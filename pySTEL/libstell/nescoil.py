@@ -30,7 +30,8 @@ class NESCOIL(FourierRep):
 		file : str
 			Path to nescin file.
 		"""
-		nescin_dict = self.libStell.read_nescoil_input(filename)
+		import copy
+		nescin_dict = copy.deepcopy(self.libStell.read_nescoil_input(filename))
 		for key in nescin_dict:
 			setattr(self, key, nescin_dict[key])
 
@@ -57,7 +58,8 @@ class NESCOIL(FourierRep):
 		file : str
 			Path to nescout file.
 		"""
-		nescout_dict = self.libStell.read_nescout(filename)
+		import copy
+		nescout_dict = copy.deepcopy(self.libStell.read_nescout(filename))
 		for key in nescout_dict:
 			setattr(self, key, nescout_dict[key])
 
@@ -146,9 +148,7 @@ class NESCOIL(FourierRep):
 		nu = len(theta)
 		nv = len(zeta)
 		for j in range(nu): pot[0,j,:] = pot[0,j,:] - self.cut*0.5*theta[j]/np.pi
-		for j in range(nv): 
-			v = zeta[j]/(np.pi*2)
-			pot[0,:,j] = pot[0,:,j] - self.cup*v
+		for j in range(nv): pot[0,:,j] = pot[0,:,j] - self.cup*0.5*zeta[j]/np.pi
 		return pot
 
 
@@ -173,12 +173,12 @@ class NESCOIL(FourierRep):
 		for j in range(self.nu): theta[j]=2.0*np.pi*j/float(self.nu-1)
 		for j in range(self.nv):  zeta[j]=    np.pi*j/float(self.nv-1)
 		pot = self.generatePotential(theta,zeta)
-		#pot = self.sfunct(theta,zeta,self.potmns_surface.T,self.xm_pot,self.xn_pot)
 		hmesh=ax.pcolormesh(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot[0,:,:]),cmap='jet',shading='gouraud')
 		ax.set_xlabel('Toroidal angle [rad]')
 		ax.set_ylabel('Poloidal angle [rad]')
 		ax.set_title(r'NESCOIL $\Phi$ Potential')
 		pyplot.colorbar(hmesh,label='$Pot$ [arb]',ax=ax)
+		if lplotnow: pyplot.show()
 
 	def plottotalpotential(self,ax=None):
 		"""Plots the NESCOIL Total Potential
@@ -286,7 +286,7 @@ class NESCOIL(FourierRep):
 			render_window.Render()
 			render_window_interactor.Start()
 
-	def cutcoils(self,ncoils_per_halfperiod,lplot=False):
+	def cutcoils(self,ncoils_per_halfperiod,npts=128,lplot=False):
 		"""Cut coils from the NESCOIL potential
 
 		This routine cuts coils from the NESCOIL potential.
@@ -297,6 +297,8 @@ class NESCOIL(FourierRep):
 		----------
 		ncoils_per_halfperiod : integer
 			Number of coils per half period (suggest 5)
+		npts : int
+			Number of points in coil (default: 128)
 		lplot : boolean (optional)
 			Plot the potential and potential lines. (default: False)
 		"""
@@ -311,19 +313,21 @@ class NESCOIL(FourierRep):
 		coils.xmin = 1E9; coils.xmax=-1E9
 		coils.ymin = 1E9; coils.ymax=-1E9
 		coils.zmin = 1E9; coils.zmax=-1E9
+		# Compute total current
+		Ipol = self.curpol*self.np/(4.0E-7*np.pi)
 		# First generate potential to determine contours
 		theta = np.reshape( np.linspace(0,2*np.pi,self.nu),(self.nu,1))
 		zeta  = np.reshape( np.linspace(0,np.pi,self.nv),(self.nv,1))
 		pot = self.generateTotalPotential(theta,zeta)
 		cont_vals = np.zeros((ncoils_per_halfperiod))
 		for k in range(ncoils_per_halfperiod):
-			u = 0
+			u = round(0.0*self.nu)
 			v = round((k+0.5)*self.nv/(ncoils_per_halfperiod))
 			cont_vals[k] = pot[0,u,v]
 		# Now calculate a larger potential map so coils can span periods
 		theta = np.reshape( np.linspace(0,2*np.pi,self.nu),(self.nu,1))
-		zeta_min = (-1.0/ncoils_per_halfperiod)*np.pi
-		zeta_max = (1.0+1.0/ncoils_per_halfperiod)*np.pi
+		zeta_min = (-2.0/ncoils_per_halfperiod)*np.pi
+		zeta_max = (1.0+2.0/ncoils_per_halfperiod)*np.pi
 		zeta  = np.reshape( np.linspace(zeta_min,zeta_max,self.nv),(self.nv,1))
 		pot = self.generateTotalPotential(theta,zeta)
 		# Now generate contours
@@ -350,25 +354,34 @@ class NESCOIL(FourierRep):
 			for temp in level:
 				th = np.append(th,temp[:,1])
 				ze = np.append(ze,temp[:,0])
+			# Wrap the coil so that poitive current is positive field (counterclockwise from top)
+			if (th[16]-th[0] > 0):
+				th = th[::-1]
+				ze = ze[::-1]
+				print(rf'Flipping coil {k}')
+			# Now we need to interpolate the coil onto the interval [0,2*pi] in theta.
+			l_in   = np.linspace(0.0,1.0,len(th))
+			l_out  = np.linspace(0.0,1.0,npts)
+			th_out = np.interp(l_out,l_in,th)
+			ph_out = np.interp(l_out,l_in,ze)/self.np
 			# Fourier transform the coil
-			npts = len(th)
 			r = np.zeros((npts)); z = np.zeros((npts))
 			for mn in range(self.mnmax_surface):
-				mtheta = th*self.xm_surface[mn]
-				nzeta  = ze*self.xn_surface[mn]
+				mtheta = th_out*self.xm_surface[mn]
+				nzeta  = ph_out*self.xn_surface[mn]*self.np
 				r  = r + np.cos(mtheta+nzeta)*self.rmnc_surface[mn]
 				z  = z + np.sin(mtheta+nzeta)*self.zmns_surface[mn]
 			# Convert to XYZ and make current/group
-			ph = ze/float(self.np)
-			x = r * np.cos(ph)
-			y = r * np.sin(ph)
-			c = np.ones((npts))*self.curpol/(np.pi*4E-7*ncoils_per_halfperiod*2)
+			x = r * np.cos(ph_out)
+			y = r * np.sin(ph_out)
+			c = np.ones((npts))*Ipol/(self.np*ncoils_per_halfperiod*2)
 			g = np.ones((npts))*(k+1)
 			c[-1] = 0.0
 			# Create stellarator symmetric coil
-			ph = (2.0*np.pi - ze)/self.np
-			xo = np.append(x,r[::-1]*np.cos(ph[::-1]))
-			yo = np.append(y,r[::-1]*np.sin(ph[::-1]))
+			#phn = (2.0*np.pi/self.np - ph_out)
+			phn = -ph_out
+			xo = np.append(x,r[::-1]*np.cos(phn[::-1]))
+			yo = np.append(y,r[::-1]*np.sin(phn[::-1]))
 			zo = np.append(z,-z[::-1])
 			co = np.append(c,c)
 			go = np.append(g,g)
@@ -390,6 +403,124 @@ class NESCOIL(FourierRep):
 			coils.zmax = np.maximum(coils.zmax,np.max(z))
 			# Now create group
 			coil_name=f'MOD{k+1}'
+			coils.groups.extend([COILGROUP(x,y,z,c,coil_name)])
+		# Return a coil object
+		return coils
+
+	def cutcoils_helical(self,nhelical_coils,lplot=False):
+		"""Cut coils from the NESCOIL potential
+
+		This routine cuts coils from the NESCOIL potential.
+		It allows the user to specify the number of coils per half 
+		period.
+
+		Parameters
+		----------
+		nhelical_coils : integer
+			Number of helical coils (suggest 2)
+		lplot : boolean (optional)
+			Plot the potential and potential lines. (default: False)
+		"""
+		import numpy as np
+		from libstell.coils import COILSET, COILGROUP, COIL
+		from contourpy import contour_generator, LineType
+		import matplotlib.pyplot as pyplot
+		# Generate coilset
+		coils = COILSET()
+		print('!!!!!!!!!!!!!!!!!!!!!!')
+		print('!!  NOT IMPLEMENTED !!')
+		print('!!!!!!!!!!!!!!!!!!!!!!')
+		return coils
+		coils.nfp = self.np
+		coils.ngroups = nhelical_coils
+		coils.xmin = 1E9; coils.xmax=-1E9
+		coils.ymin = 1E9; coils.ymax=-1E9
+		coils.zmin = 1E9; coils.zmax=-1E9
+		# First generate potential to determine contours
+		theta = np.reshape( np.linspace(0,2*np.pi,self.nu),(self.nu,1))
+		zeta  = np.reshape( np.linspace(0,np.pi,self.nv),(self.nv,1))
+		pot = self.generateTotalPotential(theta,zeta)
+		cont_vals = np.zeros((nhelical_coils))
+		for k in range(nhelical_coils):
+			v = 0
+			u = round(float(k)*self.nu/(nhelical_coils))
+			cont_vals[k] = pot[0,u,v]
+		# Now calculate a larger potential map so coils can span periods
+		theta = np.reshape( np.linspace(0,2*np.pi,self.nu),(self.nu,1))
+		zeta_min = 0.0
+		zeta_max = np.pi
+		zeta  = np.reshape( np.linspace(zeta_min,zeta_max,self.nv),(self.nv,1))
+		pot = self.generateTotalPotential(theta,zeta)
+		# Now generate contours
+		potmin = np.min(pot)
+		potmax = np.max(pot)
+		delta  = 2*(potmax-potmin)/float(2*nhelical_coils+1.5)
+		cont_gen = contour_generator(x=np.squeeze(zeta),y=np.squeeze(theta),z=np.squeeze(pot), line_type=LineType.Separate)
+		# Make plot if requested
+		if lplot:
+			px = 1/pyplot.rcParams['figure.dpi']
+			fig=pyplot.figure(figsize=(1024*px,768*px))
+			ax=fig.add_subplot(111)
+			hmesh=ax.contourf(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot),np.sort(cont_vals),extend='both',cmap='Greens')
+			ax.contour(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot),np.sort(cont_vals),colors='black')
+			ax.set_xlabel('Toroidal angle [rad]')
+			ax.set_ylabel('Poloidal angle [rad]')
+			ax.set_title(r'NESCOIL Coil Cutting')
+			pyplot.colorbar(hmesh,label=r'Potential $\Phi$ [arb]',ax=ax)
+			pyplot.show()
+		# Now loop over contours
+		for k in range(nhelical_coils):
+			level = cont_gen.lines(cont_vals[k])
+			th = np.array([]); ze = np.array([])
+			th_save = np.array([]); ze_save = np.array([])
+			th0 = 0; ze0 = 0;
+			for temp in level:
+				th = np.append(th,temp[:-1,1]+th0)
+				ze = np.append(ze,temp[:-1,0]+ze0)
+				th_save = np.append(th_save,temp[:-1,1]+th0)
+				ze_save = np.append(ze_save,temp[:-1,0]+ze0)
+				th0 = th[-1]
+				ze0 = ze[-1]
+			if True:
+				px = 1/pyplot.rcParams['figure.dpi']
+				fig=pyplot.figure(figsize=(1024*px,768*px))
+				ax=fig.add_subplot(111)
+				ax.plot(th,ze)
+				ax.set_xlim(0,2*np.pi)
+				ax.set_ylim(0,2*np.pi)
+				#hmesh=ax.contourf(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot),np.sort(cont_vals),extend='both',cmap='Greens')
+				#ax.contour(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot),np.sort(cont_vals),colors='black')
+				ax.set_xlabel('Toroidal angle [rad]')
+				ax.set_ylabel('Poloidal angle [rad]')
+				ax.set_title(r'NESCOIL Coil Cutting')
+				#pyplot.colorbar(hmesh,label=r'Potential $\Phi$ [arb]',ax=ax)
+				pyplot.show()
+
+			# Now we need to extend the coil over the whole torus
+			th0 = th[0]; ze0 = ze[0]
+			thf = th[-1]; zef = ze[-1]
+			for i in range(0,self.np):
+				th_temp = th_save[:-1] + th[-1]
+				ze_temp = ze_save[:-1] + ze[-1]
+				th = np.append(th,th_temp)
+				ze = np.append(ze,ze_temp)
+			# Fourier transform the coil
+			npts = len(th)
+			r = np.zeros((npts)); z = np.zeros((npts))
+			for mn in range(self.mnmax_surface):
+				mtheta = th*self.xm_surface[mn]
+				nzeta  = ze*self.xn_surface[mn]
+				r  = r + np.cos(mtheta+nzeta)*self.rmnc_surface[mn]
+				z  = z + np.sin(mtheta+nzeta)*self.zmns_surface[mn]
+			# Convert to XYZ and make current/group
+			ph = ze/float(self.np)
+			x = r * np.cos(ph)
+			y = r * np.sin(ph)
+			c = np.ones((npts))*self.curpol/(np.pi*4E-7*nhelical_coils*2)
+			g = np.ones((npts))*(k+1)
+			c[-1] = 0.0
+			# Now create group
+			coil_name=f'HEL{k+1}'
 			coils.groups.extend([COILGROUP(x,y,z,c,coil_name)])
 		# Return a coil object
 		return coils

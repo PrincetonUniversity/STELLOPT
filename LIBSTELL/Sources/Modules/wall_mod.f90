@@ -339,10 +339,11 @@
       IF (lcomm) CALL MPI_BARRIER(shar_comm,istat)
 #endif
       ! Check for zero area
-      IF (ANY(SUM(FN*FN,DIM=2)==zero)) THEN
-         istat=-327
-         RETURN
-      END IF
+      CALL wall_clean(shar_comm)
+      !IF (ANY(SUM(FN*FN,DIM=2)==zero)) THEN
+      !   istat=-327
+      !   RETURN
+      !END IF
       ! allocate memory for information about mesh triangles 
       IF (lcomm) THEN
          CALL mpialloc_1d_dbl(DOT00,nface,shar_rank,0,shar_comm,win_dot00)
@@ -882,10 +883,11 @@
       IF (lcomm) CALL MPI_BARRIER(comm,istat)
 #endif
       ! Check for zero area
-      IF (ANY(SUM(FN*FN,DIM=2)==zero)) THEN
-         istat=-327
-         RETURN
-      END IF
+      CALL wall_clean(shar_comm)
+      !IF (ANY(SUM(FN*FN,DIM=2)==zero)) THEN
+      !   istat=-327
+      !   RETURN
+      !END IF
       ! allocate memory for information about mesh triangles 
       IF (lcomm) THEN
          CALL mpialloc_1d_dbl(DOT00,nface,shar_rank,0,shar_comm,win_dot00)
@@ -940,6 +942,121 @@
       lwall_loaded = .true.
       RETURN
       END SUBROUTINE wall_load_seg
+
+      SUBROUTINE wall_clean(shar_comm)
+      !-----------------------------------------------------------------------
+      ! wall_clean: Cleans wall faces for zero are
+      !-----------------------------------------------------------------------
+      ! param[in]: shared memory communicator
+      !-----------------------------------------------------------------------
+#if defined(MPI_OPT)
+      USE mpi
+#endif
+      IMPLICIT NONE
+      INTEGER, INTENT(inout), OPTIONAL :: shar_comm
+      LOGICAL :: lcomm, lfixarray
+      INTEGER :: istat, dex1, dex2, dex3, i, j, ik, nface_new
+      LOGICAL, DIMENSION(:), ALLOCATABLE :: faceOK
+      INTEGER, DIMENSION(:,:), ALLOCATABLE :: face_new
+      lcomm = .FALSE.; lfixarray = .FALSE.; istat = 0
+      ! Check MPI MPI
+#if defined(MPI_OPT)
+      IF (PRESENT(shar_comm)) THEN
+         lcomm = .TRUE.
+      END IF
+#endif
+      IF (shar_rank == 0) lfixarray = ANY(SUM(FN*FN,DIM=2)==zero)
+#if defined(MPI_OPT)
+      CALL MPI_Bcast(lfixarray,1,MPI_LOGICAL,0,shar_comm,istat)
+#endif
+      IF (.not.lfixarray) RETURN ! Exit if nothing to fix
+      ! Check for zero area
+      IF (shar_rank == 0) THEN
+         ALLOCATE(faceOK(nface))
+         faceOK = .TRUE.
+         WHERE(SUM(FN*FN,DIM=2)==zero) faceOK = .FALSE.
+         nface_new = COUNT(faceOK)
+         ALLOCATE(face_new(nface_new,3))
+         j = 1
+         DO i = 1, nface
+            IF (faceOK(i)) THEN
+               face_new(j,:) = face(i,:)
+               j = j + 1
+            END IF
+         END DO
+         IF (ALLOCATED(faceOK)) DEALLOCATE(faceOK)
+         WRITE(6,*) '===========WALL_MOD==========='
+         WRITE(6,*) '== BAD FACES FOUND ==========='
+         WRITE(6,*) '== NUMBER OF OLD FACES ',nface
+         WRITE(6,*) '== NUMBER OF BAD FACES ',nface-nface_new
+         WRITE(6,*) '== NUMBER OF NEW FACES ',nface_new
+         WRITE(6,*) '=============================='
+         nface = nface_new
+      END IF
+      ! Barrier to catch up
+      IF (lcomm) THEN
+#if defined(MPI_OPT)
+         CALL MPI_BARRIER(shar_comm,istat)
+         IF (istat/=0) RETURN
+         CALL MPI_Bcast(nface,1,MPI_INTEGER,0,shar_comm,istat)
+         ! Now free old arrays
+         CALL MPI_WIN_FENCE(0,win_face,istat)
+         CALL MPI_WIN_FREE(win_face,istat)
+         IF (ASSOCIATED(face)) NULLIFY(face)
+         CALL MPI_WIN_FENCE(0,win_a0,istat)
+         CALL MPI_WIN_FREE(win_a0,istat)
+         IF (ASSOCIATED(A0)) NULLIFY(A0)
+         CALL MPI_WIN_FENCE(0,win_v0,istat)
+         CALL MPI_WIN_FREE(win_v0,istat)
+         IF (ASSOCIATED(V0)) NULLIFY(V0)
+         CALL MPI_WIN_FENCE(0,win_v1,istat)
+         CALL MPI_WIN_FREE(win_v1,istat)
+         IF (ASSOCIATED(V1)) NULLIFY(V1)
+         CALL MPI_WIN_FENCE(0,win_fn,istat)
+         CALL MPI_WIN_FREE(win_fn,istat)
+         IF (ASSOCIATED(FN)) NULLIFY(FN)
+         CALL mpialloc_2d_int(face,nface,3,shar_rank,0,shar_comm,win_face)
+         CALL mpialloc_2d_dbl(A0,nface,3,shar_rank,0,shar_comm,win_a0)
+         CALL mpialloc_2d_dbl(V0,nface,3,shar_rank,0,shar_comm,win_v0)
+         CALL mpialloc_2d_dbl(V1,nface,3,shar_rank,0,shar_comm,win_v1)
+         CALL mpialloc_2d_dbl(FN,nface,3,shar_rank,0,shar_comm,win_fn)
+         mydelta = CEILING(REAL(nface) / REAL(shar_size))
+         mystart = 1 + shar_rank*mydelta
+         myend   = mystart + mydelta
+         IF (myend > nface) myend=nface
+#endif
+      ELSE
+         IF(ASSOCIATED(face)) DEALLOCATE(face)
+         IF(ASSOCIATED(A0))   DEALLOCATE(A0)
+         IF(ASSOCIATED(V0))   DEALLOCATE(V0)
+         IF(ASSOCIATED(V1))   DEALLOCATE(V1)
+         IF(ASSOCIATED(FN))   DEALLOCATE(FN)
+         ALLOCATE(face(nface,3),STAT=istat)
+         ALLOCATE(A0(nface,3),V0(nface,3),V1(nface,3),&
+                     FN(nface,3),STAT=istat)
+         mystart = 1; myend = nface
+      END IF
+      ! Setup face
+      IF (shar_rank == 0) THEN
+         face = face_new
+         IF (ALLOCATED(face_new)) DEALLOCATE(face_new)
+      END IF
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(shar_comm,istat)
+#endif
+      DO ik = mystart, myend
+         dex1 = face(ik,1)
+         dex2 = face(ik,2)
+         dex3 = face(ik,3)
+         A0(ik,:) = vertex(dex1,:)
+         V0(ik,:)  = vertex(dex3,:)-vertex(dex1,:)
+         V1(ik,:)  = vertex(dex2,:)-vertex(dex1,:)
+         FN(ik,1) = (V1(ik,2)*V0(ik,3))-(V1(ik,3)*V0(ik,2))
+         FN(ik,2) = (V1(ik,3)*V0(ik,1))-(V1(ik,1)*V0(ik,3))
+         FN(ik,3) = (V1(ik,1)*V0(ik,2))-(V1(ik,2)*V0(ik,1))
+      END DO
+      RETURN
+      END SUBROUTINE wall_clean
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!    Wall info
@@ -1689,7 +1806,7 @@
          WRITE(10, *) 'DATE: ', TRIM(date(6:))
          WRITE(10, "(I12, I12)") 0, 0
          WRITE(10, "(I12, I12)") nvertex, nface
-         WRITE(10, "(E20.10, E20.10, E20.10)") TRANSPOSE(vertex)
+         WRITE(10, "(ES20.10, ES20.10, ES20.10)") TRANSPOSE(vertex)
          WRITE(10, "(I12, I12, I12)") TRANSPOSE(face)
 
          IF (ASSOCIATED(wall%blocks)) THEN
@@ -1698,7 +1815,7 @@
             WRITE(10, "(E20.10, I12, I12, I12)") wall%stepsize, wall%br
       
             DO i=1,wall%nblocks
-               WRITE(10, "(6(E20.10))") wall%blocks(i)%rmin(1), wall%blocks(i)%rmax(1), wall%blocks(i)%rmin(2), &
+               WRITE(10, "(6(ES20.10))") wall%blocks(i)%rmin(1), wall%blocks(i)%rmax(1), wall%blocks(i)%rmin(2), &
                                        wall%blocks(i)%rmax(2), wall%blocks(i)%rmin(3), wall%blocks(i)%rmax(3)
                WRITE(10, "(I12)") wall%blocks(i)%nfaces
                IF (wall%blocks(i)%nfaces > 0) WRITE(10, "(I12)") wall%blocks(i)%face

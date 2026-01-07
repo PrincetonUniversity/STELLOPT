@@ -6,7 +6,7 @@
      &                       restart_flag, readin_flag,
      &                       timestep_flag, ns_error_flag,
      &                       reset_jacdt_flag, lamscale, imasrun_flag,
-     &                       imas_read_flag
+     &                       imas_read_flag, really_bad_flag
       USE realspace
       USE vmec_params, ONLY: ntmax
       USE vacmod, ONLY: nuv, nuv3
@@ -146,6 +146,11 @@ C-----------------------------------------------
             CALL MPI_Bcast(icurv, SIZE(icurv), MPI_REAL8, 0,
      &                     RUNVMEC_COMM_WORLD, MPI_ERR)
             CALL MPI_Bcast(lamscale, 1, MPI_REAL8, 0,
+     &                     RUNVMEC_COMM_WORLD, MPI_ERR)
+            js = SIZE(rmn_bdy, 1)*SIZE(rmn_bdy, 2)*SIZE(rmn_bdy, 3)
+            CALL MPI_Bcast(rmn_bdy, js, MPI_REAL8, 0,                          &
+     &                     RUNVMEC_COMM_WORLD, MPI_ERR)
+            CALL MPI_Bcast(zmn_bdy, js, MPI_REAL8, 0,                          &
      &                     RUNVMEC_COMM_WORLD, MPI_ERR)
 
             nsmin = t1lglob; nsmax = t1rglob
@@ -404,6 +409,17 @@ C-----------------------------------------------
             END IF
          END IF
          grid_id = grid_id + 1
+
+         ! This is hear to catch and issue with indexing
+         IF (igrid .lt. igrid0) THEN
+            NS_RESLTN = 0
+            grid_id = 1
+            IF (ier_flag .eq. more_iter_flag) THEN
+                ier_flag = really_bad_flag
+                EXIT
+            END IF
+         END IF
+
       END DO
       !END - Main loop that will be parallelized - SKS
 
@@ -411,6 +427,7 @@ C-----------------------------------------------
 
       IF (ier_flag .eq. bad_jacobian_flag .and. jacob_off .eq. 0) THEN
          jacob_off = 1
+         NS_RESLTN = NS_RESLTN - 1
          GO TO 50
       END IF
 

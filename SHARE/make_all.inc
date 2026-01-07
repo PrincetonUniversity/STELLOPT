@@ -63,6 +63,9 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
   MGRID_DIR= ../../MAKEGRID
   LIB_MGRID= libmakegrid$(STATIC_EXT)
   MOD_PATH+= -I$(MGRID_DIR)/$(LOCTYPE)
+  NESCOIL_DIR= ../../NESCOIL
+  LIB_NESCOIL= libnescoil$(STATIC_EXT)
+  MOD_PATH+= -I$(NESCOIL_DIR)/$(LOCTYPE)
   LIB_LINK=  $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC)  \
 	$(BEAMS3D_DIR)/$(LOCTYPE)/$(LIB_BEAMS3D) \
 	$(BOOTSJ_DIR)/$(LOCTYPE)/$(LIB_BOOTSJ) \
@@ -72,7 +75,8 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
 	$(DIAGNO_DIR)/$(LOCTYPE)/$(LIB_DIAGNO) \
 	$(FIELDLINES_DIR)/$(LOCTYPE)/$(LIB_FIELDLINES) \
 	$(JINV_DIR)/$(LOCTYPE)/$(LIB_JINV) \
-	$(MGRID_DIR)/$(LOCTYPE)/$(LIB_MGRID) 
+  $(MGRID_DIR)/$(LOCTYPE)/$(LIB_MGRID) \
+  $(NESCOIL_DIR)/$(LOCTYPE)/$(LIB_NESCOIL)
   ifeq ($(LDKES),T)
     DKES_DIR = ../../DKES
     LIB_DKES = libdkes$(STATIC_EXT)
@@ -107,10 +111,24 @@ else ifeq ($(MAKECMDGOALS),xthrift)
   DIAGNO_DIR = ../../DIAGNO
   LIB_DIAGNO= libdiagno$(STATIC_EXT)
   MOD_PATH+= -I$(DIAGNO_DIR)/$(LOCTYPE)
+  PENTA_DIR= ../../PENTA
+  LIB_PENTA= libpenta$(STATIC_EXT)
+  MOD_PATH+= -I$(PENTA_DIR)/$(LOCTYPE)
   LIB_LINK=  $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC)  \
   $(BOOTSJ_DIR)/$(LOCTYPE)/$(LIB_BOOTSJ) \
   $(BOOZ_DIR)/$(LOCTYPE)/$(LIB_BOOZ) \
-  $(DIAGNO_DIR)/$(LOCTYPE)/$(LIB_DIAGNO)
+  $(DIAGNO_DIR)/$(LOCTYPE)/$(LIB_DIAGNO) \
+  $(PENTA_DIR)/$(LOCTYPE)/$(LIB_PENTA) 
+  ifeq ($(LDKES),T)
+    DKES_DIR = ../../DKES
+    LIB_DKES = libdkes$(STATIC_EXT)
+    MOD_PATH += -I$(DKES_DIR)/$(LOCTYPE)
+    PRECOMP += -DDKES_OPT
+    LIB_LINK += $(DKES_DIR)/$(LOCTYPE)/$(LIB_DKES)
+  else
+    DKES_DIR = 
+    LIB_DKES = 
+  endif
   LGENE = F
   LCOILOPT = F
   LSFINCS = F
@@ -125,6 +143,7 @@ else ifeq ($(MAKECMDGOALS),test_stellopt_regcoil)
 else ifeq ($(MAKECMDGOALS),test_stellopt_sfincs)
 else ifeq ($(MAKECMDGOALS),test_stellopt_terpsichore)
 else ifeq ($(MAKECMDGOALS),test_stellopt_travis)
+else ifeq ($(MAKECMDGOALS),test_make)
 else
   LGENE = F
   LCOILOPT = F

@@ -12,19 +12,24 @@ EC = 1.602176634E-19 # Electron charge [C]
 # PENTA Class
 class PENTA:
     
-    def __init__(self, folder_path, plasma=None, Zions=None):
+    def __init__(self, folder_path='.',files_suffix=None, plasma=None, Zions=None, lverb=True):
         #folder_path is a path to the folder containnig the following PENTA3 results files:
-        # - flows_vs_Er
-        # - flows_vs_roa
-        # - fluxes_vs_Er
-        # - fluxes_vs_roa
-        # - Jprl_vs_roa
-        # - contra_vs_roa
-        # - sigmas_vs_roa
+        # - flows_vs_Er_{files_suffix} 
+        # - flows_vs_roa_{files_suffix}
+        # - fluxes_vs_Er_{files_suffix}
+        # - fluxes_vs_roa_{files_suffix}
+        # - Jprl_vs_roa_{files_suffix}
+        # - contra_vs_roa_{files_suffix}
+        # - sigmas_vs_roa_{files_suffix}
         
-        print('\nPENTA class being created...')
+        if(lverb): print('\nPENTA class being created...')
         
         self.folder_path = folder_path
+        
+        if (files_suffix is not None):
+            self.files_suffix = '_' + files_suffix
+        else:
+            self.files_suffix = ''
         
         #check if a plasma class is given. If not check if Zions is given
         if plasma is None and Zions is None:
@@ -33,28 +38,31 @@ class PENTA:
         elif(plasma is not None and Zions is not None):
             print('Both plasma class and Zions provided. Considering plasma class and discarding Zions array')
             self.list_of_species = plasma.list_of_species
-            print(f'List of species: {self.list_of_species}')
+            if(lverb): print(f'List of species: {self.list_of_species}')
             self.Zions = [plasma.Zcharge[species] for species in self.list_of_species]
             #remove electrons
             self.Zions = self.Zions[1:]
             print(f'Zions={self.Zions}')
         elif(plasma is not None and Zions is None):
             self.list_of_species = plasma.list_of_species
-            print(f'List of species: {self.list_of_species}')
+            if(lverb): print(f'List of species: {self.list_of_species}')
             self.Zions = [plasma.Zcharge[species] for species in self.list_of_species]
             #remove electrons
             self.Zions = self.Zions[1:]
-            print(f'Zions={self.Zions}')
+            if(lverb): print(f'Zions={self.Zions}')
         elif(plasma is None and Zions is not None):
             #check if size of Zions is compatible with number of ions in results files
             self.check_size_Zions(Zions)
             self.list_of_species = ['e'] + [f'i{k}' for k in range(1,len(Zions)+1)]
-            print(f'List of species: {self.list_of_species}')
+            if(lverb): print(f'List of species: {self.list_of_species}')
             self.Zions = Zions
-            print(f'Zions={self.Zions}')
+            if(lverb): print(f'Zions={self.Zions}')
             
         #sets the arrays self.roa_unique and self.Er_search
         self.set_independent_variables()
+        
+        # set the type of rooa for ambipolar roots in the output files
+        self.set_root_type()
         
         # sets the dictionaries self.##[root], self.##[root]], self.##[root]],
         # with ## being: roa, Er, Jprl_total, J_BS
@@ -64,15 +72,26 @@ class PENTA:
         # - self.uprl[species,root]
         # - self.Jprl[species,root]
         # - self.Gamma[species,root]
+        # - self.QoT[species,root]
         # species is one of the species in self.list_of_species and root should be 
         # 'ion_root', 'electron_root' or 'unstable_root'
         self.set_fluxes_flows_by_root()
+        
+        # sets the dictionaries self.Ln[root], self.LT[root], self.LEr[root]
+        self.set_particle_transport_coeffs_by_root()
+        
+        # sets the dictionaries self.Rn[root], self.RT[root], self.REr[root]
+        self.set_heat_transport_coeffs_by_root()
+        
+        # Sets the dictionary self.root_Maxwell[roa] = 'ion_roots' or 'electron_root'
+        # using Maxwell construction criterium
+        self.set_Maxwell_root()
             
             
     def check_size_Zions(self,Zions):
         #checks if len(Zions) is the same as the number of ions in the file fluxes_vs_Er
         
-        filename = self.folder_path + '/fluxes_vs_Er'
+        filename = self.folder_path + '/fluxes_vs_Er' + self.files_suffix
             
         penta = np.loadtxt(filename,skiprows=2)        
         num_ion_species = len(penta[0,:]) - 3
@@ -86,31 +105,90 @@ class PENTA:
         # and sets the integer self.Smax
         # note that Er_search is in V/cm
         
-        filename = self.folder_path + '/fluxes_vs_Er'
+        filename = self.folder_path + '/fluxes_vs_Er' + self.files_suffix
             
         penta = np.loadtxt(filename,skiprows=2) 
         
-        self.roa_unique = np.unique(penta[:,0])
-        self.Er_search = np.unique(penta[1,:])
-        
-        filename = self.folder_path + '/flows_vs_roa'
+        self.Er_search = np.unique(penta[1,:])          
+       
+        filename = self.folder_path + '/flows_vs_roa' + self.files_suffix
             
         penta = np.loadtxt(filename,skiprows=2)
+        
+        self.roa_unique = np.unique(penta[:,0])
         
         number_flows_per_species = len(penta[0,3:]) / len(self.list_of_species)
         
         self.Smax = int(number_flows_per_species - 1)
         
-        print(f'Smax={self.Smax}')
-        
-    def set_variables_by_root(self):
-        # sets the arrays self.##_ion_root, self.##_electron_root, self.##_unstable_root,
-        # with ## being: roa, Er, Jprl_total, JBS
+    def set_root_type(self):
+        # at each roa, for each ambipolar solution sets the type of root: 
+        # if 1 root:  'ion_root'
+        # if 3 roots: 'ion_root', 'electron_root', 'unstable_root'
+        # if 5 roots: 'ion_root', 'electron_root', 'unstable_root', 'unstable_root2', 'extra_stable_root'
+        # else: gives error (probably gonna need to generalize for 7 roots since sometimes this also appears...
+        # even root: gives error
         
         from itertools import groupby
         from collections import defaultdict
         
-        filename = self.folder_path + '/Jprl_vs_roa'
+        filename = self.folder_path + '/Jprl_vs_roa' + self.files_suffix
+            
+        penta = np.loadtxt(filename,skiprows=2)
+        
+        roa = penta[:,0]
+        Er = penta[:,1]
+              
+        # these are the different options available so far        
+        self.target_keys = ['ion_root', 'electron_root', 'unstable_root', 'extra_stable_root', 'unstable_root2']
+        
+        self.root_type = []
+        self.num_roots = []
+
+        i=0
+        for _, group in groupby(roa):
+            num_roots = len( list(group) )
+            self.num_roots.append(num_roots)
+            
+            if(num_roots == 1):
+                self.root_type.append(['ion_root'])
+            elif(num_roots == 3):
+                self.root_type.append( ['ion_root','unstable_root','electron_root'] )
+            elif(num_roots == 5): # and (num_roots-1)%2==0):
+                # two possibilities:
+                possibility_1 = ['extra_stable_root','unstable_root2','ion_root','unstable_root','electron_root']
+                possibility_2 = ['ion_root','unstable_root','electron_root','unstable_root2','extra_stabe_root']
+                
+                list_Er = Er[i:i+num_roots]
+                idx_closest_to_zero = np.argmin(np.abs(list_Er-0.0))
+                Er_closest_to_zero = list_Er[idx_closest_to_zero]
+                
+                A = Er_closest_to_zero > 0
+                B = idx_closest_to_zero >= 2
+                
+                if( (A and B) or (not A  and B) ):
+                    self.root_type.append(possibility_1)
+                else:
+                    self.root_type.append(possibility_2)
+            else:
+                print(f"How come you have {num_roots} roots ??")
+                exit(0)
+                
+            i += num_roots 
+            
+        # flatten list of lists
+        self.root_type = np.concatenate(self.root_type) #[element for sublist in self.root_type for element in sublist]
+        
+        self.available_roots = list(set(self.root_type))
+        
+    def set_variables_by_root(self):
+        # sets the dictionaries self.##[root], self.##[root]], self.##[root]],
+        # with ## being: roa, Er, Jprl_total, J_BS
+        
+        from itertools import groupby
+        from collections import defaultdict
+        
+        filename = self.folder_path + '/Jprl_vs_roa' + self.files_suffix
             
         penta = np.loadtxt(filename,skiprows=2)
         
@@ -123,38 +201,88 @@ class PENTA:
         self.Er = defaultdict(list)
         self.Jprl_total = defaultdict(list)
         self.JBS = defaultdict(list)
+        
+        target_keys = self.target_keys
+        
+        for target in target_keys:
+            self.roa[target] = roa[self.root_type == target]
+            self.Er[target] = Er[self.root_type == target]
+            self.Jprl_total[target] = Jprl_total[self.root_type == target]
+            self.JBS[target] = JBS[self.root_type == target]
 
-        i=0
-        for _, group in groupby(roa):
-            num_roots = len( list(group) )
+        # i=0
+        # for _, group in groupby(roa):
+        #     num_roots = len( list(group) )
+        #     self.num_roots.append(num_roots)
             
-            if(num_roots == 1):
-                self.roa['ion_root'].append(roa[i])
-                self.Er['ion_root'].append(Er[i])
-                self.Jprl_total['ion_root'].append(Jprl_total[i])
-                self.JBS['ion_root'].append(JBS[i])
-            elif(num_roots ==3):
-                # ion root
-                self.roa['ion_root'].append(roa[i])
-                self.Er['ion_root'].append(Er[i])
-                self.Jprl_total['ion_root'].append(Jprl_total[i])
-                self.JBS['ion_root'].append(JBS[i])
-                # unstble root
-                self.roa['unstable_root'].append(roa[i+1])
-                self.Er['unstable_root'].append(Er[i+1])
-                self.Jprl_total['unstable_root'].append(Jprl_total[i+1])
-                self.JBS['unstable_root'].append(JBS[i+1])
-                # electron root
-                self.roa['electron_root'].append(roa[i+2])
-                self.Er['electron_root'].append(Er[i+2])
-                self.Jprl_total['electron_root'].append(Jprl_total[i+2])
-                self.JBS['electron_root'].append(JBS[i+2])
-            else:
-                raise ValueError(f"How come you have {num_roots} roots ??")   
-            i += num_roots        
+        #     if(num_roots == 1):
+        #         self.roa['ion_root'].append(roa[i])
+        #         self.Er['ion_root'].append(Er[i])
+        #         self.Jprl_total['ion_root'].append(Jprl_total[i])
+        #         self.JBS['ion_root'].append(JBS[i])
+        #     elif(num_roots == 3):
+                
+        #         # if(num_roots>3):
+        #         #     print(f"How come you have {num_roots} roots ??")   
+        #         #     print('Considering first root --> ion root; second_root --> unstable; 3rd root --> electron_root;discard the others')
+        #         # ion root
+        #         self.roa['ion_root'].append(roa[i])
+        #         self.Er['ion_root'].append(Er[i])
+        #         self.Jprl_total['ion_root'].append(Jprl_total[i])
+        #         self.JBS['ion_root'].append(JBS[i])
+        #         # unstable root
+        #         self.roa['unstable_root'].append(roa[i+1])
+        #         self.Er['unstable_root'].append(Er[i+1])
+        #         self.Jprl_total['unstable_root'].append(Jprl_total[i+1])
+        #         self.JBS['unstable_root'].append(JBS[i+1])
+        #         # electron root
+        #         self.roa['electron_root'].append(roa[i+2])
+        #         self.Er['electron_root'].append(Er[i+2])
+        #         self.Jprl_total['electron_root'].append(Jprl_total[i+2])
+        #         self.JBS['electron_root'].append(JBS[i+2])
+        #     elif(num_roots == 5):
+        #         list_Er = Er[i:i+num_roots]
+        #         # ion root is the one right before Er=0
+        #         # electrons root is two roots after Er=0
+        #         # the others we consider UNSTABLE
+        #         ## TO BED DONE...
+                
+                
+        #         self.roa['ion_root'].append(roa[i])
+        #         self.Er['ion_root'].append(Er[i])
+        #         self.Jprl_total['ion_root'].append(Jprl_total[i])
+        #         self.JBS['ion_root'].append(JBS[i])
+        #         # unstable root
+        #         self.roa['unstable_root'].append(roa[i+1])
+        #         self.Er['unstable_root'].append(Er[i+1])
+        #         self.Jprl_total['unstable_root'].append(Jprl_total[i+1])
+        #         self.JBS['unstable_root'].append(JBS[i+1])
+        #         # electron root
+        #         self.roa['electron_root'].append(roa[i+2])
+        #         self.Er['electron_root'].append(Er[i+2])
+        #         self.Jprl_total['electron_root'].append(Jprl_total[i+2])
+        #         self.JBS['electron_root'].append(JBS[i+2])
+        #         # unstable root 2
+        #         self.roa['unstable_root_2'].append(roa[i+3])
+        #         self.Er['unstable_root_2'].append(Er[i+3])
+        #         self.Jprl_total['unstable_root_2'].append(Jprl_total[i+3])
+        #         self.JBS['unstable_root_2'].append(JBS[i+3])
+        #         # extra root
+        #         self.roa['extra_stable_root'].append(roa[i+4])
+        #         self.Er['extra_stable_root'].append(Er[i+4])
+        #         self.Jprl_total['extra_stable_root'].append(Jprl_total[i+4])
+        #         self.JBS['extra_stable_root'].append(JBS[i+4])
+                
+        #     elif(num_roots == 2):
+        #         raise ValueError(f"How come you have 2 roots ??") 
+        #     else:
+        #         print(f"How come you have {num_roots} roots ??")
+        #         exit(0)   
+
+        #     i += num_roots    
   
     def set_fluxes_flows_by_root(self):
-        # sets the dictionaries self.uprl[species,root], self.Jprl[species,root] and self.Gamma[species,root]
+        # sets the dictionaries self.uprl[species,root], self.Jprl[species,root], self.Gamma[species,root] and self.QoT[species,root]
         # they dictionaries return arrays
         # species is one of the species in self.list_of_species and root should be 'ion_root', 'electron_root' or 'unstable_root'
         
@@ -162,55 +290,358 @@ class PENTA:
         from collections import defaultdict
         
         #get uprl0 flows for all species
-        filename = self.folder_path + '/flows_vs_roa'   
+        filename = self.folder_path + '/flows_vs_roa' + self.files_suffix
         penta = np.loadtxt(filename,skiprows=2)
         roa = penta[:,0]
         uprl0_penta = penta[:,3:-1:(self.Smax+1)]
         
         #get Jprl flows for all species
-        filename = self.folder_path + '/Jprl_vs_roa'   
+        filename = self.folder_path + '/Jprl_vs_roa' + self.files_suffix   
         penta = np.loadtxt(filename,skiprows=2)
         Jprl_penta = penta[:,3:(3+len(self.list_of_species))]
         
-        #get particle fluxes for all species
-        filename = self.folder_path + '/fluxes_vs_roa'
+        #get fluxes for all species
+        filename = self.folder_path + '/fluxes_vs_roa' + self.files_suffix
         penta = np.loadtxt(filename,skiprows=2)
         Gamma_penta = penta[:,np.r_[3,5:(5+len(self.Zions))]]
+        QoT_penta = penta[:,np.r_[4,(5+len(self.Zions)):(5+2*len(self.Zions))]]
         
         self.uprl = defaultdict(list)
         self.Jprl = defaultdict(list)
         self.Gamma = defaultdict(list)
+        self.QoT = defaultdict(list)
         
         for k,species in enumerate(self.list_of_species):
+            
+            for target in self.target_keys:
+                self.uprl[species,target] = uprl0_penta[self.root_type == target,k]
+                self.Jprl[species,target] = Jprl_penta[self.root_type == target,k]
+                self.Gamma[species,target] = Gamma_penta[self.root_type == target,k]
+                self.QoT[species,target] = QoT_penta[self.root_type == target,k]
         
-            i=0
-            for _, group in groupby(roa):
-                num_roots = len( list(group) )
+            # i=0
+            # for _, group in groupby(roa):
+            #     num_roots = len( list(group) )
                 
-                if(num_roots == 1):
-                    self.uprl[species,'ion_root'].append(uprl0_penta[i,k])
-                    self.Jprl[species,'ion_root'].append(Jprl_penta[i,k])
-                    self.Gamma[species,'ion_root'].append(Gamma_penta[i,k])
-                elif(num_roots ==3):
-                    # ion root
-                    self.uprl[species,'ion_root'].append(uprl0_penta[i,k])
-                    self.Jprl[species,'ion_root'].append(Jprl_penta[i,k])
-                    self.Gamma[species,'ion_root'].append(Gamma_penta[i,k])
-                    # unstable root
-                    self.uprl[species,'unstable_root'].append(uprl0_penta[i+1,k])
-                    self.Jprl[species,'unstable_root'].append(Jprl_penta[i+1,k])
-                    self.Gamma[species,'unstable_root'].append(Gamma_penta[i+1,k])
-                    # electron root
-                    self.uprl[species,'electron_root'].append(uprl0_penta[i+2,k])
-                    self.Jprl[species,'electron_root'].append(Jprl_penta[i+2,k])
-                    self.Gamma[species,'electron_root'].append(Gamma_penta[i+2,k])
+            #     if(num_roots == 1):
+            #         self.uprl[species,'ion_root'].append(uprl0_penta[i,k])
+            #         self.Jprl[species,'ion_root'].append(Jprl_penta[i,k])
+            #         self.Gamma[species,'ion_root'].append(Gamma_penta[i,k])
+            #         self.QoT[species,'ion_root'].append(QoT_penta[i,k])
+            #     elif(num_roots ==3):
+                
+            #         # if(num_roots>3):
+            #         #     print(f"How come you have {num_roots} roots ??")   
+            #         #     print('Considering first root --> ion root; second_root --> unstable; 3rd root --> electron_root;discard the others')
+            #         # ion root
+            #         self.uprl[species,'ion_root'].append(uprl0_penta[i,k])
+            #         self.Jprl[species,'ion_root'].append(Jprl_penta[i,k])
+            #         self.Gamma[species,'ion_root'].append(Gamma_penta[i,k])
+            #         self.QoT[species,'ion_root'].append(QoT_penta[i,k])
+            #         # unstable root
+            #         self.uprl[species,'unstable_root'].append(uprl0_penta[i+1,k])
+            #         self.Jprl[species,'unstable_root'].append(Jprl_penta[i+1,k])
+            #         self.Gamma[species,'unstable_root'].append(Gamma_penta[i+1,k])
+            #         self.QoT[species,'unstable_root'].append(QoT_penta[i+1,k])
+            #         # electron root
+            #         self.uprl[species,'electron_root'].append(uprl0_penta[i+2,k])
+            #         self.Jprl[species,'electron_root'].append(Jprl_penta[i+2,k])
+            #         self.Gamma[species,'electron_root'].append(Gamma_penta[i+2,k])
+            #         self.QoT[species,'electron_root'].append(QoT_penta[i+2,k])
+            #     elif(num_roots ==5):
+            #         # ion root
+            #         self.uprl[species,'ion_root'].append(uprl0_penta[i,k])
+            #         self.Jprl[species,'ion_root'].append(Jprl_penta[i,k])
+            #         self.Gamma[species,'ion_root'].append(Gamma_penta[i,k])
+            #         self.QoT[species,'ion_root'].append(QoT_penta[i,k])
+            #         # unstable root
+            #         self.uprl[species,'unstable_root'].append(uprl0_penta[i+1,k])
+            #         self.Jprl[species,'unstable_root'].append(Jprl_penta[i+1,k])
+            #         self.Gamma[species,'unstable_root'].append(Gamma_penta[i+1,k])
+            #         self.QoT[species,'unstable_root'].append(QoT_penta[i+1,k])
+            #         # electron root
+            #         self.uprl[species,'electron_root'].append(uprl0_penta[i+2,k])
+            #         self.Jprl[species,'electron_root'].append(Jprl_penta[i+2,k])
+            #         self.Gamma[species,'electron_root'].append(Gamma_penta[i+2,k])
+            #         self.QoT[species,'electron_root'].append(QoT_penta[i+2,k])
+            #         # unstable root 2
+            #         self.uprl[species,'unstable_root_2'].append(uprl0_penta[i+3,k])
+            #         self.Jprl[species,'unstable_root_2'].append(Jprl_penta[i+3,k])
+            #         self.Gamma[species,'unstable_root_2'].append(Gamma_penta[i+3,k])
+            #         self.QoT[species,'unstable_root_2'].append(QoT_penta[i+3,k])
+            #         # extra root
+            #         self.uprl[species,'extra_stable_root'].append(uprl0_penta[i+4,k])
+            #         self.Jprl[species,'extra_stable_root'].append(Jprl_penta[i+4,k])
+            #         self.Gamma[species,'extra_stable_root'].append(Gamma_penta[i+4,k])
+            #         self.QoT[species,'extra_stable_root'].append(QoT_penta[i+4,k])
+            #     elif(num_roots ==2):
+            #         raise ValueError(f"How come you have 2 roots ??") 
+            #     else:
+            #         print(f"How come you have {num_roots} roots ??")
+            #         exit(0)    
+            #     i += num_roots
+            
+    def set_particle_transport_coeffs_by_root(self):
+        # sets the dictionaries self.Ln[root], self.LT[root], self.LEr[root]
+        # each dictionary has shape (num_roa,Ns,Ns)
+        
+        from collections import defaultdict
+        
+        filename = self.folder_path + '/particleTransportCoeffs_vs_roa' + self.files_suffix
+        penta = np.loadtxt(filename,skiprows=2)
+        
+        Ns = len(self.list_of_species)
+        Ns2 = Ns*Ns
+        
+        Ln = penta[:,1:Ns2+1]
+        LT = penta[:,Ns2+1:2*Ns2+1]
+        LEr = penta[:,2*Ns2+1:3*Ns2+1]
+        
+        # reshape L_coeffs into 2D matrix as in penta.f90
+        num_lines, _, = Ln.shape
+        Ln = Ln.reshape(num_lines,Ns,Ns,order='F')
+        LT = LT.reshape(num_lines,Ns,Ns,order='F')
+        LEr = LEr.reshape(num_lines,Ns,Ns,order='F')
+        
+        self.Ln = defaultdict(list)
+        self.LT = defaultdict(list)
+        self.LEr = defaultdict(list)
+        
+        for sp,species in enumerate(self.list_of_species):
+            for target in self.target_keys:
+                    self.Ln[species,target] = Ln[self.root_type == target,sp,:]
+                    self.LT[species,target] = LT[self.root_type == target,sp,:]
+                    self.LEr[species,target] = LEr[self.root_type == target,sp,:]
+                    
+    def set_heat_transport_coeffs_by_root(self):
+        # sets the dictionaries self.Rn[root], self.RT[root], self.REr[root]
+        # each dictionary has shape (num_roa,Ns,Ns)
+        
+        from collections import defaultdict
+        
+        filename = self.folder_path + '/heatTransportCoeffs_vs_roa' + self.files_suffix
+        penta = np.loadtxt(filename,skiprows=2)
+        
+        Ns = len(self.list_of_species)
+        Ns2 = Ns*Ns
+        
+        Rn = penta[:,1:Ns2+1]
+        RT = penta[:,Ns2+1:2*Ns2+1]
+        REr = penta[:,2*Ns2+1:3*Ns2+1]
+        
+        # reshape R_coeffs into 2D matrix as in penta.f90
+        num_lines, _, = Rn.shape
+        Rn = Rn.reshape(num_lines,Ns,Ns,order='F')
+        RT = RT.reshape(num_lines,Ns,Ns,order='F')
+        REr = REr.reshape(num_lines,Ns,Ns,order='F')
+        
+        self.Rn = defaultdict(list)
+        self.RT = defaultdict(list)
+        self.REr = defaultdict(list)
+        
+        for sp,species in enumerate(self.list_of_species):
+            for target in self.target_keys:
+                    self.Rn[species,target] = Rn[self.root_type == target,sp,:]
+                    self.RT[species,target] = RT[self.root_type == target,sp,:]
+                    self.REr[species,target] = REr[self.root_type == target,sp,:]
+                
+    def set_plasma_solver_transport_coeffs(self,plasma_profiles_filename=None,make_plot=False):
+        # sets the dictionaries self.Dn[species,root], self.cn[species,root] for particle flux
+        #  and the dictionaries self.Dp[species,root], self.cp[species,root] for heat flux
+        
+        import matplotlib.pyplot as plt
+        from collections import defaultdict
+        
+        if(plasma_profiles_filename is None):
+            plasma_profiles_filename = self.folder_path+'/plasma_profiles_check'+self.files_suffix
+         
+        self.Dn = defaultdict(list)
+        self.cn = defaultdict(list)
+        
+        self.Dp = defaultdict(list)
+        self.cp = defaultdict(list)
+           
+        # Load density and temperature gradients
+        profiles = np.loadtxt(plasma_profiles_filename,skiprows=2)
+        
+        num_ion_species = len(self.Zions)
+        
+        roa_profiles = profiles[:,0]
+        
+        for root in self.available_roots:
+            
+            # Find the indices of the closest values in roa_profiles
+            indices = np.abs(roa_profiles[:, None] - self.roa[root]).argmin(axis=0)
+                        
+            col_indices = np.r_[2,(5+num_ion_species):(5+2*num_ion_species)]
+            n = profiles[np.ix_(indices,col_indices)]
+            #
+            col_indices = np.r_[1,5:(5+num_ion_species)]
+            eT = profiles[np.ix_(indices,col_indices)] * EC
+            #
+            col_indices = np.r_[3,(5+2*num_ion_species):(5+3*num_ion_species)]
+            dndr = profiles[np.ix_(indices,col_indices)] 
+            #
+            col_indices = np.r_[4,(5+3*num_ion_species):(5+4*num_ion_species)]
+            deTdr = profiles[np.ix_(indices,col_indices)] * EC
+            #
+            p = n*eT
+            dpdr = n*deTdr + eT*dndr
+            
+            # sets coefficients
+            for sp,species in enumerate(self.list_of_species):
+                self.Dn[species,root] = -self.Ln[species,root]
+                
+                na = n[:,sp][:, np.newaxis]
+                eTa = eT[:,sp][:, np.newaxis]
+                Er = self.Er[root][:, np.newaxis]*100
+                
+                cn_ab = (self.LT[species,root]*deTdr[:,:] + self.LEr[species,root]*Er) / na
+                
+                self.cn[species,root] = np.sum(cn_ab,axis=1)
+                
+                self.Dp[species,root] = -eTa*self.RT[species,root] / n
+                
+                cp_ab = ( (self.Rn[species,root] - p/n**2*self.RT[species,root])*dndr + self.REr[species,root]*Er ) / na
+                
+                self.cp[species,root] = np.sum(cp_ab,axis=1)
+                
+                #Check self diffusion coefficients are >=0
+                if np.any(self.Dn[species,root][:,sp] < 0):
+                    print('WARNING: there is at least one negative Dn_aa coefficient')
+                if np.any(self.Dp[species,root][:,sp] < 0):
+                    print('WARNING: there is at least one negative Dp_aa coefficient')
+            
+            # make plots for each species
+            if(make_plot):
+                ## PARTICLE FLUXES
+                for species_plot in self.list_of_species:
+                    idx = self.list_of_species.index(species_plot)                                
+                    
+                    particle_flux_dndr_a = -self.Dn[species_plot,root][:,idx]*dndr[:,idx]
+                    particle_flux_cn_a = self.cn[species_plot,root]*n[:,idx]
+                    particle_flux_others = 0.0
+                    for species_b in self.list_of_species:
+                        if species_b==species_plot:
+                            continue
+                        idx_b = self.list_of_species.index(species_b) 
+                        particle_flux_others += -self.Dn[species_plot,root][:,idx_b]*dndr[:,idx_b]
+                
+                    particle_flux_control = particle_flux_dndr_a + particle_flux_cn_a + particle_flux_others
+                    rel_error = np.max( np.abs(particle_flux_control-self.Gamma[species_plot,root]) / np.abs(self.Gamma[species_plot,root]) )
+                    plt.rc('font', size=16)
+                    _, ax = plt.subplots(figsize=(11,8))
+                    ax.plot(self.roa[root],self.Gamma[species_plot,root],'--',color='k',linewidth=4,label='PENTA flux')
+                    ax.plot(self.roa[root],particle_flux_control,'.',color='red',markersize=8,label=f'rel error={rel_error:.1E}')
+                    ax.plot(self.roa[root],particle_flux_dndr_a,'-',label='-Dn*dna/dr')
+                    ax.plot(self.roa[root],particle_flux_cn_a,'-',label='na*cn')
+                    ax.plot(self.roa[root],particle_flux_others,'-',label='others')
+                    ax.set_xlabel('r/a')
+                    ax.set_ylabel(r'particle flux $\Gamma$ [m$^{-2}\,\mathrm{s}^{-1}$]')
+                    ax.grid()
+                    ax.set_title(f'species={species_plot}, root={root}')
+                    plt.legend()
+                plt.show()  
+                  
+                # HEAT FLUXES
+                for species_plot in self.list_of_species:
+                    idx = self.list_of_species.index(species_plot)                                
+                    
+                    heat_flux_dpdr_a = -self.Dp[species_plot,root][:,idx]*dpdr[:,idx]
+                    heat_flux_cp = self.cp[species_plot,root]*p[:,idx]
+                    heat_flux_others = 0.0
+                    for species_b in self.list_of_species:
+                        if species_b==species_plot:
+                            continue
+                        idx_b = self.list_of_species.index(species_b) 
+                        heat_flux_others += -self.Dp[species_plot,root][:,idx_b]*dpdr[:,idx_b]
+                        
+                    heat_flux_control = heat_flux_dpdr_a + heat_flux_cp + heat_flux_others
+                    penta_heat_flux = self.QoT[species_plot,root]*eT[:,idx]
+                    rel_error = np.max(np.abs(penta_heat_flux-heat_flux_control)/np.abs(penta_heat_flux))
+                    plt.rc('font', size=16)
+                    _, ax = plt.subplots(figsize=(11,8))
+                    ax.plot(self.roa[root],penta_heat_flux,'--',color='k',linewidth=4,label='PENTA flux')
+                    ax.plot(self.roa[root],heat_flux_control,'.',color='red',markersize=8,label=f'rel error={rel_error:.1E}')
+                    ax.plot(self.roa[root],heat_flux_dpdr_a,'-',label='-Dp*dpa/dr')
+                    ax.plot(self.roa[root],heat_flux_cp,'-',label='pa*cp')
+                    ax.plot(self.roa[root],heat_flux_others,'-',label='others')
+                    ax.set_xlabel('r/a')
+                    ax.set_ylabel(r'heat flux $Q$ [W/m$^{2}$]')
+                    ax.grid()
+                    ax.set_title(f'species={species_plot}, root={root}')
+                    plt.legend()
+                plt.show()
+                    
+            
+        
+        
+                
+    def set_Maxwell_root(self):
+        # sets the dictionary self.root_Maxwell
+        # Of all the ambipolar roots, defines which one will settle using Maxwell criterium
+        
+        from collections import defaultdict
+        
+        filename = self.folder_path + '/fluxes_vs_Er' + self.files_suffix
+            
+        penta = np.loadtxt(filename,skiprows=2)
+        
+        roa = penta[:,0]
+        Er = penta[:,1]
+        gamma_e = penta[:,2]       
+        gamma_i_tot = np.sum(penta[:,3:]*self.Zions,axis=1)
+        
+        Jr = gamma_i_tot - gamma_e
+        
+        self.root_Maxwell = {}
+        self.Er_Maxw = []
+        self.JBS_Maxw = []
+        self.Gamma_Maxw = defaultdict(list)
+        self.QoT_Maxw = defaultdict(list)
+        
+        for k,rho in enumerate(self.roa_unique):
+            num_roots = self.num_roots[k]
+            
+            if(num_roots==1):
+                root_type = 'ion_root'
+                self.root_Maxwell[rho] = 'ion_root'
+                idx_Maxw = np.abs(self.roa['ion_root']-rho).argmin()
+            elif(num_roots>=3):
+                # compute integral(Jr.dEr) between electron and ion roots
+                ie = np.abs(self.roa['electron_root']-rho).argmin()
+                electron_root = self.Er['electron_root'][ie]
+                #
+                ii = np.abs(self.roa['ion_root']-rho).argmin()
+                ion_root = self.Er['ion_root'][ii]
+                # find Er closest to electron and ion roots
+                idx_e = np.abs(Er - electron_root).argmin()
+                idx_i = np.abs(Er - ion_root).argmin()
+                # Slice the arrays for the specified range
+                Er_slice = Er[idx_e:idx_i+1]
+                Jr_slice = Jr[idx_e:idx_i+1]
+                # Perform the integration using np.trapz
+                integral = np.trapz(Jr_slice, Er_slice)
+                # Decide root
+                if(integral>0):
+                    self.root_Maxwell[rho] = 'ion_root'
+                    root_type = 'ion_root'
+                    idx_Maxw = ii
                 else:
-                    raise ValueError(f"How come you have {num_roots} roots ??")   
-                i += num_roots
+                    self.root_Maxwell[rho] = 'electron_root'
+                    root_type = 'electron_root'
+                    idx_Maxw = ie
+                    
+            # Now save in Maxwell arrays
+            self.Er_Maxw.append(self.Er[root_type][idx_Maxw])
+            self.JBS_Maxw.append(self.JBS[root_type][idx_Maxw])
+            for species in self.list_of_species:
+                self.Gamma_Maxw[species].append(self.Gamma[species,root_type][idx_Maxw])                  
+                self.QoT_Maxw[species].append(self.QoT[species,root_type][idx_Maxw])
                 
     def plot_Er_vs_roa(self,which_root='all',plot=True):
         # plots ambipolar Er vs roa
-        # which_root is: 'ion_root', 'unstable_root', 'electron_root' or 'all'
+        # which_root is: 'ion_root', 'unstable_root', 'electron_root', 'all' or 'stable_roots'
         # if 'all', plots all roots in the same figure
         
         import matplotlib.pyplot as plt
@@ -218,12 +649,28 @@ class PENTA:
         plt.rc('font', size=18)
         fig, ax = plt.subplots(figsize=(11,8))
         
-        if which_root is ('ion_root' or 'electron_root' or 'unstable_root'):
+        if which_root == ('ion_root' or 'electron_root' or 'unstable_root'):
             ax.plot(self.roa[which_root],self.Er[which_root],'.-',label=which_root)
-        elif which_root is 'all':
+        elif which_root == 'all':
             ax.plot(self.roa['ion_root'],self.Er['ion_root'],'.-',label='ion_root')
             ax.plot(self.roa['unstable_root'],self.Er['unstable_root'],'.-',label='unstable_root')
             ax.plot(self.roa['electron_root'],self.Er['electron_root'],'.-',label='electron_root')
+            try:
+                ax.plot(self.roa['unstable_root2'],self.Er['unstable_root2'],'.-',label='unstable_root')
+            except:
+                pass
+            try:
+                ax.plot(self.roa['extra_stable_root'],self.Er['extra_stable_root'],'.-',label='extra_stable_root')
+            except:
+                pass
+        elif which_root == 'stable_roots':
+            ax.plot(self.roa['ion_root'],self.Er['ion_root'],'.-',label='ion_root')
+            ax.plot(self.roa['electron_root'],self.Er['electron_root'],'.-',label='electron_root')
+            try:
+                ax.plot(self.roa['extra_stable_root'],self.Er['extra_stable_root'],'.-',label='extra_stable_root')
+            except:
+                pass
+            
         else:
             print('ERROR: which_root can only be ion_root, electron_root, unstable_root or all')
             exit(0)
@@ -236,18 +683,63 @@ class PENTA:
         if plot:
             plt.show()
             
+    def plot_Er_smooth(self,which_root,plot=True):
+        # plots ambipolar Er vs roa
+        # which_root is: 'ion_root'  OR 'electron_root'
+        
+        import matplotlib.pyplot as plt
+        from scipy.integrate import cumulative_trapezoid, cumulative_simpson
+        from scipy.interpolate import splrep, BSpline
+        
+        plt.rc('font', size=18)
+        fig, ax = plt.subplots(figsize=(11,8))
+        
+        if which_root is ('ion_root' or 'electron_root'):
+            Er = self.Er[which_root]
+            roa = self.roa[which_root]
+        else:
+            print('ERROR: which_root can only be ion_root OR electron_root')
+            exit(0)
+            
+        # interpolate
+        roa_interp = np.linspace(np.min(roa),np.max(roa),50)
+        Er_interp  = np.interp(roa_interp,roa,Er)
+        
+        # integrate to get potential
+        potential = -cumulative_simpson(Er_interp,x=roa_interp,initial=0)
+        #plt.plot(roa_interp,potential,'.-')
+        
+        # derivative of potential
+        dphidroa = np.gradient(potential,roa_interp,edge_order=2)
+        
+        # smooth Er directly with smoothing spline
+        roa_spline = np.linspace(np.min(roa),np.max(roa),530)
+        Er_spline = splrep(roa,Er,s=len(roa))
+        
+        ax.plot(roa,Er,'.-',label=which_root)
+        #ax.plot(roa_interp,-dphidroa,color='r')
+        ax.plot(roa_spline, BSpline(*Er_spline)(roa_spline),color='r')
+        ax.set_ylabel(r'Er [V/cm]')
+        ax.set_xlabel(r'r/a')
+        ax.legend(fontsize=12)
+        ax.grid()
+        plt.legend()
+        if plot:
+            plt.show()
+            
     def plot_Gamma_vs_roa(self,which_root='all',which_species='all',plot=True):
         # plots ambipolar particle flux vs roa
-        # which_root is: 'ion_root', 'unstable_root', 'electron_root' or 'all'
+        # which_root is: 'ion_root', 'unstable_root', 'electron_root', 'all' or 'stable_roots'
         # if 'all', plots all roots in the same figure
         # which_species is any species in self.list_of_species
         
         import matplotlib.pyplot as plt
         
-        if which_species is 'all': 
+        if which_species == 'all': 
             plotting_species = self.list_of_species
         elif which_species not in self.list_of_species: 
-            print(f'Error: species {which_species} is not valid. Pick species from: {self.list_of_species}')
+            print(f'ERROR: species {which_species} is not valid. Pick species from: {self.list_of_species}')
+            exit(0)
         else: 
             plotting_species = [which_species]
         
@@ -255,14 +747,29 @@ class PENTA:
         fig, ax = plt.subplots(figsize=(11,8))
         for species in plotting_species:
         
-            if which_root is ('ion_root' or 'electron_root' or 'unstable_root'):
+            if which_root in ('ion_root','electron_root', 'unstable_root'):
                 ax.plot(self.roa[which_root],self.Gamma[species,which_root],'.-',label=which_root+', '+species)
-            elif which_root is 'all':
+            elif which_root == 'all':
                 ax.plot(self.roa['ion_root'],self.Gamma[species,'ion_root'],'.-',label='ion_root'+', '+species)
                 ax.plot(self.roa['unstable_root'],self.Gamma[species,'unstable_root'],'.-',label='unstable_root'+', '+species)
                 ax.plot(self.roa['electron_root'],self.Gamma[species,'electron_root'],'.-',label='electron_root'+', '+species)
+                try:
+                    ax.plot(self.roa['unstable_root2'],self.Gamma[species,'unstable_root2'],'.-',label='unstable_root')
+                except:
+                    pass
+                try:
+                    ax.plot(self.roa['extra_stable_root'],self.Gamma[species,'extra_stable_root'],'.-',label='extra_stable_root')
+                except:
+                    pass
+            elif which_root == 'stable_roots':
+                ax.plot(self.roa['ion_root'],self.Gamma[species,'ion_root'],'.-',label='ion_root'+', '+species)
+                ax.plot(self.roa['electron_root'],self.Gamma[species,'electron_root'],'.-',label='electron_root'+', '+species)
+                try:
+                    ax.plot(self.roa['extra_stable_root'],self.Gamma[species,'extra_stable_root'],'.-',label='extra_stable_root')
+                except:
+                    pass
             else:
-                print('ERROR: which_root can only be ion_root, electron_root, unstable_root or all')
+                print('ERROR: which_root can only be ion_root, electron_root, unstable_root, all or stable_roots')
                 exit(0)
                     
         ax.set_ylabel(r'$\Gamma~[m^{-2}s^{-1}]$')
@@ -282,7 +789,7 @@ class PENTA:
         
         import matplotlib.pyplot as plt
         
-        if which_species is 'all': 
+        if which_species == 'all': 
             plotting_species = self.list_of_species
         elif which_species not in self.list_of_species: 
             print(f'Error: species {which_species} is not valid. Pick species from: {self.list_of_species}')
@@ -293,9 +800,9 @@ class PENTA:
         fig, ax = plt.subplots(figsize=(11,8))
         for species in plotting_species:
         
-            if which_root is ('ion_root' or 'electron_root' or 'unstable_root'):
+            if which_root == ('ion_root' or 'electron_root' or 'unstable_root'):
                 ax.plot(self.roa[which_root],self.uprl[species,which_root],'.-',label=which_root+', '+species)
-            elif which_root is 'all':
+            elif which_root == 'all':
                 ax.plot(self.roa['ion_root'],self.uprl[species,'ion_root'],'.-',label='ion_root'+', '+species)
                 ax.plot(self.roa['unstable_root'],self.uprl[species,'unstable_root'],'.-',label='unstable_root'+', '+species)
                 ax.plot(self.roa['electron_root'],self.uprl[species,'electron_root'],'.-',label='electron_root'+', '+species)
@@ -323,9 +830,9 @@ class PENTA:
         fig, ax = plt.subplots(figsize=(11,8))
         for species in self.list_of_species:
         
-            if which_root is ('ion_root' or 'electron_root' or 'unstable_root'):
+            if which_root == ('ion_root' or 'electron_root' or 'unstable_root'):
                 ax.plot(self.roa[which_root],np.array(self.Jprl[species,which_root])/1000,'.-',label=which_root+', '+species)
-            elif which_root is 'all':
+            elif which_root == 'all':
                 ax.plot(self.roa['ion_root'],np.array(self.Jprl[species,'ion_root'])/1000,'.-',label='ion_root'+', '+species)
                 ax.plot(self.roa['unstable_root'],np.array(self.Jprl[species,'unstable_root'])/1000,'.-',label='unstable_root'+', '+species)
                 ax.plot(self.roa['electron_root'],np.array(self.Jprl[species,'electron_root'])/1000,'.-',label='electron_root'+', '+species)
@@ -353,13 +860,15 @@ class PENTA:
         import matplotlib.pyplot as plt
         from collections import defaultdict
         
-        filename = self.folder_path + '/fluxes_vs_Er'
+        filename = self.folder_path + '/fluxes_vs_Er' + self.files_suffix
             
         penta = np.loadtxt(filename,skiprows=2)
         
         roa = penta[:,0]
         Er = penta[:,1]
-        gamma_e = penta[:,2]       
+        gamma_e = penta[:,2]  
+        
+        roa_unique = np.unique(roa)     
         
         gamma_i_tot = np.sum(penta[:,3:]*self.Zions,axis=1)
         
@@ -383,11 +892,10 @@ class PENTA:
                 print(f'ERROR!! The provided roa={r_user} is outside the interval of PENTA data: [{np.min(roa)},{np.max(roa)}]')
                 exit(0)        
             else:
-                roa_closest = self.roa_unique[ np.argmin(np.abs(self.roa_unique-r_user)) ]
+                roa_closest = roa_unique[ np.argmin(np.abs(roa_unique-r_user)) ]
             
             plt.rc('font', size=16)
-            fig=plt.figure(figsize=(8,6))
-            ax = fig.add_subplot(111)
+            _, ax = plt.subplots(figsize=(11,8))
             ax.plot(Er_dict[roa_closest],Gamma_e_dict[roa_closest],label=r'$\Gamma_e$')
             ax.plot(Er_dict[roa_closest],Gamma_i_dict[roa_closest],label=r'$\Sigma~Z_i\Gamma_i$')
             ax.set_xlabel(r'Er [V/cm]')
@@ -397,6 +905,17 @@ class PENTA:
             ax.legend(fontsize=12)
             ax.grid()
             plt.legend()
+            ##
+            # Jr = np.array(Gamma_i_dict[roa_closest]) - np.array(Gamma_e_dict[roa_closest])
+            # _, ax = plt.subplots(figsize=(11,8))
+            # ax.plot(Er_dict[roa_closest],Jr)
+            # ax.set_xlabel(r'Er [V/cm]')
+            # ax.set_ylabel(r'$\Sigma~Z_i\Gamma_i$ - \Gamma_e')
+            # ax.set_title(f'current, r/a={roa_closest}')
+            # # ax.set_yscale('log')
+            # ax.legend(fontsize=12)
+            # ax.grid()
+            # # plt.legend()
         if plot:
             plt.show()
             
@@ -407,7 +926,7 @@ class PENTA:
         import matplotlib.pyplot as plt
         import numpy as np
         
-        filename = self.folder_path+'/plasma_profiles_check'
+        filename = self.folder_path + '/plasma_profiles_check' + self.files_suffix
             
         penta = np.loadtxt(filename,skiprows=2)
         
@@ -450,6 +969,225 @@ class PENTA:
         if plot:
             plt.show()
             
+    def plot_plasma_profiles(self,species,which_profile,filename=None,plot=True):
+        # plots plasma profiles in a more selective way than the function above
+        # which profile is 'density', 'temperature', 'density_der' or 'temperature_der'
+        
+        import matplotlib.pyplot as plt
+        import numpy as np
+        
+        if(filename is None):
+            filename = self.folder_path+'/plasma_profiles_check'+self.files_suffix
+            
+        penta = np.loadtxt(filename,skiprows=2)
+        
+        roa = penta[:,0]
+        
+        num_ion_species = len(self.Zions)
+        
+        # check species is in self.list_of_species
+        if(species not in self.list_of_species): 
+            print(f'ERROR: species {species} is not valid. Pick species from: {self.list_of_species}')
+            exit(0)
+                
+        species_id = self.list_of_species.index(species)
+        
+        match which_profile:
+            case 'density':
+                #densities: electrons, i1, i2, ...
+                densities = penta[:,np.r_[2,(5+num_ion_species):(5+2*num_ion_species)]]
+                plot_var = densities[:,species_id]
+            case 'temperature':
+                #temperatures: electrons, i1, i2, ...
+                temperatures = penta[:,np.r_[1,5:(5+num_ion_species)]]
+                plot_var = temperatures[:,species_id]
+            case 'density_der':
+                #grad_densitites: electrons, i1, i2, ...
+                grad_densitites = penta[:,np.r_[3,(5+2*num_ion_species):(5+3*num_ion_species)]]
+                plot_var = grad_densitites[:,species_id]
+            case 'temperature_der':
+                #grad_tempratures: electrons, i1, i2, ...
+                grad_temperatures = penta[:,np.r_[4,(5+3*num_ion_species):(5+4*num_ion_species)]]
+                plot_var = grad_temperatures[:,species_id]
+            case _:
+                print('ERROR: which_profile must be density, temperature, density_der or tempreature_der !!')
+                exit(0)
+        
+        plt.rc('font', size=16)
+        _, ax = plt.subplots(figsize=(11,8))
+        ax.plot(roa,plot_var,label=species)
+        ax.set_xlabel(r'r/a')
+        ax.grid()
+        ax.set_title(f'{which_profile}')
+        
+        plt.legend()
+        plt.show()
+        
+    def reconstruct_particle_flux_from_transport_coeffs(self,which_species,which_root,plasma_profiles_filename=None):
+        # compares the fluxes given by PENTA with the reconstructed fluxes using the transport coeffs
+        
+        import matplotlib.pyplot as plt
+        
+        if(plasma_profiles_filename is None):
+            plasma_profiles_filename = self.folder_path+'/plasma_profiles_check'+self.files_suffix
+            
+        # check species is in self.list_of_species
+        if(which_species not in self.list_of_species): 
+            print(f'ERROR: species {which_species} is not valid. Pick species from: {self.list_of_species}')
+            exit(0)
+            
+        # check which_root is in self.target_roots
+        if(which_root not in self.target_keys):
+            print(f'{which_root} not possible...')
+            exit(0)
+        
+        # Load density and temperature gradients
+        profiles = np.loadtxt(plasma_profiles_filename,skiprows=2)
+        
+        roa_profiles = profiles[:,0]
+        # Find the indices of the closest values in roa_profiles
+        indices = np.abs(roa_profiles[:, None] - self.roa[which_root]).argmin(axis=0)
+        num_ion_species = len(self.Zions)              
+
+        col_indices = np.r_[3,(5+2*num_ion_species):(5+3*num_ion_species)]
+        dndr = profiles[np.ix_(indices,col_indices)] 
+        col_indices = np.r_[4,(5+3*num_ion_species):(5+4*num_ion_species)]
+        deTdr = profiles[np.ix_(indices,col_indices)] * EC
+        
+        # plt.plot(roa_profiles,profiles[:,3],'-')
+        # plt.plot(self.roa[which_root],dndr[:,0],'.')
+        # plt.show()
+        
+        particle_flux_dndr = 0.0
+        particle_flux_dTdr = 0.0
+        particle_flux_Er = 0.0
+        #
+        total_particle_flux = 0.0
+        for sp,_ in enumerate(self.list_of_species):
+            particle_flux_dndr += self.Ln[which_species,which_root][:,sp]*dndr[:,sp]
+            particle_flux_dTdr += self.LT[which_species,which_root][:,sp]*deTdr[:,sp]
+            particle_flux_Er += self.LEr[which_species,which_root][:,sp]*self.Er[which_root]*100
+            #
+            total_particle_flux += self.Ln[which_species,which_root][:,sp]*dndr[:,sp] + \
+                                   self.LT[which_species,which_root][:,sp]*deTdr[:,sp] + \
+                                   self.LEr[which_species,which_root][:,sp]*self.Er[which_root]*100
+        
+        # particle flux due to only dn/dr and dT/dr of its own species (plues Er term)   
+        idx = self.list_of_species.index(which_species)                                
+        particle_flux_own_species = self.Ln[which_species,which_root][:,idx]*dndr[:,idx] + \
+                                    self.LT[which_species,which_root][:,idx]*deTdr[:,idx] + \
+                                    self.LEr[which_species,which_root][:,idx]*self.Er[which_root]*100   
+
+        
+        plt.rc('font', size=16)
+        _, ax = plt.subplots(figsize=(11,8))
+        ax.plot(self.roa[which_root],particle_flux_own_species,'-',linewidth=3.5,color='grey',label='own gradients')
+        ax.plot(self.roa[which_root],self.Gamma[which_species,which_root],'--',color='k',linewidth=4,label='PENTA flux')
+        ax.plot(self.roa[which_root],total_particle_flux,'.',color='red',markersize=8,label='reconstructed flux')
+        ax.plot(self.roa[which_root],particle_flux_dndr,'-',label='dndr')
+        ax.plot(self.roa[which_root],particle_flux_dTdr,'-',label='dTdr')
+        ax.plot(self.roa[which_root],particle_flux_Er,'-',label='Er')
+        ax.set_xlabel('r/a')
+        ax.set_ylabel('[m-2 s-2]')
+        ax.grid()
+        ax.set_title(f'comparison particle flux, species={which_species}')
+        plt.legend()
+        
+        plt.rc('font', size=16)
+        _, ax = plt.subplots(figsize=(11,8))
+        ax.plot(self.roa[which_root],np.abs(self.Gamma[which_species,which_root]-total_particle_flux)/np.abs(self.Gamma[which_species,which_root]),'-',color='k',linewidth=4)
+        ax.set_xlabel('r/a')
+        # ax.set_ylabel('')
+        ax.grid()
+        ax.set_title('rel. error')
+        
+        plt.show()
+        
+  
+        
+    def reconstruct_heat_flux_from_transport_coeffs(self,which_species,which_root,plasma_profiles_filename=None):
+        # compares the fluxes given by PENTA with the reconstructed fluxes using the transport coeffs
+        
+        import matplotlib.pyplot as plt
+        
+        if(plasma_profiles_filename is None):
+            plasma_profiles_filename = self.folder_path+'/plasma_profiles_check'+self.files_suffix
+            
+        # check species is in self.list_of_species
+        if(which_species not in self.list_of_species): 
+            print(f'ERROR: species {which_species} is not valid. Pick species from: {self.list_of_species}')
+            exit(0)
+            
+        # check which_root is in self.target_roots
+        if(which_root not in self.target_keys):
+            print(f'{which_root} not possible...')
+            exit(0)
+        
+        # Load density and temperature gradients
+        profiles = np.loadtxt(plasma_profiles_filename,skiprows=2)
+        
+        roa_profiles = profiles[:,0]
+        # Find the indices of the closest values in roa_profiles
+        indices = np.abs(roa_profiles[:, None] - self.roa[which_root]).argmin(axis=0)
+        num_ion_species = len(self.Zions)              
+
+        col_indices = np.r_[3,(5+2*num_ion_species):(5+3*num_ion_species)]
+        dndr = profiles[np.ix_(indices,col_indices)] 
+        col_indices = np.r_[4,(5+3*num_ion_species):(5+4*num_ion_species)]
+        deTdr = profiles[np.ix_(indices,col_indices)] * EC
+        
+        # plt.plot(roa_profiles,profiles[:,3],'-')
+        # plt.plot(self.roa[which_root],dndr[:,0],'.')
+        # plt.show()
+        
+        QoT_dndr = 0.0
+        QoT_dTdr = 0.0
+        QoT_Er = 0.0
+        #
+        total_QoT = 0.0
+        for sp,_ in enumerate(self.list_of_species):
+            QoT_dndr += self.Rn[which_species,which_root][:,sp]*dndr[:,sp]
+            QoT_dTdr += self.RT[which_species,which_root][:,sp]*deTdr[:,sp]
+            QoT_Er += self.REr[which_species,which_root][:,sp]*self.Er[which_root]*100
+            #
+            total_QoT += self.Rn[which_species,which_root][:,sp]*dndr[:,sp] + \
+                         self.RT[which_species,which_root][:,sp]*deTdr[:,sp] + \
+                         self.REr[which_species,which_root][:,sp]*self.Er[which_root]*100
+                         
+        # particle flux due to only dn/dr and dT/dr of its own species (plues Er term)   
+        idx = self.list_of_species.index(which_species)                                
+        QoT_own_species = self.Rn[which_species,which_root][:,idx]*dndr[:,idx] + \
+                                    self.RT[which_species,which_root][:,idx]*deTdr[:,idx] + \
+                                    self.REr[which_species,which_root][:,idx]*self.Er[which_root]*100 
+        
+        
+        
+        plt.rc('font', size=16)
+        _, ax = plt.subplots(figsize=(11,8))
+        ax.plot(self.roa[which_root],QoT_own_species,'-',linewidth=3.5,color='grey',label='own gradients')
+        ax.plot(self.roa[which_root],self.QoT[which_species,which_root],'--',color='k',linewidth=4,label='PENTA flux')
+        ax.plot(self.roa[which_root],total_QoT,'.',color='red',markersize=8,label='reconstructed flux')
+        ax.plot(self.roa[which_root],QoT_dndr,'-',label='dndr')
+        ax.plot(self.roa[which_root],QoT_dTdr,'-',label='dTdr')
+        ax.plot(self.roa[which_root],QoT_Er,'-',label='Er')
+        ax.set_xlabel('r/a')
+        ax.set_ylabel('[m-2 s-2]')
+        ax.grid()
+        ax.set_title(f'comparison Q/T flux, species={which_species}')
+        plt.legend()
+        
+        plt.rc('font', size=16)
+        _, ax = plt.subplots(figsize=(11,8))
+        ax.plot(self.roa[which_root],np.abs(self.QoT[which_species,which_root]-total_QoT)/np.abs(self.QoT[which_species,which_root]),'-',color='k',linewidth=4)
+        ax.set_xlabel('r/a')
+        # ax.set_ylabel('')
+        ax.grid()
+        ax.set_title('rel. error')
+        
+        plt.show()
+        
+        
+            
     def plot_conductivity(self,aspect_ratio=None,plot=True):
         # plots parallel conducitivity as given by PENTA (when ran in 'SN' mode)
         # if aspect_ratio is given, spitzer-NEO is computed
@@ -457,7 +1195,7 @@ class PENTA:
         import matplotlib.pyplot as plt
         import numpy as np
         
-        filename = self.folder_path+'/sigmas_vs_roa'
+        filename = self.folder_path+'/sigmas_vs_roa'+self.files_suffix
         
         try: 
             penta = np.loadtxt(filename,skiprows=2)
@@ -497,6 +1235,464 @@ class PENTA:
         
         if plot:
             plt.show()
+            
+    def save_in_file(self,which_root,filepath=None):
+        # which_root is 'ion_root' or 'electron_root'
+        # saves in a file the following ambipolar quantities: 
+        # 1st column: roa[which_root]
+        # 2nd column: Er[which_root
+        # 3rd column: Jprl_total[which_root]
+        # 4th column: J_BS[which_root]
+        
+        if filepath is None:
+            filename = self.folder_path + '/ambipolar_data_' + which_root
+        else:
+            filename = filepath + '/ambipolar_data_' + which_root
+            
+        species1 = self.list_of_species[0]
+        
+        with open(filename, 'w') as f:
+            # Write the first line
+            f.write("*\n")
+            
+            # Write the header
+            f.write("r/a   Er(V/cm)  Jprl_total(A/m^2)   J_BS(A/m^2)   Gamma_e(m^-2s^-1)\n")
+            
+            # Loop over your data and write it row by row
+            for i in range(len(self.roa[which_root])):  # Assuming they all have the same length
+                f.write(f"{self.roa[which_root][i]:.5f}  {self.Er[which_root][i]:.5e}  {self.Jprl_total[which_root][i]:.5e}  {self.JBS[which_root][i]:.5e}  {self.Gamma[species1,which_root][i]:.5e}\n")
+        
+        print(f'File {filename} created!')
+                    
+    def plot_ambipolar_data_from_files(self,list_of_files,list_of_legends):
+        # creates 3 different plots: Er, Jprl_total and JBS
+        # each plot contains data from the files indicated in list_of_files
+        # these files are the files 'ambipolar_data_##_root' that are created running
+        # self.save_in_file
+        
+        import matplotlib.pyplot as plt
+        
+        plt.rcParams['axes.prop_cycle'] = plt.cycler(color=['#5faf30','#1D2258','#004817','#a1cdc8'])
+        
+        roa_list = []
+        Er_list = []
+        Jprl_total_list = []
+        J_BS_list = []
+        Gamma_list = []
+
+        # Loop over files and extract the data
+        for file_path in list_of_files:
+            data = np.loadtxt(file_path, skiprows=2)  # Skip first two lines
+            roa = data[:, 0]   # First column: r/a
+            Er = data[:, 1]    # Second column: Er (V/cm)
+            Jprl_total = data[:, 2]  # Third column: Jprl_total (A/m^2)
+            J_BS = data[:, 3]   # Fourth column: J_BS (A/m^2)
+            Gamma = data[:,4]   # Fifth column: particle flux of 1st species in self.list_of_species (usually electrons)
+
+            # Store each file's data in respective lists
+            roa_list.append(roa)
+            Er_list.append(Er)
+            Jprl_total_list.append(Jprl_total)
+            J_BS_list.append(J_BS)
+            Gamma_list.append(Gamma)
+            
+        plt.rc('font', size=24)
+    
+        # Plot roa vs Er
+        plt.figure(figsize=(12, 9))
+        for i, roa in enumerate(roa_list):
+            if i==2:
+                plt.plot(roa, Er_list[i], label=list_of_legends[i], linestyle = '-')
+            else:
+                plt.plot(roa, Er_list[i], label=list_of_legends[i], marker='o')
+        plt.xlabel(r'$r/a$')
+        plt.ylabel(r'$E_r~~[V/cm]$')
+        plt.title('Electric Field')
+        plt.legend()
+        plt.grid(True)
+        #plt.show()
+
+        # Plot roa vs Jprl_total
+        plt.figure(figsize=(12, 9))
+        for i, roa in enumerate(roa_list):
+            if i==2:
+                plt.plot(roa, Jprl_total_list[i]/1e3, label=list_of_legends[i], linestyle = '-')
+            else:
+                plt.plot(roa, Jprl_total_list[i]/1e3, label=list_of_legends[i], marker='o')
+        plt.xlabel(r'$r/a$')
+        plt.ylabel(r'$J_{\parallel}~~[kA/m^2]$')
+        #plt.title('r/a vs Jprl_total')
+        plt.legend()
+        plt.grid(True)
+        #plt.show()
+
+        # Plot roa vs J_BS
+        plt.figure(figsize=(12, 9))
+        for i, roa in enumerate(roa_list):
+            if i==2:
+                plt.plot(roa, J_BS_list[i]/1e3, label=list_of_legends[i], linestyle = '-')
+            else:
+                plt.plot(roa, J_BS_list[i]/1e3, label=list_of_legends[i], marker='o')
+        plt.xlabel(r'$r/a$')
+        plt.ylabel(r'$J_{BS}~~[kA/m^2]$')
+        plt.title('Bootstrap Current')
+        plt.legend()
+        plt.grid(True)
+        #plt.show()
+        plt.savefig('destination_path.eps', format='eps')
+        
+        # Plot roa vs Gamma
+        plt.figure(figsize=(12, 9))
+        for i, roa in enumerate(roa_list):
+            if i==2:
+                plt.plot(roa, Gamma_list[i]/1e17, label=list_of_legends[i], linestyle = '-')
+            else:
+                plt.plot(roa, Gamma_list[i]/1e17, label=list_of_legends[i], marker='o')
+        plt.xlabel(r'$r/a$')
+        plt.ylabel(r'$\Gamma~~[\times~10^{17}~m^{-2}~s^{-1}]$')
+        plt.title('Neoclassical Fluxes')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+        
+    def plot_JBS_smooth(self,which_root,VMEC_class):
+        # BS current density is integrated to get total current using info from VMEC class
+        
+        from libstell.vmec import VMEC
+        import matplotlib.pyplot as plt
+        from scipy.integrate import trapezoid, cumulative_simpson
+        from scipy.interpolate import UnivariateSpline, CubicSpline
+        from scipy.signal import savgol_filter
+        from scipy.optimize import curve_fit, minimize
+        
+        def polynomial_fit_with_constraints(x, y, deg_fit):
+            # Define the function to compute the polynomial with constraints
+            def constrained_polynomial(coeffs, x):
+                # Construct the polynomial with constraints:
+                # P(x) = x * (c0 + c1 * x + c2 * x^2 + ...)
+                return x**2 * np.polyval(coeffs, x)
+            
+            # Objective function to minimize (residuals between data and model)
+            def objective_function(coeffs):
+                return np.sum((constrained_polynomial(coeffs, x) - y)**2)
+            
+            # Initial guess for the polynomial coefficients (deg_fit - 1 because of the constraints)
+            initial_guess = np.ones(deg_fit-2)
+            
+            # Constraint: P(1) = I_tot
+            def constraint(coeffs):
+                return constrained_polynomial(coeffs, x[-1]) - y[-1]
+            
+            # Use scipy.optimize.minimize with the constraint
+            result = minimize(objective_function, initial_guess, constraints={'type': 'eq', 'fun': constraint})
+            
+            # Get the optimized coefficients
+            optimized_coeffs = result.x
+            
+            return optimized_coeffs
+        
+        def constrained_polynomial(coeffs, x):
+            # Polynomial P(x) = x^2 * (c0 + c1 * x + c2 * x^2 + ...)
+            return x * np.polyval(coeffs, x)
+
+        
+        plt.rc('font', size=18)
+        # _, ax = plt.subplots(figsize=(11,8))
+        # _, ax2 = plt.subplots(figsize=(11,8))
+        _, ax3 = plt.subplots(figsize=(11,8))
+        
+        if which_root is ('ion_root' or 'electron_root'):
+            JBS = np.array( self.JBS[which_root] )
+            roa = np.array( self.roa[which_root] )
+        else:
+            print('ERROR: which_root can only be ion_root OR electron_root')
+            exit(0)
+            
+            
+        ##### remove point if it's very far from the others... ####
+        JBS = JBS[1:]
+        roa = roa[1:]
+        
+        roa_VMEC = np.sqrt(VMEC_class.phi / VMEC_class.phi[-1])
+        roa_VMEC = roa_VMEC.flatten()
+        
+        # by comparing roa with roa_VMEC, get surfaces numbers
+        surfaces_idx = np.zeros(len(roa), dtype=int)
+        surface_area = np.zeros(len(roa), dtype=float)
+        
+        for i,val in enumerate(roa):
+            diff = np.abs(roa_VMEC-val)
+            surfaces_idx[i] = np.argmin(diff)
+        
+        theta = np.linspace(0,2*np.pi,100)
+        zeta  = np.linspace(0,2*np.pi,101)
+        
+        tor_avg_surface_area = np.zeros(len(roa), dtype=float)
+
+        for j,idx in enumerate(surfaces_idx):
+
+            R = VMEC_class.cfunct(theta[:, np.newaxis],zeta[:, np.newaxis],VMEC_class.rmnc[idx,:][np.newaxis,:],VMEC_class.xm,VMEC_class.xn/VMEC_class.nfp)[0,:,:]
+            Z = VMEC_class.sfunct(theta[:, np.newaxis],zeta[:, np.newaxis],VMEC_class.zmns[idx,:][np.newaxis,:],VMEC_class.xm,VMEC_class.xn/VMEC_class.nfp)[0,:,:]
+
+            # print(R.shape)
+
+            dRdtheta_coeffs = -VMEC_class.xm.T*VMEC_class.rmnc[idx,:][np.newaxis,:]
+            dZdtheta_coeffs =  VMEC_class.xm.T*VMEC_class.zmns[idx,:][np.newaxis,:]
+
+            # # print(dRdtheta_coeffs.shape)
+
+            dRdtheta = VMEC_class.sfunct(theta[:, np.newaxis],zeta[:, np.newaxis],dRdtheta_coeffs,VMEC_class.xm,VMEC_class.xn/VMEC_class.nfp)[0,:,:]
+            dZdtheta = VMEC_class.cfunct(theta[:, np.newaxis],zeta[:, np.newaxis],dZdtheta_coeffs,VMEC_class.xm,VMEC_class.xn/VMEC_class.nfp)[0,:,:]
+            
+            area_integrand = R*dZdtheta
+    
+            area = trapezoid(area_integrand,theta,axis=0)
+            
+            tor_avg_surface_area[j] = np.mean(area)
+            
+        dAdrho_spline = UnivariateSpline(roa,tor_avg_surface_area,k=2).derivative()
+        
+        roa_cumulative_simpson = roa[1:]
+        IBS = cumulative_simpson(JBS*dAdrho_spline(roa),x=roa,initial=0)
+        
+        # IBS_spline = splrep(roa,IBS,s=1000)
+        degree = 7
+        IBS_fit = np.polyfit(roa_cumulative_simpson,IBS,deg=degree)
+        IBS_fit = np.poly1d(IBS_fit)
+        
+        # Fit with constrains
+        IBS_fit2_coeffs = polynomial_fit_with_constraints(roa_cumulative_simpson, IBS, degree)
+        IBS_fit2_coeffs = np.concatenate((IBS_fit2_coeffs,np.array([0,0])))
+        IBS_fit2 = np.poly1d(IBS_fit2_coeffs)
+        
+        roa_plot = np.linspace(0,1,200)
+        
+        # ax2.plot(roa,dAdrho_spline(roa),'.-',label=r'$d\left<A\right>_{\phi}/d\rho$')
+        # ax2.plot(roa,2*np.pi*roa*VMEC_class.aminor**2,'-',label=r'$2\pi a^2\rho$')
+        # ax2.set_xlabel(r'$\rho=$r/a')
+        # ax2.set_ylabel(r'$dA/d\rho$')
+        # ax2.legend()
+        # ax2.grid()
+        
+        ax3.plot(roa_cumulative_simpson,IBS/1e3,'.-',label='PENTA data integrated')
+        #ax3.plot(roa,BSpline(*IBS_spline)(roa)/1e3,'-')
+        # ax3.plot(roa_plot,IBS_fit(roa_plot)/1e3,'-',label=f'polyfit order {degree}')
+        # ax3.plot(roa_plot,IBS_fit2(roa_plot)/1e3,'-',label=f'polyfit order {degree} w/ constrains')
+        ax3.set_ylabel(r'$\left<I_{BS}\right>~[kA]$')
+        ax3.set_xlabel(r'r/a')
+        ax3.grid()
+        ax3.legend()
+        ax3.set_title('Total BS Current')
+        
+        # JBS_smooth = IBS_spline.derivative()(roa) / dAdrho_spline(roa)
+        # JBS_smooth = splev(roa,IBS_spline,der=1) / dAdrho_spline(roa)
+        JBS_smooth = np.polyder(IBS_fit,m=1)(roa_plot) / dAdrho_spline(roa_plot)
+        JBS_smooth3 = np.polyder(IBS_fit2,m=1)(roa_plot) / dAdrho_spline(roa_plot)
+        
+        # JBS_smooth2 = savgol_filter(JBS,51,3)
+        
+        # ax.plot(roa,JBS/1e3,'.-',label='PENTA data')
+        # #ax.plot(roa_plot,JBS_smooth/1e3,label='from I_BS')
+        # ax.plot(roa_plot,JBS_smooth3/1e3,label='from I_BS constrains')
+        # ax.plot(roa,JBS_smooth2/1e3,'-',linewidth=3,label='savgol filter')
+        # ax.set_ylabel(r'$\left<J_{BS}\right>~[kA~m^{-2}]$')
+        # ax.set_xlabel(r'r/a')
+        # #ax.set_title('ambipolar parallel currents')
+        # ax.legend(fontsize=12)
+        # ax.grid()
+        # ax.legend()
+        # ax.set_title('BS Current Density')
+        
+        plt.show() 
+        
+        # # compute values of dI/ds for VMEC input using the savgol profile
+        # s_VMEC = np.linspace(0,1,50)
+        
+        # # extend to roa=0
+        # roa = np.concatenate(([0.0],roa))
+        # JBS_smooth2 = np.concatenate(([JBS_smooth2[0]],JBS_smooth2))
+        
+        # print(roa.shape)
+        # print(JBS_smooth2.shape)
+        
+        # cs = CubicSpline(roa, JBS_smooth2,extrapolate=True,bc_type=((1, 0.0), 'natural'))
+        # a_VMEC = VMEC_class.aminor
+        # dIds = cs(np.sqrt(s_VMEC)) * np.pi*a_VMEC*a_VMEC
+        
+        # #divide by max val and set total current
+        # dIds = dIds / np.max(dIds)
+        # total_current = IBS_fit2(1.0)
+                
+        # print('NCURR = 1')
+        # print(f'CURTOR = {total_current}')
+        # print("PCURR_TYPE = 'cubic_spline_Ip' ")
+        # print(f'AC_AUX_S = {s_VMEC}')
+        # print(f'AC_AUX_F = {dIds}')
+        
+    def get_IBS(self,which_root,VMEC_class,make_plot=False):
+        # integrates JBS and returns IBS
+        # plots if make_plot_True
+        
+        # IBS = int( JBS*(dA/drho)*drho )
+        
+        from libstell.vmec import VMEC
+        import matplotlib.pyplot as plt
+        from scipy.integrate import trapezoid, cumulative_simpson
+        from scipy.interpolate import UnivariateSpline
+        
+        if which_root is ('ion_root' or 'electron_root'):
+            JBS = np.array( self.JBS[which_root] )
+            roa = np.array( self.roa[which_root] )
+        else:
+            print('ERROR: which_root can only be ion_root OR electron_root')
+            exit(0)
+            
+        roa_VMEC = np.sqrt(VMEC_class.phi / VMEC_class.phi[-1])
+        roa_VMEC = roa_VMEC.flatten()
+        
+        # by comparing roa with roa_VMEC, get surfaces numbers
+        surfaces_idx = np.zeros(len(roa), dtype=int)
+        
+        for i,val in enumerate(roa):
+            diff = np.abs(roa_VMEC-val)
+            surfaces_idx[i] = np.argmin(diff)
+        
+        theta = np.linspace(0,2*np.pi,100)
+        zeta  = np.linspace(0,2*np.pi,101)
+        
+        tor_avg_surface_area = np.zeros(len(roa), dtype=float)
+
+        for j,idx in enumerate(surfaces_idx):
+
+            R = VMEC_class.cfunct(theta[:, np.newaxis],zeta[:, np.newaxis],VMEC_class.rmnc[idx,:][np.newaxis,:],VMEC_class.xm,VMEC_class.xn/VMEC_class.nfp)[0,:,:]
+            Z = VMEC_class.sfunct(theta[:, np.newaxis],zeta[:, np.newaxis],VMEC_class.zmns[idx,:][np.newaxis,:],VMEC_class.xm,VMEC_class.xn/VMEC_class.nfp)[0,:,:]
+
+            # print(R.shape)
+
+            dRdtheta_coeffs = -VMEC_class.xm.T*VMEC_class.rmnc[idx,:][np.newaxis,:]
+            dZdtheta_coeffs =  VMEC_class.xm.T*VMEC_class.zmns[idx,:][np.newaxis,:]
+
+            # # print(dRdtheta_coeffs.shape)
+
+            dRdtheta = VMEC_class.sfunct(theta[:, np.newaxis],zeta[:, np.newaxis],dRdtheta_coeffs,VMEC_class.xm,VMEC_class.xn/VMEC_class.nfp)[0,:,:]
+            dZdtheta = VMEC_class.cfunct(theta[:, np.newaxis],zeta[:, np.newaxis],dZdtheta_coeffs,VMEC_class.xm,VMEC_class.xn/VMEC_class.nfp)[0,:,:]
+            
+            area_integrand = R*dZdtheta
+    
+            area = trapezoid(area_integrand,theta,axis=0)
+            
+            tor_avg_surface_area[j] = np.mean(area)
+            
+        dAdrho_spline = UnivariateSpline(roa,tor_avg_surface_area,k=2).derivative()
+        
+        # add rho=0 point
+        JBS = np.concatenate(([0.0],JBS))
+        roa = np.concatenate(([0.0],roa))
+        #
+        IBS = cumulative_simpson(JBS*dAdrho_spline(roa),x=roa,initial=0)
+        
+        if(make_plot):
+            plt.rc('font', size=18)
+            _, ax = plt.subplots(figsize=(11,8))
+            #
+            ax.plot(roa,IBS/1E3,'.-')
+            ax.set_xlabel('r/a')
+            ax.set_ylabel('IBS [kA]')
+            plt.show()
+        
+        return roa,IBS
+        
+    def get_JBS_smooth(self,rho,which_root):
+        # applies savgol filter to JBS[which_root] 
+        # completes the space between rho=0 and first point with a line
+        
+        import matplotlib.pyplot as plt
+        from scipy.signal import savgol_filter
+        from scipy.interpolate import CubicSpline, Akima1DInterpolator
+        
+        if which_root is ('ion_root' or 'electron_root'):
+            JBS = np.array( self.JBS[which_root] )
+            roa = np.array( self.roa[which_root] )
+        else:
+            print('ERROR: which_root can only be ion_root OR electron_root')
+            exit(0)
+
+        ##### remove point very far from the others... ####
+        ##### this is a bit ad-hoc...
+        JBS = JBS[1:]
+        roa = roa[1:]
+        
+        roa_copy = roa
+        
+        ### apply filter
+        JBS_smooth = savgol_filter(JBS,51,3)
+        
+        # extend to roa=0
+        roa = np.concatenate(([0.0],roa))
+        JBS_smooth = np.concatenate(([JBS_smooth[0]],JBS_smooth))
+        
+        cs = CubicSpline(roa, JBS_smooth,extrapolate=True,bc_type=((1, 0.0), 'natural'))
+        
+        ### make plot just to check everything's fine
+        plt.rc('font', size=18)
+        _,ax = plt.subplots(figsize=(11,8))
+        ax.plot(roa_copy,JBS,'.-',label='data from PENTA')
+        ax.plot(roa,JBS_smooth,'.-',label='savgol + extend at r=0')
+        ax.plot(rho,cs(rho),'.-',label='cubic spline of previous')
+        ax.set_ylabel(r'$\left<J_{BS}\right>~[A~m^{-2}]$')
+        ax.set_xlabel(r'r/a')
+        ax.set_title('Smooth JBS')
+        #ax.legend(fontsize=12)
+        ax.grid()
+        plt.legend()
+        plt.show()
+        
+        return cs(rho)
+    
+    def get_etapar_smooth(self,rho):
+        
+        import matplotlib.pyplot as plt
+        from scipy.interpolate import CubicSpline, Akima1DInterpolator
+        
+        filename = self.folder_path+'/sigmas_vs_roa'+self.files_suffix
+        
+        try: 
+            penta = np.loadtxt(filename,skiprows=2)
+        except:
+            print('Could not read file sigma_vs_roa. Probably PENTA was not run in "DKES" mode...?')
+            exit(1)
+        
+        roa = penta[:,0]
+        sigma_par = penta[:,2]
+        
+        etapar = 1 / sigma_par
+        
+        # extend to roa=0
+        roa = np.concatenate(([0.0],roa))
+        etapar = np.concatenate(([etapar[0]],etapar))
+        
+        cs = CubicSpline(roa, etapar,extrapolate=True,bc_type=((1, 0.0), 'natural'))
+        # cs = Akima1DInterpolator(roa,sigma_par)
+        
+  
+        ### make plot just to check everything's fine
+        _,ax = plt.subplots(figsize=(11,8))
+        ax.plot(roa,etapar,'.-')
+        ax.plot(rho,cs(rho),'.-')
+        ax.set_ylabel(r'$\eta_{\parallel}~~[\Omega~m]$')
+        ax.set_xlabel(r'r/a')
+        ax.set_yscale('log')
+        ax.grid()
+        
+        plt.show()
+        
+        return cs(rho)
+        
+        
+        
+        
+        
+        
 
 # Main routine
 if __name__=="__main__":

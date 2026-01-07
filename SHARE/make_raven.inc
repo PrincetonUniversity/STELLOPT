@@ -4,7 +4,7 @@
   SHELL = /bin/sh
   PWD1 = `pwd`
   MYHOME = $(HOME)/bin
-  PRECOMP:= fpp -C -P -DLINUX
+  PRECOMP:= fpp -C -P -DLINUX #-DB3D_COLLOP_NUBEAM -DB3D_VEL_DIFFUSION
   COMPILE = ifort
   COMPILE_FREE = ifort
   LINK    = ifort -Bstatic -o
@@ -16,10 +16,10 @@
 #######################################################################
   FLAGS_R = -I${MKLROOT}/include/intel64/lp64 -I$(MKL_HOME)/include \
             -O2 -assume noold_unit_star \
-            -xCORE-AVX512 -qopt-zmm-usage=high -fp-model strict -ip
+            -xCORE-AVX512 -qopt-zmm-usage=high -fp-model strict
   FLAGS_D = -I${MKLROOT}/include/intel64/lp64 -I$(MKL_HOME)/include \
             -O0 -assume noold_unit_star \
-            -xCORE-AVX512 -qopt-zmm-usage=high -fp-model strict -ip \
+            -xCORE-AVX512 -qopt-zmm-usage=high -fp-model strict \
             -check all,noarg_temp_created -ftrapuv -g -traceback
   LIBS    =  ${MKLROOT}/lib/intel64/libmkl_blas95_lp64.a \
              ${MKLROOT}/lib/intel64/libmkl_lapack95_lp64.a \
@@ -30,13 +30,13 @@
              ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a \
              -Wl,--end-group -lpthread -lm -ldl
 #######################################################################
-#            MPI Options
+#            MPI Options 2025 it's called mpiifx not mpiifort
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = mpiifort
-  MPI_COMPILE_FREE = mpiifort
-  MPI_COMPILE_C = mpiifort
-  MPI_LINK = mpiifort
+  MPI_COMPILE = mpiifx
+  MPI_COMPILE_FREE = mpiifx
+  MPI_COMPILE_C = mpiifx
+  MPI_LINK = mpiifx
   MPI_RUN  = srun
   MPI_RUN_OPTS = --nodes=1 --ntasks-per-node=72 --time=0:30:00 -p express
   MPI_RUN_OPTS_SM   = --nodes=1 --ntasks-per-node=72 --time=0:30:00 -p express
@@ -53,8 +53,8 @@
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = $(shell nc-config --fflags)
-  NETCDF_LIB = $(shell nc-config --flibs)
+  NETCDF_INC = $(shell nf-config --fflags)
+  NETCDF_LIB = $(shell nf-config --flibs)
 
 #######################################################################
 #            HDF5 Options
@@ -96,72 +96,113 @@
 #######################################################################
 #            GENE Options
 #######################################################################
-  LGENE = F
-  GENE_DIR = $(GENE_PATH)/bin/obj_cobra
-  FUTILS_DIR = $(GENE_PATH)/external/cobra/futils-gene-mod/src
+ifneq ("$(wildcard $(GENE_PATH))","")
+  LGENE = T
+  GENE_INC = -I$(GENE_PATH)
+  GENE_DIR = $(GENE_PATH)
   LIB_GENE = libgene.a
-  LIB_FUTILS = libfutils.a
-  GENE_INC = -I$(GENE_DIR) \
-             -I$(FUTILS_DIR)
-  GENE_LIB = $(GENE_DIR)/$(LIB_GENE) \
-             $(FUTILS_DIR)/$(LIB_FUTILS)
+  GENE_LIB = 
+else
+  LGENE = F
+endif
 
 #######################################################################
 #            COILOPT++ Options
 #######################################################################
-  LCOILOPT = F
+ifneq ("$(wildcard $(COILOPT_PATH))","")
+  LCOILOPT = T
   COILOPT_INC = -I$(COILOPT_PATH)
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
-  COILOPT_LIB = $(COILOPT_PATH)/$(LIB_COILOPTPP) 
+  COILOPT_LIB = $(COILOPT_PATH)/$(LIB_COILOPTPP) \
+                -L$(GSLHOME)/lib/x86_64-linux-gnu -lgsl -lgslcblas -lstdc++ -lmpi_cxx
+else
+  LCOILOPT = F
+endif
 
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= F
+ifneq ("$(wildcard $(TERPSICHORE_PATH))","")
+  LTERPSICHORE= T
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
   TERPSICHORE_LIB = $(TERPSICHORE_DIR)/$(LIB_TERPSICHORE)
+else
+  LTERPSICHORE = F
+endif
 
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= F
+ifneq ("$(wildcard $(TRAVIS_PATH))","")
+  LTRAVIS = T
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
   LIB_FADDEEVA = libfaddeeva64.a
-  TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
-               $(TRAVIS_DIR)/faddeeva_package/lib/$(LIB_FADDEEVA) \
-               $(TRAVIS_DIR)/magconf/lib/$(LIB_MCONF) -lstdc++
-
-#######################################################################
-#            SFINCS Options
-#######################################################################
-  LSFINCS = F
-  SFINCS_INC = -I$(SFINCS_DIR)
-  LIB_SFINCS = libsfincs.a
-
-  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS)
+  TRAVIS_LIB = $(TRAVIS_DIR)lib/$(LIB_TRAVIS) \
+               $(TRAVIS_DIR)faddeeva_package/lib/$(LIB_FADDEEVA) \
+               $(TRAVIS_DIR)magconf/lib/$(LIB_MCONF) -lc++
+else
+  LTRAVIS = F
+endif
 
 #######################################################################
 #            REGCOIL Options
 #######################################################################
-  LREGCOIL= F
+ifneq ("$(wildcard $(REGCOIL_PATH))","")
+  LREGCOIL= T
   REGCOIL_DIR = $(REGCOIL_PATH)
   REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
+else
+  LREGCOIL = F
+endif
+
+#######################################################################
+#            SFINCS Options
+#######################################################################
+ifneq ("$(wildcard $(SFINCS_PATH))","")
+  LSFINCS = T
+  SFINCS_DIR = $(SFINCS_PATH)
+  SFINCS_INC = -I$(SFINCS_DIR)
+  LIB_SFINCS = libsfincs.a
+  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
+             -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
+else
+  LSFINCS = F
+endif
 
 #######################################################################
 #            Available Energy Options
 #######################################################################
-  LAEOPT= F
+ifneq ("$(wildcard $(AEOPT_PATH))","")
+  LAEOPT = T
   AEOPT_DIR = $(AEOPT_PATH)
   AEOPT_INC = -I$(AEOPT_DIR) 
   LIB_AEOPT = libtrapAE.a
   AEOPT_LIB = $(AEOPT_PATH)/$(LIB_AEOPT)
+else
+  LAEOPT = F
+endif
+
+#######################################################################
+#            MANGO Options
+#######################################################################
+ifneq ("$(wildcard $(MANGO_PATH))","")
+  LMANGO = T
+  MANGO_DIR = $(MANGO_PATH)
+# Any flags specified on the next 2 lines will be added to the
+# MANGO_F_COMPILE_FLAGS and MANGO_F_LINK_FLAGS lines as defined in
+# $(MANGO_DIR)/lib/mangoMakeVariables
+  MANGO_INC = 
+  MANGO_LIB = 
+else
+  LMANGO = F
+endif
 
 #######################################################################
 #            LIBSTELL Shared Options

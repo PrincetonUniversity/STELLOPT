@@ -82,6 +82,164 @@ class FOCUS():
 				if temp in f:
 					setattr(self, temp, np.array(f[temp][:]))
 
+	def read_focus_focus(self,filename):
+		"""Reads a .focus file
+
+		This routine reads the .focus files containg the various representations
+		of coils and magnetic field sources.
+
+		Parameters
+		----------
+		file : str
+			Path to .focus file.
+		"""
+		import numpy as np
+		f = open(filename,'r')
+		lines = f.readlines()
+		f.close()
+		cline = 1
+		ncoils = int(lines[cline])
+		self.ncoils = ncoils
+		self.coil_type = np.zeros((ncoils),dtype=int)
+		self.symmetry_type = np.zeros((ncoils),dtype=int)
+		self.name = []
+		self.nseg = np.zeros((ncoils),dtype=int)
+		self.current = np.zeros((ncoils))
+		self.ifree = np.zeros((ncoils),dtype=int)
+		self.length = np.zeros((ncoils))
+		self.lfree = np.zeros((ncoils),dtype=int)
+		self.lz = np.zeros((ncoils),dtype=int)
+		self.target_length = np.zeros((ncoils))
+		self.ncoef = np.zeros((ncoils),dtype=int)
+		self.bz = np.zeros((ncoils))
+		self.coef1x = []
+		self.coef2x = []
+		self.coef1y = []
+		self.coef2y = []
+		self.coef1z = []
+		self.coef2z = []
+		self.knots = []
+		for i in range(ncoils):
+			cline = cline + 3
+			(ctype_txt,symm_txt,name_txt) = lines[cline].split()
+			self.coil_type[i] = int(ctype_txt)
+			self.symmetry_type[i] = int(symm_txt)
+			self.name.append(name_txt)
+			if self.coil_type[i] == 1: # Fourier
+				cline = cline + 2
+				(nseg_txt,current_txt,ifree_txt,length_txt,lfree_txt,target_length_txt) = lines[cline].split()
+				self.nseg[i] = int(nseg_txt)
+				self.ifree[i] = int(ifree_txt)
+				self.lfree[i] = int(lfree_txt)
+				self.current[i] = float(current_txt)
+				self.length[i] = float(length_txt)
+				self.target_length[i] = float(target_length_txt)
+				cline = cline + 2
+				self.ncoef[i] = int(lines[cline])
+				cline = cline + 2
+				self.coef1x.append([float(s) for s in lines[cline].split()])
+				cline = cline + 1
+				self.coef2x.append([float(s) for s in lines[cline].split()])
+				cline = cline + 1
+				self.coef1y.append([float(s) for s in lines[cline].split()])
+				cline = cline + 1
+				self.coef2y.append([float(s) for s in lines[cline].split()])
+				cline = cline + 1
+				self.coef1z.append([float(s) for s in lines[cline].split()])
+				cline = cline + 1
+				self.coef2z.append([float(s) for s in lines[cline].split()])
+			elif self.coil_type[i] == 2: # Magnet
+				cline = cline + 2
+				(lc_txt,ox_txt,oy_txt,oz_txt,ic_txt,I_txt,mt_txt,mp_txt) = lines[cline].split()
+				print('WARNING: Permanent Magnets not implemented')
+			elif self.coil_type[i] == 3: # Background Btor, Bz
+				cline = cline + 2
+				(ifree_txt,current_txt,lz_txt,bz_txt) = lines[cline].split()
+				self.ifree[i] = int(ifree_txt)
+				self.current[i] = float(current_txt)
+				self.lz[i] = int(lz_txt)
+				self.bz[i] = float(bz_txt)
+			elif self.coil_type[i] == 5: # Spline
+				cline = cline + 2
+				(nseg_txt,current_txt,ifree_txt,length_txt,lfree_txt,target_length_txt) = lines[cline].split()
+				self.nseg[i] = int(nseg_txt)
+				self.ifree[i] = int(ifree_txt)
+				self.lfree[i] = int(lfree_txt)
+				self.current[i] = float(current_txt)
+				self.length[i] = float(length_txt)
+				self.target_length[i] = float(target_length_txt)
+				cline = cline + 2
+				self.ncoef[i] = int(lines[cline])
+				cline = cline + 2
+				self.knots.append([float(s) for s in lines[cline].split()])
+				cline = cline + 2
+				self.coef1x.append([float(s) for s in lines[cline].split()])
+				cline = cline + 1
+				self.coef1y.append([float(s) for s in lines[cline].split()])
+				cline = cline + 1
+				self.coef1z.append([float(s) for s in lines[cline].split()])
+			else:
+				print(rf'Unkown coil type {self.coil_type[i]}, {self.name[i]}')
+		return
+
+	def write_focus_focus(self,filename='new.focus'):
+		"""Writes a .focus source deffinition file
+
+		This routine writes the .focus magnetic field source deffinition
+		file.
+
+		Parameters
+		----------
+		filename : string (optional)
+			Source deffinition file name (default: new.focus)
+		"""
+		f=open(filename,'w')
+		f.write(f" # Total number of coils\n")
+		f.write(f"        {self.ncoils:6d}\n")
+		for i in range(self.ncoils):
+			f.write(f" #----------------- {i+1:d} ---------------------------\n")
+			f.write(f" #coil_type   coil_symm  coil_name\n")
+			f.write(f"   {self.coil_type[i]:3d}    {self.symmetry_type[i]:3d}    {self.name[i]}\n")
+			if self.coil_type[i] == 1:
+				f.write(f" #Nseg        current         Ifree         Length         Lfree  target_length\n")
+				f.write(f"  {self.nseg[i]:4d}{self.current[i]:23.15E}   {self.ifree[i]:3d}{self.length[i]:23.15E}   {self.lfree[i]:3d}{self.target_length[i]:23.15E}\n")
+				f.write(f' #NFcoil\n')
+				f.write(f'  {self.ncoef[i]:3d}\n')
+				f.write(f' #Fourier harmonics for coils ( xc; xs; yc; ys; zc; zs)\n')
+				for j in range(self.ncoef[i]): f.write(f"{self.coef1x[i][j]:23.15E}")
+				for j in range(self.ncoef[i]): f.write(f"{self.coef2x[i][j]:23.15E}")
+				f.write('\n')
+				for j in range(self.ncoef[i]): f.write(f"{self.coef1y[i][j]:23.15E}")
+				for j in range(self.ncoef[i]): f.write(f"{self.coef2y[i][j]:23.15E}")
+				f.write('\n')
+				for j in range(self.ncoef[i]): f.write(f"{self.coef1z[i][j]:23.15E}")
+				for j in range(self.ncoef[i]): f.write(f"{self.coef2z[i][j]:23.15E}")
+				f.write('\n')
+			elif self.coil_type[i] ==2:
+				f.write(f' #  Lc  ox   oy   oz  Ic  I  mt  mp (note yet implemented in python interface)\n')
+				f.write(f'   1   0.0  0.0  0.0  1 1.0E6  0.0  0.0\n')
+			elif self.coil_type[i] == 3:
+				f.write(f' # Ic     I    Lc  Bz  (Ic control I; Lc control Bz)\n')
+				f.write(f'  {self.ifree[i]}  {self.current[i]:21.15E}  {self.lz[i]}  {self.bz[i]:21.15E}\n')
+			elif self.coil_type[i] == 5:
+				f.write(f' #NS          current         Ifree         Length         Lfree  target_length\n')
+				f.write(f"  {self.nseg[i]:4d}{self.current[i]:23.15E}   {self.ifree[i]:3d}{self.length[i]:23.15E}   {self.lfree[i]:3d}{self.target_length[i]:23.15E}\n")
+				f.write(f' #NCP\n')
+				f.write(f'  {self.ncoef[i]:3d}\n')
+				f.write(f' #Vector of knots\n')
+				for j in range(self.ncoef[i]+4): f.write(f"{self.knots[i][j]:23.15E}")
+				f.write(f'\n #Control Points Coordinates for coils ( x; y; z)  \n')
+				for j in range(self.ncoef[i]): f.write(f"{self.coef1x[i][j]:23.15E}")
+				f.write('\n')
+				for j in range(self.ncoef[i]): f.write(f"{self.coef1y[i][j]:23.15E}")
+				f.write('\n')
+				for j in range(self.ncoef[i]): f.write(f"{self.coef1z[i][j]:23.15E}")
+				f.write('\n')
+			else:
+				print(rf'Unkown coil type {self.ctype[i]}, {self.name[i]}')
+		f.close()
+		return
+
 	def write_focus_plasma(self,nfp,xm,xn,rmnc,zmns,rmns=None,zmnc=None,xm_b=None,\
 		xn_b=None,bmnc=None,bmns=None,filename='plasma.boundary'):
 		"""Writes a focus boundary file
@@ -142,6 +300,153 @@ class FOCUS():
 		f.write(f'# n m bnc bns\n')
 		for mn in range(mnmax_b):
 			f.write(f'{int(xn_b[mn]):d} {int(xm_b[mn]):d} {bmnc[mn]:10.9e} {bmns[mn]:10.9e}\n')
+		f.close()
+
+	def write_focus_plasma_booz(self,nfp,xm,xn,rmnc,zmns,pmns,rmns=None,zmnc=None,pmnc=None,xm_b=None,\
+		xn_b=None,bmnc=None,bmns=None,filename='plasma.boundary'):
+		"""Writes a focus boundary file
+
+		This routine writes the FOCUS plasma boundary file.
+
+		Parameters
+		----------
+		nfp : int
+			Field periodicity
+		xm : ndarray
+			Poloidal mode array
+		xn : ndarray
+			Toroidal mode array
+		rmnc : ndarray
+			R cosine boundary harmonics
+		zmns : ndarray
+			Z sine boundary harmonics
+		pmns : ndarray
+			P sine toridal angle harmonics
+		rmns : ndarray (optional)
+			R sine boundary harmonics
+		zmnc : ndarray (optional)
+			Z cosine boundary harmonics
+		pmnc : ndarray
+			P cosine toridal angle harmonics
+		xm_b : ndarray (optional)
+			Poloidal mode array (B-normal)
+		xn_b : ndarray (optional)
+			Toroidal mode array (B-normal)
+		bmnc : ndarray (optional)
+			B-normal cosine boundary harmonics
+		bmns : ndarray (optional)
+			B-normal sine boundary harmonics
+		filename : string (optional)
+			Boundary file name (default: plasma.boundary)
+		"""
+		import numpy as np
+		mnmax = len(xm)
+		mnmax_b = 1
+		if (type(xm_b) is not type(None)) and \
+		   (type(xn_b) is not type(None)) and \
+		   ((type(bmns) is not type(None)) or \
+		   	(type(bmnc) is not type(None))):
+			mnmax_b = len(xm_b)
+		else:
+			xm_b = [0]
+			xn_b = [0]
+			bmnc = [0]
+			bmns = [0]
+		if not (rmns and zmnc):
+			rmns = np.zeros((mnmax))
+			zmnc = np.zeros((mnmax))
+			pmnc = np.zeros((mnmax))
+		f=open(filename,'w')
+		f.write(f'#Nfou Nfp NBnf\n')
+		f.write(f'{int(mnmax)} {int(nfp)} {int(mnmax_b)}\n')
+		f.write(f'#plasma boundary\n')
+		f.write(f'# n m Rbc Rbs Zbc Zbs\n')
+		for mn in range(mnmax):
+			f.write(f'{int(xn[mn]):5d} {int(xm[mn]):5d} {rmnc[mn]:10.9e} {rmns[mn]:10.9e} {zmnc[mn]:10.9e} {zmns[mn]:10.9e} {pmnc[mn]:10.9e} {pmns[mn]:10.9e}\n')
+		f.write(f'#Bn harmonics\n')
+		f.write(f'# n m bnc bns\n')
+		for mn in range(mnmax_b):
+			f.write(f'{int(xn_b[mn]):5d} {int(xm_b[mn]):5d} {bmnc[mn]:10.9e} {bmns[mn]:10.9e}\n')
+		f.close()
+
+	def write_focus_harmonics(self,tol,nfp,xm,xn,rmnc,zmns,pmns=None,rmns=None,zmnc=None,pmnc=None,xm_b=None,\
+		xn_b=None,bmnc=None,bmns=None,filename='target.harmonics'):
+		"""Writes a focus boundary file
+
+		This routine writes the FOCUS plasma boundary file.
+
+		Parameters
+		----------
+		tol : float
+			Tolerance for boundary Harmonics targeting
+		nfp : int
+			Field periodicity
+		xm : ndarray
+			Poloidal mode array
+		xn : ndarray
+			Toroidal mode array
+		rmnc : ndarray
+			R cosine boundary harmonics
+		zmns : ndarray
+			Z sine boundary harmonics
+		pmns : ndarray
+			P sine toridal angle harmonics
+		rmns : ndarray (optional)
+			R sine boundary harmonics
+		zmnc : ndarray (optional)
+			Z cosine boundary harmonics
+		pmnc : ndarray
+			P cosine toridal angle harmonics
+		xm_b : ndarray (optional)
+			Poloidal mode array (B-normal)
+		xn_b : ndarray (optional)
+			Toroidal mode array (B-normal)
+		bmnc : ndarray (optional)
+			B-normal cosine boundary harmonics
+		bmns : ndarray (optional)
+			B-normal sine boundary harmonics
+		filename : string (optional)
+			Boundary file name (default: target.harmonics)
+		"""
+		import numpy as np
+		mnmax = len(xm)
+		mnmax_b = 1
+		if (type(xm_b) is not type(None)) and \
+		   (type(xn_b) is not type(None)) and \
+		   ((type(bmns) is not type(None)) or \
+		   	(type(bmnc) is not type(None))):
+			mnmax_b = len(xm_b)
+		else:
+			xm_b = [0]
+			xn_b = [0]
+			bmnc = [0]
+			bmns = [0]
+		if type(pmns) is not type(None):
+			pmns = np.zeros((mnmax))
+		if not (rmns and zmnc and pmnc):
+			rmns = np.zeros((mnmax))
+			zmnc = np.zeros((mnmax))
+			pmnc = np.zeros((mnmax))
+		xm_out = []
+		xn_out = []
+		for mn in range(mnmax):
+			if (abs(rmnc[mn])>=tol) or ((abs(zmns[mn])>=tol)) or (abs(rmns[mn])>=tol) or (abs(zmnc[mn])>=tol) or ((abs(pmnc[mn])>=tol)) or ((abs(pmns[mn])>=tol)):
+				xm_out.append(xm[mn])
+				xn_out.append(xn[mn])
+		nharm = len(xm_out)
+		weight = np.zeros((nharm))
+		for i in range(nharm):
+			if xm_out[i] > 0 and xn_out[i]!=0:
+				weight[i] = float(abs(xn_out[i])+abs(xm_out[i]))/float(abs(xm_out[i]*xn_out[i]))
+		#weight = float(abs(xn_out)+abs(xm_out))/float(abs(xm_out*xn_out))
+		weight = np.where(weight==0,1.0,weight)
+		weight = np.where(weight>1.0,1.0,weight)
+		f=open(filename,'w')
+		f.write(f'# Number of Harmonics\n')
+		f.write(f'{int(nharm)}\n')
+		f.write(f'# N,M,BMNC,BMNS,Weight\n')
+		for mn in range(nharm):
+			f.write(f'{int(xn_out[mn]):5d} {int(xm_out[mn]):5d} {0.0:10.2f} {0.0:10.2f} {weight[mn]:10.3f}\n')
 		f.close()
 
 	def plotConvergence(self,ax=None):
@@ -232,9 +537,12 @@ class FOCUS():
 			plt = PLOT3D()
 		[points,triangles] = plt.torusvertexTo3Dmesh(self.xsurf.T,self.ysurf.T,self.zsurf.T,lcloseu=True,lclosev=False)
 		# Handle Bn
-		scalar = plt.valuesToScalar(self.Bn.flatten())
-		# Add to Render
-		plt.add3Dmesh(points,triangles,scalars=scalar)
+		if hasattr(self,'Bn'):
+			scalar = plt.valuesToScalar(self.Bn.flatten())
+			# Add to Render
+			plt.add3Dmesh(points,triangles,scalars=scalar)
+		else:
+			plt.add3Dmesh(points,triangles)
 		# In case it isn't set by user.
 		plt.setBGcolor()
 		# Colorbar

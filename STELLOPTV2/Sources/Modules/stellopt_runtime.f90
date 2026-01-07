@@ -149,7 +149,7 @@
       USE stellopt_globals, ONLY: axis_init_option, cr_strategy, &
          epsfcn, factor, ftol, gtol, lcentered_differences, lkeep_mins, &
          lrefit, mode, noptimizers, npopulation, opt_type, refit_param, &
-         rho_exp, xtol, bigno, lcoil_geom, lno_restart, ltriangulate, &
+         rho_exp, xtol, bigno, lno_restart, ltriangulate, &
          maxwindsurf
       USE EZspline
 !-----------------------------------------------------------------------
@@ -167,12 +167,6 @@
       INTEGER, PARAMETER ::  ALLOC_ERR         = 11
       INTEGER, PARAMETER ::  NAMELIST_READ_ERR = 12
       INTEGER, PARAMETER ::  BAD_INPUT_ERR     = 13
-      INTEGER, PARAMETER ::  CWS_READ_ERR      = 14
-      INTEGER, PARAMETER ::  BAD_CWS_ERR       = 15
-      INTEGER, PARAMETER ::  KNOT_MISMATCH_ERR = 16
-      INTEGER, PARAMETER ::  KNOT_DEF_ERR      = 17
-      INTEGER, PARAMETER ::  KNOT_ORDER_ERR    = 18
-      INTEGER, PARAMETER ::  KNOT_CONST_ERR    = 19
       INTEGER, PARAMETER ::  VMEC_INPUT_ERR    = 2
       INTEGER, PARAMETER ::  VMEC_WOUT_ERR     = 21
       INTEGER, PARAMETER ::  MGRID_ERR         = 22
@@ -200,33 +194,17 @@
       INTEGER, PARAMETER ::  MPI_BCAST_ERR      = 830
       INTEGER, PARAMETER ::  MPI_FREE_ERR       = 840
       INTEGER, PARAMETER ::  MPI_FINE_ERR       = 890
-
-      !INTEGER, PARAMETER :: maxwindsurf=32
       REAL(rprec), PARAMETER :: STELLOPT_VERSION = 2.85      
-      !REAL(rprec), PARAMETER :: bigno = 1.0E+10
-      
-!      LOGICAL                  :: lverb, lkeep_mins, lneed_output, lrestart,&
-!                                  lrefit, lno_restart, lauto_domain, lparallel,&
-!                                  ltriangulate, lcoil_geom, lrenorm     
       LOGICAL                  :: lverb, lneed_output, lrestart,&
-                                  lauto_domain, lparallel,lrenorm
-!      INTEGER                  :: nvars, mtargets, iter, mode, iunit_out,&
-!                                  cr_strategy, rho_exp, npopulation, noptimizers,&
-!                                  ier_paraexe
+                                  lauto_domain, lparallel,lrenorm, loneiter
       INTEGER                  :: nvars, mtargets, iter, iunit_out,ier_paraexe
       INTEGER, ALLOCATABLE     :: var_dex(:),target_dex(:)
       INTEGER, ALLOCATABLE     :: arr_dex(:,:)
-!      REAL(rprec)              :: pi, pi2, mu0, ftol, xtol, gtol, epsfcn,&
-!                                  factor, chisq_min, refit_param, pct_domain
       REAL(rprec)              :: pi, pi2, mu0, chisq_min, pct_domain
       REAL(rprec), ALLOCATABLE :: vars(:),targets(:),sigmas(:),vals(:),&
                                   diag(:),vars_min(:),vars_max(:)
-!      CHARACTER(256)           :: id_tag, id_string, opt_type, proc_string, &
-!                                  proc_string_old, screen_str, xvec_file
       CHARACTER(256)           :: id_tag, id_string, proc_string, &
                                   proc_string_old, screen_str, xvec_file
-!      LOGICAL                  :: lcentered_differences ! Available for MANGO algorithms
-!      CHARACTER(256)           :: axis_init_option
 !-----------------------------------------------------------------------
 !     Subroutines
 !          handle_err  Controls Program Termination
@@ -296,30 +274,6 @@
             WRITE(6,*) '  STELLOPT ENCOUNTERED AN ERROR READING A NAMELIST'
             WRITE(6,*) '  ',TRIM(string_val)
             WRITE(6,*) '  IERR:      ',ierr
-      ELSEIF (error_num .eq. CWS_READ_ERR) THEN
-            WRITE(6,*) '  STELLOPT ENCOUNTERED AN ERROR READING A WINDING SURFACE'
-            WRITE(6,*) '  FILENAME: ',TRIM(string_val)
-            WRITE(6,*) '  IERR:      ',ierr
-      ELSEIF (error_num .eq. BAD_CWS_ERR) THEN
-            WRITE(6,*) '  STELLOPT ENCOUNTERED A WINDING SURFACE ERROR'
-            WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
-            WRITE(6,*) '  IERR:      ',ierr
-      ELSEIF (error_num .eq. KNOT_MISMATCH_ERR) THEN
-            WRITE(6,*) '  STELLOPT ENCOUNTERED A COIL COORDINATE SPLINE KNOT COUNT MISMATCH'
-            WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
-            WRITE(6,*) '  CTRL PT COUNT:      ',ierr
-      ELSEIF (error_num .eq. KNOT_DEF_ERR) THEN
-            WRITE(6,*) '  STELLOPT ENCOUNTERED A COIL SPLINE WITH LESS THAN FOUR KNOTS'
-            WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
-            WRITE(6,*) '  KNOT COUNT:      ',ierr
-      ELSEIF (error_num .eq. KNOT_ORDER_ERR) THEN
-            WRITE(6,*) '  STELLOPT ENCOUNTERED A COIL SPLINE WITH DESCENDING KNOTS'
-            WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
-            WRITE(6,*) '  KNOT:      ',ierr
-      ELSEIF (error_num .eq. KNOT_CONST_ERR) THEN
-            WRITE(6,*) '  FIRST AND LAST FOUR COIL SPLINE KNOTS MUST BE IDENTICAL'
-            WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
-            WRITE(6,*) '  COIL:      ',ierr
       ELSEIF (error_num .eq. D02CJF_ERR) THEN
             WRITE(6,*) '  STELLOPT ENCOUNTERED A NAG ERROR (D02CJF)'
             WRITE(6,*) '     CALLING FUNCTION ',TRIM(string_val)

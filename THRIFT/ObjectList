@@ -1,4 +1,7 @@
 ObjectFiles = \
+thrift_plasma_solver_mod.o \
+thrift_penta.o \
+thrift_dkes.o \
 thrift_diagno.o \
 thrift_run_diagnostics.o \
 thrift_run_nbcd.o \
@@ -20,7 +23,6 @@ thrift_vars.o \
 thrift_init.o \
 thrift_init_mpisubgroup.o \
 thrift_paraexe.o \
-thrift_input_mod.o \
 thrift_profiles_mod.o \
 thrift_interface_mod.o \
 thrift_funcs.o \

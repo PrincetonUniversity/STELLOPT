@@ -1,5 +1,17 @@
 # Microsoft Developer Studio Generated Dependency File, included by LIBSTELL.mak      
 
+conrec.o :
+
+spline_coils_mod.o : \
+      ezspline.o \
+      ezspline_obj.o \
+      biotsavart.o \
+      bsc_T.o
+
+fusion_mod.o : 
+
+collision_operators.o : 
+
 read_nescoil_mod.o : \
       safe_open_mod.o \
       stel_kinds.o \
@@ -7,7 +19,6 @@ read_nescoil_mod.o : \
       ezspline_obj.o \
       mpi_sharmem.o \
       mpi_inc.o
-
 
 stellopt_globals.o : \
       stel_kinds.o 
@@ -51,6 +62,14 @@ beams3d_input_mod.o: \
 
 beams3d_globals.o :  \
       stel_kinds.o 
+
+thrift_globals.o : \
+      stel_kinds.o
+
+thrift_input_mod.o: \
+      stel_kinds.o \
+      safe_open_mod.o \
+      thrift_globals.o 
 
 diagno_runtime.o :  \
       ezspline.o \
@@ -974,7 +993,10 @@ bsc_cdf.o : \
       stel_constants.o \
       stel_kinds.o \
       v3_utilities.o 
-      
+
+bsc_T.o : \
+      stel_kinds.o 
+
 
 coilsnamin.o : \
       bcoils_mod.o \
@@ -1234,6 +1256,7 @@ vf_coils.o : \
       
 
 vmec_input.o : \
+      stel_constants.o \
       vparams.o \
       vsvd0.o 
       
@@ -1349,6 +1372,7 @@ wall_mod.o : \
 
 
 mumaterial_mod.o : \
+      mpi_params.o \
       safe_open_mod.o 
       
 

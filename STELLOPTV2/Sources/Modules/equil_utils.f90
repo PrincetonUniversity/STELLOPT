@@ -1404,11 +1404,12 @@
       RETURN
       END SUBROUTINE copy_boozer_file
 
-      SUBROUTINE fit_profile(ptype,ntarg,sarr,farr,ncoefs,coefs)
+      SUBROUTINE fit_profile(ptype,ntarg,sarr,farr,ncoefs,knots,coefs)
       IMPLICIT NONE
       CHARACTER(LEN=*), INTENT(in)   :: ptype
       INTEGER, INTENT(in) :: ntarg,ncoefs
       REAL(rprec), INTENT(in) :: sarr(ntarg), farr(ntarg)
+      REAL(rprec), INTENT(in) :: knots(ncoefs)
       REAL(rprec), INTENT(inout) :: coefs(ncoefs)
       INTEGER :: nc, ik, maxfev_local, nfev, info, njev, maxfev, nprint, mode
       INTEGER, DIMENSION(ncoefs) :: ipvt
@@ -1435,7 +1436,7 @@
             nc = 2
          CASE('power_series','power_series_0i0','power_series_edge0','power_series_i','power_series_i_edge0','power_series_0_boundaries')
             DO ik = 1, ncoefs
-               IF (coefs(ik) /=0 ) nc = ik
+               IF (knots(ik) > 0 ) nc = ik
             END DO
          CASE('pedestal','sum_atan')
             nc = 21
@@ -1445,7 +1446,7 @@
             PRINT *,"Error! Unknown profile type in subroutine fit_profile:",ptype
             STOP
       END SELECT
-      IF (ptype == 'power_series') THEN
+      IF ((ptype == 'power_series') .or. (ptype == 'power_series_i')) THEN
          ! For fitting polynomials, 'polyfit' is more robust than LMDER, so use polyfit.
          coefs(1:nc) = polyfit(sarr,farr,nc-1)
          RETURN

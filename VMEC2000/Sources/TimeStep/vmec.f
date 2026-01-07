@@ -258,6 +258,7 @@ C-----------------------------------------------
             CALL second0(ton)
 
             CALL read_namelist (iunit, isnml, 'vseq')
+            nseq_restart(1) = 0 ! Never restart on the first file.
 
             CALL second0(toff)
             read_namelist_time = read_namelist_time + (toff - ton)
@@ -310,14 +311,15 @@ C-----------------------------------------------
          ictrl(2) = 0
 !         ictrl(3) = 100
 !         ictrl(4) = 2
+         IF (nseq_restart(iseq) < 1) ictrl(4) = 0
          ictrl(5) = iseq - 1
          ncount = 0
-         IF (iseq .GT. 1) THEN
+         IF (nseq_restart(iseq) .GT. 0) THEN
             reset_file_name =
 #ifdef NETCDF
-     &         'wout_' // TRIM(extension(index_seq-1)) // ".nc"
+     &         'wout_' // TRIM(extension(nseq_restart(iseq))) // ".nc"
 #else
-     &         'wout.' // TRIM(extension(index_seq-1))
+     &         'wout.' // TRIM(extension(nseq_restart(iseq)))
             WRITE (*,*) 'WARNING: Text based wout files are no ' \\
      &                  'longer maintained and may be removed in ' \\
      &                  'the future.'

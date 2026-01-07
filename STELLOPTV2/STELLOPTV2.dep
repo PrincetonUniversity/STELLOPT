@@ -1,10 +1,109 @@
 # Microsoft Developer Studio Generated Dependency File, included by STELLOPT.mak
 
+stellopt_run_vmec.o : \
+      stellopt_runtime.o  \
+      equil_utils.o  \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_globals.o \
+      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
+      $(LIB_DIR)/$(LOCTYPE)/vmec_input.o 
+
+stellopt_generate_coilsurf.o : \
+      stellopt_runtime.o  \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      $(NESCOIL_DIR)/$(LOCTYPE)/nescoil_stellopt_mod.o \
+      $(BNORM_DIR)/$(LOCTYPE)/neswrite.o \
+      $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o 
+
+chisq_coil_baxis.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      equil_vals.o
+
+chisq_bnmns.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      equil_vals.o
+
+chisq_bnmnc.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      equil_vals.o
+
+chisq_lgradb.o : \
+      stellopt_runtime.o \
+      equil_vals.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      $(LIB_DIR)/$(LOCTYPE)/stel_tools.o 
+
+chisq_coil_curvature.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      $(LIB_DIR)/$(LOCTYPE)/spline_coils_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/biotsavart.o 
+
+chisq_coil_length.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      $(LIB_DIR)/$(LOCTYPE)/spline_coils_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/biotsavart.o \
+      $(LIB_DIR)/$(LOCTYPE)/vsvd0.o 
+
+chisq_coil_torsion.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      $(LIB_DIR)/$(LOCTYPE)/spline_coils_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/biotsavart.o 
+
+chisq_coilcoil_distance.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/biotsavart.o 
+
+stellopt_flines_mod.o : \
+      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
+      $(LIB_DIR)/$(LOCTYPE)/biotsavart.o
+
+chisq_bnormal.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      equil_vals.o
+
+stellopt_compute_bnormal.o : \
+      stellopt_runtime.o  \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      equil_vals.o  \
+      $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/bsc_T.o \
+      $(LIB_DIR)/$(LOCTYPE)/biotsavart.o \
+      $(BNORM_DIR)/$(LOCTYPE)/neswrite.o \
+      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o 
+
+stellopt_generate_coils.o : \
+      stellopt_runtime.o  \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/vmec_input.o \
+      $(LIB_DIR)/$(LOCTYPE)/spline_coils_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/biotsavart.o \
+      $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o 
+
 stellopt_read_cws.o : \
       stellopt_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
       stellopt_winding_surface.o \
+      $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_params.o 
 
@@ -169,6 +268,13 @@ chisq_rosenbrock.o : \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o
 
       
+chisq_rosenbrock2d.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_input_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o
+
+      
 chisq_rbtor.o : \
       stellopt_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
@@ -203,9 +309,23 @@ chisq_curvature.o : \
 chisq_bootstrap.o : \
       stellopt_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
       equil_utils.o \
-      $(BOOTSJ_DIR)/$(LOCTYPE)/parambs.o \
-      $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o 
+      equil_vals.o \
+      $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/bootsj_input.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o \
+      $(BOOTSJ_DIR)/$(LOCTYPE)/parambs.o 
+      
+
+chisq_totalbootstrap.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/bootsj_input.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o \
+      $(LIB_DIR)/$(LOCTYPE)/vmec_input.o \
+      $(BOOTSJ_DIR)/$(LOCTYPE)/parambs.o
       
 
 chisq_txport.o : \
@@ -232,6 +352,14 @@ chisq_magwell.o : \
       stellopt_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
       equil_utils.o
+
+
+chisq_b10b11.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      equil_vals.o \
+      $(LIB_DIR)/$(LOCTYPE)/read_boozer_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/vmec_input.o
       
 
 chisq_bprobes.o : \
@@ -270,14 +398,24 @@ chisq_helicity.o : \
       stellopt_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
       equil_vals.o \
-      $(LIB_DIR)/$(LOCTYPE)/read_boozer_mod.o
+      $(LIB_DIR)/$(LOCTYPE)/read_boozer_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/vmec_input.o
 
 
 chisq_helicity_ornl.o : \
       stellopt_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
       equil_vals.o \
-      $(LIB_DIR)/$(LOCTYPE)/read_boozer_mod.o
+      $(LIB_DIR)/$(LOCTYPE)/read_boozer_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/vmec_input.o
+
+
+chisq_quasiiso.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      equil_utils.o \
+      $(LIB_DIR)/$(LOCTYPE)/read_boozer_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/vmec_input.o
 
 chisq_resjac.o : \
       stellopt_runtime.o \
@@ -391,7 +529,28 @@ chisq_neo.o : \
       equil_utils.o
       
 
-chisq_dkes.o : \
+chisq_dkes_11.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      equil_vals.o \
+      $(DKES_DIR)/$(LOCTYPE)/dkes_realspace.o
+      
+
+chisq_dkes_boot.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      equil_vals.o \
+      $(DKES_DIR)/$(LOCTYPE)/dkes_realspace.o
+      
+
+chisq_dkes_31.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      equil_vals.o \
+      $(DKES_DIR)/$(LOCTYPE)/dkes_realspace.o
+      
+
+chisq_dkes_33.o : \
       stellopt_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
       equil_vals.o \
@@ -735,6 +894,10 @@ stellopt_paraexe.o : \
       equil_vals.o \
       $(VMEC_DIR)/$(LOCTYPE)/vmec_params.o \
       $(LIB_DIR)/$(LOCTYPE)/wall_mod.o \
+      $(BEAMS3D_DIR)/$(LOCTYPE)/beams3d_runtime.o \
+      $(BEAMS3D_DIR)/$(LOCTYPE)/beams3d_lines.o \
+      $(BEAMS3D_DIR)/$(LOCTYPE)/beams3d_grid.o \
+      $(LIB_DIR)/$(LOCTYPE)/beams3d_input_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_params.o 
       
       
@@ -876,22 +1039,4 @@ chisq_template.o : \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o
 
 chisq_jinvariant.o : \
-      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o 
-
-chisq_coillen.o : \
-      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o 
-
-chisq_coilsep.o : \
-      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o 
-
-chisq_coilcrv.o : \
-      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o 
-
-chisq_coilself.o : \
-      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o 
-
-chisq_coiltorvar.o : \
-      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o 
-
-chisq_coilrect.o : \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o 

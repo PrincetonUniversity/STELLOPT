@@ -86,14 +86,30 @@ class COLLISIONS():
 		ne_cm = ne*1E-6
 		mu = mi/self.MP
 		# No need to convert masses from kg to g
-		if ti/mi < (te/self.ME):
-			if (te < (10 * Z * Z)):
-				clog = 23 - np.log(np.sqrt(ne_cm)*Z*te**(-1.5))
-			else:
-				clog = 24 - np.log(np.sqrt(ne_cm)/te)
-		else:
-			mu = (self.ME*mi)/(self.ME+mi)
-			clog  = 16 - np.log(mu*Z*Z*np.sqrt(ni)*ti**-1.5)
+  
+		# Convert to numpy arrays if they aren't already
+		ti = np.asarray(ti)
+		te = np.asarray(te)
+		ni = np.asarray(ni)
+		ne = np.asarray(ne)
+  
+  		# Condition: ti/mi < te/self.ME
+		condition = (ti / mi) < (te / self.ME)
+
+		# Compute mu for cases where the condition is False
+		mu = mi / DA
+  
+		# Compute clog based on condition
+		clog = np.where(
+			condition,
+			np.where(
+				te < (10 * Z * Z),
+				23 - np.log(np.sqrt(ne_cm) * Z * te**(-1.5)),
+				24 - np.log(np.sqrt(ne_cm) / te) 
+			),
+			16 - np.log(mu * Z * Z * np.sqrt(ni) * ti**-1.5) 
+		)
+  
 		return clog
 
 	def coullog_ii(self,mi1,Z1,ni1,ti1,mi2,Z2,ni2,ti2):
@@ -172,6 +188,52 @@ class COLLISIONS():
 		clog = ne_cm/te
 		clog = Z1*Z2*(mu1+mu2) * np.sqrt(clog) / (mu1*mu2*beta*beta)
 		clog = 43-np.log(clog)
+		return clog
+
+	def coullog_test_plasma(self,ma,va,Za,mb,Zb,nb,Tb):
+		"""Computes the Coulomb logarithm between test particle 'a'
+		   and each species 'b' in a plasma. Returns a list of clogs
+
+		Parameters
+		----------
+		ma : real
+			Test particle mass [kg]
+		va : real
+			Test particle velocity [m/s]
+		Za : real
+			Test particle charge number
+		mb : 1D array
+			mass of all plasma species [kg]
+		Zb : 1D array
+			Charge number of all plasma species
+		nb : 1D array
+			Density of all plasma species [m^-3]
+		Tb : 1D array
+			Temperature of all plasma species [eV]
+		Returns
+		----------
+		clog : array
+			Coulomb logarithm between test particle and each 
+			species in the plasma
+		"""
+		import numpy as np
+		mb = np.atleast_1d(mb)
+		Zb = np.atleast_1d(Zb)
+		nb = np.atleast_1d(nb)
+		Tb = np.atleast_1d(Tb)
+		# lambda_D of the plasma
+		lambda_D = np.sum(nb*Zb*Zb*EC*EC/(Tb*EC))
+		lambda_D = np.sqrt(EPS0/lambda_D)
+		# Reduced mass
+		mr = ma*mb / (ma+mb)
+		# Relative velocity norm
+		vr = np.sqrt(va**2 + 2*EC*Tb/mb)
+		# Classical minimum impact
+		b0 = EC*EC*np.abs(Za*Zb) / (4*np.pi*EPS0*mr*vr**2)
+		# Quantum cutoff (de Broglie)
+		lambda_B = HBAR / (2*mr*vr)
+		# Coulomb log
+		clog = np.log(lambda_D / np.maximum(lambda_B,b0))
 		return clog
 
 	def collisionfreq_thermal_equilibration(self,m1,Z1,T1,m2,Z2,n2,T2,clog):
@@ -438,6 +500,66 @@ class COLLISIONS():
 		import numpy as np
 		return (0.75*np.sqrt(np.pi*mp/self.ME))**(1.0/3.0) * np.sqrt(2*EC*Te/mp)
 
+	def collisionalHeatExchange(self,n1,T1,m1,Z1,n2,T2,m2,Z2):
+		"""Computes the collisional energy exchange rate between two
+  		thermalized species (ie., their dist functions are Maxwellians)
+        with zero relative flow velocity
+        
+        References:
+        Eq. (51) in https://scipub.euro-fusion.org/wp-content/uploads/2014/11/EFDR07001.pdf
+        OR
+        Eq. (52) in https://courses.physics.ucsd.edu/2009/Fall/physics218a/Collisional%20Transport.pdf
+        
+        Parameters
+		----------
+		n1 : real
+			Species #1 Density [m^-3]
+  		T1 : real
+			Species #1 Temperature [eV]
+   		m1 : real
+			Species #1 Mass [kg]
+		Z1 : real
+			Species #1 Charge number
+		n2 : real
+			Species #2 Density [m^-3]
+  		T2 : real
+			Species #2 Temperature [eV]
+   		m2 : real
+			Species #2 Mass [kg]
+		Z2 : real
+			Species #2 Charge number
+		Returns
+		----------
+		W_s1_s2 : real
+			Collisional thermal energy exchange rate [W/m^3]
+		"""
+		import numpy as np
+
+		# get Coulomb logarithm
+		if(Z1>0 and Z2>0):
+			clog = self.coullog_ii(m1,Z1,n1,T1,m2,Z2,n2,T2)
+		elif(Z1>0 and Z2<0):
+			clog = self.coullog_ei(n2,T2,m1,Z1,n1,T1)
+		elif(Z1<0 and Z2>0):
+			clog = self.coullog_ei(n1,T1,m2,Z2,n2,T2)
+		else:
+			# print('Heat exchange between electrons and electrons is 0')
+			return 0.0
+
+		gamma = (Z1*Z2*EC*EC)**2 * clog / (8*np.pi*EPS0**2)
+  
+		vth_s1_sqr = 2*EC*T1/m1
+		vth_s2_sqr = 2*EC*T2/m2
+
+		num = gamma * n1 * n2 * (T2-T1)
+		den = m1 * m2 * (vth_s1_sqr + vth_s2_sqr)**1.5
+  
+		W_s1_s2 = (8/np.sqrt(np.pi)) * num / den  # eV / (s.m^3)
+
+		W_s1_s2 = W_s1_s2 * EC  # W/m^3
+  
+		return W_s1_s2    
+ 
 if __name__=="__main__":
 	import sys
 	sys.exit(0)

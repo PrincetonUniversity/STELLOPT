@@ -130,8 +130,16 @@ class PLOT3D():
 		#from matplotlib import cm
 		import matplotlib
 		lut = vtk.vtkLookupTable()
-		# Check for custom colormaps
-		if self.cmap:
+		# Check for custom colormaps	
+		if ctable in list(matplotlib.colormaps.keys()):
+			lut.SetNumberOfTableValues(256)
+			lut.Build()
+			# Use matplotlib to generate the jet colormap
+			mlibmap = matplotlib.colormaps[ctable]
+			for i in range(256):
+				rgba = mlibmap(i / 255.0)
+				lut.SetTableValue(i, rgba[0], rgba[1], rgba[2], rgba[3])
+		elif type(self.cmap) is dict:
 			if ctable in list(self.cmap.keys()):
 				cmap = self.cmap[ctable]
 			else:
@@ -152,17 +160,32 @@ class PLOT3D():
 					b = (c2[2]-c1[2])*float(j)/255.0 + c1[2]
 					lut.SetTableValue(k,r,g,b,1.0)
 					k = k + 1
-			return lut
-		elif not ctable:
+		else:
 			ctable = _CMAP_ # default from above
-		lut.SetNumberOfTableValues(256)
-		lut.Build()
-		# Use matplotlib to generate the jet colormap
-		mlibmap = matplotlib.colormaps[ctable]
-		for i in range(256):
-			rgba = mlibmap(i / 255.0)
-			lut.SetTableValue(i, rgba[0], rgba[1], rgba[2], rgba[3])
+			lut.SetNumberOfTableValues(256)
+			lut.Build()
+			# Use matplotlib to generate the jet colormap
+			mlibmap = matplotlib.colormaps[ctable]
+			for i in range(256):
+				rgba = mlibmap(i / 255.0)
+				lut.SetTableValue(i, rgba[0], rgba[1], rgba[2], rgba[3])
 		return lut
+
+	def setLUTRed(self,dex=0):
+		"""Set a value of a LUT to red
+
+		The routine sets the first or last value of a LUT to red. This
+		is useful for explicitly setting some min or max value to a
+		red color as a warning.
+
+		Parameters
+		----------
+		lut : VTKLookupTable
+			VTK style lookup table class
+		dex : int (optional)
+			Index to set red (default = 0)
+		"""
+		self.lookupTable.SetTableValue(dex,1.0,0.0,0.0,1.0)
 
 	def setActorColor(self,actor,color=None):
 		"""Set the color property of the actor
@@ -305,6 +328,63 @@ class PLOT3D():
 				triangles.InsertNextCell(triangle)
 		return points, triangles
 
+	def meshToArea(self,points,triangles):
+		"""Compute area of meshes
+
+		This routine computes the area of a set of triangles
+
+		Parameters
+		----------
+		points :  VTK Points object
+			Points to plot
+		triangles : VTK CellArray of VTKTriangle Objects
+			Face list
+
+		Returns
+		-------
+		area : ndarray
+			Aread of triangles in mesh.
+		"""
+		import numpy as np
+		from vtk.util.numpy_support import vtk_to_numpy
+		# 1. Convert vtkPoints data to a NumPy array for fast access
+		coords = vtk_to_numpy(points.GetData())
+
+		num_triangles = triangles.GetNumberOfCells()
+		areas = np.zeros(num_triangles)
+		
+		# vtkIdList is a utility object to temporarily store the point IDs for the cell
+		point_ids = vtk.vtkIdList()
+		triangle_index = 0
+		
+		# 2. Iterate through the vtkCellArray using GetNextCell
+		# This method handles the iteration and advances the cell pointer implicitly.
+		while triangles.GetNextCell(point_ids):
+			# Get the indices of the three points
+			p1_idx = point_ids.GetId(0)
+			p2_idx = point_ids.GetId(1)
+			p3_idx = point_ids.GetId(2)
+
+			# Retrieve the 3D coordinates from the NumPy array
+			P1 = coords[p1_idx]
+			P2 = coords[p2_idx]
+			P3 = coords[p3_idx]
+
+			# 3. Calculate the area using the cross-product method in 3D
+			# Vector A = P2 - P1
+			A = P2 - P1 
+			# Vector B = P3 - P1
+			B = P3 - P1
+
+			# Area = 0.5 * ||A x B|| 
+			cross_product = np.cross(A, B)
+			area = 0.5 * np.linalg.norm(cross_product)
+			
+			areas[triangle_index] = area
+			triangle_index += 1
+
+		return areas
+
 	def valuesToScalar(self,vals):
 		"""Generate scalar object from values
 
@@ -347,6 +427,27 @@ class PLOT3D():
 			points.InsertNextPoint(vertex.tolist())
 		return points
 
+	def vectorToVector(self,vec_in):
+		"""Generate vector objects from an array of vectors
+
+		This routine returns a vtkDoubleArray object given a vector array.
+
+		Parameters
+		----------
+		vec_in : ndarray
+			Vector component amplitudes (npts,3)
+		Returns
+		-------
+		vector : VTK Double Array
+			Vectors to plot in 3D.
+		"""
+		# Create objects
+		vectors = vtk.vtkDoubleArray()
+		vectors.SetNumberOfComponents(3)
+		# Convert numpy arrays to VTK arrays
+		for vec in vec_in:
+			vectors.InsertNextTuple3(vec[0],vec[1],vec[2])
+		return vectors
 
 	def facemeshTo3Dmesh(self,vertices,indices):
 		"""Generate points and triangle objects from a facemesh
@@ -510,7 +611,56 @@ class PLOT3D():
 		# Add actor
 		self.renderer.AddActor(actor)
 
-	def add3Dmesh(self,points,triangles,scalars=None,opacity=1.0,color=None):
+	def add3Dvector(self,points,vector,color='black',tipradius=0.05,shaftradius=0.01):
+		"""Add a 3D vector plot
+
+		This routine adds a vector plot using VTK where points is an 
+		object as returned by vtk.vtkPoints() and vector is an object
+		as returned by VTK Double Array with 3 components.
+
+		Parameters
+		----------
+		points : VTK Points object
+			Origin of vectors
+		vector : VTK Double Array
+			Vector components
+		color : string (optional)
+			Line color name, see VTK (default: black)
+		tipradius : float (optional)
+			Arrow tip size (default: 0.05)
+		shaftradius : float (optional)
+			Shaft size (default: 0.01)
+		"""
+		# Create actor/mapper
+		actor = vtk.vtkActor()
+		mapper = vtk.vtkPolyDataMapper()
+		# Create a polyline to connect the points
+		polydata = vtk.vtkPolyData()
+		polydata.SetPoints(points)
+		polydata.GetPointData().SetVectors(vector)
+		# Create the Glyph
+		arrow_source = vtk.vtkArrowSource()
+		arrow_source.SetTipRadius(tipradius)
+		arrow_source.SetShaftRadius(shaftradius)
+		#Use vtkGlyph3D to place arrows at points
+		glyph = vtk.vtkGlyph3D()
+		glyph.SetSourceConnection(arrow_source.GetOutputPort())
+		glyph.SetInputData(polydata)
+		glyph.SetVectorModeToUseVector()
+		glyph.SetScaleModeToScaleByVector()
+		glyph.SetScaleFactor(0.8)  # Adjust overall scaling
+		glyph.Update()
+		# Setup the mapper
+		mapper = vtk.vtkPolyDataMapper()
+		mapper.SetInputConnection(glyph.GetOutputPort())
+		# Set arrow colors
+		self.setActorColor(actor,color)
+		# Set Mapper
+		actor.SetMapper(mapper)
+		# Add actor
+		self.renderer.AddActor(actor)
+
+	def add3Dmesh(self,points,triangles,scalars=None,opacity=1.0,color=None,FaceScalars=None):
 		"""Add a 3D mesh to a render
 
 		This routine adds a mesh using VTK where points is an object
@@ -541,11 +691,18 @@ class PLOT3D():
 		# Link Mapper to polydata
 		mapper.SetInputData(polydata)
 		# Handle scalars or make red
-		if type(scalars) != type(None): 
+		if type(scalars) != type(None):
 			polydata.GetPointData().SetScalars(scalars)
-			if not self.lookupTable: self.lookupTable = self.vtkLUTHelper(self.cmap)
+			if not self.lookupTable: self.lookupTable = self.vtkLUTHelper(color)
 			mapper.SetLookupTable(self.lookupTable)
 			mapper.SetScalarRange(scalars.GetRange())
+		elif type(FaceScalars) != type(None):
+			FaceScalars.SetName("FaceValues")
+			polydata.GetCellData().SetScalars(FaceScalars)
+			if not self.lookupTable: self.lookupTable = self.vtkLUTHelper(color)
+			mapper.SetLookupTable(self.lookupTable)
+			mapper.SetScalarRange(FaceScalars.GetRange())
+			mapper.SetScalarModeToUseCellData()
 		else:
 			self.setActorColor(actor,color)
 		# Set Opacity
@@ -555,25 +712,34 @@ class PLOT3D():
 		# Add actor to the scene
 		self.renderer.AddActor(actor)
 
-	def colorbar(self,show=True,title=""):
+	def colorbar(self,show=True,title="",whitetext=False):
 		"""Add a colorbar to a render
 
-		This routine adds a colorbar to the render.
+		This routine adds a colorbar to the render. Text in black,
+		set whitetext=True to print in white.
 
 		Parameters
 		----------
 		show : logical (optional)
 			Show the colorbar (default: True)
-		title : string
-			Colorbar title
+		title : string (optional)
+			Colorbar title (default: "")
+		whitetext : logical (optional)
+			Text in white (default: False)
 		"""
 		if show:
 			# Set Label Text
-			self.scalar_bar.GetLabelTextProperty().SetColor(0,0,0)
+			if whitetext:
+				self.scalar_bar.GetLabelTextProperty().SetColor(1,1,1)
+			else:
+				self.scalar_bar.GetLabelTextProperty().SetColor(0,0,0)
 			self.scalar_bar.GetLabelTextProperty().ShadowOff()
 			self.scalar_bar.GetLabelTextProperty().SetFontSize(self.fontsize)
 			# Set Titel Text
-			self.scalar_bar.GetTitleTextProperty().SetColor(0,0,0)
+			if whitetext:
+				self.scalar_bar.GetTitleTextProperty().SetColor(1,1,1)
+			else:
+				self.scalar_bar.GetTitleTextProperty().SetColor(0,0,0)
 			self.scalar_bar.GetTitleTextProperty().ShadowOff()
 			self.scalar_bar.GetTitleTextProperty().SetFontSize(self.fontsize)
 			self.scalar_bar.UnconstrainedFontSizeOn()
@@ -601,6 +767,81 @@ class PLOT3D():
 		self.camera.OrthogonalizeViewUp()
 		self.renderer.SetActiveCamera(self.camera)
 
+	def setZoom(self,zoom=None):
+		"""Set the view zoom
+
+		This routine sets the camera zoom using a factor.
+
+		Parameters
+		----------
+		zoom : float (optional)
+			Zoom factor (degrees)
+		"""
+		if zoom: self.camera.Zoom(zoom)
+		self.renderer.SetActiveCamera(self.camera)
+
+	def addCameraHUD(self, corner=(10, 10), font_size=16):
+		"""Implements a camera HUD in the view
+
+		This routine implements a camera HUD in the view.
+		"""
+		cam = self.renderer.GetActiveCamera()
+		interactor = self.render_window_interactor
+		# Text overlay
+		hud = vtk.vtkTextActor()
+		hud.SetDisplayPosition(*corner)
+		tp = hud.GetTextProperty()
+		tp.SetFontFamilyToCourier()       # monospaced columns
+		tp.SetFontSize(font_size)
+		tp.SetColor(1, 1, 1)
+		# If your VTK supports it, this adds a readable backdrop:
+		try:
+			tp.SetBackgroundColor(0, 0, 0)
+			tp.SetBackgroundOpacity(0.5)
+		except AttributeError:
+			pass
+
+		self.renderer.AddViewProp(hud)
+
+		def fmt3(v):
+			return f"{v[0]: .3f} {v[1]: .3f} {v[2]: .3f}"
+
+		def update_text(*_):
+			pos = cam.GetPosition()
+			fp  = cam.GetFocalPoint()
+			vu  = cam.GetViewUp()
+			dist = cam.GetDistance()
+			text = [
+				f"Pos:   {fmt3(pos)}",
+				f"Focal: {fmt3(fp)}",
+				f"Up:    {fmt3(vu)}",
+				f"Dist:  {dist:.3f}",
+			]
+			if cam.GetParallelProjection():
+				text.append(f"Parallel scale: {cam.GetParallelScale():.3f}")
+			else:
+				text.append(f"View angle: {cam.GetViewAngle():.2f}°")
+
+			hud.SetInput("\n".join(text))
+			interactor.GetRenderWindow().Render()
+
+		# Initialize now
+		update_text()
+
+		# Update during interaction and any time the camera changes
+		style = interactor.GetInteractorStyle()
+		(style or interactor).AddObserver("InteractionEvent", update_text)
+		cam.AddObserver("ModifiedEvent", update_text)
+
+		# Optional: press 'h' to toggle the HUD
+		def on_keypress(obj, evt):
+			if interactor.GetKeySym().lower() == 'h':
+				hud.SetVisibility(not hud.GetVisibility())
+				interactor.GetRenderWindow().Render()
+		interactor.AddObserver("KeyPressEvent", on_keypress)
+
+		return hud
+
 	def render(self):
 		"""Render the window
 
@@ -608,6 +849,29 @@ class PLOT3D():
 		"""
 		self.render_window.Render()
 		self.render_window_interactor.Start()
+
+	def clear_scene(self):
+		"""Clear the scene of objects
+
+		This routine clears the existing scene of all objects.
+		"""
+		# Remove all actors
+		actors = self.renderer.GetActors()
+		if actors:
+			actors.InitTraversal()
+			actor = actors.GetNextItem()
+			while actor:
+				self.renderer.RemoveActor(actor)
+				actor = actors.GetNextItem()
+
+		# Remove all volumes (important for volume rendering)
+		volumes = self.renderer.GetVolumes()
+		if volumes:
+			volumes.InitTraversal()
+			volume = volumes.GetNextItem()
+			while volume:
+				self.renderer.RemoveVolume(volume)
+				volume = volumes.GetNextItem()
 
 	def saveImage(self,filename='vtkImage.png'):
 		"""Save VTK Render as image

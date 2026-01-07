@@ -78,9 +78,10 @@ class DKES:
         self.D31_star = self.L31 * np.sqrt(self.Bsq)
         self.D33_star = self.L33 * self.Bsq
         
-        #according to J. Lore documentation and also C. Beidler...
-        # this is also what is done internally in PENTA
-        self.D13_star = -self.D31_star
+        # according to J. Lore documentation and also C. Beidler
+        # this is also what is done internally in PENTA 
+        # (this sign basically sets sign of JBS, and calculations agree w/ SFINCS, so this should be correct!)
+        self.D13_star = self.D31_star
         
     def check_convergence(self):
     
@@ -109,7 +110,7 @@ class DKES:
                     print(f'{self.cmul[idx]:<12.3E} {self.efield[idx]:<12.3E} {self.Lm[Lvar][idx]:<12.4E} {self.Lp[Lvar][idx]:<12.4E} {self.rel_error[Lvar][idx]*100:<15.2f}')
                 print(f'Making the average anyway: {Lvar} = 0.5*({Lvarp} + {Lvarm})')
             
-    def plot_DKES_coeffs(self):
+    def plot_DKES_coeffs(self,R0=None,iota=None,use_nustar=False):
         # plots the species-independent L11, L13 and L33 
         
         import matplotlib.pyplot as pyplot
@@ -118,7 +119,7 @@ class DKES:
                 'L11': '$D_{11}^*~~[m^{-1}~T^{-2}]$',
                 'L31': '$D_{31}^*$',
                 'L33': '$D_{33}^*~~[m~T^2]$'
-                }
+                } 
         
         for plot_var in ['L11', 'L31', 'L33']:
             
@@ -136,9 +137,14 @@ class DKES:
                 #ax.plot(self.cmul[i1:i2],yplot[i1:i2],marker='+',label=rf'$E_s/v$={self.efield[i1]:3.1E}',linewidth=4,markersize=18)
                 # plot with error bar
                 [yerr_lower, yerr_upper] = self.compute_yerr(yplot[i1:i2],self.Lm[plot_var][i1:i2],self.Lp[plot_var][i1:i2])
-                ax.errorbar(self.cmul[i1:i2],yplot[i1:i2],yerr=[yerr_lower,yerr_upper],fmt='-o',label=rf'$E_s/v$={self.efield[i1]:3.1E}',capsize=5, elinewidth=2, markeredgewidth=2)
-                    
-            ax.set_xlabel(r'$\nu/v\,\,[\text{m}^{-1}]$')
+                if(use_nustar and (R0 is not None) and (iota is not None)):
+                    nu_star = self.cmul[i1:i2] * (R0/iota)
+                    ax.set_xlabel(r'$\nu^*$')
+                    x_axis = nu_star
+                else:
+                    x_axis = self.cmul[i1:i2]
+                    ax.set_xlabel(r'$\nu/v\,\,[\text{m}^{-1}]$')
+                ax.errorbar(x_axis,yplot[i1:i2],yerr=[yerr_lower,yerr_upper],fmt='-o',label=rf'$E_s/v$={self.efield[i1]:3.1E}',capsize=5, elinewidth=2, markeredgewidth=2)
             ax.set_ylabel(f'{var_names[plot_var]}')
             ax.set_xscale('log')
             if(plot_var=='L11' or plot_var=='L33'):
@@ -388,28 +394,72 @@ class DKES:
         temp[-1] = 2.0 * temp[-1] - 1.0 * temp[-2]
         return temp
     
-    def write_PENTA3_coeffs_to_files(self,where_to):
+    def write_PENTA3_coeffs_to_files(self, where_to, cmul_list=None, efield_list=None):
         # name of the files are 'D11_star_##' , 'D13_star_##', 'D33_star_##'
         
-        #where_to save -- path should not have final /
+        # where_to save -- path should not have final /
+        
+        # if cmul_list and/or efield_list are None, then it uses ALL available values
+        # if not None, then looks for the closest available
+        # this is used to reduce the parameter space of DKES to make it faster (at the cost of loosing accuracy, of course)
+        # it's also used to make convergence tests in cmul/efield
         
         #checks that data is regular, i.e.: for each efield there are always the same cmul
         # if data is regular the following arrays are computed:
         # self.cmul_regular
         # self.efield_regular
-        
         self.check_data_is_regular(self.cmul,self.efield)
+        
+        # If no values are provided, use the full range of regular values
+        if cmul_list is None:
+            cmul_list = self.cmul_regular
+        else:
+            cmul_list = np.array(cmul_list)
+            #check that cmul_list is inside the domain of self.cmul_regular
+            if( np.min(cmul_list) < np.min(self.cmul_regular) or np.max(cmul_list) > np.max(self.cmul_regular)):
+                print('ERROR!! the given cmul values are outisde the domain of cmul....')
+            
+            
+        if efield_list is None:
+            efield_list = self.efield_regular
+        else:
+            efield_list = np.array(efield_list)
+            #check that efield_list is inside the domain of self.efield_regular
+            if( np.min(efield_list) < np.min(self.efield_regular) or np.max(efield_list) > np.max(self.efield_regular)):
+                print('ERROR!! the given efield values are outisde the domain of cmul....')
+                
         
         for var in ['D11_star', 'D13_star', 'D33_star']:
             
             filename = where_to + '/' + var + '_surface_' + f'{self.surface}'
             y = getattr(self,var)
+            
+            # Get the closest indices for cmul and efield (if cmul_list and/or efield_list are not provided, this ends up with the same array)
+            cmul_indices = self.get_closest_indices(cmul_list, self.cmul_regular)
+            efield_indices = self.get_closest_indices(efield_list, self.efield_regular)
+            
+            # Get the new cmul_regular and efield_regular arrays using the closest indices
+            new_cmul_regular = np.array([self.cmul_regular[i] for i in cmul_indices])
+            new_efield_regular = np.array([self.efield_regular[i] for i in efield_indices])
+            
+            ncmul = len(new_cmul_regular)
+            nefield = len(new_efield_regular)
+            
+            # Create an empty list to store the new y values
+            new_y = []
+            
+            # Loop over the closest indices and extract the corresponding D11_star values
+            for e_idx in efield_indices:
+                for c_idx in cmul_indices:
+                    # Compute the position in the y array
+                    index = e_idx * len(self.cmul_regular) + c_idx
+                    new_y.append(y[index])
 
-            combined = np.concatenate((self.cmul_regular,self.efield_regular,y))
+            combined = np.concatenate((new_cmul_regular,new_efield_regular,new_y))
             
             #create file
             with open(filename, 'w') as file:
-                file.write(f'{self.ncmul} {self.nefield}\n')
+                file.write(f'{ncmul} {nefield}\n')
                 for value in combined:
                     file.write(f'{value:.10e}\n')
     
@@ -468,6 +518,13 @@ class DKES:
             else:
                 self.efield_regular = unique_efields
                 self.cmul_regular   = expected_cmul
+                
+    def get_closest_indices(self,values, regular_values):
+        #For each value in 'values', find the index of the closest value in 'regular_values'.
+        
+        indices = np.abs(np.array(regular_values)[:, np.newaxis] - values).argmin(axis=0)
+        
+        return indices
                 
     def set_cmul_species(self,K,make_plot=False):
         
@@ -805,13 +862,157 @@ class DKES:
                 
                 self.get_integral(integrand[species][i],self.K,xmin=Kmin,xmax=Kmax,make_plot=True,plot_title=which_convol+f', {species}, Er/v={efield}')
     
-    def get_PENTA3_energy_convolution(self,which_coeff,which_species,Er,plasma_class,K_exp=0,jval=0,make_plot=True):
+    def get_PENTA3_energy_convolution(self,which_coeff,which_species,Er,plasma_class,K_exp=0,jval=0,log_interp_coeff=True,make_plot=True):
         # Er is in V/cm
         
         import matplotlib.pyplot as plt
         from scipy.integrate import trapezoid
         from scipy.interpolate import RectBivariateSpline, interp1d, interp2d
         from scipy.special import assoc_laguerre
+        
+        if(which_coeff == 'D11_star'):
+            coeff = self.D11_star
+        elif(which_coeff == 'D31_star'):
+            coeff = self.D31_star
+        elif(which_coeff == 'D31_over_D33_corrected'):
+            D33_corrected = (2./3.)*self.Bsq/self.cmul - self.D33_star
+            coeff = self.D31_star / D33_corrected
+        else:
+            print('Coeff not found...')
+            exit(1)
+        # put here more cases...
+        
+        # check that there are no Er/v=0
+        if np.any(self.efield == 0):
+            raise ValueError("Error: 'efield' array contains zero values, which is not allowed.")
+        
+        cmul_log = np.log10( np.unique(self.cmul) )
+        efield_log = np.log10( np.unique(self.efield) )
+        
+        # convert coeff to 2D array
+        coeff_2d = coeff.reshape(len(efield_log), len(cmul_log)).transpose()
+
+        # spline interpolate the log of the coeff
+        # if the log is not taken, then for coefficients that span many orders of magnitude (as D11star)
+        # it will give bad results...
+        if(log_interp_coeff):
+            interp_func = RectBivariateSpline(cmul_log, efield_log, np.log10(coeff_2d), kx=2, ky=2)
+        else:
+            interp_func = RectBivariateSpline(cmul_log, efield_log, coeff_2d, kx=2, ky=2)
+            
+        #get thermal speed
+        vth = plasma_class.get_thermal_speed(which_species,self.roa)
+
+        #get cmul for self.K
+        cmul_species = []
+        for k in self.K:
+            vparticle = vth * np.sqrt(k)
+            nu = plasma_class.get_collisionality(which_species,self.roa,vparticle)
+            cmul_species.append( nu / vparticle )
+                         
+        log_cmul_K = np.log10(cmul_species)
+        
+        log_efield_K = np.log10( np.abs(Er)*100/(vth*np.sqrt(self.K)) )
+        
+        # handle points that are out of range as in PENTA3
+        log_cmul_K_non_clipped = log_cmul_K
+        log_efield_K_non_clipped = log_efield_K
+        log_cmul_K = np.clip(log_cmul_K, np.min(cmul_log), np.max(cmul_log))
+        log_efield_K = np.clip(log_efield_K, np.min(efield_log), np.max(efield_log))    
+        # get indexes where values were clipped 
+        idx_clipped = (log_cmul_K_non_clipped!=log_cmul_K) + (log_efield_K_non_clipped!=log_efield_K)
+        
+        if(log_interp_coeff):
+            integrand = 10**interp_func(log_cmul_K,log_efield_K,grid=False)
+        else:
+            integrand = interp_func(log_cmul_K,log_efield_K,grid=False)
+            
+        integrand = integrand * self.K**K_exp * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, jval, k=1.5)
+        
+        qa = plasma_class.charge[which_species]
+        ma = plasma_class.mass[which_species]
+        na = plasma_class.get_density(which_species,self.roa)
+        norm = ma**2 * vth**3 * na / (qa*qa*np.sqrt(np.pi))
+        
+        convolution = norm*trapezoid(integrand,self.K)
+        
+        print(f'Energy convolution = {convolution:.1e}')
+        
+        # Optionally plots the coefficient as function of cmul and the integrand on a 2nd axis
+        # this allows to understand what are the most important points
+        if make_plot:
+            plt.rc('font', size=16)
+            fig, ax1 = plt.figure(figsize=(10,8)), plt.gca()
+            
+            cmul_species = np.array(cmul_species)
+            integrand = np.array(integrand)
+            
+            # First plot the coefficient
+            for ie in range(0, self.nefield):
+                ax1.plot(np.unique(self.cmul), coeff_2d[:, ie], '.-')#, label=f'$E_r/v={np.unique(self.efield)[ie]:3.1E}$')
+
+            # Create a second y-axis on the right
+            ax2 = ax1.twinx()  # Create another axis that shares the same x-axis
+            ax2.set_yscale('linear') 
+
+            # Now plot the integrand
+            ax2.plot(cmul_species[~idx_clipped], norm*integrand[~idx_clipped],'.-',color='black')
+            ax2.plot(cmul_species[idx_clipped], norm*integrand[idx_clipped],'.-',color='red')
+            ax2.fill_between(cmul_species, norm*integrand, alpha=0.3, label=f'|Er|={np.abs(Er)} V/cm')
+
+            if(log_interp_coeff): ax1.set_yscale('log')
+            ax1.set_xscale('log')
+            ax2.set_xscale('log')
+            ax1.set_ylabel(which_coeff)
+            ax2.set_ylabel(f'{which_species} ||{which_coeff} K^{K_exp}||')
+            ax1.grid()
+            ax1.set_xlabel(r'$\nu/v$')
+            ax2.legend()
+            plt.title(f'r/a={self.roa:.2f}')
+            #plt.show()
+
+            #now make a plot that shows how many integration points are out of range
+            fig, ax3 = plt.figure(figsize=(10,8)), plt.gca()
+            ax3.plot(self.cmul,self.efield,'x',label='DKES data')
+            ax3.plot(10**log_cmul_K[idx_clipped],10**log_efield_K[idx_clipped],'.',color='r',label='integration points (out of range)')
+            ax3.plot(10**log_cmul_K[~idx_clipped],10**log_efield_K[~idx_clipped],'.',color='k',label='integration points')
+            ax3.set_yscale('log')
+            ax3.set_xscale('log')
+            ax3.set_xlabel(r'$\nu/v$')
+            ax3.set_ylabel(r'$E_r/v$')
+            ax3.set_title(f'{which_species},  |Er|={np.abs(Er)} V/cm')
+            plt.legend()
+            plt.show()
+            
+            # now make a plot that shows how many integration points are out of range
+            # with size of markers defined by the norm of the integrand
+            # marker_size = np.abs( integrand / np.max(integrand) ) * 20
+            # print(marker_size)
+            # fig, ax4 = plt.figure(figsize=(10,8)), plt.gca()
+            # ax4.plot(self.cmul,self.efield,'x',label='DKES data')
+            # ax4.scatter(10**log_cmul_K[idx_clipped],10**log_efield_K[idx_clipped],color='r',label='integration points (out of range)',s=marker_size[idx_clipped])
+            # ax4.scatter(10**log_cmul_K[~idx_clipped],10**log_efield_K[~idx_clipped],color='k',label='integration points',s=marker_size[~idx_clipped])
+            # ax4.set_yscale('log')
+            # ax4.set_xscale('log')
+            # ax4.set_xlabel(r'$\nu/v$')
+            # ax4.set_ylabel(r'$E_r/v$')
+            # ax4.set_title(f'{which_species},  |Er|={np.abs(Er)} V/cm')
+            # plt.legend()
+            # plt.show()
+        
+        return convolution
+    
+    def get_PENTA3_convolution_domain_plot(self,which_coeff,which_species,absEr_list,plasma_class,K_exp=0,jval=0):
+        # absEr_list is in V/cm
+        # no need to give negative values of Er since it;s only the absolute value that matters
+        # recall that the sign of Er inly influences the thermal force, not the transport coefficients
+        
+        import matplotlib.pyplot as plt
+        from scipy.integrate import trapezoid
+        from scipy.interpolate import RectBivariateSpline, interp1d, interp2d
+        from scipy.special import assoc_laguerre
+        
+        plt.rc('font', size=16)
         
         if(which_coeff == 'D11_star'):
             coeff = self.D11_star
@@ -849,76 +1050,44 @@ class DKES:
                          
         log_cmul_K = np.log10(cmul_species)
         
-        log_efield_K = np.log10( np.abs(Er)*100/(vth*np.sqrt(self.K)) )
+        fig, ax = plt.figure(figsize=(10,8)), plt.gca()
         
-        # handle points that are out of range as in PENTA3
-        log_cmul_K_non_clipped = log_cmul_K
-        log_efield_K_non_clipped = log_efield_K
-        log_cmul_K = np.clip(log_cmul_K, np.min(cmul_log), np.max(cmul_log))
-        log_efield_K = np.clip(log_efield_K, np.min(efield_log), np.max(efield_log))    
-        # get indexes where values were clipped 
-        idx_clipped = (log_cmul_K_non_clipped!=log_cmul_K) + (log_efield_K_non_clipped!=log_efield_K)
+        for Er in absEr_list:
         
-        integrand = 10**interp_func(log_cmul_K,log_efield_K,grid=False)
-        integrand = integrand * self.K**K_exp * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, jval, k=1.5)
-        
-        qa = plasma_class.charge[which_species]
-        ma = plasma_class.mass[which_species]
-        na = plasma_class.get_density(which_species,self.roa)
-        norm = ma**2 * vth**3 * na / (qa*qa*np.sqrt(np.pi))
-        
-        convolution = norm*trapezoid(integrand,self.K)
-        
-        print(f'Energy convolution = {convolution}')
-        
-        # Optionally plots the coefficient as function of cmul and the integrand on a 2nd axis
-        # this allows to understand what are the most important points
-        if make_plot:
-            plt.rc('font', size=16)
-            fig, ax1 = plt.figure(figsize=(10,8)), plt.gca()
+            log_efield_K = np.log10( np.abs(Er)*100/(vth*np.sqrt(self.K)) )
             
-            cmul_species = np.array(cmul_species)
-            integrand = np.array(integrand)
+            # handle points that are out of range as in PENTA3
+            log_cmul_K_non_clipped = log_cmul_K
+            log_efield_K_non_clipped = log_efield_K
+            log_cmul_K = np.clip(log_cmul_K, np.min(cmul_log), np.max(cmul_log))
+            log_efield_K = np.clip(log_efield_K, np.min(efield_log), np.max(efield_log))    
+            # get indexes where values were clipped 
+            idx_clipped = (log_cmul_K_non_clipped!=log_cmul_K) + (log_efield_K_non_clipped!=log_efield_K)
             
-            # First plot the coefficient
-            for ie in range(0, self.nefield):
-                ax1.plot(np.unique(self.cmul), coeff_2d[:, ie], '.-')#, label=f'$E_r/v={np.unique(self.efield)[ie]:3.1E}$')
-
-            # Create a second y-axis on the right
-            ax2 = ax1.twinx()  # Create another axis that shares the same x-axis
-            ax2.set_yscale('linear') 
-
-            # Now plot the integrand
-            ax2.plot(cmul_species[~idx_clipped], norm*integrand[~idx_clipped],'.-',color='black')
-            ax2.plot(cmul_species[idx_clipped], norm*integrand[idx_clipped],'.-',color='red')
-            ax2.fill_between(cmul_species, norm*integrand, alpha=0.3, label=f'|Er|={np.abs(Er)} V/cm')
-
-            ax1.set_yscale('log')
-            ax1.set_xscale('log')
-            ax2.set_xscale('log')
-            ax1.set_ylabel(which_coeff)
-            ax2.set_ylabel(f'{which_species} ||{which_coeff} K^{K_exp}||')
-
-            ax1.set_xlabel(r'$\nu/v$')
-            ax2.legend()
-            plt.title(f'r/a={self.roa:.2f}')
-            #plt.show()
-
-            #now make a plot that shows how many integration points are out of range
-            fig, ax1 = plt.figure(figsize=(10,8)), plt.gca()
-            ax1.plot(self.cmul,self.efield,'x',label='DKES data')
-            ax1.plot(10**log_cmul_K[idx_clipped],10**log_efield_K[idx_clipped],'.',color='r',label='integration points (out of range)')
-            ax1.plot(10**log_cmul_K[~idx_clipped],10**log_efield_K[~idx_clipped],'.',color='k',label='integration points')
-            ax1.set_yscale('log')
-            ax1.set_xscale('log')
-            ax1.set_xlabel(r'$\nu/v$')
-            ax1.set_ylabel(r'$E_r/v$')
-            plt.legend()
-            plt.show()
+            integrand = 10**interp_func(log_cmul_K,log_efield_K,grid=False)
+            integrand = integrand * self.K**K_exp * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, jval, k=1.5)
             
+            # qa = plasma_class.charge[which_species]
+            # ma = plasma_class.mass[which_species]
+            # na = plasma_class.get_density(which_species,self.roa)
+            # norm = ma**2 * vth**3 * na / (qa*qa*np.sqrt(np.pi))
+
+
+            # make plot that shows how many integration points are out of range
+            # with size of markers defined by the norm of the integrand
+            marker_size = np.abs( integrand / np.max(integrand) ) * 30
             
-        
-        return convolution
+            ax.plot(self.cmul,self.efield,'x',label='DKES data')
+            ax.scatter(10**log_cmul_K[idx_clipped],10**log_efield_K[idx_clipped],color='r',label='integration points (out of range)',s=marker_size[idx_clipped])
+            ax.scatter(10**log_cmul_K[~idx_clipped],10**log_efield_K[~idx_clipped],color='k',label='integration points',s=marker_size[~idx_clipped])
+            ax.set_yscale('log')
+            ax.set_xscale('log')
+            ax.set_xlabel(r'$\nu/v$')
+            ax.set_ylabel(r'$E_r/v$')
+            
+        ax.set_title(f'{which_species},  |Er|=[{np.min(absEr_list)},{np.max(absEr_list)}] V/cm')
+        #plt.legend()
+        plt.show()
                        
     def plot_U2_estimate(self):
         

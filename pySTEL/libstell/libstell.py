@@ -10,7 +10,7 @@ This library provides a python class for interfacing to libstell
 
 # LIBSTELL Class
 class LIBSTELL():
-	"""Class for working with VMEC equilibria
+	"""Class for working with LIBSTELL library routines (fortran interfaces via Ctypes)
 
 	"""
 	def __init__(self, parent=None):
@@ -141,6 +141,7 @@ class LIBSTELL():
 			Path to wout file.
 		"""
 		import ctypes as ct
+		import numpy as np
 		# Get constants
 		module_name = self.s1+'vsvd0_'+self.s2
 		get_constant = getattr(self.libstell,module_name+'_getnigroup'+self.s3)
@@ -203,7 +204,30 @@ class LIBSTELL():
 		charList.extend(['mgrid_file','input_extension'])
 		charLen.extend([(200,1),(200,1)])
 		out_data = self.get_module_vars(module_name,booList,booLen,intList,intLen,realList,realLen,charList,charLen,ldefined_size_arrays=True)
+		# Note we need to reshape the rbc/s zbs/c arrays.
+		out_data['rbc'] = np.reshape(out_data['rbc'],(mpol1d+1,2*ntord+1))
+		out_data['zbc'] = np.reshape(out_data['zbc'],(mpol1d+1,2*ntord+1))
+		out_data['rbs'] = np.reshape(out_data['rbs'],(mpol1d+1,2*ntord+1))
+		out_data['zbs'] = np.reshape(out_data['zbs'],(mpol1d+1,2*ntord+1))
 		return out_data
+
+	def update_module(self,module_name,out_dict):
+		"""Updates the Fortran memory with dictionary
+
+		This routine updates the memory on the Fortran side with any
+		modifications made to the supplied dictionary.
+
+		Parameters
+		----------
+		module_name : str
+			Name of module to update memory
+		out_dict : dict
+			Dictionary of items to change.
+		"""
+		import ctypes as ct
+		# Check if we want to update values
+		for key in out_dict:
+			self.set_module_var(self.s1+module_name+self.s2,key,out_dict[key])
 
 	def write_indata(self,filename,out_dict=None):
 		"""Wrappers writing of the VMEC INDATA namelist
@@ -221,12 +245,114 @@ class LIBSTELL():
 		module_name = self.s1+'vmec_input_'+self.s2
 		# Check if we want to update values
 		if out_dict:
-			for key in out_dict:
-				self.set_module_var(module_name,key,out_dict[key])
+			self.update_module('vmec_input_',out_dict)
+		# Write the indata namelist
 		write_indata_namelist = getattr(self.libstell,module_name+'_write_indata_namelist_byfile'+self.s3)
 		write_indata_namelist.argtypes = [ct.c_char_p,ct.c_long]
 		write_indata_namelist.restype=None
 		write_indata_namelist(filename.encode('UTF-8'),len(filename))
+
+	def indataVolume(self):
+		"""Wrapper to the INDATA_VOLUME subroutine
+
+		This routine wrappers the INDATA_VOLUME subroutine
+		which calcualtes the plasma volume for a given INDATA
+		boundary deffinition.
+
+		Returns
+		-------
+		Volume : real
+			Total volume of plasma [m^3]
+		"""
+		import ctypes as ct
+		# Load Libraries
+		module_name = self.s1+'vmec_input_'+self.s2
+		indata_volume = getattr(self.libstell,module_name+'_indata_volume'+self.s3)
+		indata_volume.argtypes = [ct.POINTER(ct.c_double)]
+		indata_volume.restype  = None
+		volume = ct.c_double(0.0)
+		indata_volume(ct.byref(volume))
+		return volume.value
+
+	def indataArea(self):
+		"""Wrapper to the INDATA_AREA subroutine
+
+		This routine wrappers the INDATA_AREA subroutine
+		which calcualtes the plasma area for a given INDATA
+		boundary deffinition.
+
+		Returns
+		-------
+		Area : real
+			Total average cross sectional area [m^2]
+		"""
+		import ctypes as ct
+		# Load Libraries
+		module_name = self.s1+'vmec_input_'+self.s2
+		indata_area = getattr(self.libstell,module_name+'_indata_area'+self.s3)
+		indata_area.argtypes = [ct.POINTER(ct.c_double)]
+		indata_area.restype  = None
+		area = ct.c_double(0.0)
+		indata_area(ct.byref(area))
+		return area.value
+
+	def indataInitAxisMean(self):
+		"""Wrapper to the InitAxisMean subroutine
+
+		This routine wrappers the INIT_AXIS_MEAN subroutine
+		which initilizes the axis guess from the boundary coefficients
+
+		Returns
+		-------
+		out_data: dict
+			Dictionary of axis harmonics
+		"""
+		import ctypes as ct
+		# Get constant
+		module_name = self.s1+'vparams_'+self.s2
+		get_constant = getattr(self.libstell,module_name+'_getndatafmax'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		ndatafmax = get_constant()
+		# Load Libraries and initialize axis
+		module_name = self.s1+'vmec_input_'+self.s2
+		indata_init_axis = getattr(self.libstell,module_name+'_init_axis_mean'+self.s3)
+		indata_init_axis.argtypes = None
+		indata_init_axis.restype  = None
+		indata_init_axis()
+		realLen =[(ndatafmax,1)]*6
+		realList=['raxis','zaxis','raxis_cc','raxis_cs','zaxis_cc','zaxis_cs']
+		out_data = self.get_module_vars(module_name,realVar=realList,realLen=realLen,ldefined_size_arrays=True)
+		return out_data
+
+	def indataInitAxisMidpoint(self):
+		"""Wrapper to the InitAxisMidpoint subroutine
+
+		This routine wrappers the INIT_AXIS_MIDPOINT subroutine
+		which initilizes the axis guess from the boundary coefficients
+
+		Returns
+		-------
+		out_data: dict
+			Dictionary of axis harmonics
+		"""
+		import ctypes as ct
+		# Get constant
+		module_name = self.s1+'vparams_'+self.s2
+		get_constant = getattr(self.libstell,module_name+'_getndatafmax'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		ndatafmax = get_constant()
+		# Load Libraries and initialize axis
+		module_name = self.s1+'vmec_input_'+self.s2
+		indata_init_axis = getattr(self.libstell,module_name+'_init_axis_midpoint'+self.s3)
+		indata_init_axis.argtypes = None
+		indata_init_axis.restype  = None
+		indata_init_axis()
+		realLen =[(ndatafmax,1)]*6
+		realList=['raxis','zaxis','raxis_cc','raxis_cs','zaxis_cc','zaxis_cs']
+		out_data = self.get_module_vars(module_name,realVar=realList,realLen=realLen,ldefined_size_arrays=True)
+		return out_data
 
 	def read_bootin(self,filename):
 		"""Reads a BOOTSJ BOOTIN namelist
@@ -314,6 +440,7 @@ class LIBSTELL():
 			Path to wout file.
 		"""
 		import ctypes as ct
+		import numpy as np
 		# A few constants defined in globals
 		module_name = self.s1+'beams3d_globals_'+self.s2
 		get_constant = getattr(self.libstell,module_name+'_getmaxparticles'+self.s3)
@@ -338,15 +465,17 @@ class LIBSTELL():
 		init_beams3d_input.argtypes = None
 		init_beams3d_input.restype = None
 		init_beams3d_input()
-		# We use an added routine as a helper
-		module_name = self.s1+'beams3d_input_mod_'+self.s2
-		read_beams3d_input = getattr(self.libstell,module_name+'_read_beams3d_input'+self.s3)
-		read_beams3d_input.argtypes = [ct.c_char_p,ct.POINTER(ct.c_int),ct.c_long]
-		read_beams3d_input.restype = None
-		istat = ct.c_int(0)
-		read_beams3d_input(filename.encode('UTF-8'),ct.byref(istat),len(filename))
-		if not (istat.value == 0):
-			return None
+		# Only read a file if we didn't pass an empty string.
+		if filename != '':
+			# We use an added routine as a helper
+			module_name = self.s1+'beams3d_input_mod_'+self.s2
+			read_beams3d_input = getattr(self.libstell,module_name+'_read_beams3d_input'+self.s3)
+			read_beams3d_input.argtypes = [ct.c_char_p,ct.POINTER(ct.c_int),ct.c_long]
+			read_beams3d_input.restype = None
+			istat = ct.c_int(0)
+			read_beams3d_input(filename.encode('UTF-8'),ct.byref(istat),len(filename))
+			if not (istat.value == 0):
+				return None
 		# Get vars
 		intList=['nr','nphi','nz','nparticles_start','npoinc', \
 				'duplicate_factor', 'ns_prof1','ns_prof2', \
@@ -386,6 +515,7 @@ class LIBSTELL():
 		realLen.extend([(maxproflen,1),(nion,maxproflen),(nion,1)])
 		module_name = self.s1+'beams3d_globals_'+self.s2
 		out_data = self.get_module_vars(module_name,intVar=intList,intLen=intLen,realVar=realList,realLen=realLen,ldefined_size_arrays=True)
+		out_data['ni_aux_f'] = np.reshape(out_data['ni_aux_f'],(maxproflen,nion))
 		return out_data
 
 	def write_beams3d_input(self,filename,out_dict=None):
@@ -637,6 +767,7 @@ class LIBSTELL():
 			Dictionary of items.
 		"""
 		import ctypes as ct
+		import numpy as np
 		# A few constants defined in globals
 		module_name = self.s1+'vsvd0_'+self.s2
 		get_constant = getattr(self.libstell,module_name+'_getnigroup'+self.s3)
@@ -669,6 +800,14 @@ class LIBSTELL():
 		get_constant.argtypes = None
 		get_constant.restype=ct.c_int
 		bigno = get_constant()
+		get_constant = getattr(self.libstell,module_name+'_getncoilsmax'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		ncoilsmax = get_constant()
+		get_constant = getattr(self.libstell,module_name+'_getnknotscoilsmax'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		nknotscoilsmax = get_constant()
 		# Call the initialization routine
 		module_name = self.s1+'stellopt_input_mod_'+self.s2
 		init_stellopt_input = getattr(self.libstell,module_name+'_init_stellopt_input'+self.s3)
@@ -686,9 +825,9 @@ class LIBSTELL():
 			return None
 		# Get vars Globals
 		module_name = self.s1+'stellopt_globals_'+self.s2
-		booList=['lcentered_differences', 'lkeep_mins', 'lrefit', 'lcoil_geom', 'lno_restart', 'ltriangulate']
+		booList=['lcentered_differences', 'lkeep_mins', 'lrefit', 'lno_restart', 'ltriangulate']
 		booLen=[1]*len(booList)
-		intList=['cr_strategy', 'npopulation', 'noptimizers', 'mode', 'rho_exp']
+		intList=['nfunc_max','cr_strategy', 'npopulation', 'noptimizers', 'mode', 'rho_exp']
 		intLen=[1]*len(intList)
 		realList=['ftol', 'xtol', 'gtol', 'epsfcn', 'factor', 'refit_param']
 		realLen=[1]*len(realList)
@@ -698,9 +837,10 @@ class LIBSTELL():
 		# Get VARS
 		module_name = self.s1+'stellopt_vars_'+self.s2
 		booList=['lphiedge_opt', 'lcurtor_opt', 'lpscale_opt', \
-			'lbcrit_opt', 'lmix_ece_opt', 'lregcoil_winding_surface_separation_opt',\
-			 'lregcoil_current_density_opt', 'lxval_opt', 'lyval_opt', \
-			 'lxics_v0_opt','mango_bound_constraints']
+			'lbcrit_opt', 'lmix_ece_opt', 'lxval_opt', 'lyval_opt', \
+			 'lxics_v0_opt','mango_bound_constraints',\
+			 'lcreate_coils','lfix_rho_coil','lfix_theta_coil',\
+			'lfix_zeta_coil','lpoincare']
 		booLen=[1]*len(booList)
 		booList.extend(['lextcur_opt','laphi_opt', 'lam_opt', \
 					'lac_opt', 'lai_opt','lah_opt', 'lat_opt','lne_opt', \
@@ -713,33 +853,23 @@ class LIBSTELL():
 		booLen.extend([(ndatafmax,1)]*18)
 		booList.extend(['laxis_opt','lbound_opt','lrho_opt','lmode_opt','ldeltamn_opt'])
 		booLen.extend([(ntord+1,1),(2*ntord+1,mpol1d+1),(2*ntord+1,mpol1d+1),(2*ntord+1,mpol1d+1),(2*ntord+1,2*mpol1d+1)])
-		booList.extend(['lcoil_spline','lwindsurf'])
-		booLen.extend([(nigroup,40),(maxwindsurf,1)])
-		booList.extend(['lregcoil_rcws_rbound_c_opt','lregcoil_rcws_rbound_s_opt',\
-			'lregcoil_rcws_zbound_c_opt','lregcoil_rcws_zbound_s_opt'])
-		booLen.extend([(65,65)]*4)
-		intList=['nfunc_max', 'regcoil_nlambda', 'regcoil_num_field_periods', \
-			'sfincs_min_procs', 'vboot_max_iterations']
+		booList.extend([('lcoil_kts_opt')])
+		booLen.extend([(ncoilsmax,nknotscoilsmax)])
 		booList.extend(['lrosenbrock_x_opt'])
 		booLen.extend([(20,1)])
+		intList=['sfincs_min_procs', 'vboot_max_iterations','nw_coil','nh_coil']
 		intLen=[1]*len(intList)
-		intList.extend(['coil_nctrl'])
-		intLen.extend([(nigroup,1)])
 		realList=['dphiedge_opt', 'dcurtor_opt', 'dbcrit_opt', \
 			'dpscale_opt', 'dmix_ece_opt', 'dxval_opt', 'dyval_opt', \
-			'dregcoil_winding_surface_separation_opt', \
-			'dregcoil_current_density_opt', 'dxics_v0_opt', \
+			'dxics_v0_opt', \
 			'phiedge_min', 'curtor_min', 'bcrit_min', \
 			'pscale_min', 'mix_ece_min', 'xval_min', 'yval_min', 
-			'regcoil_winding_surface_separation_min', \
-			'regcoil_current_density_min', 'xics_v0_min', \
+			'xics_v0_min', \
 			'phiedge_max', 'curtor_max', 'bcrit_max', \
 			'pscale_max', 'mix_ece_max', 'xval_max', 'yval_max', \
-			'regcoil_winding_surface_separation_max', \
-			'regcoil_current_density_max', 'xics_v0_max', \
-			'mix_ece', 'xval', 'yval', 'xics_v0', \
-			'regcoil_winding_surface_separation', \
-			'regcoil_current_density','vboot_tolerance']
+			'xics_v0_max', \
+			'mix_ece', 'xval', 'yval', 'xics_v0','vboot_tolerance',\
+			'width_coil','height_coil']
 		realLen=[1]*len(realList)
 		realList.extend(['dextcur_opt','extcur_min','extcur_max'])
 		realLen.extend([(nigroup,1)]*3)
@@ -749,10 +879,6 @@ class LIBSTELL():
 			'am_min', 'ac_min', 'ai_min', 'ah_min', 'at_min', 'am_max', 'ac_max', 'ai_max', 'ah_max', 'at_max',\
 			'te_min', 'ne_min', 'ti_min', 'th_min', 'te_max', 'ne_max', 'ti_max', 'th_max', 'zeff_max', 'zeff_min'])
 		realLen.extend([(21,1)]*30)
-		realList.extend(['bnfou'])
-		realLen.extend([(25,41)])
-		realList.extend(['dregcoil_rcws_rbound_c_opt','dregcoil_rcws_rbound_s_opt','dregcoil_rcws_zbound_c_opt','dregcoil_rcws_zbound_s_opt'])
-		realLen.extend([(65,65)]*4)
 		realList.extend(['te_opt','ti_opt','ne_opt','th_opt','zeff_opt'])
 		realLen.extend([(21,1)]*5)
 		realList.extend(['ne_aux_s', 'te_aux_s', 'ti_aux_s', 'th_aux_s', 'zeff_aux_s', \
@@ -780,23 +906,17 @@ class LIBSTELL():
 		realLen.extend([(2*ntord+1,1+mpol1d)]*14)
 		realList.extend(['deltamn','ddeltamn_opt','delta_min','delta_max'])
 		realLen.extend([(2*ntord+1,2*mpol1d+1)]*4)
-		realList.extend(['coil_splinesx','coil_splinesy','coil_splinesz'])
-		realLen.extend([(nigroup,44)]*3)
-		realList.extend(['coil_splinefx','coil_splinefy','coil_splinefz','dcoil_spline', \
-			'coil_splinefx_min','coil_splinefy_min','coil_splinefz_min','coil_splinefx_max','coil_splinefy_max','coil_splinefz_max'])
-		realLen.extend([(nigroup,40)]*10)
-		realList.extend(['regcoil_rcws_rbound_c', 'regcoil_rcws_rbound_s','regcoil_rcws_rbound_c_min',\
-			'regcoil_rcws_rbound_s_min','regcoil_rcws_rbound_c_max', 'regcoil_rcws_rbound_s_max',\
-			'regcoil_rcws_zbound_c', 'regcoil_rcws_zbound_s','regcoil_rcws_zbound_c_min', \
-			'regcoil_rcws_zbound_s_min','regcoil_rcws_zbound_c_max', 'regcoil_rcws_zbound_s_max'])
-		realLen.extend([(65,65)]*12)
 		realList.extend(['drosenbrock_x_opt','rosenbrock_x','rosenbrock_x_min','rosenbrock_x_max'])
 		realLen.extend([(20,1)]*4)
+		realList.extend(['dcoil_kts_opt','rho_coil_kts','rho_coil_kts_min','rho_coil_kts_max',\
+			'theta_coil_kts','theta_coil_kts_min','theta_coil_kts_max',\
+			'zeta_coil_kts','zeta_coil_kts_min','zeta_coil_kts_max'])
+		realLen.extend([(ncoilsmax,nknotscoilsmax)]*10)
 		charList=['sfincs_er_option', 'equil_type', 'te_type', 'ne_type', \
 			'ti_type', 'th_type', 'beamj_type','bootj_type','zeff_type','emis_xics_type',\
-			'fixedcoilname','regcoil_nescin_filename','bootcalc_type','phi_type','coil_type']
+			'bootcalc_type','phi_type']
 		charLen=[(256,1),(256,1),(256,1),(256,1),(256,1),(256,1),(256,1),\
-			(256,1),(256,1),(256,1),(256,1),(256,1),(256,1),(256,1),(nigroup,1)]
+			(256,1),(256,1),(256,1),(256,1),(256,1)]
 		var_data = self.get_module_vars(module_name,booList,booLen,intList,intLen,realList,realLen,charList,charLen,ldefined_size_arrays=True)
 		# Get target
 		module_name = self.s1+'stellopt_targets_'+self.s2
@@ -806,9 +926,7 @@ class LIBSTELL():
 		booLen.extend([(nsd,1),(512,1)])
 		intList=['mboz', 'nboz', 'numjstar', 'nz_txport', 'nalpha_txport', 'nruns_dkes',\
 			'nu_orbit', 'nv_orbit', 'np_orbit', 'mlmnb_kink', 'ivac_kink', 'mmaxdf_kink', \
-			'nmaxdf_kink', 'nra_ece', 'nphi_ece', 'numws', 'nu_bnorm', 'nv_bnorm', \
-			'npts_biot', 'npts_clen', 'npts_torx', 'npts_curv', 'npts_csep', 'npts_cself', \
-			'npts_crect', 'npts_cpoly']
+			'nmaxdf_kink', 'nra_ece', 'nphi_ece','nu_bnormal','nv_bnormal']
 		intLen=[1]*len(intList)
 		intList.extend(['mlmns_kink', 'lssl_kink', 'lssd_kink','nj_kink','nk_kink'])
 		intLen.extend([(16,1)]*5)
@@ -822,9 +940,10 @@ class LIBSTELL():
 			'phi_kappa_box', 'target_kappa_avg', 'sigma_kappa_avg', 'target_x', 'sigma_x' ,'target_y', \
 			'sigma_y', 'qm_ratio', 'cutoff_te_line', 'target_vessel', 'sigma_vessel', 'alpha_start_txport', \
 			'alpha_end_txport', 'nu_dkes_erdiff', 'ep_dkes_erdiff', 'em_dkes_erdiff', 'mass_orbit', 'z_orbit', \
-			'target_coil_bnorm', 'sigma_coil_bnorm', 'target_regcoil_winding_surface_separation', 'sigma_regcoil_winding_surface_separation',\
-			'target_regcoil_current_density', 'sigma_regcoil_current_density', 'target_curvature_p2', 'sigma_curvature_p2', \
-			'target_coilsep',  'sigma_coilsep', 'coilrectpfw']
+			'target_bnormal','sigma_bnormal', 'target_bnmns', 'sigma_bnmns', 'target_bnmnc', 'sigma_bnmnc', \
+			'target_coil_curvature','sigma_coil_curvature','target_coil_torsion','sigma_coil_torsion',\
+			'target_coilcoil_distance','sigma_coilcoil_distance', \
+			'target_curvature_p2', 'sigma_curvature_p2']
 		realLen=[1]*len(realList)
 		realList.extend(['target_rosenbrock_f','sigma_rosenbrock_f'])
 		realLen.extend([(20,1),(20,1)])
@@ -868,6 +987,9 @@ class LIBSTELL():
 			'sigma_dkes', 'target_dkes_erdiff', 'sigma_dkes_erdiff', 'target_dkes_alpha', 'sigma_dkes_alpha', \
 			'target_gamma_c', 'sigma_gamma_c', 'target_orbit', 'sigma_orbit'])
 		realLen.extend([(nsd,1)]*39)
+		realList.extend(['target_dkes_11', 'target_dkes_31', 'target_dkes_33', \
+			'sigma_dkes_11', 'sigma_dkes_31', 'sigma_dkes_33'])
+		realLen.extend([(nsd,1)]*6)
 		realList.extend(['target_bprobe', 'sigma_bprobe'])
 		realLen.extend([(2048,1)]*2)
 		realList.extend(['target_separatrix', 'sigma_separatrix', 'r_separatrix', 'z_separatrix', 'phi_separatrix', \
@@ -881,18 +1003,19 @@ class LIBSTELL():
 		realLen.extend([(16,512)]*3)
 		realList.extend(['antennaposition_ece', 'targetposition_ece', 'rbeam_ece', 'rfocus_ece'])
 		realLen.extend([(16,3)]*4)
-		realList.extend(['target_regcoil_chi2_b', 'sigma_regcoil_chi2_b'])
-		realLen.extend([(16900,1)]*4)
-		realList.extend(['target_coillen', 'sigma_coillen', 'target_coilsegvar', 'sigma_coilsegvar', 'target_coilcrv',  \
-			'sigma_coilcrv', 'target_coilself', 'sigma_coilself', 'target_coiltorvar', 'sigma_coiltorvar', \
-			'thwt_coiltorvar', 'coilrectvmin', 'coilrectvmax', 'coilrectduu', 'coilrectdul', \
-			'target_coilrect', 'sigma_coilrect', 'target_coilpoly', 'sigma_coilpoly'])
-		realLen.extend([(nigroup,1)]*19)
-		realList.extend(['kopolyu', 'kopolyv'])
-		realLen.extend([(128,16)]*2)
 		charList=['magdiag_coil', 'vessel_string', 'txport_proxy', 'vessel_ece', 'mirror_ece', 'targettype_ece', 'antennatype_ece']
 		charLen=[(256,1)]*7
 		target_data = self.get_module_vars(module_name,booList,booLen,intList,intLen,realList,realLen,charList,charLen,ldefined_size_arrays=True)
+		var_data['lbound_opt'] = np.reshape(var_data['lbound_opt'],(mpol1d+1,2*ntord+1))
+		var_data['dbound_opt'] = np.reshape(var_data['dbound_opt'],(mpol1d+1,2*ntord+1))
+		var_data['bound_min'] = np.reshape(var_data['bound_min'],(mpol1d+1,2*ntord+1))
+		var_data['bound_max'] = np.reshape(var_data['bound_max'],(mpol1d+1,2*ntord+1))
+		var_data['lrho_opt'] = np.reshape(var_data['lrho_opt'],(mpol1d+1,2*ntord+1))
+		var_data['drho_opt'] = np.reshape(var_data['drho_opt'],(mpol1d+1,2*ntord+1))
+		var_data['ldeltamn_opt'] = np.reshape(var_data['ldeltamn_opt'],(2*mpol1d+1,2*ntord+1))
+		var_data['ddeltamn_opt'] = np.reshape(var_data['ddeltamn_opt'],(2*mpol1d+1,2*ntord+1))
+		var_data['delta_min'] = np.reshape(var_data['delta_min'],(2*mpol1d+1,2*ntord+1))
+		var_data['delta_max'] = np.reshape(var_data['delta_max'],(2*mpol1d+1,2*ntord+1))
 		return global_data, var_data, target_data
 
 	def write_stellopt_input(self,filename,global_dict=None,var_dict=None,target_dict=None):
@@ -965,7 +1088,7 @@ class LIBSTELL():
 		realList = ['wb','wp','gamma','pfac','rmax_surf','rmin_surf','zmax_surf',\
 			'aspect','betatot','betapol','betator','betaxis','b0','version_',\
 			'ionlarmor','volavgb','fsql','fsqr','fsqz','ftolv','aminor','rmajor',\
-			'volume','rbtor','rbtor0','itor','machsq']
+			'volume','rbtor','rbtor0','itor','machsq','itfsq','niter']
 		realLen = [1]*len(realList)
 		scalar_data = self.get_module_vars(module_name,booList,booLen,intList,intLen,realList,realLen)
 		ns = scalar_data['ns']
@@ -999,8 +1122,26 @@ class LIBSTELL():
 		charVar=['mgrid_file','input_extension','pmass_type','pcurr_type','piota_type']
 		charLen=[(200,1),(100,1),(20,1),(20,1),(20,1)]
 		string_data = self.get_module_vars(module_name,charVar=charVar,charLen=charLen,ldefined_size_arrays=True)
+		# Now read the values in input_mod that set by reading wout file
+		booList  = ['lfreeb']
+		booLen   = [1]*len(booList)
+		module_name = self.s1+'vmec_input_'+self.s2
+		boo_indata_data = self.get_module_vars(module_name,booVar=booList,booLen=booLen,ldefined_size_arrays=True)
+		if boo_indata_data['lfreeb']:
+			# Now get values in mgrid mod
+			intList  = ['nextcur']
+			intLen   = [1]*len(intList)
+			module_name = self.s1+'mgrid_mod_'+self.s2
+			scalar_mgrid_data = self.get_module_vars(module_name,intVar=intList,intLen=intLen)
+			realList = ['extcur']
+			realLen = [(scalar_mgrid_data['nextcur'],1)]*len(realList)
+			module_name = self.s1+'read_wout_mod_'+self.s2
+			array_mgrid_data = self.get_module_vars(module_name,realVar=realList,realLen=realLen)
+		else:
+			scalar_mgrid_data = {}
+			array_mgrid_data = {}
 		# Return
-		return scalar_data | array_data | string_data
+		return boo_indata_data | scalar_data | array_data | string_data | scalar_mgrid_data | array_mgrid_data
 
 	def read_boozer(self,file):
 		"""Reads a boozmn file and returns a dictionary
@@ -1200,6 +1341,81 @@ class LIBSTELL():
 				 ct.byref(bx_ctype),ct.byref(by_ctype),ct.byref(bz_ctype),ct.byref(istat_ctype))
 		return bx_ctype.value,by_ctype.value,bz_ctype.value
 
+	def read_mgrid(self,file,extcur,nv,nfp):
+		"""Reads a makegrid file and returns a dictionary
+
+		This routine wrappers read_mgrid in LIBSTELL and returns
+		a dictionary of values
+
+		Parameters
+		----------
+		file : str
+			Path to makegrid file.
+		extcur : extcur
+			List of external currents ([A] or scale factor)
+		nv : int
+			Number of toroidal planes
+		nfp : int
+			Field periodicty
+		Returns
+		----------
+		vars : dict
+			Dictionary of module variables
+		"""
+		import ctypes as ct
+		# Get constants
+		module_name = self.s1+'vsvd0_'+self.s2
+		get_constant = getattr(self.libstell,module_name+'_getnigroup'+self.s3)
+		get_constant.argtypes = None
+		get_constant.restype=ct.c_int
+		nigroup = get_constant()
+		# Now get data
+		module_name = self.s1+'mgrid_mod_'+self.s2
+		read_mgrid = getattr(self.libstell,module_name+'_read_mgrid_python'+self.s3)
+		read_mgrid.argtypes=[ct.c_char_p, ct.POINTER(ct.c_double), \
+		ct.POINTER(ct.c_int), ct.POINTER(ct.c_int), ct.POINTER(ct.c_int), ct.c_long, \
+		ct.c_long]
+		read_mgrid.restype=None
+		nv_in = ct.c_int(nv)
+		nfp_in = ct.c_int(nfp)
+		nextcur_in = ct.c_int(len(extcur))
+		extcur_c = (ct.c_double * len(extcur))(*extcur)
+		read_mgrid(file.encode('UTF-8'), extcur_c, ct.byref(nv_in), ct.byref(nfp_in), ct.byref(nextcur_in), len(file), len(extcur))
+		# Setup Arrays
+		out_data={}
+		# Get Scalars
+		intList  = ['nr0b','np0b','nfper0','nz0b','nobd','nobser','nextcur','nbfldn',\
+			'nbsets','nbcoilsn','nbvac', 'nbcoil_max', 'nlim', 'nlim_max', 'nsets', \
+			'nrgrid','nzgrid']
+		intLen   = [1]*len(intList)
+		realList = ['rminb', 'zminb', 'rmaxb', 'zmaxb', 'delrb', 'delzb',\
+			'rx1', 'rx2', 'zy1', 'zy2', 'condif']
+		realLen = [1]*len(realList)
+		scalar_data = self.get_module_vars(module_name,intVar=intList,intLen=intLen,realVar=realList,realLen=realLen)
+		nr = scalar_data['nr0b']
+		np = scalar_data['np0b']
+		nz = scalar_data['nz0b']
+		nc = scalar_data['nextcur']
+		nbvac = nr*nz*nv
+		# Get 1D Real Arrays
+		realList = ['raw_coil_current']
+		realLen = [(nc,1)]*len(realList)
+		# Add 2D Arrays
+		realList.extend(['bvac'])
+		realLen.extend([(nbvac,3)])
+		# Add 3D Arrays
+		realList.extend(['brvac','bzvac','bpvac'])
+		realLen.extend([(np,nz,nr)]*3)
+		array_data = self.get_module_vars(module_name,realVar=realList,realLen=realLen)
+		# Try reading strings
+		#charVar=['mgrid_path','curlabel','mgrid_mode','tokid']
+		#charLen=[(300,1),(30,nc),(1,1),(30,1)]
+		charVar=['mgrid_path','mgrid_mode','tokid']
+		charLen=[(300,1),(1,1),(30,1)]
+		string_data = self.get_module_vars(module_name,charVar=charVar,charLen=charLen,ldefined_size_arrays=True)
+		# Return
+		return scalar_data | array_data | string_data
+
 	def get_module_vars(self,modName,booVar=None,booLen=None,\
 		intVar=None,intLen=None,realVar=None,realLen=None,\
 		charVar=None,charLen=None,\
@@ -1247,8 +1463,9 @@ class LIBSTELL():
 				if booLen[i]==1:
 					out_data[temp]=ct.c_bool.in_dll(self.libstell,modName+'_'+temp+self.s3).value
 				else:
-					if ldefined_size_arrays : ftemp=ct.c_bool*prod(booLen[i])
-					out_data[temp]=npct.as_array(ftemp.in_dll(self.libstell,modName+'_'+temp+self.s3),booLen[i])
+					# This works because fortran has 4 byte sized booleans
+					if ldefined_size_arrays : ftemp=ct.c_int*prod(booLen[i])
+					out_data[temp]=npct.as_array(ftemp.in_dll(self.libstell,modName+'_'+temp+self.s3),booLen[i])>0
 		# Integers
 		if intVar:
 			ftemp = ct.POINTER(ct.c_int)
@@ -1326,6 +1543,15 @@ class LIBSTELL():
 			if n==1:
 				for i,col in enumerate(val):
 					temp[i] = val[i]
+			elif n==2:
+				k = 0
+				for i,col in enumerate(val):
+					for j,row in enumerate(col):
+						temp[k] = val[i][j]
+						k = k + 1
+				#print(modName+'_'+var+self.s3)
+				#print(n)
+				#print(val)
 		elif type(val) == str:
 			temp.value = val.encode('UTF-8')
 		else:
@@ -1369,8 +1595,9 @@ class LIBSTELL():
 		import ctypes as ct
 		module_name = self.s1+'vmec_utils_'+self.s2
 		get_flxcoord = getattr(self.libstell,module_name+'_get_flxcoord_python'+self.s3)
-		get_flxcoord.argtypes = [ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),
+		get_flxcoord.argtypes = [ct.POINTER(ct.c_double),ct.POINTER(ct.c_double), \
 			ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),ct.POINTER(ct.c_double), \
+			ct.POINTER(ct.c_double),ct.POINTER(ct.c_double), \
 			ct.c_long,ct.c_long]
 		get_flxcoord.restype=None
 		x1 = (ct.c_double*3)(0,0,0)
@@ -1379,8 +1606,10 @@ class LIBSTELL():
 		zs = ct.c_double(0)
 		ru = ct.c_double(0)
 		zu = ct.c_double(0)
+		rv = ct.c_double(0)
+		zv = ct.c_double(0)
 		get_flxcoord(x1,c_flx,\
-			ct.byref(rs),ct.byref(zs),ct.byref(ru),ct.byref(zu),len(x1),len(c_flx))
+			ct.byref(rs),ct.byref(zs),ct.byref(ru),ct.byref(zu),ct.byref(rv),ct.byref(zv),len(x1),len(c_flx))
 		R = x1[0]
 		v = x1[1]
 		Z = x1[2]
@@ -1388,7 +1617,9 @@ class LIBSTELL():
 		zs1 = zs.value
 		ru1 = ru.value
 		zu1 = zu.value
-		return R,v,Z,rs1,zs1,ru1,zu1
+		rv1 = rv.value
+		zv1 = zv.value
+		return R,v,Z,rs1,zs1,ru1,zu1,rv1,zv1
 
 	def vmec_getBcyl_wout(self,R,phi,Z):
 		"""Wrapper to the GetBcyl_WOUT function
@@ -1635,6 +1866,75 @@ class FourierRep():
 			f[k,:,:]=np.matmul((fmn*sinmt).T, cosnz)+np.matmul((fmn*cosmt).T, sinnz)
 		return f
 
+	def plot_RZ3D(self,r,z,phi,k,svals,*args,**kwargs):
+		"""Plot a flux surface cross section in 3D using VTK
+
+		This routine plots a cross section of flux surfaces at fixed phi
+		using the VTK library when passes a r[m], z[m], and phi [rad] arrays
+		as produced by the sfunct and cfunct functions. The user may supply a
+		list of surfaces to plot. Pass svals=-1 if the arrays only ahve one
+		radial gridpoint to plot.
+
+		Parameters
+		----------
+		r : ndarray
+			Ordered list of R verticies [m] (ns,nu)
+		z : ndarray
+			Ordered list of Z verticies [m] (ns,nu)
+		phi : ndarray
+			Phi coordiantes [rad] (nv)
+		k : int or list
+			Toroidal coordinate to plot 
+		svals : int
+			Surface to generate in ns
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		color : string (optional)
+			Surface color name, overriden by vals (default: 'red')
+		"""
+		import numpy as np
+		import vtk
+		from libstell.plot3D import PLOT3D 
+		# Handle input arguments
+		plt  = kwargs.get('plot3D',None)
+		color = kwargs.get('color','red')
+		lrender = False
+		if not plt:
+			plt = PLOT3D()
+			lrender = True
+		# Figure out number of surfaces to plot
+		if type(svals) is list:
+			s = svals
+		else:
+			# Aviod plotting axis
+			if svals == 0: svals = 1
+			# Flag for plotting single surface array
+			if r.shape[0] == 1: svals = 0
+			s= [svals]
+		nr = np.size(s)
+		# Handle toroidal cut index
+		if type(k) is list:
+			kvec = k
+		else:
+			kvec = [k]
+		# Loop over radial values
+		for kdex in kvec:
+			for sdex in range(nr):
+				u = r.shape[1]
+				points_array = np.zeros((u,3))
+				points_array[:,0] = np.squeeze(r[s[sdex],:,kdex])*np.cos(phi[kdex])
+				points_array[:,1] = np.squeeze(r[s[sdex],:,kdex])*np.sin(phi[kdex])
+				points_array[:,2] = np.squeeze(z[s[sdex],:,kdex])
+				# Convert numpy array to VTK points
+				points = vtk.vtkPoints()
+				for point in points_array:
+					points.InsertNextPoint(point)
+				plt.add3Dline(points,linewidth=2,color=color)
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Render if requested
+		if lrender: plt.render()
+
 	def isotoro(self,r,z,phi,svals,*args,**kwargs):
 		"""Plot a surface in 3D using VTK
 
@@ -1652,7 +1952,7 @@ class FourierRep():
 			Ordered list of Z verticies [m] (ns,nu,nv)
 		phi : ndarray
 			Ordered list of phi coordiantes [rad] (nv)
-		surface : int
+		svals : int
 			Surface to generate in ns
 		vals : ndarray (optional)
 			Ordered list of vertex values for coloring (ns,nu,nv)
@@ -1666,6 +1966,8 @@ class FourierRep():
 			Turn the colorbar on (default: False)
 		color : string (optional)
 			Surface color name, overriden by vals (default: 'red')
+		alpha : float (optional)
+			Face alpha in range [0.0,1.0] (default: 1/nr)
 		"""
 		import numpy as np
 		from libstell.plot3D import PLOT3D 
@@ -1676,18 +1978,26 @@ class FourierRep():
 		vals = kwargs.get('vals',None)
 		lbar = kwargs.get('lcolorbar',False)
 		color = kwargs.get('color','red')
+		alpha = kwargs.get('alpha',None)
 		lrender = False
 		if not plt:
 			plt = PLOT3D()
 			lrender = True
 		# Figure out number of surfaces to plot
-		nr = np.size(svals)
-		if (nr == 1):
-			if svals == 0: svals = 1
-			if svals == -1: svals = 0
-			s= [svals]
+		if type(svals) is list:
+			s = svals
 		else:
-			s=svals
+			# Aviod plotting axis
+			if svals == 0: svals = 1
+			# Flag for plotting single surface array
+			if r.shape[0] == 1: svals = 0
+			s= [svals]
+		nr = np.size(s)
+		# Handle alpha
+		if not alpha:
+			alpha_3D = 1.0/nr
+		else:
+			alpha_3D = alpha
 		# Setup x,y,z helpers
 		nu = np.size(r,1)
 		nv = np.size(r,2)
@@ -1702,13 +2012,12 @@ class FourierRep():
 			z_s = z[s[k],:,:]
 			[points,triangles] = plt.torusvertexTo3Dmesh(x_s,y_s,z_s,lcloseu=lcu,lclosev=lcv)
 			# Handle Color
-			scalar = None
 			if type(vals) != type(None): 
 				scalar = plt.valuesToScalar(vals[s[k],:,:])
 				# Add to Render
-				plt.add3Dmesh(points,triangles,scalars=scalar,opacity=1.0/nr)
+				plt.add3Dmesh(points,triangles,scalars=scalar,opacity=alpha_3D)
 			else:
-				plt.add3Dmesh(points,triangles,color=color,opacity=1.0/nr)
+				plt.add3Dmesh(points,triangles,color=color,opacity=alpha_3D)
 		# In case it isn't set by user.
 		plt.setBGcolor()
 		# Render if requested
@@ -1754,6 +2063,34 @@ class FourierRep():
 			faces[i,1] = faces_list[i][1]
 			faces[i,2] = faces_list[i][2]
 		return vertex,faces
+
+	def surfaceSTL(self,r,z,phi,surface=None,filename='surface.stl'):
+		"""Outputs an STL file from a surface
+
+		This routine outputs an STL file for a given surface.
+
+		Parameters
+		----------
+		r : ndarray
+			Ordered list of R verticies [m] (ns,nu,nv)
+		z : ndarray
+			Ordered list of Z verticies [m] (ns,nu,nv)
+		phi : ndarray
+			Ordered list of phi coordiantes [rad] (nv)
+		surface : int (optional)
+			Surface to generate in ns (default: outermost)
+		filename : str (optional)
+			Filename for output file
+		"""
+		import numpy as np
+		from stl import mesh
+		vertex,faces = self.generateSurface(r,z,phi,surface)
+		nfaces = faces.shape[0]
+		wall_mesh = mesh.Mesh(np.zeros(nfaces, dtype=mesh.Mesh.dtype))
+		for i, f in enumerate(faces):
+			for j in range(3):
+				wall_mesh.vectors[i][j] = vertex[f[j],:]
+		wall_mesh.save(filename)
 
 	def blenderSurface(self,r,z,phi,surface=None):
 		"""Generates the lists Blender needs to render a flux surface
@@ -1829,10 +2166,4 @@ class FourierRep():
 # Main routine
 if __name__=="__main__":
 	import sys
-	temp = LIBSTELL()
-	val=temp.read_indata('input.ORBITS')
-	temp.set_module_var('vmec_input','mpol',12)
-	temp.set_module_var('vmec_input','niter_array',[1,2,3,4,5])
-	temp.write_indata('input.test')
-	#wout=temp.read_wout('wout_W7X_AIM_n04_e30_i15_8SH2_slow.nc')
 	sys.exit(0)

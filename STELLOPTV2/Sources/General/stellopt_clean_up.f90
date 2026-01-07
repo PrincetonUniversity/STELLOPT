@@ -32,6 +32,7 @@
 !        ier         Error flag
 !        iunit       File unit number
 !----------------------------------------------------------------------
+      LOGICAL :: lscreen
       INTEGER ::  ier, ik, iunit, ctype, temp_max, m, n
       CHARACTER(len = 256)   :: temp_str
       REAL(rprec), ALLOCATABLE :: fvec_temp(:)
@@ -77,6 +78,8 @@
          WRITE(iunit_out,'(ES22.12E3)') vals(1:mtargets)
          CLOSE(iunit_out)
          DEALLOCATE(fvec_temp)
+         lscreen = (ncnt == 0)
+         IF (lpoincare) CALL stellopt_paraexe('poincare',proc_string,lscreen)
       ELSE IF ((ctype == LEV_CLEANUP) .or. (ctype == GADE_CLEANUP)) THEN
           IF (ncnt /= 1 .or. ctype == GADE_CLEANUP) CALL stellopt_write_inputfile(ncnt,.false.)
           ! Overwrite the restart file
@@ -91,37 +94,6 @@
           END IF
           ! Now open the Output file
           ALLOCATE(fvec_temp(mtargets))
-
-          !WRITE COIL KNOTS, CONTROL POINTS TO FILE
-          IF (ANY(lcoil_spline)) THEN
-             CALL safe_open(iunit_out,iflag,TRIM('cbspline.'//TRIM(id_string)),'unknown','formatted',ACCESS_IN='APPEND')
-             IF (ncnt == 0) THEN
-                WRITE(iunit_out,'(A)') 'COIL KNOTS'
-                DO n = LBOUND(lcoil_spline,DIM=1), UBOUND(lcoil_spline,DIM=1)
-                   IF (ANY(lcoil_spline(n,:))) THEN
-                      WRITE(iunit_out,'(2X,A,2X,I5.5)') 'COIL', n
-                           ik = coil_nctrl(n) + 4
-                      WRITE(iunit_out,"(4X,'k =',4(2X,ES22.12E3))") (coil_splinesx(n,m), m = 1, ik)
-                   ENDIF
-                END DO !n
-             ENDIF
-             WRITE(iunit_out,'(A,1X,I5.5)') 'COIL CTRL PTS, ITER',ncnt
-             DO n = LBOUND(lcoil_spline,DIM=1), UBOUND(lcoil_spline,DIM=1)
-                IF (ANY(lcoil_spline(n,:))) THEN
-                   WRITE(iunit_out,'(2X,A,2X,I5.5)') 'COIL', n
-                         ik = coil_nctrl(n)
-                   IF (lwindsurf(coil_surf(n))) THEN
-                      WRITE(iunit_out,"(4X,'u =',4(2X,ES22.12E3))") (coil_splinefx(n,m), m = 1, ik)
-                      WRITE(iunit_out,"(4X,'v =',4(2X,ES22.12E3))") (coil_splinefy(n,m), m = 1, ik)
-                   ELSE
-                      WRITE(iunit_out,"(4X,'x =',4(2X,ES22.12E3))") (coil_splinefx(n,m), m = 1, ik)
-                      WRITE(iunit_out,"(4X,'y =',4(2X,ES22.12E3))") (coil_splinefy(n,m), m = 1, ik)
-                      WRITE(iunit_out,"(4X,'z =',4(2X,ES22.12E3))") (coil_splinefz(n,m), m = 1, ik)
-                   END IF !lwindsurf
-                END IF
-             END DO !n
-             CLOSE(iunit_out)
-          END IF !lcoil_spline
 
           CALL safe_open(iunit_out,iflag,TRIM('stellopt.'//TRIM(id_string)),'unknown','formatted',ACCESS_IN='APPEND')
           iflag = 1
@@ -139,6 +111,8 @@
           WRITE(iunit_out,'(ES22.12E3)') vals(1:mtargets)
           CLOSE(iunit_out)
           DEALLOCATE(fvec_temp)
+         lscreen = (ncnt == 0)
+         IF (lpoincare) CALL stellopt_paraexe('poincare',proc_string,lscreen)
       ELSE IF (ctype == JAC_CLEANUP) THEN
       ELSE IF (ctype == JUST_INPUT) THEN
          ! Write the input file

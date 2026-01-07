@@ -47,6 +47,7 @@ C-----------------------------------------------
 !        modd    parity selection label for odd poloidal modes of R and
 !        gc      stacked array of R, Z, Lambda Spectral force coefficients (see readin for stack order)
 !        xc      stacked array of scaled R, Z, Lambda Fourier coefficients
+
       CALL second0(teqsolon)
 
       liter_flag = iter2 .eq. 1
@@ -67,7 +68,11 @@ C-----------------------------------------------
       IF (irst .EQ. 2) THEN
 
          IF (PARVMEC) THEN
-            CALL ZeroLastNType(pxc)
+!            CALL ZeroLastNType(pxc)
+            pxc = 0 ! profile3d_par reads from the ns rank. Zero the full pxc
+                    ! array to match the serial runs. This prevents an error
+                    ! when resetting the magnetic axis using multiple
+                    ! processors.
             CALL profil3d_par(pxc(1), pxc(1+irzloff), lreset_internal,
      &                        .FALSE.)
          ELSE

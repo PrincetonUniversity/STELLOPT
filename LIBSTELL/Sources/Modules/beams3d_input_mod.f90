@@ -73,9 +73,9 @@
                                TE_AUX_F, NE_AUX_S, NE_AUX_F, TI_AUX_S, &
                                TI_AUX_F, POT_AUX_S, POT_AUX_F, &
                                NI_AUX_S, NI_AUX_F, NI_AUX_Z, NI_AUX_M, &
-                               ZEFF_AUX_S, ZEFF_AUX_F, P_beams, &
+                               ZEFF_AUX_S, ZEFF_AUX_F, OMEG_AUX_S, OMEG_AUX_F,&
                                ldebug, ne_scale, te_scale, ti_scale, &
-                               zeff_scale, &
+                               zeff_scale, P_beams, &
                                plasma_zavg, plasma_mass, plasma_Zmean, &
                                therm_factor, fusion_scale, &
                                nrho_dist, ntheta_dist, & 
@@ -88,7 +88,11 @@
                                rmin_fida, rmax_fida, zmin_fida, &
                                zmax_fida,phimin_fida, phimax_fida, &
                                nr_fida, nphi_fida, nz_fida, nenergy_fida, &
-                               npitch_fida, t_fida
+                               npitch_fida, t_fida, &
+                               mumaterial_tol, mumaterial_niter, &
+                               mumaterial_lambda, mumaterial_lamfactor, &
+                               mumaterial_lamthresh, mumaterial_padfactor, &
+                               mumaterial_convcheck
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -143,6 +147,7 @@
       s_max_ne = 0.0_rprec
       s_max_zeff = 0.0_rprec
       s_max_pot = 0.0_rprec
+      s_max_omeg = 0.0_rprec
       TE_AUX_S = -1
       TE_AUX_F = -1
       NE_AUX_S = -1
@@ -153,6 +158,8 @@
       ZEFF_AUX_F = -1
       POT_AUX_S = -1
       POT_AUX_F = -1
+      OMEG_AUX_S = -1
+      OMEG_AUX_F = 0      
       NI_AUX_S = -1
       NI_AUX_F = 0
       NI_AUX_Z = 0
@@ -208,6 +215,14 @@
       nenergy_fida = 0
       npitch_fida = 0
       t_fida = 0.0
+
+      !MUMATERIAL Defaults
+      mumaterial_tol = 1.0D-5
+      mumaterial_niter = 100
+      mumaterial_lambda = 0.7
+      mumaterial_lamfactor = 0.75
+      mumaterial_nneighbor = 100
+
       RETURN
       END SUBROUTINE init_beams3d_input
       
@@ -318,6 +333,11 @@
             IF (POT_AUX_S(ik) >= 0.0) npot = npot+1
          END DO
          IF (npot > 0)  s_max_pot = POT_AUX_S(npot)
+         nomeg = 0
+         DO ik = 1, MAXPROFLEN
+            IF (OMEG_AUX_S(ik) >= 0.0) nomeg = nomeg+1
+         END DO
+         IF (nomeg > 0)  s_max_omeg = OMEG_AUX_S(nomeg)         
          ! Handle multiple ion species
          IF (ANY(NI_AUX_S >0)) THEN
             nzeff = 0
@@ -394,6 +414,9 @@
             IF (r_start_in(ik) >= 0.0) nparticles = nparticles + 1
          END DO
 
+         ! Assume three is one population if dex_beams is not set.
+         IF (MAXVAL(Dex_beams) < 0) FORALL(ik=1:MAXBEAMS) Dex_beams(ik) = 1
+
 #if !defined(NAG)
       IF (int_type=='NAG') THEN
          int_type = 'LSODE'
@@ -462,12 +485,11 @@
       WRITE(iunit_out,outflt) 'PLASMA_MASS',plasma_mass
       WRITE(iunit_out,outflt) 'PLASMA_ZMEAN',plasma_zmean
       WRITE(iunit_out,outflt) 'THERM_FACTOR',therm_factor
-      WRITE(iunit_out,"(A)") '!---------- Profiles ------------'
+      WRITE(iunit_out,"(A)") '!---------- Profiles ---------------------'
       WRITE(iunit_out,outflt) 'NE_SCALE',NE_SCALE
       WRITE(iunit_out,outflt) 'TE_SCALE',TE_SCALE
       WRITE(iunit_out,outflt) 'TI_SCALE',TI_SCALE
       WRITE(iunit_out,outflt) 'ZEFF_SCALE',ZEFF_SCALE
-      WRITE(iunit_out,outflt) 'THERM_FACTOR',therm_factor
       ik = COUNT(ne_aux_s >= 0)
       IF (ik > 0) THEN
          WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'NE_AUX_S',(ne_aux_s(n), n=1,ik)
@@ -486,7 +508,7 @@
       ik = COUNT(ni_aux_s >= 0)
       IF (ik > 0) THEN
          WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'NI_AUX_M',(ni_aux_m(n), n=1,NION)
-         WRITE(iunit_out,"(2X,A,1X,'=',4(1X,I0))") 'NI_AUX_Z',(ni_aux_z(n), n=1,NION)
+         WRITE(iunit_out,"(2X,A,1X,'=',6(1X,I0))") 'NI_AUX_Z',(ni_aux_z(n), n=1,NION)
          WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'NI_AUX_S',(ni_aux_s(n), n=1,ik)
          DO n = 1, NION
             IF (ANY(NI_AUX_F(n,:)>0)) THEN
@@ -499,6 +521,11 @@
          WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'ZEFF_AUX_S',(zeff_aux_s(n), n=1,ik)
          WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'ZEFF_AUX_F',(zeff_aux_f(n), n=1,ik)
       END IF
+      ik = COUNT(omeg_aux_s >= 0)
+      IF (ik > 0) THEN
+         WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'OMEG_AUX_S',(omeg_aux_s(n), n=1,ik)
+         WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'OMEG_AUX_F',(omeg_aux_f(n), n=1,ik)
+      END IF      
       ik = COUNT(pot_aux_s >= 0)
       IF (ik > 0) THEN
          WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'POT_AUX_S',(pot_aux_s(n), n=1,ik)
@@ -527,18 +554,32 @@
             WRITE(iunit_out,vecvar2) 'Z_BEAMS',n,2,z_beams(n,2)
          END DO
       ELSE
+         WRITE(iunit_out,"(A,I2.2)") '!---------- Markers ----------------------'
          n = COUNT(r_start_in > 0)
          WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'R_START_IN',(r_start_in(ik), ik=1,n)
          WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'Z_START_IN',(z_start_in(ik), ik=1,n)
          WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'PHI_START_IN',(phi_start_in(ik), ik=1,n)
          WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'VLL_START_IN',(vll_start_in(ik), ik=1,n)
          WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'MU_START_IN',(mu_start_in(ik), ik=1,n)
+         IF (rho_fullorbit < 1E10) WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'VR_START_IN',(vr_start_in(ik), ik=1,n)
+         IF (rho_fullorbit < 1E10) WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'VPHI_START_IN',(vphi_start_in(ik), ik=1,n)
+         IF (rho_fullorbit < 1E10) WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'VZ_START_IN',(vz_start_in(ik), ik=1,n)
          WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'MASS_IN',(mass_in(ik), ik=1,n)
          WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'CHARGE_IN',(charge_in(ik), ik=1,n)
          WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'ZATOM_IN',(zatom_in(ik), ik=1,n)
          IF (ANY(weight_in /= 1)) WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'WEIGHT_IN',(weight_in(ik), ik=1,n)
-         n = COUNT(t_end_in > -1)
-         WRITE(iunit_out,"(2X,A,1X,'=',I0,'*',ES22.12E3)") 'T_END_IN',n,MAXVAL(t_end_in)
+         ! Handle possible negative T_END_IN
+         IF (MAXVAL(t_end_in) > 0.0) THEN
+            n = COUNT(t_end_in > 0.0)
+            WRITE(iunit_out,"(2X,A,1X,'=',I6,'*',ES19.12E3)") 'T_END_IN',n,MAXVAL(t_end_in)
+         ELSE
+            n = COUNT(t_end_in < 0.0)
+            WRITE(iunit_out,"(2X,A,1X,'=',I6,'*',ES19.11E3)") 'T_END_IN',n,MINVAL(t_end_in)
+         END IF
+         IF (MAXVAL(dex_beams)>0) THEN
+            n = COUNT(dex_beams>0)
+            WRITE(iunit_out,"(2X,A,1X,'=',4(1X,I3.3))") 'DEX_BEAMS',(dex_beams(ik), ik=1,n)
+         END IF
       END IF
       WRITE(iunit_out,'(A)') '/'
 
@@ -655,6 +696,11 @@
       CALL MPI_BCAST(follow_tol,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(int_type, 256, MPI_CHARACTER, local_master, comm,istat)
 
+      CALL MPI_BCAST(mumaterial_niter,1,MPI_INTEGER, local_master, comm,istat)
+      CALL MPI_BCAST(mumaterial_nneighbor,1,MPI_INTEGER, local_master, comm,istat)
+      CALL MPI_BCAST(mumaterial_tol,1,MPI_REAL8, local_master, comm,istat)
+      CALL MPI_BCAST(mumaterial_lambda,1,MPI_REAL8, local_master, comm,istat)
+      CALL MPI_BCAST(mumaterial_lamfactor,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(E_kick,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(freq_kick,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(B_kick_min,1,MPI_REAL8, local_master, comm,istat)

@@ -43,6 +43,7 @@
 !     Since the summation is from 0 to Smax the number of terms used is
 !     Smax+1.  This affects the number of parallel flow moments calculated and
 !     output.
+! 10 files_name -- name that is appended to the output files
 !
 !  Input files:
 !
@@ -233,7 +234,9 @@ Use io_unit_spec, Only :             &
   iu_flowvEr_out,                    & ! flows vs Er i/o unit #
   iu_Jprl_out,                       & ! Parallel current den vs r/a i/o unit #
   iu_contraflows_out,                & ! Contravariant flows vs roa
-  iu_sigmas_out                        ! sigma_par and sigma_par_Spitzer vs roa
+  iu_sigmas_out,                     & ! sigma_par and sigma_par_Spitzer vs roa
+  iu_particleTranspCoeffs_out,       & ! Particle transport coefficients vs roa
+  iu_heatTranspCoeffs_out             ! Heat transport coefficients vs roa
 Use read_input_file_mod, Only :      &
   ! Imported Subroutines
   read_vmec_file,                    & ! Reads VMEC data file
@@ -292,7 +295,7 @@ Logical ::    &
   input_is_Er    = .true.,     & ! If true, Er range is (V/cm) else e<a>Er/kT_e
   log_interp     = .true.,     & ! If true, log. interp. of DKES coeffs is used
   use_quanc8     = .false.,    & ! If false, rect. approx. to convolution used
-  read_U2_file   = .true.,     & ! If false <U**2> is calculated from D11*
+  read_U2_file   = .false.,     & ! If false <U**2> is calculated from D11*
   flux_cap       = .true.,     & ! If true, min(L_radial) = 0
   output_QoT_vs_Er = .false.,  & ! If true Q/T vs Er output file is written
   Add_Spitzer_to_D33 = .true., & ! If true collisional portion of D33* is added
@@ -316,7 +319,7 @@ Real(rknd) ::    &
   epsrel = 1.e-6_rknd            ! Relative tolerance for quanc8  
                                  !  (used if use_quanc8=.true.)
 Character(Len=10) ::     &
-  Method  = 'DKES'               ! Which algorithm to use.  Options are
+  Method  = 'SN'               ! Which algorithm to use.  Options are
                                  !  'T'    = Taguchi
                                  !  'SN'   = Sugama-Nishimura
                                  !  'MBT'  = Maassberg-Beidler-Turkin
@@ -357,13 +360,14 @@ Real(rknd)    :: J_BS=0.0_rknd
 Character(Len=100) ::           & ! Command line args
   arg1, arg2, arg3, arg4,       & 
   arg5, arg6, arg7, arg8,       &
-  arg9  
+  arg9, arg10  
 Character(Len=100) :: coeff_ext   ! Identifier for DKES coeff. data files
 Character(Len=100) :: run_ident   ! Identifier for VMEC data file
 Character(Len=20)  :: pprof_char  ! Identifier for plasma profile file
 Character(Len=100) :: fpos        ! Status for writing to files (position)
 Character(Len=100) :: fstatus     ! Status for writing to files
 character(Len=100) :: str_num     ! Used for converting numbers to strings
+Character(Len=100) :: files_name  ! Used to append a name to the output files
 Real(rknd)         ::           &
   Z_ion_init(num_ion_max),      & ! Ion charge numbers
   miomp_init(num_ion_max)         ! Ion mass ratios
@@ -417,6 +421,13 @@ Real(rknd), Allocatable ::      &
 
 Real(rknd) :: Er_roots(num_roots_max)   ! The maximum number of roots allowed
 
+Real(rknd), Allocatable :: L_n(:,:), L_T(:,:), L_Er(:,:)
+Real(rknd), Allocatable :: R_n(:,:), R_T(:,:), R_Er(:,:)
+! Local allocatable arrays (3D)
+Real(rknd), Allocatable :: L_A1(:,:,:), L_A2(:,:,:), L_A3(:,:,:)
+Real(rknd), Allocatable :: L_n_ambi(:,:,:), L_T_ambi(:,:,:), L_Er_ambi(:,:,:)
+Real(rknd), Allocatable :: R_n_ambi(:,:,:), R_T_ambi(:,:,:), R_Er_ambi(:,:,:)
+
 ! Namelist files
 Namelist / ion_params / num_ion_species, Z_ion_init, miomp_init
 Namelist / run_params / input_is_Er, log_interp, use_quanc8, read_U2_file, &
@@ -451,7 +462,7 @@ Close(iu_nl)
 
 ! Get command line arguments
 numargs=command_argument_count()
-If ( numargs /= 9 ) Then
+If ( numargs /= 9 .and. numargs /= 10) Then
   Write(*,*) 'Incorrect number of input arguments, see penta.f90 for details'
   Stop 'Exiting: Input arguments error in penta.f90'
 Endif
@@ -464,6 +475,7 @@ Call Getarg(6, arg6)
 Call Getarg(7, arg7)
 Call Getarg(8, arg8)
 Call Getarg(9, arg9)
+Call Getarg(10, arg10)
 
 ! Store command line args
 coeff_ext = Trim(Adjustl(arg1))
@@ -475,6 +487,7 @@ run_ident = Trim(Adjustl(arg6))
 pprof_char = Trim(Adjustl(arg7))
 Read(arg8,*) B_Eprl
 Read(arg9,*) Smax
+files_name = Trim(Adjustl(arg10))
   
 ! Allocate variables according to number of ion species defined
 num_species = num_ion_species + 1_iknd
@@ -501,6 +514,15 @@ If ( output_QoT_vs_Er .EQV. .true. ) Then
   Allocate(QoT_i_vs_Er(num_Er_test,num_ion_species))       ! Ion flux vs Er
   Allocate(QoT_e_vs_Er(num_Er_test))                       ! Electron flux vs Er
 Endif
+Allocate(L_A1(num_species,num_species,Smax+1))
+Allocate(L_A2(num_species,num_species,Smax+1))
+Allocate(L_A3(num_species,num_species,Smax+1))
+Allocate(L_n(num_species,num_species))
+Allocate(L_T(num_species,num_species))
+Allocate(L_Er(num_species,num_species))
+Allocate(R_n(num_species,num_species))
+Allocate(R_T(num_species,num_species))
+Allocate(R_Er(num_species,num_species))
 
 ! Read input files
 Call read_vmec_file_2(js,run_ident)
@@ -626,28 +648,32 @@ Else
 EndIf
 
 ! Open output files
-Open(unit=iu_flux_out, file="fluxes_vs_roa", &
+Open(unit=iu_flux_out, file="fluxes_vs_roa"//files_name, &
   position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
-Open(unit=iu_pprof_out, file="plasma_profiles_check",  &
+Open(unit=iu_pprof_out, file="plasma_profiles_check"//files_name,  &
   position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
-Open(unit=iu_fvEr_out, file="fluxes_vs_Er",  &
+Open(unit=iu_fvEr_out, file="fluxes_vs_Er"//files_name ,  &
   position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
-Open(unit=iu_flows_out, file="flows_vs_roa",  &
+Open(unit=iu_flows_out, file="flows_vs_roa"//files_name ,  &
   position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
-Open(unit=iu_flowvEr_out, file="flows_vs_Er",  &
+Open(unit=iu_flowvEr_out, file="flows_vs_Er"//files_name ,  &
   position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
-Open(unit=iu_Jprl_out,file="Jprl_vs_roa",  &
+Open(unit=iu_Jprl_out,file="Jprl_vs_roa"//files_name ,  &
   position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
-Open(unit=iu_contraflows_out,file="ucontra_vs_roa",  &
+Open(unit=iu_contraflows_out,file="ucontra_vs_roa"//files_name ,  &
+  position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
+Open(unit=iu_particleTranspCoeffs_out,file="particleTransportCoeffs_vs_roa"//files_name ,  &
+  position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
+  Open(unit=iu_heatTranspCoeffs_out,file="heatTransportCoeffs_vs_roa"//files_name ,  &
   position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
 
 If ( Method == 'SN') Then
-  Open(unit=iu_sigmas_out, file="sigmas_vs_roa",  &
+  Open(unit=iu_sigmas_out, file="sigmas_vs_roa"//files_name ,  &
     position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
 Endif
 
 If ( output_QoT_vs_Er .EQV. .true. ) Then
-  Open(unit=iu_QoTvEr_out, file="QoTs_vs_Er",  &
+  Open(unit=iu_QoTvEr_out, file="QoTs_vs_Er"//files_name ,  &
     position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
   Write(iu_QoTvEr_out,'("*",/,"r/a   Er[V/cm]   Q_e/T_e [m**-2s**-1] ",&
     & "   Q_i/T_i [m**-2s**-1]")')
@@ -682,6 +708,12 @@ If ( i_append == 0 ) Then
   ! Legend for flows vs Er
     Write(iu_flowvEr_out,'("*",/,"r/a   Er[V/cm]  ", &
     & "    <B*u_||ke>/<B**2> [m/sT]  <B*u_||ki>/<B**2> [m/sT]")')
+  ! Legend for particle transport coeffs vs roa
+    Write(iu_particleTranspCoeffs_out,'("*",/,"r/a   L_n (Ns x Ns)      ",&
+    & "   L_T (NsxNs)       L_Er (NsxNs)")')
+  ! Legend for heat transport coeffs vs roa
+    Write(iu_heatTranspCoeffs_out,'("*",/,"r/a   R_n (Ns x Ns)      ",&
+    & "   R_T (NsxNs)       R_Er (NsxNs)")')
 EndIf
 
 ! Calculate thermal velocities 
@@ -769,8 +801,8 @@ If ((log_interp .EQV. .true. ) .AND. ( Dabs(min_Er) <= elem_charge ))  Then
   Else
     Er_test_vals(min_ind) = Er_test_vals(min_ind + 1)/2._rknd
   EndIf
-  Write(*,'(a,i4,a,f10.3)') 'Cannot use Er=0 with log_interp, using Er(',  &
-     min_ind, ') = ', Er_test_vals(min_ind)
+  ! Write(*,'(a,i4,a,f10.3)') 'Cannot use Er=0 with log_interp, using Er(',  &
+  !    min_ind, ') = ', Er_test_vals(min_ind)
 EndIf
 
 ! Loop over Er to get fluxes as a function of Er
@@ -819,18 +851,18 @@ Do ie = 1,num_Er_test
       Flows = calc_flows_SN(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
          masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,log_interp,       &
          cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_DUa,num_c,num_e,kcord,  &
-         keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS)                                                
+         keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS,L_A1,L_A2,L_A3)                                                
       Gammas = calc_fluxes_SN(num_species,Smax,abs_Er,Temps,dens,vths,charges,&
         masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,cmax, &
         emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,Dspl_Dex,Dspl_logD11,        &
         Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,lmat,Flows,U2,dTdrs,        &
-        dndrs,flux_cap)  
+        dndrs,flux_cap,L_A1,L_A2,L_A3,L_n,L_T,L_Er)  
       If ( output_QoT_vs_Er .EQV. .true. ) Then
         QoTs = calc_QoTs_SN(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
           masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,    &
           cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,Dspl_Dex,Dspl_logD11, &
           Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,lmat,Flows,U2,dTdrs,      &
-          dndrs,flux_cap)  
+          dndrs,flux_cap,L_A1,L_A2,L_A3,R_n,R_T,R_Er)  
       Endif    
     Case ('DKES')
       Flows = calc_flows_DKES(num_species,Smax,abs_Er,Temps,dens,vths,charges,&
@@ -899,6 +931,12 @@ Allocate(sigma_par_Spitzer_ambi(num_roots))          ! Spitzer Parallel conducti
 Allocate(Jprl_parts(num_species,num_roots))          ! Par. curr. dens. per spec.
 Allocate(upol(num_species,num_roots))                ! fsa contra pol flow
 Allocate(utor(num_species,num_roots))                ! fsa contra tor flow
+Allocate(L_n_ambi(num_roots,num_species,num_species))
+Allocate(L_T_ambi(num_roots,num_species,num_species))
+Allocate(L_Er_ambi(num_roots,num_species,num_species))
+Allocate(R_n_ambi(num_roots,num_species,num_species))
+Allocate(R_T_ambi(num_roots,num_species,num_species))
+Allocate(R_Er_ambi(num_roots,num_species,num_species))
 
 ! Evaluate fluxes and flows at the ambipolar Er
 Do iroot = 1_iknd, num_roots
@@ -953,23 +991,34 @@ Do iroot = 1_iknd, num_roots
       Flows_ambi(:,iroot) = calc_flows_SN(num_species,Smax,abs_Er,Temps,dens,&
          vths,charges,masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,    &
          log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_DUa,num_c,  &
-         num_e,kcord,keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS)                                                
+         num_e,kcord,keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS,L_A1,L_A2,L_A3)                                                
       ! Calculate array of radial particle fluxes
       Gammas_ambi(:,iroot) = calc_fluxes_SN(num_species,Smax,abs_Er,Temps,   &
         dens,vths,charges,masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,   &
         log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,       &
         Dspl_Dex,Dspl_logD11,Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,      &
-        lmat,Flows_ambi(:,iroot),U2,dTdrs,dndrs,flux_cap)  
+        lmat,Flows_ambi(:,iroot),U2,dTdrs,dndrs,flux_cap,L_A1,L_A2,L_A3,     &
+        L_n,L_T,L_Er)  
       ! Calculate array of radial energy fluxes
       QoTs_ambi(:,iroot) = calc_QoTs_SN(num_species,Smax,abs_Er,Temps,dens,  &
         vths,charges,masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,        &
         log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,       &
         Dspl_Dex,Dspl_logD11,Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,      &
-        lmat,Flows_ambi(:,iroot),U2,dTdrs,dndrs,flux_cap)
+        lmat,Flows_ambi(:,iroot),U2,dTdrs,dndrs,flux_cap,L_A1,L_A2,L_A3,     &
+        R_n,R_T,R_Er)
 
       sigma_par_ambi(iroot) = sigma_par
       sigma_par_Spitzer_ambi(iroot) = sigma_par_Spitzer
       J_BS_ambi(iroot) = J_BS
+      !
+      L_n_ambi(iroot,:,:) = L_n
+      L_T_ambi(iroot,:,:) = L_T
+      L_Er_ambi(iroot,:,:) = L_Er
+      !
+      !
+      R_n_ambi(iroot,:,:) = R_n
+      R_T_ambi(iroot,:,:) = R_T
+      R_Er_ambi(iroot,:,:) = R_Er
 
     Case ('DKES')
 
@@ -1056,6 +1105,17 @@ Do iroot = 1_iknd, num_roots
       roa_surf,Er_test/100._rknd,sigma_par_ambi(iroot),sigma_par_Spitzer_ambi(iroot)
   Endif
 
+  ! Write particle transport coefficients to file "particleTransportCoeffs_vs_roa"
+  Write(str_num,*) 3*num_species*num_species
+  Write(iu_particleTranspCoeffs_out,'(f7.3,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
+    roa_surf,L_n_ambi(iroot,:,:),L_T_ambi(iroot,:,:),L_Er_ambi(iroot,:,:)
+
+  ! Write heat transport coefficients to file "heatTransportCoeffs_vs_roa"
+  Write(str_num,*) 3*num_species*num_species
+  Write(iu_heatTranspCoeffs_out,'(f7.3,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
+      roa_surf,R_n_ambi(iroot,:,:),R_T_ambi(iroot,:,:),R_Er_ambi(iroot,:,:)
+
+
 EndDo ! Ambipolar root loop
 
 ! Write plasma profile information to "plasma_profiles_check"
@@ -1105,6 +1165,11 @@ Deallocate(Er_test_vals)  ! Er to loop over
 Deallocate(Jprl_ambi,Jprl_parts,J_BS_ambi) ! Parallel current densities
 Deallocate(sigma_par_ambi,sigma_par_Spitzer_ambi) ! Paarllel conductivities
 Deallocate(utor,upol) ! Contravariant fsa flows
+Deallocate(L_A1,L_A2,L_A3)
+Deallocate(L_n,L_T,L_Er)
+Deallocate(R_n,R_T,R_Er)
+Deallocate(L_n_ambi,L_T_ambi,L_Er_ambi)
+Deallocate(R_n_ambi,R_T_ambi,R_Er_ambi)
 
 ! Close output files
 Close(iu_flux_out)
@@ -1115,6 +1180,8 @@ Close(iu_flows_out)
 Close(iu_flowvEr_out)
 Close(iu_Jprl_out)
 Close(iu_contraflows_out)
+Close(iu_particleTranspCoeffs_out)
+Close(iu_heatTranspCoeffs_out)
 
 End program penta3
 

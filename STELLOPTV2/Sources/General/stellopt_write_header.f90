@@ -10,10 +10,9 @@
       USE stellopt_vars, ONLY: equil_type
       USE stellopt_targets, ONLY: txport_proxy, sigma_orbit, &
          sigma_bootstrap, sigma_balloon, sigma_kink, sigma_ece, &
-         sigma_coil_bnorm, sigma_regcoil_chi2_b, sigma_dkes, &
+         sigma_dkes, &
          sigma_dkes_Erdiff, sigma_dkes_alpha, sigma_fluxloop, &
-         sigma_bprobe, sigma_segrog, sigma_neo, sigma_txport, &
-         sigma_regcoil_current_density
+         sigma_bprobe, sigma_segrog, sigma_neo, sigma_txport
       USE mpi_params
       USE diagno_runtime, ONLY: DIAGNO_VERSION
       USE beams3d_runtime, ONLY: BEAMS3D_VERSION
@@ -115,51 +114,6 @@
             WRITE(6,*) '  Optimization of ECE Radiation not possible.'
             WRITE(6,*) '  Disabling ECE Radiation targets.'
          END IF
-      END IF
-!DEC$ ENDIF
-!DEC$ IF DEFINED (COILOPTPP)
-      IF (myid == master .and. (sigma_coil_bnorm < bigno)) THEN
-         WRITE(6,*)        " Stellarator Coil Optimization provided by: "
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,"(2X,A)") "=========                            COILOPT++                          ========="
-         WRITE(6,"(2X,A)") "=========                    (J. Breslau, S. Lazerson)                  ========="
-         WRITE(6,"(2X,A)") "=========                        jbreslau@pppl.gov                      ========="
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,*)        "    "
-      END IF
-!DEC$ ELSE
-      IF (sigma_coil_bnorm < bigno) THEN
-         sigma_coil_bnorm = bigno
-         IF (myid == master) THEN
-            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
-            WRITE(6,*) '  Coil optimization with the COILOPT++'
-            WRITE(6,*) '  code has been disabled.  Coil optimziation'
-            WRITE(6,*) '  has been turned off.  Contact your vendor for'
-            WRITE(6,*) '  further information.'
-         END IF
-      END IF
-!DEC$ ENDIF
-!DEC$ IF DEFINED (REGCOIL)
-      IF (myid == master .and. (ANY(sigma_regcoil_chi2_b < bigno) .or. &
-                                (sigma_regcoil_current_density < bigno) )) THEN
-         WRITE(6,*)        " Stellarator REGCOIL Optimization provided by: "
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,"(2X,A)") "=========                            REGCOIL                            ========="
-         WRITE(6,"(2X,A)") "=========                        (M. Landreman)                         ========="
-         WRITE(6,"(2X,A)") "=========               Matt dot Landreman at gmail dot com             ========="
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,*)        "    "
-      END IF
-!DEC$ ELSE
-      IF (myid == master .and. (ANY(sigma_regcoil_chi2_b < bigno) .or. &
-                                (sigma_regcoil_current_density < bigno) ) ) THEN
-         sigma_regcoil_chi2_b = bigno
-         sigma_regcoil_current_density = bigno
-         WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
-         WRITE(6,*) '  Coil optimization with the REGCOIL'
-         WRITE(6,*) '  code has been disabled.  Coil optimziation'
-         WRITE(6,*) '  has been turned off.  Contact your vendor for'
-         WRITE(6,*) '  further information.'
       END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (DKES_OPT)

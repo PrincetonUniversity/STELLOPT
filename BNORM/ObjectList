@@ -1,4 +1,5 @@
 ObjectFiles = \
+bn_read_boozer.o \
 normal_info.o \
 Map_v.o \
 bnormal.o \

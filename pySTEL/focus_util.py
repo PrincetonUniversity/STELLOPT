@@ -9,6 +9,7 @@ if __name__=="__main__":
 	import matplotlib.pyplot as pyplot
 	import vtk
 	from libstell.vmec import VMEC
+	from libstell.boozer import BOOZER
 	from libstell.focus import FOCUS
 	from libstell.bnorm import BNORM
 	from libstell.coils import COILSET
@@ -19,6 +20,8 @@ if __name__=="__main__":
 		help="FOCUS file extension", default = None)
 	parser.add_argument("-v", "--vmec", dest="vmec_ext",
 		help="VMEC file extension", default = None)
+	parser.add_argument("-b", "--boozer", dest="boozer_ext",
+		help="Boozer file extension", default = None)
 	parser.add_argument("--bnorm", dest="bnorm_ext",
 		help="BNORM file extension", default = None)
 	parser.add_argument("-p", "--plot", dest="lplot", action='store_true',
@@ -28,32 +31,28 @@ if __name__=="__main__":
 	parser.add_argument("--plotcoildist", dest="lplotcoildist", action='store_true',
 		help="Plot the coil-plasma distance.", default = False)
 	parser.add_argument("--gensurf", dest="lgensurf", action='store_true',
-		help="Generate plasma.boundary VMEC.", default = False)
+		help="Generate plasma.boundary VMEC or Boozer.", default = False)
 	parser.add_argument("--limiter_dist", dest="lim_dist",
 		help="Generate limiter.boundary at offset distance of lim_dist.", default = None)
+	parser.add_argument("--genharm", dest="genharm_tol", type=float,
+		help="Create a target hamonics file at fixed tolerance.", default = -1)
+	parser.add_argument("--save", dest="lsave", action='store_true',
+		help="Save the plots with ext names.", default = False)
 	focus_data = FOCUS()
 	coil_data=COILSET()
 	args = parser.parse_args()
-	if args.focus_ext:
-		try:
-			focus_data.read_focus_HDF5(args.focus_ext)
-		except:
-			print(f'Could not file FOCUS HDF5 file: {args.focus_ext}')
-			sys.exit(-1)
-		if args.lgensurf and args.vmec_ext:
+	phi_plt3d = np.deg2rad(22.5)
+	# Stuff that doesn't require a focus run
+	if args.lgensurf:
+		if args.vmec_ext:
+			# Note that FOCUS wants mu-nv and while VMEC is mu-nv,
+			# our python interface has mu+nv so we need to convert
+			# back.
 			wout = VMEC()
 			wout.read_wout(args.vmec_ext)
 			rmns = None;	zmnc = None
 			xm_b = None;	xn_b = None
-			bmnc = None;	bmns = None
-			if args.bnorm_ext:
-				bnorm = BNORM()
-				bnorm.read_bnorm(bnorm_filename)
-				curpol = wout.getCurrentPoloidal()
-				xn_b = -bnorm.xn
-				xm_b =  bnorm.xm
-				bnmnc = curpol*bnorm.bnmnc[0,:]
-				bnmns = curpol*bnorm.bnmns[0,:]
+			bnmnc = None;	bnmns = None
 			k = wout.ns-1
 			xm = wout.xm[:,0]
 			xn = -wout.xn[:,0]/wout.nfp
@@ -62,7 +61,17 @@ if __name__=="__main__":
 			if wout.iasym == 1:
 				rmns = wout.rmns[k,:]
 				zmnc = wout.zmnc[k,:]
+			if args.bnorm_ext:
+				bnorm = BNORM()
+				bnorm.read_bnorm(args.bnorm_ext)
+				curpol = wout.getCurrentPoloidal()
+				xn_b = -bnorm.xn
+				xm_b =  bnorm.xm
+				bnmnc = curpol*bnorm.bnmnc[0,:]
+				bnmns = curpol*bnorm.bnmns[0,:]
 			focus_data.write_focus_plasma(wout.nfp,xm,xn,rmnc,zmns,rmns=rmns,zmnc=zmnc,xm_b=xm_b,xn_b=xn_b,bmnc=bnmnc,bmns=bnmns,filename='plasma.boundary')
+			if args.genharm_tol > 0.0:
+				focus_data.write_focus_harmonics(args.genharm_tol,wout.nfp_b,xm,xn,rmnc,zmns,rmns=rmns,zmnc=zmnc,xm_b=xm_b,xn_b=xn_b,bmnc=bnmnc,bmns=bnmns,filename='target.harmonics')
 			if args.lim_dist:
 				[rmnc,zmns,rmns,zmnc]=wout.fitSurface(dist=-dist)
 				focus_data.write_focus_plasma(wout.nfp,xm,xn,rmnc,zmns,rmns=rmns,zmnc=zmnc,filename='limiter.boundary')
@@ -95,6 +104,35 @@ if __name__=="__main__":
 				ax.set_aspect('equal', adjustable='box')
 				ax.legend()
 				pyplot.show()
+				if (args.lsave): fig.savefig(f'limitersurface_{args.focus_ext}.png', dpi=fig.dpi)
+		if args.boozer_ext:
+			# Note that Boozer is in mu+nv so we need to convert
+			# but apparently don't
+			boozer = BOOZER()
+			boozer.read_boozer(args.boozer_ext)
+			rmns = None;	zmnc = None;	pmnc=None;
+			xm_b = None;	xn_b = None
+			bnmnc = None;	bnmns = None
+			k = boozer.ns_b-1
+			xm = boozer.ixm_b[:,0]
+			xn = boozer.ixn_b[:,0]/boozer.nfp_b
+			rmnc = boozer.rmnc_b[k,:]
+			zmns = boozer.zmns_b[k,:]
+			pmns = boozer.pmns_b[k,:]
+			if boozer.lasym_b:
+				rmns = boozer.rmns_b[k,:]
+				zmnc = boozer.zmnc_b[k,:]
+				pmnc = boozer.pmnc_b[k,:]
+			focus_data.write_focus_plasma_booz(boozer.nfp_b,xm,xn,rmnc,zmns,pmns,rmns=rmns,zmnc=zmnc,pmnc=pmnc,xm_b=xm_b,xn_b=xn_b,bmnc=bnmnc,bmns=bnmns,filename='plasma.boundary')
+			if args.genharm_tol > 0.0:
+				focus_data.write_focus_harmonics(args.genharm_tol,boozer.nfp_b,xm,xn,rmnc,zmns,pmns,rmns=rmns,zmnc=zmnc,pmnc=pmnc,xm_b=xm_b,xn_b=xn_b,bmnc=bnmnc,bmns=bnmns,filename='target.harmonics')
+	# Stuff that requires a focus run
+	if args.focus_ext:
+		try:
+			focus_data.read_focus_HDF5(args.focus_ext)
+		except:
+			print(f'Could not file FOCUS HDF5 file: {args.focus_ext}')
+			sys.exit(-1)
 		if args.lplot:
 			px = 1/pyplot.rcParams['figure.dpi']
 			fig,((ax1,ax2),(ax3,ax4)) = pyplot.subplots(2,2,figsize=(1024*px,768*px))
@@ -103,6 +141,8 @@ if __name__=="__main__":
 			focus_data.plotBNormal(ax2)
 			focus_data.plotPoincare(ax3)
 			focus_data.plotIota(ax4)
+			ax4.set_ylim([0.5,1.5])
+			if (args.lsave): fig.savefig(f'overview_{args.focus_ext}.png', dpi=fig.dpi)
 			pyplot.show()
 		if args.lplot3d:
 			plt3d = PLOT3D()
@@ -113,10 +153,17 @@ if __name__=="__main__":
 				coil_data.plotcoilsHalfFP(plt3d)
 			except:
 				i=1
+			plt3d.setCamera(pos=[0,0,0.0],focus=[np.cos(phi_plt3d),np.sin(phi_plt3d),0],camup=[0,0,1],angle=70)
 			plt3d.render()
+			if (args.lsave): plt3d.saveImage(f'coil3D_{args.focus_ext}.png')
 		if args.lplotcoildist:
 			coil_data.read_coils_file(args.focus_ext+'.coils')
 			coil_data.coilSurfDist(focus_data.xsurf.flatten(),\
 					focus_data.ysurf.flatten(),\
 					focus_data.zsurf.flatten())
-			coil_data.plotcoilsDist()
+			plt3d = PLOT3D()
+			coil_data.plotcoilplasmaDist(cmin=2.5,plot3D=plt3d)
+			plt3d.setCamera(pos=[0,0,0.0],focus=[np.cos(phi_plt3d),np.sin(phi_plt3d),0],camup=[0,0,1],angle=70)
+			plt3d.render()
+			if (args.lsave): plt3d.saveImage(f'coildist3D_{args.focus_ext}.png')
+	sys.exit(0)

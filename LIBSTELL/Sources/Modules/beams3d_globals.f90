@@ -19,19 +19,22 @@
       INTEGER, PARAMETER :: MAXPARTICLES = 2**18
       INTEGER, PARAMETER :: MAXBEAMS = 32
       INTEGER, PARAMETER :: MAXPROFLEN = 512
-      INTEGER, PARAMETER :: NION = 4
+      INTEGER, PARAMETER :: NION = 6
       LOGICAL :: lverb, lcollision, lrestart_particles, ldebug, &
                  lfusion, lfusion_alpha, lfusion_He3, lfusion_proton, &
                  lfusion_tritium, lkick, lgcsim, lbeam, lbbnbi
-      INTEGER :: npoinc, nbeams, nparticles_start,duplicate_factor
+      INTEGER :: npoinc, nbeams, nparticles_start,duplicate_factor, &
+                 mumaterial_niter, mumaterial_nneighbor, mumaterial_lamthresh
       INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
       REAL(rprec) :: follow_tol, pi2, ne_scale, te_scale, ti_scale, &
-                     zeff_scale, fusion_scale, lendt_m, te_col_min, rho_max_dist
+                     zeff_scale, fusion_scale, lendt_m, te_col_min, rho_max_dist, &
+                     mumaterial_tol, mumaterial_lambda, mumaterial_lamfactor, &
+                     mumaterial_padfactor, mumaterial_convcheck
       REAL(rprec), DIMENSION(MAXBEAMS) :: Adist_beams, Asize_beams, Div_beams, E_beams, mass_beams, &
                                         charge_beams, Zatom_beams, P_beams
       REAL(rprec), DIMENSION(MAXBEAMS, 2) :: r_beams, z_beams, phi_beams
       REAL(rprec), DIMENSION(MAXPROFLEN) :: TE_AUX_S, TE_AUX_F, NE_AUX_S, NE_AUX_F, TI_AUX_S, TI_AUX_F,&
-                                            POT_AUX_S, POT_AUX_F, ZEFF_AUX_S, ZEFF_AUX_F                                  
+                                            POT_AUX_S, POT_AUX_F,OMEG_AUX_S, OMEG_AUX_F, ZEFF_AUX_S, ZEFF_AUX_F                                  
       INTEGER, DIMENSION(NION) :: NI_AUX_Z   
       REAL(rprec), DIMENSION(MAXPROFLEN) :: NI_AUX_S
       REAL(rprec), DIMENSION(NION,MAXPROFLEN) :: NI_AUX_F
@@ -46,12 +49,12 @@
       REAL(rprec) :: partvmax, plasma_Zmean, plasma_mass
 
       ! moved from beams3d_grid
-      INTEGER  ::    nr, nphi, nz, nte, nne, nti, nzeff, npot, nr_fida, nphi_fida, nz_fida, nenergy_fida, npitch_fida, dexionT, dexionD, dexionHe3
+      INTEGER  ::    nr, nphi, nz, nte, nne, nti, nzeff, nomeg, npot, nr_fida, nphi_fida, nz_fida, nenergy_fida, npitch_fida, dexionT, dexionD, dexionHe3
       REAL :: rmin_fida, rmax_fida, zmin_fida, zmax_fida, phimin_fida, phimax_fida, emin_fida, pimin_fida
       REAL(rprec) :: rmin, rmax, zmin, zmax, phimin, phimax, &
                      vc_adapt_tol, therm_factor, B_kick_min, &
                      B_kick_max, E_kick, freq_kick, rho_fullorbit, &
-                     t_fida, s_max,s_max_te, s_max_ne,s_max_zeff,s_max_ti, s_max_pot
+                     t_fida, s_max,s_max_te, s_max_ne,s_max_zeff,s_max_ti, s_max_pot, s_max_omeg
 
       CONTAINS
 

@@ -1,3 +1,21 @@
+nescoil_stellopt_mod.o : \
+      Vmeshes.o \
+      Vprecal1.o \
+      Vvacuum2.o \
+      Vvacuum3.o \
+      SvdCtrl.o \
+      OutCtrl.o \
+      Vvacuum1.o \
+      Vbiopre.o \
+      Vculine1.o \
+      Vprecal4.o \
+      NumParams.o \
+      Vdiagno2.o \
+      ../../LIBSTELL/$(LOCTYPE)/bsc_T.o \
+      ../../LIBSTELL/$(LOCTYPE)/biotsavart.o \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+
+
 ab_matrix.o : \
       Vmeshes.o \
       NumParams.o \

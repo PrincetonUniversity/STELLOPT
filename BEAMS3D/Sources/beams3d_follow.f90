@@ -22,6 +22,7 @@ SUBROUTINE beams3d_follow
     USE beams3d_write_par
     USE safe_open_mod, ONLY: safe_open
     USE wall_mod, ONLY: wall_free, ihit_array, nface
+    USE collision_operators, ONLY: SET_CRIT_FACTOR, SET_COULOMB_FACTOR
     USE mpi_inc
     !-----------------------------------------------------------------------
     !     Local Variables
@@ -125,11 +126,7 @@ SUBROUTINE beams3d_follow
 
     ! Some helpers
     fact_vsound = 1.5*sqrt(e_charge/plasma_mass)*therm_factor
-    fact_crit= SQRT(2.0*e_charge/electron_mass)*(0.75*sqrt_pi*electron_mass*plasma_Zmean/plasma_mass)**(1.0/3.0) ! Wesson pg 226 5.4.9
-    fact_crit_legacy = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0)
-    !fact_crit=fact_crit_pro*(plasma_Zmean/plasma_mass)**(1.0/3.0)
-    !fact_kick = pi2*2*SQRT(pi*1E-7*plasma_mass)*E_kick*freq_kick !old
-    !fact_kick = 2*freq_kick*E_kick
+    CALL SET_CRIT_FACTOR(plasma_Zmean,plasma_mass)
 
     ! Handle the Beam defaults
     IF (lbeam) THEN
@@ -158,8 +155,7 @@ SUBROUTINE beams3d_follow
        mybeam = Beam(i)
        moment = mu_start(i)
        fact_pa   = plasma_mass/(mymass*plasma_Zmean)
-       fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
-       
+       CALL SET_COULOMB_FACTOR(mymass,myZ,plasma_mass)
        ! Save the IC of the neutral
        my_end = t_end(i)
        myline = i
@@ -193,8 +189,7 @@ SUBROUTINE beams3d_follow
           myline = i
           mytdex = 1
           fact_pa   = plasma_mass/(mymass*plasma_Zmean)
-          fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
-          
+          CALL SET_COULOMB_FACTOR(mymass,myZ,plasma_mass)
           ! Define neutral trajectory
           myv_neut(1) = vr_start(i)*cos(phi_start(i)) - vphi_start(i)*sin(phi_start(i))
           myv_neut(2) = vr_start(i)*sin(phi_start(i)) + vphi_start(i)*cos(phi_start(i))
@@ -244,12 +239,10 @@ SUBROUTINE beams3d_follow
     ! First reduce the cumulative arrays over shared memory groups then allreduce between shared memeory groups
 #if defined(MPI_OPT)
     IF (myid_sharmem == master) THEN
-       CALL MPI_REDUCE(MPI_IN_PLACE,   end_state,     nparticles,          MPI_INTEGER, MPI_MAX, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(MPI_IN_PLACE, epower_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(MPI_IN_PLACE, ipower_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(MPI_IN_PLACE,   ndot_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
     ELSE
-       CALL MPI_REDUCE(end_state,     end_state,     nparticles,          MPI_INTEGER, MPI_MAX, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(epower_prof, epower_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(ipower_prof, ipower_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(ndot_prof,     ndot_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)

@@ -1,4 +1,10 @@
 ObjectFiles = \
+conrec.o \
+spline_coils_mod.o \
+fusion_mod.o \
+collision_operators.o \
+thrift_input_mod.o \
+thrift_globals.o \
 read_nescoil_mod.o \
 stellopt_targets.o \
 stellopt_vars.o \

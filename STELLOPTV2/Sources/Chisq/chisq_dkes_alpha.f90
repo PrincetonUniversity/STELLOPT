@@ -39,13 +39,15 @@
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
-      ! Count values
-      ik   = COUNT(sigma < bigno)
-      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'DKES_ALPHA ',ik,26
-      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VAL  S  NU+  NU- '&
+      ! Print Header
+      IF (iflag == 1) THEN
+         ik   = COUNT(target_dex == jtarget_dkes_alpha)
+         WRITE(iunit_out,'(A,2(2X,I3.3))') 'DKES_ALPHA ',ik,26
+         WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VAL  S  NU+  NU- '&
                 // ' ER+  ER-' &
                 // ' L11p+  L11m+  L33p+  L33m+  L31p+  L31m+  SCAL11+  SCAL33+  SCAL31+'& 
                 // ' L11p-  L11m-  L33p-  L33m-  L31p-  L31m-  SCAL11-  SCAL33-  SCAL31-'
+      END IF
       IF (niter >= 0) THEN
          ik = COUNT(DKES_rundex < 3)
          DO ii = 1, nsd
@@ -91,6 +93,7 @@
       ELSE
          DO ii = 1, nsd
             IF (sigma(ii) >= bigno) CYCLE
+            lneed_dkes = .TRUE.
             DO ij = 1, nprof
                IF (Ep_DKES_alpha(ij) <= -bigno .or. nup_dkes_alpha(ij) <= -bigno .or. &
                    Em_DKES_alpha(ij) <= -bigno .or. num_dkes_alpha(ij) <= -bigno) CYCLE

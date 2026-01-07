@@ -9,6 +9,7 @@ equilibrium data.
 from libstell.libstell import LIBSTELL, FourierRep
 
 # Constants
+SEARCH_TOL = 1.0E-12
 
 # VMEC Class
 class VMEC(FourierRep):
@@ -32,7 +33,8 @@ class VMEC(FourierRep):
 			Path to wout file.
 		"""
 		import numpy as np
-		wout_dict = self.libStell.read_wout(filename)
+		import copy
+		wout_dict = copy.deepcopy(self.libStell.read_wout(filename))
 		for key in wout_dict:
 			setattr(self, key, wout_dict[key])
 		# (mu-nv) -> (mu+nv)
@@ -44,35 +46,39 @@ class VMEC(FourierRep):
 		self.vp = self.h2f(self.vp)
 		self.overr = self.h2f(self.overr)
 		self.specw = self.h2f(self.specw)
+		self.bdotb = self.h2f(self.bdotb)
 		for mn in range(self.mnmax):
-			self.lmns[:,mn] = self.h2f(self.lmns[:,mn])
+			self.lmns[:,mn] = self.h2fmn(self.lmns[:,mn],self.xm[mn])
 		for mn in range(self.mnmax_nyq):
-			self.bmnc[:,mn] = self.h2f(self.bmnc[:,mn])
-			self.gmnc[:,mn] = self.h2f(self.gmnc[:,mn])
-			self.bsupumnc[:,mn] = self.h2f(self.bsupumnc[:,mn])
-			self.bsupvmnc[:,mn] = self.h2f(self.bsupvmnc[:,mn])
-			self.bsubsmns[:,mn] = self.h2f(self.bsubsmns[:,mn])
-			self.bsubumnc[:,mn] = self.h2f(self.bsubumnc[:,mn])
-			self.bsubvmnc[:,mn] = self.h2f(self.bsubvmnc[:,mn])
+			self.bmnc[:,mn] = self.h2fmn(self.bmnc[:,mn],self.xm_nyq[mn])
+			self.gmnc[:,mn] = self.h2fmn(self.gmnc[:,mn],self.xm_nyq[mn])
+			self.bsupumnc[:,mn] = self.h2fmn(self.bsupumnc[:,mn],self.xm_nyq[mn])
+			self.bsupvmnc[:,mn] = self.h2fmn(self.bsupvmnc[:,mn],self.xm_nyq[mn])
+			self.bsubsmns[:,mn] = self.h2fmn(self.bsubsmns[:,mn],self.xm_nyq[mn])
+			self.bsubumnc[:,mn] = self.h2fmn(self.bsubumnc[:,mn],self.xm_nyq[mn])
+			self.bsubvmnc[:,mn] = self.h2fmn(self.bsubvmnc[:,mn],self.xm_nyq[mn])
 		if self.iasym==1:
 			for mn in range(self.mnmax):
-				self.lmnc[:,mn] = self.h2f(self.lmnc[:,mn])
+				self.lmnc[:,mn] = self.h2fmn(self.lmnc[:,mn],self.xm[mn])
 			for mn in range(self.mnmax_nyq):
-				self.bmns[:,mn] = self.h2f(self.bmns[:,mn])
-				self.gmns[:,mn] = self.h2f(self.gmns[:,mn])
-				self.bsupumns[:,mn] = self.h2f(self.bsupumns[:,mn])
-				self.bsupvmns[:,mn] = self.h2f(self.bsupvmns[:,mn])
-				self.bsubsmnc[:,mn] = self.h2f(self.bsubsmnc[:,mn])
-				self.bsubumns[:,mn] = self.h2f(self.bsubumns[:,mn])
-				self.bsubvmns[:,mn] = self.h2f(self.bsubvmns[:,mn])
+				self.bmns[:,mn] = self.h2fmn(self.bmns[:,mn],self.xm_nyq[mn])
+				self.gmns[:,mn] = self.h2fmn(self.gmns[:,mn],self.xm_nyq[mn])
+				self.bsupumns[:,mn] = self.h2fmn(self.bsupumns[:,mn],self.xm_nyq[mn])
+				self.bsupvmns[:,mn] = self.h2fmn(self.bsupvmns[:,mn],self.xm_nyq[mn])
+				self.bsubsmnc[:,mn] = self.h2fmn(self.bsubsmnc[:,mn],self.xm_nyq[mn])
+				self.bsubumns[:,mn] = self.h2fmn(self.bsubumns[:,mn],self.xm_nyq[mn])
+				self.bsubvmns[:,mn] = self.h2fmn(self.bsubvmns[:,mn],self.xm_nyq[mn])
 		# Calc Eplasma
 		self.eplasma = 1.5*4*np.pi*np.pi*sum( self.vp * self.presf ) / self.ns
 		# Get mn00
-		self.mn00 = None
+		self.mn00 = None; self.mn01 = None; self.mn10 = None
 		for mn in range(self.mnmax):
 			if self.xm[mn]==0 and self.xn[mn]==0:
 				self.mn00 = mn
-
+			if self.xm[mn]==0 and self.xn[mn]==self.nfp:
+				self.mn01 = mn
+			if self.xm[mn]==1 and self.xn[mn]==0:
+				self.mn10 = mn
 
 	def h2f(self,var_half):
 		"""Half to full grid
@@ -96,6 +102,45 @@ class VMEC(FourierRep):
 		temp[-1] = 2.0 * temp[-1] - 1.0 * temp[-2]
 		return temp
 
+	def h2fmn(self,var_half,mmode):
+		"""Half to full grid with Fourier interpolation
+
+		This routine takes a 1D field and interpolates it from the half
+		to the full grid taking care of even and odd mode parity. For 
+		an ns sized array we assumes that the first index [0]=0 and 
+		is just a placeholder.
+
+		Parameters
+		----------
+		var_half : list
+			Variable on half grid
+		mmode : int
+			Poloidal mode number
+		Returns
+		----------
+		var_full : list
+			Variable on full grid
+		"""
+		import numpy as np
+		temp = var_half.copy()
+		if np.mod(mmode,2) == 1:
+			#factlo = 0.5*SQRT((k-1.0)/(k-1.5)) #orig
+			#facthi = 0.5*SQRT((k-1.0)/(k-0.5)) #orig
+			factlo = 0.5*np.sqrt(np.linspace(0,self.ns-1.0,self.ns)/np.linspace(-0.5,self.ns-1.5,self.ns))
+			facthi = 0.5*np.sqrt(np.linspace(0,self.ns-1.0,self.ns)/np.linspace( 0.5,self.ns-0.5,self.ns))
+			temp[1:-1] = factlo[1:-1]*temp[1:-1] + facthi[2:]*temp[2:]
+			factlo = 2.0*np.sqrt((self.ns-1)/(self.ns-1.5))
+			facthi =-1.0*np.sqrt((self.ns-1)/(self.ns-2.0))
+			temp[-1] = factlo*temp[-1]+facthi*temp[-2]
+			temp[0] = 0.0
+		else:
+			temp[1:-1] = 0.5*(temp[1:-1] + temp[2:])
+			# Do ns
+			temp[-1] = 2.0*temp[-1]-temp[-2]
+			# Do 1
+			temp[0] = 2.0*temp[1]-temp[2]
+		return temp
+
 	def calc_jll(self, theta, phi ):
 		"""Compute parallel current density
 
@@ -104,7 +149,7 @@ class VMEC(FourierRep):
 		Parameters
 		----------
 		theta : ndarray
-			Polidal angle grid [rad]
+			Poloidal angle grid [rad]
 		phi : ndarray
 			Toroidal angle grid [rad]
 		Returns
@@ -129,65 +174,320 @@ class VMEC(FourierRep):
 		jll = (bu*ju+bv*jv)/(g*b)
 		return jll
 
-	def calc_grad_rhosq(self):
-		"""Compute <|grad(rho)|^2> 
-		This routine flux surface average of |grad(rho)|^2 
+	def calc_magwell(self):
+		"""Compute Magnetic Well vs Hill
+
+		This routine computes the magnetic well according to the
+		formula in:
+		https://fusion.gat.com/pubs-ext/ComPlasmaPhys/A22135.pdf
+		which is essentially
+				 V * ( 2 * mu0 * p'/V' + d<B^2>/drho)
+			W =  ------------------------------------
+			                <B^2>
+
+		Returns
+		----------
+		W : ndarray
+			Well (W>0) / Hill (W<0) Stability Parameter
+		"""
+		import numpy as np
+		p = np.squeeze(self.presf)
+		vp = np.squeeze(self.vp)
+		V  = np.cumsum(vp)*4*np.pi*np.pi/self.ns
+		Bsqav = np.squeeze(self.bdotb)
+		pp = np.gradient(p)
+		dBsqav = np.gradient(Bsqav)
+		return V * ( 8E-7 * np.pi * pp / vp + dBsqav)/Bsqav
+
+	def calc_covariant_tensor(self,theta,phi):
+		"""
+		Computes the covariant metric tensor g_ij(s_full, theta, phi) in VMEC coordinates.
 
 		Parameters
 		----------
 		theta : ndarray
-			Polidal angle grid [rad]
+			Poloidal angle grid [rad]
 		phi : ndarray
 			Toroidal angle grid [rad]
+
+		Description
+		-----------
+		This function evaluates the covariant basis vectors
+			e_i = ∂x/∂q^i
+		where q = (s, u, v) are the VMEC coordinates. The covariant vectors are expressed in the Cartesian basis (ex, ey, ez) as:
+
+        e_s = (dR/ds * cos(v)) ex
+              + (dR/ds * sin(v)) ey
+              + (dZ/ds)          ez
+
+        e_u = (dR/du * cos(v)) ex
+              + (dR/du * sin(v)) ey
+              + (dZ/du)          ez
+
+        e_v = [dR/dv * cos(v) - R * sin(v)] ex
+              + [dR/dv * sin(v) + R * cos(v)] ey
+              + (dZ/dv)  ez
+    	
+     	The covariant metric tensor is then constructed as
+
+			g_ij = e_i · e_j ,
+
+		and arranged in the 3x3 block
+
+			g = [ g_ss   g_su   g_sv
+				  g_us   g_uu   g_uv
+				  g_vs   g_vu   g_vv ]
+
+		Each component g_ij is returned on the full VMEC spatial grid and therefore
+		has shape (ns, ntheta, nphi), where ns is the radial grid defined in the
+		VMEC equilibrium and (ntheta, nphi) are determined by the shapes of the
+		input arrays `theta` and `phi`.
+
 		Returns
-		----------
-		avgrho2 : ndarray
-			Flux surface average of |grad(rho)|^2
+		-------
+		g : dict
+			The covariant tensor components returned as:
+				- a dictionary with keys ("ss","su","sv","us","uu","uv","vs","vu","vv"),
+				each mapped to an array g_ij[s,theta,phi]
 		"""
 		import numpy as np
-		nu = 64
-		nv = 128
-		theta = np.linspace(0,2*np.pi,nu)
-		phi   = np.linspace(0,2*np.pi,nv)
-		# Create derivatives
-		xm2d  = np.broadcast_to(self.xm,(self.ns,self.mnmax))
-		xn2d  = np.broadcast_to(self.xn,(self.ns,self.mnmax))
-		rumns = - xm2d * self.rmnc
-		rvmns = - xn2d * self.rmnc
-		zumnc =   xm2d * self.zmns
-		zvmnc =   xn2d * self.zmns
+		s = np.linspace(0,1,self.ns)
+		ds = s[1]-s[0]
+		s[0] = ds/10000 # to avoid division by zero
+		
+		## Compute radial derivatives, dR/ds and dZ/ds, as in flx2cyl of vmec_utils.f
+		## odd m modes interpolate as sqrt(s), while even m modes scale with s
+		rmnc = np.zeros((self.ns,self.mnmax))
+		zmns = np.zeros((self.ns,self.mnmax))
+		drmnc_ds = np.zeros((self.ns,self.mnmax))
+		dzmns_ds = np.zeros((self.ns,self.mnmax))
 		if self.iasym==1:
-			rumnc =   xm2d * self.rmns
-			rvmnc =   xn2d * self.rmns
-			zumns = - xm2d * self.zmnc
-			zvmns = - xn2d * self.zmnc
-		r = self.cfunct(theta,zeta,self.rmnc,self.xm,self.xn)
-		g = self.cfunct(theta,zeta,self.gmnc,self.xm_nyq,self.xn_nyq)
-		ru = self.sfunct(theta,zeta,rumns,self.xm,self.xn)
-		rv = self.sfunct(theta,zeta,rvmns,self.xm,self.xn)
-		zu = self.cfunct(theta,zeta,zumnc,self.xm,self.xn)
-		zv = self.cfunct(theta,zeta,zvmnc,self.xm,self.xn)
+			rmns = np.zeros((self.ns,self.mnmax))
+			zmnc = np.zeros((self.ns,self.mnmax))
+			drmns_ds = np.zeros((self.ns,self.mnmax))
+			dzmnc_ds = np.zeros((self.ns,self.mnmax))
+
+		slow = np.concatenate((s[:-1],[s[-2]]))
+		shigh = np.concatenate((s[1:],[s[-1]]))
+		#
+		wlow_even  = 1 - (s-slow)/ds
+		whigh_even = (s-slow) / ds
+		dwlow_even = -1/ds
+		dwhigh_even = 1/ds
+		# 
+		wlow_odd = wlow_even * np.sqrt(s)/np.sqrt(slow)
+		wlow_odd[0] = 0.0
+		whigh_odd = whigh_even * np.sqrt(s)/np.sqrt(shigh)
+		whigh_odd[0] = np.sqrt(s[0]) / np.sqrt(s[1])
+		dwlow_odd = - (3*np.sqrt(s)-shigh/np.sqrt(s)) / (2*ds*np.sqrt(slow))
+		dwlow_odd[0] = 0.0
+		dwhigh_odd =  (3*np.sqrt(s)-slow/np.sqrt(s)) / (2*ds*np.sqrt(shigh))
+		dwhigh_odd[0] = 1 / (2*np.sqrt(s[0])*np.sqrt(s[1]))
+
+		for imn,m in enumerate(self.xm.ravel()):
+			rmnc_low = np.concatenate((self.rmnc[0:-1,imn],[self.rmnc[-2,imn]])) 
+			rmnc_high = np.concatenate((self.rmnc[1:,imn],[self.rmnc[-1,imn]]))
+			zmns_low = np.concatenate((self.zmns[0:-1,imn],[self.zmns[-2,imn]])) 
+			zmns_high = np.concatenate((self.zmns[1:,imn],[self.zmns[-1,imn]]))
+			#
+			if self.iasym==1:
+				rmns_low = np.concatenate((self.rmns[0:-1,imn],[self.rmns[-2,imn]])) 
+				rmns_high = np.concatenate((self.rmns[1:,imn],[self.rmns[-1,imn]]))
+				zmnc_low = np.concatenate((self.zmnc[0:-1,imn],[self.zmnc[-2,imn]])) 
+				zmnc_high = np.concatenate((self.zmnc[1:,imn],[self.zmnc[-1,imn]]))
+    
+			if(int(m)%2 == 0):
+				drmnc_ds[:,imn] = rmnc_low*dwlow_even + rmnc_high*dwhigh_even
+				dzmns_ds[:,imn] = zmns_low*dwlow_even + zmns_high*dwhigh_even
+				rmnc[:,imn] = rmnc_low*wlow_even + rmnc_high*whigh_even
+				zmns[:,imn] = zmns_low*wlow_even + zmns_high*whigh_even
+				#
+				if self.iasym==1:
+					drmns_ds[:,imn] = rmns_low*dwlow_even + rmns_high*dwhigh_even
+					dzmnc_ds[:,imn] = zmnc_low*dwlow_even + zmnc_high*dwhigh_even
+					rmns[:,imn] = rmns_low*wlow_even + rmns_high*whigh_even
+					zmnc[:,imn] = zmnc_low*wlow_even + zmnc_high*whigh_even
+					
+			else:
+				drmnc_ds[:,imn] = rmnc_low*dwlow_odd + rmnc_high*dwhigh_odd
+				dzmns_ds[:,imn] = zmns_low*dwlow_odd + zmns_high*dwhigh_odd
+				rmnc[:,imn] = rmnc_low*wlow_odd + rmnc_high*whigh_odd
+				zmns[:,imn] = zmns_low*wlow_odd + zmns_high*whigh_odd
+				#
+				if self.iasym==1:
+					drmns_ds[:,imn] = rmns_low*dwlow_odd + rmns_high*dwhigh_odd
+					dzmnc_ds[:,imn] = zmnc_low*dwlow_odd + zmnc_high*dwhigh_odd
+					rmns[:,imn] = rmns_low*wlow_odd + rmns_high*whigh_odd
+					zmnc[:,imn] = zmnc_low*wlow_odd + zmnc_high*whigh_odd			
+
+		R = self.cfunct(theta,phi,rmnc,self.xm,self.xn)
+		Z = self.sfunct(theta,phi,zmns,self.xm,self.xn)
+		dRds = self.cfunct(theta,phi,drmnc_ds,self.xm,self.xn)
+		dZds = self.sfunct(theta,phi,dzmns_ds,self.xm,self.xn)
 		if self.iasym==1:
-			r  = r  + self.sfunct(theta,zeta,self.rmns,self.xm,self.xn)
-			g  = g  + self.sfunct(theta,zeta,self.gmns,self.xm_nyq,self.xn_nyq)
-			ru = ru + self.cfunct(theta,zeta,rumnc,self.xm,self.xn)
-			rv = rv + self.cfunct(theta,zeta,rvmnc,self.xm,self.xn)
-			zu = zu + self.sfunct(theta,zeta,zumns,self.xm,self.xn)
-			zv = zv + self.sfunct(theta,zeta,zvmns,self.xm,self.xn)
-		# Calc metrics
-		gsr = - zu * r
-		gsp = zu * rv - ru * zv
-		gsz = ru * r
-		gs  = ( gsr * gsr + gsp * gsp + gsz * gsz ) / ( g * g )
-		for i in range(self.ns):
-			gs[i,:,:] = 0.25 * gs[i,:,:] / ( rho[i] * rho[i] )
-		vp = np.sum(g,axis=(1,2))
-		avgrho2 = np.sum(gs * g,axis=(1,2)) / vp
-		avgrho2[1] = 2.0 * avgrho2[1] - avgrho2[2]
+			R += self.sfunct(theta,phi,rmns,self.xm,self.xn)
+			Z += self.cfunct(theta,phi,zmnc,self.xm,self.xn)
+			dRds += self.sfunct(theta,phi,drmns_ds,self.xm,self.xn)
+			dZds += self.cfunct(theta,phi,dzmnc_ds,self.xm,self.xn)
+
+		# Compute poloidal and toroidal derivatives using the harmonics
+		xm2d  = np.broadcast_to(self.xm.T,(self.ns,self.mnmax))
+		xn2d  = np.broadcast_to(self.xn.T,(self.ns,self.mnmax))
+		#
+		dRdu = self.sfunct(theta,phi,-xm2d*rmnc,self.xm,self.xn)
+		dRdv = self.sfunct(theta,phi,-xn2d*rmnc,self.xm,self.xn)
+		dZdu = self.cfunct(theta,phi,xm2d*zmns,self.xm,self.xn)
+		dZdv = self.cfunct(theta,phi,xn2d*zmns,self.xm,self.xn)
+		if self.iasym==1:
+			dRdu += self.cfunct(theta,phi,xm2d*rmns)
+			dRdv += self.cfunct(theta,phi,xn2d*rmns)
+			dZdu += self.sfunct(theta,phi,-xm2d*zmnc)
+			dZdv += self.sfunct(theta,phi,-xn2d*zmnc)
+
+		# Now compute covariant tensor
+		g = {}
+		g['ss'] = dRds**2 + dZds**2
+		g['su'] = dRds*dRdu + dZds*dZdu
+		g['sv'] = dRds*dRdv+ dZds*dZdv
+		g['uu'] = dRdu**2 + dZdu**2
+		g['uv'] = dRdu*dRdv + dZdu*dZdv
+		g['vv'] = dRdv**2 + dZdv**2 + R**2
+		# g is a symmetric matrix
+		g['us'] = g['su']
+		g['vs'] = g['sv']
+		g['vu'] = g['uv']
+
+		return g
+ 
+	def calc_grad_rhosq(self):
+		"""
+		Computes the flux-surface average <|∇ρ|²>, where ρ = sqrt(s) and s
+		is the normalized toroidal flux, s = phi_t / phi_t_LCFS
+
+		Description
+		-----------
+		This function computes the quantity
+
+			<|∇ρ|²> = <|∇s|²> / (4 ρ²) ,
+
+		where |∇s|² = g^(ss) = ( g_uu * g_vv - g_uv * g_vu ) / det(g).
+
+		Here g_ij are the covariant metric tensor components,
+		det(g) = J² is the determinant of the covariant metric,
+		and J is the VMEC Jacobian.
+
+		The flux-surface average of any scalar-field Q is given by
+
+			<Q> = (1 / (dV/ds))  ∫₀^{2π} ∫₀^{2π}  J(s,u,v) * Q(s,u,v)  du dv.
+
+		The flux-surface average of |∇ρ|² becomes
+
+			<|∇ρ|²> =
+				(1 / (dV/ds))
+				∫₀^{2π} ∫₀^{2π}
+					J * ( g_uu * g_vv - g_uv * g_vu ) /
+						( J² * 4 ρ² )
+				du dv .
+
+		Returns
+		-------
+		avgrho2 : ndarray
+			An array of size (ns,) containing the flux-surface averaged values
+			<|∇ρ|²> on each VMEC radial grid point s.
+		"""
+		import numpy as np
+		nu = 200
+		nv = 500
+		theta = np.linspace(0,2*np.pi,nu).reshape(-1,1)
+		phi   = np.linspace(0,2*np.pi,nv).reshape(-1,1)
+		s     = np.linspace(0,1,self.ns)
+		rho   = np.sqrt(s)
+		#
+		g = self.calc_covariant_tensor(theta=theta,phi=phi)
+		guu = g['uu']
+		gvv = g['vv']
+		guv = g['uv']
+		#
+		dVds = self.vp[:].flatten() * (4*np.pi*np.pi)
+		# Jacobian
+		J = self.cfunct(theta,phi,self.gmnc,self.xm_nyq,self.xn_nyq)
+		if(self.iasym==1):
+			J = J + self.sfunct(theta,phi,self.gmns,self.xm_nyq,self.xn_nyq)
+		integrand = (guu*gvv - guv*guv) / (np.abs(J))
+		integral = np.trapz(integrand,x=phi.ravel(),  axis=2)
+		integral = np.trapz(integral, x=theta.ravel(),axis=1)
+		# Since at rho=0 there is an indetermination, we linearly interpolate:
+		avgrho2 = np.zeros_like(rho)
+		avgrho2[1:] = integral[1:] / (4.0 * dVds[1:] * rho[1:]**2)
+		avgrho2[0] = ( -avgrho2[2]*rho[1] + avgrho2[1]*rho[2] ) / (rho[2]-rho[1])
+		#		
 		return avgrho2
+
+	def calc_grad_rho(self):
+		"""
+		Computes the flux-surface average <|∇ρ|>, where ρ = sqrt(s) and s
+		is the normalized toroidal flux, s = phi_t / phi_t_LCFS
+
+		Description
+		-----------
+		This function computes the quantity
+
+			<|∇ρ|> = <|∇s|> / (2 ρ) ,
+
+		where |∇s|² = g^(ss) = ( g_uu * g_vv - g_uv * g_vu ) / det(g).
+
+		Here g_ij are the covariant metric tensor components,
+		det(g) = J² is the determinant of the covariant metric,
+		and J is the VMEC Jacobian.
+
+		The flux-surface average of any scalar-field Q is given by
+
+			<Q> = (1 / (dV/ds))  ∫₀^{2π} ∫₀^{2π}  J(s,u,v) * Q(s,u,v)  du dv.
+
+		The flux-surface average of |∇ρ| becomes
+
+			<|∇ρ|> =
+				(1 / (dV/ds))
+				∫₀^{2π} ∫₀^{2π}
+					( sqrt[g_uu * g_vv - g_uv * g_vu] ) /
+						( 2 ρ )
+				du dv .
+
+		Returns
+		-------
+		avgrho : ndarray
+			An array of size (ns,) containing the flux-surface averaged values
+			<|∇ρ|> on each VMEC radial grid point s.
+		"""
+		import numpy as np
+		nu = 200
+		nv = 500
+		theta = np.linspace(0,2*np.pi,nu).reshape(-1,1)
+		phi   = np.linspace(0,2*np.pi,nv).reshape(-1,1)
+		s     = np.linspace(0,1,self.ns)
+		rho   = np.sqrt(s)
+		#
+		g = self.calc_covariant_tensor(theta=theta,phi=phi)
+		guu = g['uu']
+		gvv = g['vv']
+		guv = g['uv']
+		#
+		dVds = self.vp[:].flatten() * (4*np.pi*np.pi)
+		# It's important to keep rho inside the integrand instead of diving afterwards
+		# otherwise the integral will diverge close to the axis
+		integrand = np.sqrt(guu*gvv - guv*guv)
+		integral = np.trapz(integrand,x=phi.ravel(),  axis=2)
+		integral = np.trapz(integral, x=theta.ravel(),axis=1)
+		# Because at rho=0 the integrand is Nan, we linearly interpolate:
+		avgrho = np.zeros_like(rho)
+		avgrho[1:] = integral[1:] / (2*dVds[1:]*rho[1:])
+		avgrho[0] = ( -avgrho[2]*rho[1] + avgrho[1]*rho[2] ) / (rho[2]-rho[1])
+		#		
+		return avgrho
 
 	def calc_susceptance(self):
 		"""Compute susceptance matrix elements 
+
 		This routine calculates the susceptance matrix elements
 		S11, S12, S21, S22.
 
@@ -256,8 +556,47 @@ class VMEC(FourierRep):
 		S22 = np.trapz(S22, x=theta, axis=1)*scale_fact
 		return S11,S12,S21,S22
 
+	def calcNormals2D(self,theta,phi,ns=None):
+		"""Returns the 2D surface normals over a domain
+		
+		This routine calculates the 2D outward directed normals for a
+		given surface.  Here the normals always lie in the a plane
+		of constant toroidal angle.
+
+		Parameters
+		----------
+		theta : list
+			Poloidal angles at which to evaluate normals [rad]
+		phi  : list
+			Toroidal angles at which to evaluate normals [rad]
+		s    : int
+			Radial index at which to evaluate normals (default: ns)
+
+		Returns
+		----------
+		nr : ndarray
+			Cylindical radial surface normal (normalized)
+		nz : numpy array
+			Cylindrical vertical surface normal (normalized)
+		"""
+		import numpy as np
+		if type(ns) is type(None):
+			ns = self.ns-1
+		r = self.cfunct(theta,phi,self.rmnc,self.xm,self.xn)
+		z = self.sfunct(theta,phi,self.zmns,self.xm,self.xn)
+		rumns = -self.rmnc*np.tile(self.xm,(1,self.ns)).T
+		zumnc =  self.zmns*np.tile(self.xm,(1,self.ns)).T
+		ru = self.sfunct(theta,phi,rumns,self.xm,self.xn)
+		zu = self.cfunct(theta,phi,zumnc,self.xm,self.xn)
+		nr =  r[ns,:,:]*zu[ns,:,:]
+		nz = -r[ns,:,:]*ru[ns,:,:]
+		n  = np.sqrt(nr*nr+nz*nz)
+		return nr/n, nz/n
+
+
 	def getSpline(self,*args,**kwargs):
 		"""Returns a profile in the AUX_S/F form
+
 		This routine returns the pressure, current or rotational
 		transform profile in the form AUX form used by the VMEC input
 		spline routines.
@@ -297,10 +636,9 @@ class VMEC(FourierRep):
 			print(rf'  AUX_F = {aux_f}')
 		return aux_s,aux_f
 
-
-
 	def getCurrentPoloidal(self):
 		"""Returns the poloidal total current
+
 		This routine returns the total poloidal current as used by the
 		BNORM code.
 
@@ -315,6 +653,109 @@ class VMEC(FourierRep):
 			if (self.xm_nyq[mn]==0 and self.xn_nyq[mn]==0):
 				curpol = 2.0*self.bsubvmnc[self.ns-1,mn]*np.pi/self.nfp 
 		return curpol
+
+	def getCurrentToroidal(self):
+			"""Returns the toroidal total current
+
+			This routine returns the net toroidal current enclosed by
+			the LCFS
+
+			Returns
+			----------
+			curtor : float
+				Total toroidal current -2*pi*B_u(s=1,m=0,n=0)/mu0 [A]
+			"""
+			import numpy as np
+			curtor = -1
+			mu0 = 4*np.pi*1E-7
+			for mn in range(self.mnmax_nyq):
+				if (self.xm_nyq[mn]==0 and self.xn_nyq[mn]==0):
+					curtor = -2.0*np.pi*self.bsubumnc[self.ns-1,mn]/mu0
+			return curtor
+
+	def getiota(self,s):
+		"""Returns the rotational transform
+
+		This routine returns the rotational transform given a value
+		of normalized toroidal flux.
+
+		Parameters
+		----------
+		s : float
+			Normalized toroidal flux [arb]
+
+		Returns
+		----------
+		iota : float
+			Rotational Transform [arb]
+		"""
+		import numpy as np
+		x = np.linspace(0,1,self.ns)
+		f = np.squeeze(self.iotaf)
+		return np.interp(s,x,f)
+
+	def getiotaprime(self,s):
+		"""Returns the derivative of the rotational transform
+
+		This routine returns the derivative of the rotational 
+		transform given a value of normalized toroidal flux.
+
+		Parameters
+		----------
+		s : float
+			Normalized toroidal flux [arb]
+
+		Returns
+		----------
+		iotap : float
+			Rotational Transform Derivative diota/ds [arb]
+		"""
+		import numpy as np
+		x = np.linspace(0,1,self.ns)
+		f = np.diff(np.squeeze(self.iotaf),prepend=0)*(self.ns-1)
+		return np.interp(s,x,f)
+
+	def getpressure(self,s):
+		"""Returns the pressure
+
+		This routine returns the pressure given a value
+		of normalized toroidal flux.
+
+		Parameters
+		----------
+		s : float
+			Normalized toroidal flux [arb]
+
+		Returns
+		----------
+		pressure : float
+			Pressure [Pa]
+		"""
+		import numpy as np
+		x = np.linspace(0,1,self.ns)
+		f = np.squeeze(self.presf)
+		return np.interp(s,x,f)
+
+	def getpressureprime(self,s):
+		"""Returns the derivative of the pressure profile
+
+		This routine returns the derivative of the pressure 
+		profile given a value of normalized toroidal flux.
+
+		Parameters
+		----------
+		s : float
+			Normalized toroidal flux [arb]
+
+		Returns
+		----------
+		pressurep : float
+			Pressure Derivative dpressure/ds [Pa]
+		"""
+		import numpy as np
+		x = np.linspace(0,1,self.ns)
+		f = np.gradient(np.squeeze(self.presf),x,edge_order=2)
+		return np.interp(s,x,f)
 
 	def getBcyl(self,R,phi,Z):
 		"""Wrapper to the GetBcyl_WOUT function
@@ -385,9 +826,187 @@ class VMEC(FourierRep):
 			Derivative of R coordiante with respect to u (dR/du)
 		dZdu : real
 			Derivative of Z coordiante with respect to u (dZ/du)
+		dRdv : real
+			Derivative of R coordiante with respect to v (dR/dv)
+		dZdv : real
+			Derivative of Z coordiante with respect to v (dZ/dv)
 		"""
 		return self.libStell.vmec_get_flxcoord(s,u,v)
 
+	def getTheta(self,s,thetastar,phi):
+		"""Returns VMEC theta coordaintes given theta-star
+
+		This routine returns the poloidal theta coordinate given the 
+		VMEC theta-star coordinate.  Theta-start is the VMEC poloidal
+		coordinate and theta is the poloidal coordiante of the field
+		line where.
+		theta-star = theta + lambda(s,theta,phi)
+
+		Parameters
+		----------
+		s : real
+			VMEC radial coordinate [0,1]
+		thetastar : real
+			VMEC poloidal coordiante [rad]
+		phi : real
+			VMEC toroidal coordiante [rad]
+
+		Returns
+		----------
+		theta : real
+			Poloidal coordinate of field line [rad]
+		"""
+		import numpy as np
+		from scipy import interpolate
+		ph = np.mod(phi,np.pi*2.0)
+		cosnp = np.squeeze(np.cos(self.xn*ph))
+		sinnp = np.squeeze(np.sin(self.xn*ph))
+		dth = 1.0
+		n1 = 0
+		th = np.mod(thetastar,np.pi*2)
+		th1 = th
+		# interpolate in s
+		x = np.linspace(0,1,self.ns)
+		f = interpolate.interp1d(x, self.lmns, axis=0)
+		lmns = f(s)
+		f = interpolate.interp1d(x, self.lmns*np.tile(self.xm,self.ns).T, axis=0)
+		lumnc = f(s)
+		while abs(dth) >= SEARCH_TOL and n1 < 500:
+			cosmt = np.squeeze(np.cos(self.xm*th))
+			sinmt = np.squeeze(np.sin(self.xm*th))
+			lam = np.sum(lmns*(sinmt*cosnp+cosmt*sinnp))
+			lamu = np.sum(lumnc*(cosmt*cosnp-sinmt*sinnp))
+			dth = -(th + lam - th1)/(1.0+lamu)
+			n1 = n1 + 1
+			th = th + 0.5 *dth
+		return th
+
+	def plotfieldlines(self,sval,*args,**kwargs):
+		"""Plots a 3D flux surface with the field lines traced on it
+
+		This routine creates a plot of a flux surface with a field line traced on it
+
+		Parameters
+		----------
+		svals : int
+			Surface to generate in ns
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+
+		"""
+		import numpy as np
+		from libstell.plot3D import PLOT3D 
+		print('!!!!! NOT IMPLMENTED!!!!!')
+		return
+		# Handle input arguments
+		plt  = kwargs.get('plot3D',None)
+		color = kwargs.get('color','red')
+		lrender = False
+		if not plt:
+			plt = PLOT3D()
+			lrender = True
+		plt = PLOT3D()
+		# Make plots of fieldlines
+		s   = float(sval)/float(self.ns-1)
+		maxpnt=128
+		phi_arr = np.linspace(-np.pi,np.pi,maxpnt)
+		zeta_arr = phi_arr*self.nfp
+		x=[]; y=[]; z=[]
+		for zeta in zeta_arr:
+			phi = zeta/self.nfp
+			thetastar = zeta*self.iotaf[sval]
+			theta = self.getTheta(s,thetastar,phi)
+			if theta < 0: theta = theta + 2.0*np.pi
+			R = 0.0; Z = 0.0;
+			for mn in range(self.mnmax):
+				arg = 2.0*np.pi*(self.xm[mn]*theta+self.xn[mn]*phi)
+				R = R + np.cos(arg)*self.rmnc[sval,mn]
+				Z = Z + np.sin(arg)*self.zmns[sval,mn]
+			x.extend([R*np.cos(phi)])
+			y.extend([R*np.sin(phi)])
+			z.extend([Z])
+		points_array = np.squeeze(np.array([x,y,z])).T
+		print(points_array.shape)
+		# Convert numpy array to VTK points
+		points=plt.vertexToPoints(points_array)
+		plt.add3Dline(points,linewidth=2,color='black')
+
+		# Make 3D flux surface plot
+		theta = np.linspace([0],[np.pi*2],360)
+		phi = np.linspace([0],[np.pi*2],360)
+		r = self.cfunct(theta,phi,self.rmnc,self.xm,self.xn)
+		z = self.sfunct(theta,phi,self.zmns,self.xm,self.xn)
+		self.isotoro(r,z,phi,sval-16,color=color,plot3D=plt)
+		# Render if requested
+		if lrender: plt.render()
+
+	def wout_to_indata(self):
+		"""Converts an wout to indata
+
+		This routine sets the VMEC INDATA namelist via values from a
+		VMEC wout file.
+		"""
+		import numpy as np
+		indata = VMEC_INDATA()
+		indata.read_indata('')
+		#### setup indata
+		indata.delt = 1.0
+		indata.nstep = 200
+		indata.ns_array = np.round(np.array([0.125,0.25,0.5,1.0])*float(self.ns)).astype(int)
+		indata.niter_array = np.array([2000,4000,8000,20000])
+		indata.ftol_array = np.array([1E-30,1E-30,1E-30,self.ftolv])
+		indata.precon_type = 'none'
+		indata.prec2d_threshold = 1.0E-19
+		indata.lasym = self.lasym
+		indata.nfp = self.nfp
+		indata.mpol = int(np.max(self.xm)+1)
+		indata.ntor = int(np.max(self.xn)/self.nfp)
+		indata.ntheta = int(2*indata.mpol+6)
+		if indata.ntor == 0: 
+			indata.nzeta = 1
+		else:
+			indata.nzeta  = int(2*indata.ntor+4)
+		indata.phiedge = float(self.phi[-1,0])
+		indata.lfreeb  = self.lfreeb
+		if indata.lfreeb:
+			indata.extcur = self.extcur
+		indata.nvacskip = 6
+		indata.mgrid_file = self.mgrid_file.strip()
+		indata.gamma = self.gamma
+		indata.bloat = 1.0
+		indata.ncurr = 1
+		indata.curtor = self.itor
+		indata.ai = np.squeeze(self.ai)
+		indata.ac = np.squeeze(self.ac)
+		indata.am = np.squeeze(self.am)
+		indata.pmass_type = self.pmass_type.strip()
+		indata.piota_type = self.piota_type.strip()
+		indata.pcurr_type = self.pcurr_type.strip()
+		indata.pres_scale = 1.0
+		indata.update_indata()
+		pvmec = self.presf[0,0]
+		pindata = indata.pmass(0.0)/(np.pi*4E-7)
+		indata.pres_scale = float(np.round(float(pvmec/pindata),decimals=4))
+		i = 0
+		for mn in range(self.mnmax):
+			if (self.xm[mn] == 0):
+				indata.raxis_cc[i] = self.rmnc[0,mn]
+				indata.zaxis_cs[i] = self.zmns[0,mn]
+				if indata.lasym:
+					indata.raxis_cs[i] = self.rmns[0,mn]
+					indata.zaxis_cc[i] = self.zmnc[0,mn]
+				i = i + 1
+			mdex = int(self.xm[mn,0])
+			ndex = int(-self.xn[mn,0]/self.nfp+101)
+			#print(self.xn[mn,0],self.xm[mn,0],mdex,ndex)
+			#print(indata.rbc.shape)
+			indata.rbc[mdex,ndex] = self.rmnc[-1,mn]
+			indata.zbs[mdex,ndex] = self.zmns[-1,mn]
+			if indata.lasym:
+				indata.rbs[mdex,ndex] = self.rmns[-1,mn]
+				indata.zbc[mdex,ndex] = self.zmnc[-1,mn]
+		indata.update_indata()
+		indata.write_indata('input.'+self.input_extension.strip()+'_new')
 
 	def extrapSurface(self,surf=None,dist=0.1):
 		"""Returns an extrapolated surface.
@@ -624,6 +1243,7 @@ class VMEC(FourierRep):
 				dl2 = dr*dr + dz*dz
 				d = d + min(dl2)
 		return d
+		
 	def callbackF(self,intermediate_result):
 		print(f'ITER: {self.Nfeval} -- dval: {intermediate_result.fun}')
 		self.Nfeval += 1
@@ -657,7 +1277,104 @@ class VMEC(FourierRep):
 		print('{0:4d}   {1: 3.6f}   {2: 3.6f}   {3: 3.6f}'.format(self.Nfeval, Xi[0], Xi[1], Xi[2]))
 		self.Nfeval += 1
 		pyplot.close(fig)
+  
+	def get_RZ_coordinates(self,phi,theta):
+		"""This routine returns the (R,Z) positions of all the flux surfaces 
+  		at given phi and theta. phi and theta can be arrays and the returned 
+    	positions have dimension self.ns x Ntheta x Nzeta
 
+		Parameters
+		----------
+		phi : float or 1D array
+			cylindrical toroidal angle at which R,Z are computed
+		theta_arr : flot or 1D array
+  			poloidal angle at which R,Z are computed
+
+		Returns
+		----------
+		R : ndarray (self.ns x Ntheta x Nzeta)
+			R coordinate of flux surface
+		Z : ndarray (self.ns x Ntheta x Nzeta)
+			Z coordinate of flux surface
+		"""
+		import numpy as np
+		phi = np.atleast_1d(phi)
+		phi = phi.reshape(-1,1) #nd array
+		theta = np.atleast_1d(theta)
+		theta = theta.reshape(-1,1) # nd array
+		R = self.cfunct(theta,phi,self.rmnc,self.xm,self.xn)
+		Z = self.sfunct(theta,phi,self.zmns,self.xm,self.xn)
+		if self.iasym==1:
+			R += self.sfunct(theta,phi,self.rmns,self.xm,self.xn)
+			Z += self.cfunct(theta,phi,self.zmnc,self.xm,self.xn)
+        
+		return R,Z
+
+	def get_triangulation(self,phi,s_input=None,f_input=None):
+		"""This routine returns a matplotlib triangulation for all the flux surfaces
+		at cylindrical toroidal angle phi. The triangulation is computed using a poloidal
+		discretization of 1 degree
+  		The triangulation can be used to make contour plots with the VMEC flux surface 
+    	unstructured grid. 
+    	If the flux quantity f_input is to be contour ploted and is initially given 
+		at the s_input (normalized flux) grid, this routine interpolates f_input at 
+  		VMEC s-grid and returns f with the length Ntheta x self.ns, ready to be plotted
+		with the triangulation.
+  
+		Example. If fi is a flux-surface quantity evaluated at the s grid, then:
+		triangulation, f_output = get_triangulation(0.0,s,fi)
+		plt.tricontourf(triangulation, f_output)
+  
+		Parameters
+		----------
+		phi : float
+			cylindrical toroidal angle at which R,Z are computed
+		s_input: 1D array (optional)
+			grid at which f is given
+		f_input: 1D array (optional)
+			flux=surface quantity evauated at s_input
+
+		Returns
+		----------
+		triang : matplotlip triangulation class
+		f_output (optional) : f_input quantity interpolated at VMEC grid
+		"""
+		import numpy as np
+		import matplotlib.tri as tri
+		import matplotlib.path
+  
+		if(f_input is not None and s_input is None):
+			raise ValueError('f_input has been given but s_input no!')
+		elif(f_input is None and s_input is not None):
+			raise Warning('s_input has been given, but there isno f_input. Only triangulation is computed...')
+
+		theta = np.ndarray((360,1))
+		for j in range(360): theta[j]=2.0*np.pi*j/360.0
+		Ntheta = len(theta)
+  
+		# Get R,Z coordinates of all flux surfaces
+		R,Z = self.get_RZ_coordinates(phi,theta)
+		
+  		# Make triangulation
+		triangulation = tri.Triangulation(R.ravel(),Z.ravel())
+		# Mask triangles outside the LCFS
+		LCFS = matplotlib.path.Path(np.column_stack((R[-1,:], Z[-1,:])))
+		triangles = triangulation.triangles
+		xc = R.ravel()[triangles].mean(axis=1) # centroids
+		yc = Z.ravel()[triangles].mean(axis=1)
+		mask = ~LCFS.contains_points(np.column_stack((xc, yc)))
+		triangulation.set_mask(mask)
+
+		if(s_input is not None and f_input is not None):
+			# Interpolate f_input at VMEC s-grid
+			s_VMEC = np.linspace(0,1,self.ns)
+			f_output = np.interp(s_VMEC,s_input,f_input)
+			# Reshape f_output to have the length Nsurfaces X Ntheta
+			f_output = np.broadcast_to(f_output[:,None],(self.ns,Ntheta))
+			f_output = f_output.reshape(self.ns*Ntheta)
+			return triangulation, f_output
+		else:
+			return triangulation
 # VMEC INDATA Class
 class VMEC_INDATA():
 	"""Class for working with VMEC equilibria
@@ -682,6 +1399,15 @@ class VMEC_INDATA():
 		# generate helpers
 		#print(self.rbc.shape)
 
+	def update_indata(self):
+		"""Update indata on the Fortran side of memory
+
+		This routine updates the fortran side of memory with any
+		changes made to the class.
+		"""
+		out_dict = vars(self)
+		self.libStell.update_module('vmec_input_',out_dict)
+
 	def write_indata(self,filename):
 		"""Writes INDATA namelist to a file
 
@@ -696,6 +1422,105 @@ class VMEC_INDATA():
 		#del out_dict['libStell']
 		#print(d(self))
 		self.libStell.write_indata(filename,out_dict)
+
+	def pmass(self,x):
+		"""Wrapper to the PMASS function
+
+		This routine wrappers the PMASS function which
+		returns the mass(s) pressure function.
+
+		Parameters
+		----------
+		s : real
+			Value of normalized toroidal flux
+		Returns
+		-------
+		val : real
+			Value of mass(s)
+		"""
+		return self.libStell.pmass(x)
+
+	def piota(self,x):
+		"""Wrapper to the PIOTA function
+
+		This routine wrappers the PIOTA function which
+		returns the iota(s) function.
+
+		Parameters
+		----------
+		s : real
+			Value of normalized toroidal flux
+		Returns
+		-------
+		val : real
+			Value of iota
+		"""
+		return self.libStell.piota(x)
+
+	def pcurr(self,x):
+		"""Wrapper to the PCURR function
+
+		This routine wrappers the PCURR function which
+		returns the current profile.
+
+		Parameters
+		----------
+		s : real
+			Value of normalized toroidal flux
+		Returns
+		-------
+		val : real
+			Value of current profile
+		"""
+		return self.libStell.pcurr(x)
+
+	def calcVolume(self):
+		"""Calculate total volume
+
+		The routine computes the total volume based on the boundary
+		shape.
+
+		Returns
+		-------
+		volume : real
+			Total equilibrium volume [m^3]
+		"""
+		return self.libStell.indataVolume()
+
+	def calcArea(self):
+		"""Calculate cross sectional area
+
+		The routine computes the cross sectional area based on the 
+		boundary shape.
+
+		Returns
+		-------
+		area : real
+			Average cross sectional area [m^2]
+		"""
+		return self.libStell.indataArea()
+
+	def initAxisMean(self):
+		"""Initiazlize the axis using a mean method
+
+		The routine initializes the axis using a mean method.
+
+		"""
+		rzaxis_dict = self.libStell.indataInitAxisMean()
+		for key in rzaxis_dict:
+			setattr(self, key, rzaxis_dict[key])
+		return 
+
+	def initAxisMidpoint(self):
+		"""Initiazlize the axis using a midpoint method
+
+		The routine initializes the axis using a midpoint method.
+
+		"""
+		rzaxis_dict = self.libStell.indataInitAxisMidpoint()
+		for key in rzaxis_dict:
+			setattr(self, key, rzaxis_dict[key])
+		return 
 
 
 
