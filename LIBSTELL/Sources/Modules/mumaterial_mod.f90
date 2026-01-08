@@ -182,11 +182,11 @@
       END INTERFACE
       CONTAINS
       
-
 !------------------------------------------------------------------------------
 ! mumaterial_read_nml: Reads Mumaterial namelist from file
 !------------------------------------------------------------------------------
-! param[in]: lverbin. Verbosity on
+! param[in]: filename. File containting mumat_input namelist
+! param[inout]: istat. Status Flag
 !------------------------------------------------------------------------------
       SUBROUTINE mumaterial_read_nml(filename, istat)
 
@@ -196,11 +196,18 @@
       INTEGER,      INTENT(out) :: istat
 
       LOGICAL :: lexist
-      INTEGER :: iunit, niter, lamthresh
-      DOUBLE PRECISION :: tol, lambda, lamfactor, padfactor, convcheck
+      INTEGER :: iunit
       CHARACTER(LEN=1000) :: line
 
-      NAMELIST /mumat_input/ tol, niter, lambda, lamfactor, lamthresh, padfactor, convcheck
+      NAMELIST /mumat_input/ maxIter, dMmax, lambdaStart, lambdaFactor, lambdaThresh, padFactor, convCheck
+
+      maxITER = 100
+      dMmax   = 1.0D-5
+      lambdaStart = 0.7
+      lambdaFactor = 0.75
+      lambdaThresh = 0
+      padFactor = 0.0
+      convCheck = 0.0
 
       istat = 0
       iunit = 422
@@ -224,13 +231,69 @@
 
       CLOSE(iunit)
 
-      CALL mumaterial_setd(tol, niter, lambda, lamfactor, lamthresh, padfactor, convcheck)
-
       RETURN
 
       END SUBROUTINE mumaterial_read_nml
       
+!------------------------------------------------------------------------------
+! mumaterial_write_nml: Writes Mumaterial namelist to a file
+!------------------------------------------------------------------------------
+! param[inout]: iunit_out. Unit number to write to.
+! param[out]: istat. Status flag.
+!------------------------------------------------------------------------------
+      SUBROUTINE mumaterial_write_nml(iunit_out, istat)
 
+      IMPLICIT NONE
+
+      INTEGER,      INTENT(inout)  :: iunit_out
+      INTEGER,      INTENT(out) :: istat
+
+      CHARACTER(LEN=*), PARAMETER :: outint  = "(2X,A,1X,'=',1X,I0)"
+      CHARACTER(LEN=*), PARAMETER :: outflt  = "(2X,A,1X,'=',1X,ES22.12E3)"
+
+      WRITE(iunit_out,'(A)') '&MUMAT_INPUT'
+      WRITE(iunit_out,outint) 'MAXITER',maxIter
+      WRITE(iunit_out,outflt) 'DMMAX',dMmax
+      WRITE(iunit_out,outflt) 'LAMBDASTART',lambdaStart
+      WRITE(iunit_out,outflt) 'LAMBDAFACTOR',lambdaFactor
+      WRITE(iunit_out,outint) 'LAMBDATHRESH',lambdaThresh
+      WRITE(iunit_out,outflt) 'PADFACTOR',padFactor
+      WRITE(iunit_out,outflt) 'CONVCHECK',convCheck
+      WRITE(iunit_out,'(A)') '/'
+
+      RETURN
+
+      END SUBROUTINE mumaterial_write_nml
+      
+!------------------------------------------------------------------------------
+! mumaterial_write_nml_byfile: Writes Mumaterial namelist to a file
+!------------------------------------------------------------------------------
+! param[in]: filename. File to read from
+!------------------------------------------------------------------------------
+      SUBROUTINE mumaterial_write_nml_byfile(filename)
+
+      IMPLICIT NONE
+
+      CHARACTER(LEN=*), INTENT(in) :: filename
+      INTEGER :: iunit, istat
+      LOGICAL :: lexists
+      
+      iunit = 100
+      istat = 0
+      INQUIRE(FILE=TRIM(filename),exist=lexists)
+      IF (lexists) THEN
+         OPEN(unit=iunit, file=TRIM(filename), iostat=istat, status="old", position="append")
+      ELSE
+         OPEN(unit=iunit, file=TRIM(filename), iostat=istat, status="new")
+      END IF
+      IF (istat .ne. 0) RETURN
+      CALL mumaterial_write_nml(iunit,istat)
+      CLOSE(iunit)
+
+      RETURN
+
+      END SUBROUTINE mumaterial_write_nml_byfile
+      
 !------------------------------------------------------------------------------
 ! mumaterial_setverb: Sets Verbosity
 !------------------------------------------------------------------------------
