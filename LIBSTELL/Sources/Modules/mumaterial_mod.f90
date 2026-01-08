@@ -148,6 +148,11 @@
 !         mumaterial_init:      Initializes everything, calls iteration subroutine
 !         mumaterial_iterate_M: Main calculation loop
 !
+!       Namelist Routines
+!         mumaterial_init_nml:  Initializes the namelist variables
+!         mumaterial_read_nml:  Reads the namelist from an iunit
+!         mumaterial_write_nml: Write the namelist to a file.
+!
 !       Helpers
 !         mumaterial_gettetvolume:  Calculates volume of a tetrahedron
 !         mumaterial_getneighbours: Determines tetrahedron neighbours
@@ -164,12 +169,23 @@
 !         mumaterial_sync_array2d_dbl: Syncs any 2D,DBL array on shar_mem nodes
 !         mumaterial_syncM:       Syncs (3,domsize) DBL array on shar_mem nodes
 !         mumaterial_free:             Frees MPI memory
+!
 !       Output
 !         mumaterial_output:  Output B-field and points to file
 !         mumaterial_getb:    Calculates magnetic field in space
-!             mumaterial_getb_scalar:      Single point in space
-!               mumaterial_getbmag_scalar: Excludes applied field
-!             mumaterial_getb_vector: Multiple points in space
+!         mumaterial_getb_scalar:      Single point in space
+!         mumaterial_getbmag_scalar: Excludes applied field
+!         mumaterial_getb_vector: Multiple points in space
+!
+!       Python Interface Routines
+!         mumaterial_load_serial:   Loads magnetic material file
+!         mumaterial_get_nvertex:   Returns the nvertex variable
+!         mumaterial_get_ntet:      Returns the ntet variable
+!         mumaterial_get_nstate:    Returns the nstate variable
+!         mumaterial_get_vertex:    Returns the vertex variable
+!         mumaterial_get_tet:       Returns the tet variable
+!         mumaterial_get_statedex:  Returns the state_dex variable
+!         mumaterial_get_statetype: Returns the state_type variable
 !
 !       Debug
 !         mumaterial_debug:      Sets debug verbosity
@@ -181,6 +197,24 @@
             MODULE PROCEDURE mumaterial_getb_scalar, mumaterial_getb_vector
       END INTERFACE
       CONTAINS
+      
+!------------------------------------------------------------------------------
+! mumaterial_init_nml: Initializes the mumat_input namelist variables
+!------------------------------------------------------------------------------
+!------------------------------------------------------------------------------
+      SUBROUTINE mumaterial_init_nml()
+
+      IMPLICIT NONE
+
+      maxITER = 100
+      dMmax   = 1.0D-5
+      lambdaStart = 0.7
+      lambdaFactor = 0.75
+      lambdaThresh = 10
+      padFactor = 1.0
+      convCheck = 99.0
+
+      END SUBROUTINE mumaterial_init_nml
       
 !------------------------------------------------------------------------------
 ! mumaterial_read_nml: Reads Mumaterial namelist from file
@@ -200,14 +234,6 @@
       CHARACTER(LEN=1000) :: line
 
       NAMELIST /mumat_input/ maxIter, dMmax, lambdaStart, lambdaFactor, lambdaThresh, padFactor, convCheck
-
-      maxITER = 100
-      dMmax   = 1.0D-5
-      lambdaStart = 0.7
-      lambdaFactor = 0.75
-      lambdaThresh = 0
-      padFactor = 0.0
-      convCheck = 0.0
 
       istat = 0
       iunit = 422
@@ -609,6 +635,28 @@
       RETURN
 
       END SUBROUTINE mumaterial_load
+
+!------------------------------------------------------------------------------
+! mumaterial_load_serial: Loads magnetic material file (no MPI for Python)
+!------------------------------------------------------------------------------
+! param[in]: filename. The file name to load in
+! param[in, out]: istat. Integer that shows  if != 0
+!------------------------------------------------------------------------------
+      SUBROUTINE mumaterial_load_serial(filename,istat)
+
+#if defined(MPI_OPT)
+      USE mpi
+#endif
+      IMPLICIT NONE
+
+      CHARACTER(LEN=*), INTENT(in) :: filename
+      INTEGER, INTENT(inout)       :: istat
+
+      CALL mumaterial_load(filename,istat)
+
+      RETURN
+
+      END SUBROUTINE mumaterial_load_serial
 
 !------------------------------------------------------------------------------
 ! mumaterial_info: Prints info to iunit
@@ -2097,6 +2145,80 @@
 
       RETURN
       END SUBROUTINE
+
+!------------------------------------------------------------------------------
+! mumaterial_get_nvertex: Returns nvertex (for python)
+!------------------------------------------------------------------------------
+!------------------------------------------------------------------------------
+      INTEGER FUNCTION mumaterial_get_nvertex()
+      IMPLICIT NONE
+      mumaterial_get_nvertex = nvertex
+      RETURN
+      END FUNCTION mumaterial_get_nvertex
+
+!------------------------------------------------------------------------------
+! mumaterial_get_ntet: Returns ntet (for python)
+!------------------------------------------------------------------------------
+!------------------------------------------------------------------------------
+      INTEGER FUNCTION mumaterial_get_ntet()
+      IMPLICIT NONE
+      mumaterial_get_ntet = ntet
+      RETURN
+      END FUNCTION mumaterial_get_ntet
+
+!------------------------------------------------------------------------------
+! mumaterial_get_nstate: Returns ntet (for python)
+!------------------------------------------------------------------------------
+!------------------------------------------------------------------------------
+      INTEGER FUNCTION mumaterial_get_nstate()
+      IMPLICIT NONE
+      mumaterial_get_nstate = nstate
+      RETURN
+      END FUNCTION mumaterial_get_nstate
+
+!------------------------------------------------------------------------------
+! mumaterial_get_vertex: Returns vertex (for python)
+!------------------------------------------------------------------------------
+!------------------------------------------------------------------------------
+      SUBROUTINE mumaterial_get_vertex(vertex_out)
+      IMPLICIT NONE
+      DOUBLE PRECISION, DIMENSION(3,nvertex), INTENT(INOUT) :: vertex_out
+      vertex_out = vertex
+      RETURN
+      END SUBROUTINE mumaterial_get_vertex
+
+!------------------------------------------------------------------------------
+! mumaterial_get_tet: Returns tet array (for python)
+!------------------------------------------------------------------------------
+!------------------------------------------------------------------------------
+      SUBROUTINE mumaterial_get_tet(tet_out)
+      IMPLICIT NONE
+      INTEGER, DIMENSION(4,ntet), INTENT(INOUT) :: tet_out
+      tet_out = tet
+      RETURN
+      END SUBROUTINE mumaterial_get_tet
+
+!------------------------------------------------------------------------------
+! mumaterial_get_statedex: Returns state_dex array (for python)
+!------------------------------------------------------------------------------
+!------------------------------------------------------------------------------
+      SUBROUTINE mumaterial_get_statedex(state_out)
+      IMPLICIT NONE
+      INTEGER, DIMENSION(ntet), INTENT(INOUT) :: state_out
+      state_out = state_dex
+      RETURN
+      END SUBROUTINE mumaterial_get_statedex
+
+!------------------------------------------------------------------------------
+! mumaterial_get_statetype: Returns state_type array (for python)
+!------------------------------------------------------------------------------
+!------------------------------------------------------------------------------
+      SUBROUTINE mumaterial_get_statetype(state_out)
+      IMPLICIT NONE
+      INTEGER, DIMENSION(nstate), INTENT(INOUT) :: state_out
+      state_out = state_type
+      RETURN
+      END SUBROUTINE mumaterial_get_statetype
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!    Memory Allocation Subroutines
