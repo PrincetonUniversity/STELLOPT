@@ -42,11 +42,13 @@
 
       ! THRIFT_J is set to 0.0 at begining of thrift_evolve
       ! so need to update it here if code is in restart mode
-      IF(lrestart_from_file .AND. mytimestep.eq.1) THEN
+      IF(lrestart_from_file .AND. mytimestep.eq.1 .AND. nsubsteps .eq. 1) THEN
             ! THRIFT_J(:,itime) = J_RESTART  --> using J directly can be problematic sometimes. better to use the smoothed I
             ! THRIFT_I(:,itime) = UGRID_RESTART*eq_phiedge/mu0 --> better, but leads to small discontinuities of iota at restart times
             ! since UGRID_RESTART does not know about fpicard, while j does. The following is consistent with previous and following iters:
-            CALL curden_to_curtot(THRIFT_J(:,itime),THRIFT_I(:,itime))
+            ! CALL curden_to_curtot(THRIFT_J(:,itime),THRIFT_I(:,itime))  ! This may give the wrong sing?
+            CALL curden_to_curtot(ABS(J_RESTART)*UGRID_RESTART/ABS(UGRID_RESTART),THRIFT_I(:,itime)) ! This for sure gives the correct current's sign
+
       END IF
 
       ! Feed VMEC with dI/ds instead of J (as was done before, see commented lines below)
