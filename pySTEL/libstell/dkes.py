@@ -35,6 +35,10 @@ class DKES:
         self.K = K
         
     def read_DKES_results(self,filename):
+        """
+        Reads a DKES results file named 'filename'. Assumes that data is regular, i.e.
+        cmul and efield form a rectangular meshgrid
+        """
         
         dkes = np.loadtxt(filename,skiprows=2)
         
@@ -111,14 +115,18 @@ class DKES:
                 print(f'Making the average anyway: {Lvar} = 0.5*({Lvarp} + {Lvarm})')
             
     def plot_DKES_coeffs(self,R0=None,iota=None,use_nustar=False):
-        # plots the species-independent L11, L13 and L33 
-        
+        """
+        Plots the species-independent DKES coefficients L11, L13 and L33 
+        To use nu_star at the x-axis instead of cmul, R0 and iota need to be provided:
+        nu_star = (nu/v) * (R0/iota) = cmul * (R0/iota)
+        """
+        # 
         import matplotlib.pyplot as pyplot
         
         var_names = {
                 'L11': '$D_{11}^*~~[m^{-1}~T^{-2}]$',
                 'L31': '$D_{31}^*$',
-                'L33': '$D_{33}^*~~[m~T^2]$'
+                'L33': '$D_{33}^*~~[m~T^2]$',
                 } 
         
         for plot_var in ['L11', 'L31', 'L33']:
@@ -157,6 +165,51 @@ class DKES:
     
         pyplot.show()
         
+    def plot_coeffs(self,which_coeff):
+        """
+        Plots coefficients a la carte. which_coeff can be:
+        D11_star, D31_star, D31_over_D33_corrected or D33_star
+        """
+        import matplotlib.pyplot as pyplot
+        
+        if(which_coeff == 'D11_star'):
+            yplot = self.D11_star
+            var_name = r'$D_{11}^*~~[m^{-1}~T^{-2}]$'
+        elif(which_coeff == 'D31_star'):
+            yplot = self.D31_star
+            var_name = r'$D_{31}^*$'
+        elif(which_coeff == 'D31_over_D33_corrected'):
+            D33_corrected = (2./3.)*self.Bsq/self.cmul - self.D33_star
+            yplot = self.D31_star / D33_corrected
+            var_name = r'$D_{31}^*\,\,/\,\,[(2/3)(\nu/v)^{-1}-D_{33}^*]$'
+        elif(which_coeff == 'D33_star'):
+            yplot = self.D33_star
+            var_name = r'$D_{33}^*$'
+        else:
+            print('Coeff not found...')
+            exit(1)
+                        
+        px = 1/pyplot.rcParams['figure.dpi']
+        pyplot.rc('font', size=20)
+        #pyplot.rc('legend', fontsize=24)
+        fig=pyplot.figure(figsize=(1024*px,768*px))
+        ax = fig.add_subplot(111)
+        for i in range(self.nefield):
+            i1 = i*self.ncmul
+            i2 = i1 + self.ncmul
+            # plot without error bar
+            ax.plot(self.cmul[i1:i2],yplot[i1:i2],marker='+',label=rf'$E_s/v$={self.efield[i1]:3.1E}',linewidth=4,markersize=18)
+            # plot with error bar
+            # [yerr_lower, yerr_upper] = self.compute_yerr(yplot[i1:i2],self.Lm[plot_var][i1:i2],self.Lp[plot_var][i1:i2])
+            x_axis = self.cmul[i1:i2]
+            ax.set_xlabel(r'$\nu/v\,\,[\text{m}^{-1}]$')
+        ax.set_ylabel(var_name)
+        ax.set_xscale('log')
+        ax.set_title(f'r/a={self.roa:.2f}')
+        ax.legend(fontsize=12)
+        ax.grid()
+        pyplot.show()
+    
     def plot_L33_test(self):
         
         import matplotlib.pyplot as pyplot
@@ -214,11 +267,8 @@ class DKES:
         ax.grid()
         pyplot.show()
         
-        
-        
     def plot_Er_resonance(self,Er_v_resonance=None):
-        # make plot of D11* as function of Er/v for each cmul
-        
+        """ Make plot of D11* as function of Er/v for each cmul"""
         import matplotlib.pyplot as pyplot
         
         px = 1/pyplot.rcParams['figure.dpi']
@@ -243,10 +293,12 @@ class DKES:
         pyplot.show()
         
     def compute_yerr(self,y,ym,yp):
-    # Computes the distance between the central value 'y' and its upper and lower limits
-    # A priori we don't know which one of these is the upper and lower since they change
-    # depending on their sign
-    # The output of this function is used for the argument of the maplotlib errorbar function
+        """ 
+        Computes the distance between the central value 'y' and its upper and lower limits
+        A priori we don't know which one of these is the upper and lower since they change
+        depending on their sign
+        The output of this function is used for the argument of the maplotlib errorbar function
+        """
 
         # Check if arrays have different sizes
         if len(y) != len(yp) or len(y) != len(ym):
@@ -270,54 +322,21 @@ class DKES:
                 yerr_upper.append(ypi-yi)
         
         return [yerr_lower, yerr_upper]
-            
-    
-    def compute_PENTA1_coeffs(self):
-        # Computes PENTA input coefficients lstar, mstar and nstar
-        # size of lstar, mstar, nstar is n_cmul x n_efield
-        # Check DKES/PENTA documentation to see the definition of lstar, mstar, nstar
-        # In the documentation, D_ij^* corresponds to self.Lij, which are the species-independent DKES coefficientes
-        print('\n#############################################################################')
-        print('###################   Computing coefficients for PENTA1/v2.0 ##################')
-        print('###############################################################################')
-        
-        ######  WARNING: as of now this assumes an hydrogen plasma, qa=e_charge  #####
-        print('\nWARNING: THIS ASSUMES A PLASMA WITH Z=1, qa=echarge')
-        
-        # Read Pfirsch-Schluter flow from external file
-        # To do later...
-        print('\nFailed to read Pfirsch-Schluter flow, <U^2>, from external file')
-        print('Assuming <U^2>=0\n')
-        self.Usq = 0.0
-        
-        aux = 1 - 1.5*self.cmul*self.D33_star/self.Bsq
-        
-        #compute PENTA lstar
-        self.lstar = self.D11_star - (2./3.)*self.cmul*self.Usq + (1.5*self.cmul*self.D13_star*self.D13_star/self.Bsq)/aux
-        self.lstar = self.lstar / (EC*EC)
-        
-        #compute PENTA mstar
-        self.mstar = self.cmul*self.cmul*self.D33_star / aux
-
-        #compute PENTA nstar
-        self.nstar = self.cmul*self.D13_star / aux
-        self.nstar = self.nstar / EC
     
     def get_VMEC_quantities(self,wout_file):
-        
-        ##########################################################
         import netCDF4 as nc
+        
         try:
             dataset = nc.Dataset(wout_file, 'r')
             Bsq = dataset.variables['bdotb'][:]
             phi = dataset.variables['phi'][:]
             bmnc = dataset.variables['bmnc'][:]
             self.aspect_ratio = dataset.variables['aspect'][:]
+            self.aminor = dataset.variables['Aminor_p'][:]
             dataset.close()
         except:
             print('\nERROR: Could not read wout file')
             sys.exit(0)
-        ##########################################################
         
         self.Bsq = Bsq[self.surface-1]
         self.roa = np.sqrt(phi[self.surface-1]/phi[-1])
@@ -328,81 +347,17 @@ class DKES:
         print(f'Bsq = {self.Bsq}')
         print(f'B0 = {self.B0}')
         print(f'R/a = {self.aspect_ratio}')
-        
-     
-    def plot_PENTA1_coeffs(self):
-        # creates 3 graphs: lstar, mstar and nstar vs cmul (for each efield)
-        
-        import matplotlib.pyplot as pyplot
-        
-        for plot_var in ['lstar', 'mstar', 'nstar']:
-            
-            yplot = getattr(self,plot_var)
-            
-            if plot_var=='lstar':
-                yplot1 = getattr(self,plot_var+'_1')
-                yplot2 = getattr(self,plot_var+'_2')
-                yplot3 = getattr(self,plot_var+'_3')
-                
-            px = 1/pyplot.rcParams['figure.dpi']
-            pyplot.rc('font', size=24)
-            pyplot.rc('legend', fontsize=24)
-            fig=pyplot.figure(figsize=(1024*px,768*px))
-            ax = fig.add_subplot(111)
-            for i in range(self.nefield):
-                i1 = i*self.ncmul
-                i2 = i1 + self.ncmul
-                ax.plot(self.cmul[i1:i2],yplot[i1:i2],marker='+',label=rf'$E_s/v$={self.efield[i1]:3.1E}',linewidth=4,markersize=18)
-                if plot_var=='lstar' and i==1:
-                    ax.plot(self.cmul[i1:i2],yplot1[i1:i2],'--',label='D11*',linewidth=4)
-                    ax.plot(self.cmul[i1:i2],yplot2[i1:i2],'--',label='U2*',linewidth=4)
-                    ax.plot(self.cmul[i1:i2],yplot3[i1:i2],'--',label='(D31*)^2/D33*',linewidth=4)
-                    
-            ax.set_xlabel(r'$\nu/v [m^{-1}]$')
-            ax.set_ylabel(f'PENTA {plot_var}')
-            ax.set_xscale('log')
-            if(plot_var=='lstar' or plot_var=='mstar'):
-                ax.set_yscale('log')
-            if(plot_var=='nstar'):
-                ax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
-            ax.set_title(f'r/a={self.roa:.2f}')
-            ax.grid()
-            ax.legend(fontsize=12)
-     
-        pyplot.show()
-        
-    def h2f(self,var_half):
-        """Half to full grid
-        Copied from vmec.py
-
-		This routine takes a 1D field and interpolates it from the half
-		to the full grid. For an ns sized array we assumes that the
-		first index [0]=0 and is just a placeholder.
-
-		Parameters
-		----------
-		var_half : list
-			Variable on half grid
-		Returns
-		----------
-		var_full : list
-			Variable on full grid
-		"""
-        temp = var_half.copy()
-        temp[0] = 1.5 * temp[1] - 0.5 * temp[2]
-        temp[1:-1] = 0.5 * (temp[1:-1] + temp[2:])
-        temp[-1] = 2.0 * temp[-1] - 1.0 * temp[-2]
-        return temp
     
     def write_PENTA3_coeffs_to_files(self, where_to, cmul_list=None, efield_list=None):
-        # name of the files are 'D11_star_##' , 'D13_star_##', 'D33_star_##'
+        """ 
+        Creates files to be read by PENTA3: 'D11_star_##' , 'D13_star_##', 'D33_star_##'
+        where_to specifies ssaving directory (path should not have final /)
         
-        # where_to save -- path should not have final /
-        
-        # if cmul_list and/or efield_list are None, then it uses ALL available values
-        # if not None, then looks for the closest available
-        # this is used to reduce the parameter space of DKES to make it faster (at the cost of loosing accuracy, of course)
-        # it's also used to make convergence tests in cmul/efield
+        If cmul_list and/or efield_list are None, then it uses ALL available values
+        If not None, then looks for the closest available
+        This is used to reduce the parameter space of DKES to make it faster (at the cost of loosing accuracy, of course)
+        It's also used to make convergence tests in cmul/efield
+        """
         
         #checks that data is regular, i.e.: for each efield there are always the same cmul
         # if data is regular the following arrays are computed:
@@ -461,41 +416,18 @@ class DKES:
             with open(filename, 'w') as file:
                 file.write(f'{ncmul} {nefield}\n')
                 for value in combined:
-                    file.write(f'{value:.10e}\n')
-    
-    def write_PENTA1_coeffs_to_files(self,where_to):
-        # name of the files are 'lstar_lijs_##' , 'mstar_lijs_##', 'nstar_lijs_##'
-        
-        #where_to save -- path should not have final /
-        
-        #checks that data is regular, i.e.: for each efield there are always the same cmul
-        # if data is regular the following arrays are computed:
-        # self.cmul_regular
-        # self.efield_regular
-        
-        self.check_data_is_regular(self.cmul,self.efield)
-        
-        for var in ['lstar', 'mstar', 'nstar']:
-            
-            filename = where_to + '/' + var + '_lijs_' + 'surface_' + f'{self.surface}'
-            y = getattr(self,var)
-
-            combined = np.concatenate((self.cmul_regular,self.efield_regular,y))
-            
-            #create file
-            with open(filename, 'w') as file:
-                file.write(f'{self.ncmul} {self.nefield}\n')
-                for value in combined:
-                    file.write(f'{value:.10e}\n')            
+                    file.write(f'{value:.10e}\n')           
                 
     def check_data_is_regular(self,cmul,efield):
-        # checks that data is regular, i.e.: for each efield there are always the same cmul
-        # if data is regular the following arrays are computed:
-        # self.cmul_regular
-        # self.efield_regular
+        """ Checks that data is regular, i.e. for each efield there are always the same cmul.
+        If data is regular the following arrays are computed:
+        self.cmul_regular
+        self.efield_regular
+        """
         
         # Get the unique values and counts of efield
         unique_efields, counts = np.unique(efield, return_counts=True)
+        print(counts)
         
         if not np.all(counts == counts[0]):
             print('ERROR: Each cmul does not have the same number of efields. Cannot proceed...')
@@ -520,10 +452,8 @@ class DKES:
                 self.cmul_regular   = expected_cmul
                 
     def get_closest_indices(self,values, regular_values):
-        #For each value in 'values', find the index of the closest value in 'regular_values'.
-        
+        """For each value in 'values', find the index of the closest value in 'regular_values'."""
         indices = np.abs(np.array(regular_values)[:, np.newaxis] - values).argmin(axis=0)
-        
         return indices
                 
     def set_cmul_species(self,K,make_plot=False):
@@ -560,9 +490,10 @@ class DKES:
             plt.show()
             
     def plot_Erv_K_species(self,Er_V_cm,plasma_class,K=None,Er_v_resonance=None):
-        #makes plot of Er/v as a function of K for all species
-        # Er_V_cm is in V/cm and it can wether be an array or a double
-        
+        """ 
+        Makes a plot of Er/v as a function of K for all species
+        Er_V_cm is in V/cm and it can be an array or a double
+        """
         import matplotlib.pyplot as plt
         
         #if K is not given, check if self.K exists
@@ -605,313 +536,64 @@ class DKES:
             if Er_v_resonance is not None:
                 ax.plot(K,np.full_like(K,Er_v_resonance),'--r',linewidth=3,label='Er/v res')
             plt.legend()
-            plt.show()
-    
-    def set_PENTA1_integrands_energy_conv(self,intj,plasma_class,make_plots=True):
-        # This function computes the integrand of the energy convolution as in PENTA for each efield
-        # and plots it as function of K
-        # Integrand = sqrt(K) * exp(-K) * (K-5/2)^{intj-1} * [lstar,m,star,nstar] * K^{3/2}
-        # This function requires computing collisionality nu_D
-        # We also spline interpolate lstar,mstar and star as function of cmul for each efield
-        
-        import matplotlib.pyplot as plt
-        
-        self.plasma_class = plasma_class
-        
-        # Computes dicitionary of arrays self.cmul_species. 
-        # Contains cmul for each species for array K
-        self.set_cmul_species(K,make_plot=make_plots)
-        
-        # Set integrands = l/m/n-star * fix func
-        # this creates dictionary of arrays: self.lstar_integrand, self.nstar_integrand, self.mstar_integrand
-        # for instance, self.lstar_integrand['electrons'][3] gives the arrays of integrand (as function of K) 
-        # for l* for electrons for the 4th (3+1) electric field 
-        self.set_integrands(intj,K,make_plot=make_plots)  
-            
-            
-    def get_fix_func(self,K,intj,make_plot=False):
-        
-        import matplotlib.pyplot as plt
-        
-        fix_func = np.sqrt(K) * np.exp(-K) * (K-2.5)**(intj-1) * K**1.5
-        
-        if make_plot is True:
-            fig, ax = plt.subplots(figsize=(8,6))
-            ax.plot(K,fix_func,'o-')
-            #ax.set_yscale('log')
-            ax.set_ylabel(r'$\sqrt{K}e^{-K}\left(K-5/2\right)^{j-1}\,K^{3/2}$')
-            ax.set_xlabel(f'K')   
-            ax.set_title(f'j={intj}')
-            ax.grid()    
-            plt.show()
-        
-        return fix_func        
-        
-                
-    def set_integrands(self,intj,K,make_plot=False):
-        
-        from scipy.interpolate import interp1d
-        import matplotlib.pyplot as plt
-        from collections import defaultdict
-        
-        print('\n ############################################################')
-        print('############# COMPUTING INTEGRANDS AS IN PENTA #################')
-        print('############################################################')
-        
-        # fix_func = f_j(K)*K^(3/2)
-        fix_func = self.get_fix_func(K,intj,make_plot=False)
-        
-        # create dicionaries of lists
-        self.lstar_integrand = defaultdict(list)
-        self.mstar_integrand = defaultdict(list)
-        self.nstar_integrand = defaultdict(list)
-        
-        for i in range(self.nefield):
-            i1 = i*self.ncmul
-            i2 = i1 + self.ncmul
-            
-            efield = self.efield[i1]
-            
-            x = self.cmul[i1:i2]
-            yl = self.lstar[i1:i2]
-            yn = self.nstar[i1:i2]
-            ylogm = np.log( self.mstar[i1:i2] )
-            
-            # quadratic spline as in PENTA. Assuming log_interp = true
-            xlog = np.log(x)
-            lstar_interp = interp1d(xlog,yl,kind='quadratic',bounds_error=False,fill_value=0.0)
-            nstar_interp = interp1d(xlog,yn,kind='quadratic',bounds_error=False,fill_value=0.0)
-            logmstar_interp = interp1d(xlog,ylogm,kind='quadratic',bounds_error=False,fill_value=0.0)
-            #this function is used to multiply exp(logmstar_interp1d), otherwise exp(0)=1 is taken outside the interpolating region
-            filter_logmstar = interp1d(xlog,np.ones_like(xlog),bounds_error=False,fill_value=0.0)
-            
-            xspline = np.logspace(np.log10(x[0]),np.log10(x[-1]),100)
-            
-            fig, ax = plt.subplots(1,3,figsize=(17,6))
-            ax[0].plot(x,yl,'ob')
-            ax[0].plot(xspline, lstar_interp(np.log(xspline)),'red',label='spline')
-            ax[0].set_yscale('log')
-            ax[0].set_xscale('log')
-            ax[0].set_ylabel(r'lstar')
-            ax[0].set_xlabel(f'cmul')   
-            ax[0].set_title(f'Er/v={efield}')
-            ax[0].grid()
-            ax[0].legend()
-            
-            ax[1].plot(x,yn,'ob')
-            ax[1].plot(xspline, nstar_interp(np.log(xspline)),'red',label='spline')
-            ax[1].set_xscale('log')
-            ax[1].set_ylabel(r'nstar')
-            ax[1].set_xlabel(f'cmul')   
-            ax[1].set_title(f'Er/v={efield}')
-            ax[1].grid()   
-            #ax[1].legend()
-            
-            ax[2].plot(x,ylogm,'ob')
-            ax[2].plot(xspline, logmstar_interp(np.log(xspline)),'red',label='spline')
-            ax[2].set_xscale('log')
-            ax[2].set_ylabel('ln(mstar)')
-            ax[2].set_xlabel(f'cmul')   
-            ax[2].set_title(f'Er/v={efield}')
-            ax[2].grid()   
-            #ax[1].legend()
-            
-            plt.tight_layout(pad=2)
-            
-            # full integrand of l*
-            fig,ax = plt.subplots(figsize=(8,6))
-            for species in self.plasma_class.list_of_species:
-                integrand = lstar_interp(np.log(self.cmul_species[species]))*fix_func
-                integral = self.get_integral(integrand,K)
-                
-                #save integrand
-                self.lstar_integrand[species].append( integrand )
-                
-                #plot
-                ax.plot(K,integrand,'o-',label=f'{species}, {integral:.3e}')       
-                ax.set_xlabel('K')
-                ax.set_ylabel(fr'$f_{intj}(K)~l^*(K)~K^{{3/2}}$')
-                ax.set_title(f'Er/v={efield}')
-                ax.grid()
-            plt.legend()
-                      
-            # full integrand of n*
-            fig,ax = plt.subplots(figsize=(10,6))
-            for species in self.plasma_class.list_of_species:
-                integrand = nstar_interp(np.log(self.cmul_species[species]))*fix_func
-                integral = self.get_integral(integrand,K)
-                
-                #save integrand
-                self.nstar_integrand[species].append( integrand )                
-                
-                #plot
-                ax.plot(K,integrand,'o-',label=f'{species}, {integral:.3e}')       
-                ax.set_xlabel('K')
-                ax.set_ylabel(f'$f_{intj}(K)~n^*(K)~K^{{3/2}}$')
-                ax.set_title(f'Er/v={efield}')
-                ax.grid()
-            plt.legend()
-            
-            # full integrand of m*
-            fig,ax = plt.subplots(figsize=(10,6))
-            for species in self.plasma_class.list_of_species:
-                integrand = np.exp(logmstar_interp(np.log(self.cmul_species[species])))*filter_logmstar(np.log(self.cmul_species[species]))*fix_func
-                integral = self.get_integral(integrand,K)
-                
-                #save integrand
-                self.mstar_integrand[species].append( integrand )
-                
-                #plot
-                ax.plot(K,integrand,'o-',label=f'{species}, {integral:.3e}')       
-                ax.set_xlabel('K')
-                ax.set_ylabel(f'$f_{intj}(K)~m^*(K)~K^{{3/2}}$')
-                ax.set_title(f'Er/v={efield}')
-                ax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
-                ax.grid()
-            plt.legend()
-            if make_plot:
-                plt.show()
-            else:
-                plt.close('all')
-            
-    def get_integral(self,y,x,xmin=None,xmax=None,make_plot=False,plot_title=None):
-        # this function computes the trapezoid integral of y=y(x)
-        # if xmin or xmax are provided, the limits of the integral are changed
-        # an error is raised if xmin or xmax fall outside the domain defined by x
-        # if the array x does not contain xmin or xmax exactly, then the closest value is considered
-        
-        import matplotlib.pyplot as plt
-        from scipy.integrate import trapezoid
-        
-        # Check if xmin and xmax are within the domain of x
-        if xmin is not None and (xmin < x.min() or xmin > x.max()):
-            raise ValueError(f"xmin ({xmin}) is outside the domain of x.")
-        if xmax is not None and (xmax < x.min() or xmax > x.max()):
-            raise ValueError(f"xmax ({xmax}) is outside the domain of x.")
-
-        # If xmin or xmax are provided, adjust the limits
-        if xmin is not None:
-            xmin_index = np.argmin(np.abs(x - xmin))  # Find closest value to xmin in x
-        else:
-            xmin_index = 0  # If xmin is None, start from the beginning
-
-        if xmax is not None:
-            xmax_index = np.argmin(np.abs(x - xmax))  # Find closest value to xmax in x
-        else:
-            xmax_index = len(x) - 1  # If xmax is None, go to the end
-
-        # Perform the trapezoidal integration
-        x_selected = x[xmin_index:xmax_index+1]
-        y_selected = y[xmin_index:xmax_index+1]
-        integral = trapezoid(y_selected, x_selected)
-        
-        integral_exact = trapezoid(y,x)
-        rel_error = np.abs(integral_exact-integral) / integral_exact
-
-        # Optionally plot the function
-        if make_plot:
-            plt.rc('font', size=16)
-            fig=plt.figure(figsize=(10,8))
-            plt.plot(x, y, '.-')
-            plt.fill_between(x_selected, y_selected, alpha=0.3, label=f'rel. error={rel_error*100:.1f}%')
-            plt.xlabel('x')
-            plt.legend()
-            if plot_title is not None:
-                plt.title(plot_title)
-            plt.show()
-
-        return integral
-    
-    def compute_energy_convolution(self,which_convol, cmin, cmax):
-        #which_convol should be 'lstar', 'mstar or nstar'
-        
-        convol_type = ['lstar','mstar','nstar']
-        
-        if which_convol not in convol_type:
-            print(f'ERROR: which_convol should take one of the following: {convol_type}')
-            exit(1)
-            
-        #check if integrand exist
-        if not hasattr(self,which_convol+'_integrand'):
-            print('ERROR: integrand does not exist! Need to set it up first!!')
-            exit(1)
-        else:
-            integrand = getattr(self,which_convol+'_integrand')
-            
-        #check if cmin and cmax are inside the cmul domain
-        if cmin>cmax or cmin<np.min(self.cmul) or cmax>np.max(self.cmul):
-            print('ERROR: limits of integral not correct. Cannot proceed')
-            exit(1)
-            
-        #loop in field
-        for i in range(self.nefield):
-            i1 = i*self.ncmul
-            #i2 = i1 + self.ncmul
-            
-            efield = self.efield[i1]
-          
-            for species in self.plasma_class.list_of_species:
-                
-                # compute Kmin and Kmax according to cmin and cmax
-                # we take the values in self.cmul closest to cmin and cmax
-                cmin_index = np.argmin(np.abs(self.cmul_species[species] - cmin))
-                cmax_index = np.argmin(np.abs(self.cmul_species[species] - cmax))
-            
-                Kmin = self.K[np.min([cmin_index,cmax_index])]
-                Kmax = self.K[np.max([cmin_index,cmax_index])]
-                
-                self.get_integral(integrand[species][i],self.K,xmin=Kmin,xmax=Kmax,make_plot=True,plot_title=which_convol+f', {species}, Er/v={efield}')
+            plt.show()        
     
     def get_PENTA3_energy_convolution(self,which_coeff,which_species,Er,plasma_class,K_exp=0,jval=0,log_interp_coeff=True,make_plot=True):
-        # Er is in V/cm
+        """
+        Plots the convolution integrand as in PENTA3:
         
+        convolution = 2*na/sqrt(pi) * integral( dk * integrand )
+        integrand = k**K_exp * sqrt(k) * exp(-k) * assoc_laguerre_{jval}^(3/2) * which_coeff
+        
+        which coeff can be:
+        D11_star, D31_star, D33_star, D31_over_D33_corrected, D31sq_over_D33_corrected, LHS_SN_flow_eq
+        
+        Er must be provided in V/cm
+        """
         import matplotlib.pyplot as plt
         from scipy.integrate import trapezoid
-        from scipy.interpolate import RectBivariateSpline, interp1d, interp2d
         from scipy.special import assoc_laguerre
         
         if(which_coeff == 'D11_star'):
             coeff = self.D11_star
         elif(which_coeff == 'D31_star'):
             coeff = self.D31_star
+        elif(which_coeff == 'D33_star'):
+            coeff = self.D33_star
         elif(which_coeff == 'D31_over_D33_corrected'):
             D33_corrected = (2./3.)*self.Bsq/self.cmul - self.D33_star
             coeff = self.D31_star / D33_corrected
+        elif(which_coeff == 'D31sq_over_D33_corrected'):
+            D33_corrected = (2./3.)*self.Bsq/self.cmul - self.D33_star
+            coeff = self.D31_star**2 / D33_corrected
+        elif(which_coeff == 'LHS_SN_flow_eq'):
+            D33_corrected = (2./3.)*self.Bsq/self.cmul - self.D33_star
+            coeff = (2/3)*self.Bsq/D33_corrected - self.cmul
         else:
             print('Coeff not found...')
             exit(1)
-        # put here more cases...
-        
-        # check that there are no Er/v=0
-        if np.any(self.efield == 0):
-            raise ValueError("Error: 'efield' array contains zero values, which is not allowed.")
+            
+        self.check_data_is_regular(self.cmul,self.efield)
         
         cmul_log = np.log10( np.unique(self.cmul) )
         efield_log = np.log10( np.unique(self.efield) )
         
         # convert coeff to 2D array
         coeff_2d = coeff.reshape(len(efield_log), len(cmul_log)).transpose()
-
-        # spline interpolate the log of the coeff
-        # if the log is not taken, then for coefficients that span many orders of magnitude (as D11star)
-        # it will give bad results...
-        if(log_interp_coeff):
-            interp_func = RectBivariateSpline(cmul_log, efield_log, np.log10(coeff_2d), kx=2, ky=2)
-        else:
-            interp_func = RectBivariateSpline(cmul_log, efield_log, coeff_2d, kx=2, ky=2)
             
         #get thermal speed
         vth = plasma_class.get_thermal_speed(which_species,self.roa)
 
         #get cmul for self.K
         cmul_species = []
+        Erv_species = []
         for k in self.K:
             vparticle = vth * np.sqrt(k)
             nu = plasma_class.get_collisionality(which_species,self.roa,vparticle)
             cmul_species.append( nu / vparticle )
+            Erv_species.append(np.abs(Er*100/vparticle))
                          
         log_cmul_K = np.log10(cmul_species)
-        
         log_efield_K = np.log10( np.abs(Er)*100/(vth*np.sqrt(self.K)) )
         
         # handle points that are out of range as in PENTA3
@@ -922,18 +604,12 @@ class DKES:
         # get indexes where values were clipped 
         idx_clipped = (log_cmul_K_non_clipped!=log_cmul_K) + (log_efield_K_non_clipped!=log_efield_K)
         
-        if(log_interp_coeff):
-            integrand = 10**interp_func(log_cmul_K,log_efield_K,grid=False)
-        else:
-            integrand = interp_func(log_cmul_K,log_efield_K,grid=False)
+        integrand = self.get_interpolated_coeff(which_coeff,cmul=cmul_species,efield=Erv_species,log_interp_coeff=log_interp_coeff)
             
         integrand = integrand * self.K**K_exp * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, jval, k=1.5)
         
-        qa = plasma_class.charge[which_species]
-        ma = plasma_class.mass[which_species]
         na = plasma_class.get_density(which_species,self.roa)
-        norm = ma**2 * vth**3 * na / (qa*qa*np.sqrt(np.pi))
-        
+        norm =  2 * na / np.sqrt(np.pi)
         convolution = norm*trapezoid(integrand,self.K)
         
         print(f'Energy convolution = {convolution:.1e}')
@@ -942,9 +618,10 @@ class DKES:
         # this allows to understand what are the most important points
         if make_plot:
             plt.rc('font', size=16)
-            fig, ax1 = plt.figure(figsize=(10,8)), plt.gca()
+            fig, ax1 = plt.subplots(figsize=(10,8))
             
             cmul_species = np.array(cmul_species)
+            Erv_species  = np.array(Erv_species)
             integrand = np.array(integrand)
             
             # First plot the coefficient
@@ -958,18 +635,26 @@ class DKES:
             # Now plot the integrand
             ax2.plot(cmul_species[~idx_clipped], norm*integrand[~idx_clipped],'.-',color='black')
             ax2.plot(cmul_species[idx_clipped], norm*integrand[idx_clipped],'.-',color='red')
-            ax2.fill_between(cmul_species, norm*integrand, alpha=0.3, label=f'|Er|={np.abs(Er)} V/cm')
+            ax2.fill_between(cmul_species, norm*integrand, alpha=0.3, label=f'|Er|={np.abs(Er)} V/cm')          
 
             if(log_interp_coeff): ax1.set_yscale('log')
             ax1.set_xscale('log')
             ax2.set_xscale('log')
             ax1.set_ylabel(which_coeff)
-            ax2.set_ylabel(f'{which_species} ||{which_coeff} K^{K_exp}||')
+            ax2.set_ylabel(f'{which_species} ||{which_coeff} K^{K_exp} L_{jval}||')
             ax1.grid()
             ax1.set_xlabel(r'$\nu/v$')
             ax2.legend()
-            plt.title(f'r/a={self.roa:.2f}')
+            ax1.set_title(f'r/a={self.roa:.2f}')
             #plt.show()
+            
+            _, ax4 = plt.figure(figsize=(10,8)), plt.gca()
+            ax4.plot(Erv_species[~idx_clipped], norm*integrand[~idx_clipped],'.-',color='black')
+            ax4.plot(Erv_species[idx_clipped], norm*integrand[idx_clipped],'.-',color='red')
+            ax4.set_xlabel(r'$Er/v$')
+            ax4.grid()
+            ax4.set_xscale('log')
+            plt.show()
 
             #now make a plot that shows how many integration points are out of range
             fig, ax3 = plt.figure(figsize=(10,8)), plt.gca()
@@ -984,45 +669,64 @@ class DKES:
             plt.legend()
             plt.show()
             
-            # now make a plot that shows how many integration points are out of range
-            # with size of markers defined by the norm of the integrand
-            # marker_size = np.abs( integrand / np.max(integrand) ) * 20
-            # print(marker_size)
-            # fig, ax4 = plt.figure(figsize=(10,8)), plt.gca()
-            # ax4.plot(self.cmul,self.efield,'x',label='DKES data')
-            # ax4.scatter(10**log_cmul_K[idx_clipped],10**log_efield_K[idx_clipped],color='r',label='integration points (out of range)',s=marker_size[idx_clipped])
-            # ax4.scatter(10**log_cmul_K[~idx_clipped],10**log_efield_K[~idx_clipped],color='k',label='integration points',s=marker_size[~idx_clipped])
-            # ax4.set_yscale('log')
-            # ax4.set_xscale('log')
-            # ax4.set_xlabel(r'$\nu/v$')
-            # ax4.set_ylabel(r'$E_r/v$')
-            # ax4.set_title(f'{which_species},  |Er|={np.abs(Er)} V/cm')
-            # plt.legend()
-            # plt.show()
-        
+            # get the maxima...
+            y = np.abs(norm*integrand)
+            x1 = cmul_species
+            x2 = Erv_species
+            
+            idx = np.argsort(y)[::-1]
+            y_sorted = y[idx]
+            x1_sorted = x1[idx]
+            x2_sorted = x2[idx]
+            
+            def sci_round(val):
+                signif=1
+                if val == 0:
+                    return 0.0
+                exp = int(np.floor(np.log10(abs(val))))
+                mant = round(val / 10**exp, signif)
+                return mant * 10**exp   # “aEb” form
+            
+            x1_rounded = np.array([sci_round(v) for v in x1_sorted])
+            x2_rounded = np.array([sci_round(v) for v in x2_sorted])
+
+            for x1,x2 in zip(x1_rounded,x2_rounded):
+                print(f'{x1:.1e}  ',f'  {x2:.1e}')
+             
         return convolution
     
-    def get_PENTA3_convolution_domain_plot(self,which_coeff,which_species,absEr_list,plasma_class,K_exp=0,jval=0):
-        # absEr_list is in V/cm
-        # no need to give negative values of Er since it;s only the absolute value that matters
-        # recall that the sign of Er inly influences the thermal force, not the transport coefficients
-        
-        import matplotlib.pyplot as plt
-        from scipy.integrate import trapezoid
-        from scipy.interpolate import RectBivariateSpline, interp1d, interp2d
-        from scipy.special import assoc_laguerre
-        
-        plt.rc('font', size=16)
+    def get_interpolated_coeff(self,which_coeff,cmul,efield,log_interp_coeff=False):
+        """ Interpolates which_coeff at nu/v=cmul and Er/v=efield.
+            cmul and efield can be floats or arrays with same size.
+            
+            which_coeff can be:
+            D11_star, D31_star, D33_star, D31_over_D33_corrected, D31sq_over_D33_corrected, LHS_SN_flow_eq
+            
+            If log_interp_coeff is True, then the log of the coefficient is used when producing the spline
+            (this is particularly helpful for coeffs that vary by many orders of magnitude such as D11_star)
+            The output is always of the quantity and not of its log
+        """
+        from scipy.interpolate import RectBivariateSpline
         
         if(which_coeff == 'D11_star'):
             coeff = self.D11_star
         elif(which_coeff == 'D31_star'):
             coeff = self.D31_star
+        elif(which_coeff == 'D33_star'):
+            coeff = self.D33_star
+        elif(which_coeff == 'D31_over_D33_corrected'):
+            D33_corrected = (2./3.)*self.Bsq/self.cmul - self.D33_star
+            coeff = self.D31_star / D33_corrected
+        elif(which_coeff == 'D31sq_over_D33_corrected'):
+            D33_corrected = (2./3.)*self.Bsq/self.cmul - self.D33_star
+            coeff = self.D31_star**2 / D33_corrected
+        elif(which_coeff == 'LHS_SN_flow_eq'):
+            D33_corrected = (2./3.)*self.Bsq/self.cmul - self.D33_star
+            coeff = (2/3)*self.Bsq/D33_corrected - self.cmul
         else:
             print('Coeff not found...')
             exit(1)
-        # put here more cases...
-        
+            
         # check that there are no Er/v=0
         if np.any(self.efield == 0):
             raise ValueError("Error: 'efield' array contains zero values, which is not allowed.")
@@ -1030,64 +734,287 @@ class DKES:
         cmul_log = np.log10( np.unique(self.cmul) )
         efield_log = np.log10( np.unique(self.efield) )
         
+        emin = np.min(efield_log)
+        emax = np.max(efield_log)
+        
+        # Handle out of range as in PENTA
+        cmul   = np.clip(cmul, np.min(np.unique(self.cmul)), np.max(np.unique(self.cmul)))
+        efield = np.clip(efield, np.min(np.unique(self.efield)), np.max(np.unique(self.efield)))
+        
+        enrm_log_database = (efield_log-emin)/(emax-emin)
+        enrm_log_in       = (np.log10(efield)-emin)/(emax-emin)
+        
         # convert coeff to 2D array
         coeff_2d = coeff.reshape(len(efield_log), len(cmul_log)).transpose()
 
         # spline interpolate the log of the coeff
         # if the log is not taken, then for coefficients that span many orders of magnitude (as D11star)
         # it will give bad results...
-        interp_func = RectBivariateSpline(cmul_log, efield_log, np.log10(coeff_2d), kx=2, ky=2)
+        # k=1 corresponds to kord=2 in PENTA spline functions
+        if(log_interp_coeff):
+            interp_func = RectBivariateSpline(cmul_log, enrm_log_database, np.log10(coeff_2d), kx=1, ky=1)#kx=2, ky=2)
+            out = 10**interp_func(np.log10(cmul),enrm_log_in,grid=False)
+        else:
+            interp_func = RectBivariateSpline(cmul_log, enrm_log_database, coeff_2d,  kx=1, ky=1)#kx=2, ky=2)
+            out = interp_func(np.log10(cmul),enrm_log_in,grid=False)            
+        return out
+    
+    def get_auxiliary_integrand(self,which_species,plasma_class,K_exp=0,jval=0,Er=None,make_plot=True):
+        """
+        Plots the "axuiliary" function of PENTA integrand:
         
+        auxiliary_integrand = k**K_exp * sqrt(k) * exp(-k) * assoc_laguerre_{jval}^(3/2)
+        
+        which_species and a plasma_class must be provided in order to tranform K into nu/v. 
+        If Er provided [in V/cm], then same plot is produced as function of Er/v
+        
+        Note that this function can be called without having read a dkes results file beforehand!
+        """
+        import matplotlib.pyplot as plt
+        from scipy.special import assoc_laguerre
+            
         #get thermal speed
         vth = plasma_class.get_thermal_speed(which_species,self.roa)
 
         #get cmul for self.K
         cmul_species = []
+        Erv_species = []
         for k in self.K:
             vparticle = vth * np.sqrt(k)
             nu = plasma_class.get_collisionality(which_species,self.roa,vparticle)
             cmul_species.append( nu / vparticle )
-                         
-        log_cmul_K = np.log10(cmul_species)
-        
-        fig, ax = plt.figure(figsize=(10,8)), plt.gca()
-        
-        for Er in absEr_list:
-        
-            log_efield_K = np.log10( np.abs(Er)*100/(vth*np.sqrt(self.K)) )
+            if(Er is not None):
+                Erv_species.append(np.abs(Er*100/vparticle))
             
-            # handle points that are out of range as in PENTA3
-            log_cmul_K_non_clipped = log_cmul_K
-            log_efield_K_non_clipped = log_efield_K
-            log_cmul_K = np.clip(log_cmul_K, np.min(cmul_log), np.max(cmul_log))
-            log_efield_K = np.clip(log_efield_K, np.min(efield_log), np.max(efield_log))    
-            # get indexes where values were clipped 
-            idx_clipped = (log_cmul_K_non_clipped!=log_cmul_K) + (log_efield_K_non_clipped!=log_efield_K)
-            
-            integrand = 10**interp_func(log_cmul_K,log_efield_K,grid=False)
-            integrand = integrand * self.K**K_exp * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, jval, k=1.5)
-            
-            # qa = plasma_class.charge[which_species]
-            # ma = plasma_class.mass[which_species]
-            # na = plasma_class.get_density(which_species,self.roa)
-            # norm = ma**2 * vth**3 * na / (qa*qa*np.sqrt(np.pi))
+        auxiliary_integrand = self.K**K_exp * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, jval, k=1.5)
+        
+        plt.rc('font', size=16)
+        _, ax = plt.subplots(figsize=(10,8))
+        
+        cmul_species = np.array(cmul_species)
+        if(Er is not None):
+            Erv_species  = np.array(Erv_species)
 
-
-            # make plot that shows how many integration points are out of range
-            # with size of markers defined by the norm of the integrand
-            marker_size = np.abs( integrand / np.max(integrand) ) * 30
-            
-            ax.plot(self.cmul,self.efield,'x',label='DKES data')
-            ax.scatter(10**log_cmul_K[idx_clipped],10**log_efield_K[idx_clipped],color='r',label='integration points (out of range)',s=marker_size[idx_clipped])
-            ax.scatter(10**log_cmul_K[~idx_clipped],10**log_efield_K[~idx_clipped],color='k',label='integration points',s=marker_size[~idx_clipped])
-            ax.set_yscale('log')
+        if(make_plot):
+            ax.plot(cmul_species, auxiliary_integrand,'.-',color='black')
+            ax.set_title(f'r/a={self.roa:.2f}')
             ax.set_xscale('log')
+            ax.set_ylabel(f'{which_species}: sqrt(K) e^(-K) K^{K_exp} L_{jval}')
+            ax.grid()
             ax.set_xlabel(r'$\nu/v$')
-            ax.set_ylabel(r'$E_r/v$')
-            
-        ax.set_title(f'{which_species},  |Er|=[{np.min(absEr_list)},{np.max(absEr_list)}] V/cm')
-        #plt.legend()
+            # ax.legend()
+        
+        if(Er is not None and make_plot):   
+            _, ax = plt.subplots(figsize=(10,8))
+            ax.plot(Erv_species, auxiliary_integrand,'.-',color='black',label=f'Er={Er:.1f} V/cm')
+            ax.set_ylabel(f'{which_species}: sqrt(K) e^(-K) K^{K_exp} L_{jval}')
+            ax.set_xlabel(r'$Er/v$')
+            ax.set_title(f'r/a={self.roa:.2f}')
+            ax.grid()
+            ax.set_xscale('log')
+            ax.legend()
         plt.show()
+        
+        if(Er is None):
+            return cmul_species,auxiliary_integrand
+        else:
+            return cmul_species,Erv_species,auxiliary_integrand
+        
+    def get_BS_current(self,Er,plasma_class,Smax,inspect=False):
+        """ This function computes the SN Bootstrap Current <JBS> as PENTA3 does using the Sugama-Nishimura method. This amounts to 
+        solve Eq. (3.2.1.1) in PENTA documentation by Jeremy Lore. The equation has one typo though: they are missing the elementary 
+        charge multiplying Ta (since it was defined to be in eV)
+        
+        Er is given in V/cm
+        If inspect is True, then will plot inv(flow_mat)*A1 and inv(flow_mat)*A2 point-wise, to check which terms
+        are contributing the most to the BS current
+        """
+        from scipy.special import assoc_laguerre
+        
+        # Check Er!=0
+        if(np.abs(Er) < 1E-6):
+            raise ValueError('Please Choose Er != 0, cause this brings problems when taking the log of Er')
+        
+        ############################################################################################################################
+        ####################### Setup Convolutions in the SN Flow Equation (Eq. 3.2.1.1 in PENTA's notes)  #########################
+        ############################################################################################################################
+        vth = {}
+        n = {}
+        T = {}
+        q = {}
+        m = {}
+        LHS_conv    = {species: np.zeros((Smax+1,Smax+1)) for species in plasma_class.list_of_species}
+        RHS_A1_conv = {species: np.zeros((Smax+1)) for species in plasma_class.list_of_species}
+        RHS_A2_conv = {species: np.zeros((Smax+1)) for species in plasma_class.list_of_species}
+        #
+        for species in plasma_class.list_of_species:
+            vth[species] = plasma_class.get_thermal_speed(species,self.roa)
+            n[species] = plasma_class.get_density(species,self.roa)
+            T[species] = plasma_class.get_temperature(species,self.roa)
+            q[species] = plasma_class.charge[species]
+            m[species] = plasma_class.mass[species]
+            
+            #get cmul for self.K
+            cmul_K = []
+            for k in self.K:
+                vparticle = vth[species] * np.sqrt(k)
+                nu = plasma_class.get_collisionality(species,self.roa,vparticle)
+                cmul_K.append( nu / vparticle )
+                            
+            cmul_K = np.array(cmul_K)
+            efield_K = np.abs(Er)*100/(vth[species]*np.sqrt(self.K))
+            
+            D31_over_D33_corrected = self.get_interpolated_coeff('D31_over_D33_corrected',cmul_K,efield_K,log_interp_coeff=False)
+            # compute: 2/3B^2/D33 - cmul
+            fact_LHS_SN_flow = self.get_interpolated_coeff('LHS_SN_flow_eq',cmul=cmul_K,efield=efield_K,log_interp_coeff=False)
+            
+            #### RHS convolutions ####
+            for jval in range(Smax+1):
+                
+                # A1
+                integrand = D31_over_D33_corrected * self.K**1.5 * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, jval, k=1.5)
+                integrand = integrand * n[species] * 2 / np.sqrt(np.pi)
+                RHS_A1_conv[species][jval] =  np.trapz(integrand,x=self.K)
+                
+                # A2
+                integrand = D31_over_D33_corrected * self.K**2.5 * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, jval, k=1.5)
+                integrand = integrand * n[species] * 2 / np.sqrt(np.pi)
+                RHS_A2_conv[species][jval] =  np.trapz(integrand,x=self.K)
+                
+            #### LHS convolution ####
+            for jval in range(Smax+1):
+                for kval in range(Smax+1):
+                    integrand = fact_LHS_SN_flow * assoc_laguerre(self.K, kval, k=1.5)
+                    integrand = integrand * self.K**1.5 * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, jval, k=1.5)
+                    LHS_conv[species][jval,kval] = np.trapz(integrand,x=self.K) * n[species] * 2 / np.sqrt(np.pi)          
+                               
+        ############################################################################################################################
+        ###############################################  Compute lmat ##############################################################
+        ############################################################################################################################
+        # Calculate Coulomb logarithm as in PENTA
+        if ( T['electrons'] > 50 ):
+            loglambda = 25.3 - 1.15*np.log10(n['electrons']/1.E6) + 2.3*np.log10(T['electrons'])
+        else:
+            loglambda = 23.4 - 1.15*np.log10(n['electrons']/1.E6) + 3.45*np.log10(T['electrons'])
+        #
+        lmat = define_friction_coeffs(masses=np.fromiter(m.values(), dtype=float), 
+                                     charges=np.fromiter(q.values(), dtype=float), 
+                                     v_ths = np.fromiter(vth.values(), dtype=float), 
+                                     Temps = np.fromiter(T.values(), dtype=float), 
+                                     dens  = np.fromiter(n.values(), dtype=float),
+                                     loglambda = loglambda, 
+                                     num_species=len(plasma_class.list_of_species), 
+                                     Smax=Smax)
+        
+        ############################################################################################################################
+        ###########################################  Assemble flow matrix ##########################################################
+        ############################################################################################################################
+        Nspecies = len(plasma_class.list_of_species)
+        flow_mat = np.zeros(((Smax+1)*Nspecies,(Smax+1)*Nspecies))
+        
+        for ispec1,species1 in enumerate(plasma_class.list_of_species):
+            fact1 = q[species1] / (EC*T[species1])
+            fact2 = 1.5*q[species1] / (m[species1]*vth[species1]*EC*T[species1])
+            
+            for jval in range(Smax+1):
+                
+                for kval in range(Smax+1):
+                    # ind1_LHS1 = (ispec1-1)*(Smax+1)
+                    ind1_LHS1 = (ispec1)*(Smax+1)
+                    flow_mat[ind1_LHS1+jval,ind1_LHS1+kval] = fact1*LHS_conv[species1][jval,kval]
+                    
+                    for ispec2,species2 in enumerate(plasma_class.list_of_species):
+                        # ind1_LHS2 = ( ispec1 - 1 ) * ( Smax + 1 ) + jval
+                        ind1_LHS2 = ( ispec1 ) * ( Smax + 1 ) + jval
+                        # ind2_LHS2 = ( ispec2 - 1 ) * ( Smax + 1 ) + kval
+                        ind2_LHS2 = ( ispec2 ) * ( Smax + 1 ) + kval
+                        flow_mat[ind1_LHS2,ind2_LHS2] += -fact2*lmat[ind1_LHS2,ind2_LHS2]
+        
+        ############################################################################################################################
+        ##########################################  Compute A1 and A2 for each species #############################################
+        ############################################################################################################################
+        A1 = {}
+        A2 = {}
+        for species in plasma_class.list_of_species:
+            na_prime_r = plasma_class.get_density_der(species,self.roa) / self.aminor
+            Ta_prime_r = plasma_class.get_temperature_der(species,self.roa) / self.aminor
+            #
+            A1[species] = na_prime_r/n[species] - 1.5*Ta_prime_r/(T[species]) - q[species]*Er*100/(EC*T[species])
+            A2[species] = Ta_prime_r/(T[species])
+            
+        ############################################################################################################################
+        ###############################################  Assemble RHS vector #######################################################
+        ############################################################################################################################
+        RHS = []; RHS1 = []; RHS2 = []
+        for species in plasma_class.list_of_species:
+            for jval in range(Smax+1):
+                rhs = -RHS_A1_conv[species][jval]*A1[species] - RHS_A2_conv[species][jval]*A2[species]
+                RHS.append( rhs )
+                if(inspect):
+                    RHS1.append(-RHS_A1_conv[species][jval]*A1[species])
+                    RHS2.append(-RHS_A2_conv[species][jval]*A2[species])
+        RHS = np.array(RHS); RHS1 = np.array(RHS1); RHS2 = np.array(RHS2)
+        
+        ############################################################################################################################
+        ###############################################  Solve Linear System #######################################################
+        ############################################################################################################################
+        
+        uB_over_B2 = np.linalg.solve(flow_mat,RHS)
+        uB_over_B2_0 = uB_over_B2[0::Smax+1]
+        
+        JBS_species = []
+        for ispecies,species in enumerate(plasma_class.list_of_species):
+            jbs = n[species]*q[species]*np.sqrt(self.Bsq)*uB_over_B2_0[ispecies]
+            JBS_species.append( jbs )
+            
+        JBS_tot = np.sum(JBS_species)
+        print(f'JBS = {JBS_tot/1E3:.1f} kA/m2')
+        print('JBS_species = ',JBS_species)
+        
+        if(inspect):
+            import matplotlib.pyplot as plt
+            
+            flow_mat_inv = np.linalg.inv(flow_mat)
+            flow_mat_inv_point_A1 = flow_mat_inv * RHS1 #[:,None].T
+            flow_mat_inv_point_A2 = flow_mat_inv * RHS2 #[:,None].T
+            
+            uB_over_B2_0_A1 = flow_mat_inv_point_A1[0::Smax+1,:]
+            uB_over_B2_0_A2 = flow_mat_inv_point_A2[0::Smax+1,:]
+
+            x_axis = []
+            for species in plasma_class.list_of_species:
+                for jval in range(Smax+1):
+                    x = f'jval={jval:.0f},{species[0]}'
+                    x_axis.append(x)
+                    
+            # nqB = []
+            # for ispecies,species in enumerate(plasma_class.list_of_species):
+            #     nqB.append( n[species]*q[species]*np.sqrt(self.Bsq) )
+
+            _, ax = plt.subplots(figsize=(11,8))
+            ax.plot(uB_over_B2_0_A1.T,'.-',label=plasma_class.list_of_species)
+            ax.set_xticks(range(len(x_axis)))
+            ax.grid()
+            ax.set_xticklabels(x_axis)#, rotation=90, va='bottom')  # rotate bottom→up
+            ax.set_title('inv(flow)_point_wise_RHS_A1')
+            ax.legend()
+            # plt.show()
+            #
+            _, ax = plt.subplots(figsize=(11,8))
+            ax.plot(uB_over_B2_0_A2.T,'.-',label=plasma_class.list_of_species)
+            ax.set_xticks(range(len(x_axis)))
+            ax.grid()
+            ax.set_xticklabels(x_axis)#, rotation=90, va='bottom')  # rotate bottom→up
+            ax.set_title('inv(flow)_point_wise_RHS_A2')
+            ax.legend()
+            plt.show()
+            
+            # Sanity Check
+            # summation = np.sum((uB_over_B2_0_A1+uB_over_B2_0_A2),axis=1)
+            # for ispecies,species in enumerate(plasma_class.list_of_species):
+            #     print('sanity =',n[species]*q[species]*np.sqrt(self.Bsq)*summation[ispecies] )
+        
+        return JBS_species
                        
     def plot_U2_estimate(self):
         
@@ -1145,23 +1072,120 @@ class DKES:
         ax.grid()
         plt.show()   
             
-    def write_U2_to_file(self,rho,filename=None):
-        print(f'\n ########### ASSUMING U2 IS CONSTANT: <U^2>={self.Usq} ##############')
+    # def write_U2_to_file(self,rho,filename=None):
+    #     print(f'\n ########### ASSUMING U2 IS CONSTANT: <U^2>={self.Usq} ##############')
         
-        if filename is None:
-            filename = 'Utilde2_profile'
+    #     if filename is None:
+    #         filename = 'Utilde2_profile'
             
-        with open(filename, 'w') as file:
-            # Write the size of rho as the first line
-            file.write(f'{rho.size}\n')
+    #     with open(filename, 'w') as file:
+    #         # Write the size of rho as the first line
+    #         file.write(f'{rho.size}\n')
             
-            # Write the data to the file
-            for i in range(rho.size):
-                row_data = [rho[i], self.Usq]
+    #         # Write the data to the file
+    #         for i in range(rho.size):
+    #             row_data = [rho[i], self.Usq]
 
-                # Write the row to the file, formatted as space-separated values
-                file.write(" ".join(map(str, row_data)) + '\n')
+    #             # Write the row to the file, formatted as space-separated values
+    #             file.write(" ".join(map(str, row_data)) + '\n')
+    
+    # def compute_PENTA1_coeffs(self):
+    #     # Computes PENTA input coefficients lstar, mstar and nstar
+    #     # size of lstar, mstar, nstar is n_cmul x n_efield
+    #     # Check DKES/PENTA documentation to see the definition of lstar, mstar, nstar
+    #     # In the documentation, D_ij^* corresponds to self.Lij, which are the species-independent DKES coefficientes
+    #     print('\n#############################################################################')
+    #     print('###################   Computing coefficients for PENTA1/v2.0 ##################')
+    #     print('###############################################################################')
+        
+    #     ######  WARNING: as of now this assumes an hydrogen plasma, qa=e_charge  #####
+    #     print('\nWARNING: THIS ASSUMES A PLASMA WITH Z=1, qa=echarge')
+        
+    #     # Read Pfirsch-Schluter flow from external file
+    #     # To do later...
+    #     print('\nFailed to read Pfirsch-Schluter flow, <U^2>, from external file')
+    #     print('Assuming <U^2>=0\n')
+    #     self.Usq = 0.0
+        
+    #     aux = 1 - 1.5*self.cmul*self.D33_star/self.Bsq
+        
+    #     #compute PENTA lstar
+    #     self.lstar = self.D11_star - (2./3.)*self.cmul*self.Usq + (1.5*self.cmul*self.D13_star*self.D13_star/self.Bsq)/aux
+    #     self.lstar = self.lstar / (EC*EC)
+        
+    #     #compute PENTA mstar
+    #     self.mstar = self.cmul*self.cmul*self.D33_star / aux
+
+    #     #compute PENTA nstar
+    #     self.nstar = self.cmul*self.D13_star / aux
+    #     self.nstar = self.nstar / EC
+    
+    # def plot_PENTA1_coeffs(self):
+    #     # creates 3 graphs: lstar, mstar and nstar vs cmul (for each efield)
+        
+    #     import matplotlib.pyplot as pyplot
+        
+    #     for plot_var in ['lstar', 'mstar', 'nstar']:
             
+    #         yplot = getattr(self,plot_var)
+            
+    #         if plot_var=='lstar':
+    #             yplot1 = getattr(self,plot_var+'_1')
+    #             yplot2 = getattr(self,plot_var+'_2')
+    #             yplot3 = getattr(self,plot_var+'_3')
+                
+    #         px = 1/pyplot.rcParams['figure.dpi']
+    #         pyplot.rc('font', size=24)
+    #         pyplot.rc('legend', fontsize=24)
+    #         fig=pyplot.figure(figsize=(1024*px,768*px))
+    #         ax = fig.add_subplot(111)
+    #         for i in range(self.nefield):
+    #             i1 = i*self.ncmul
+    #             i2 = i1 + self.ncmul
+    #             ax.plot(self.cmul[i1:i2],yplot[i1:i2],marker='+',label=rf'$E_s/v$={self.efield[i1]:3.1E}',linewidth=4,markersize=18)
+    #             if plot_var=='lstar' and i==1:
+    #                 ax.plot(self.cmul[i1:i2],yplot1[i1:i2],'--',label='D11*',linewidth=4)
+    #                 ax.plot(self.cmul[i1:i2],yplot2[i1:i2],'--',label='U2*',linewidth=4)
+    #                 ax.plot(self.cmul[i1:i2],yplot3[i1:i2],'--',label='(D31*)^2/D33*',linewidth=4)
+                    
+    #         ax.set_xlabel(r'$\nu/v [m^{-1}]$')
+    #         ax.set_ylabel(f'PENTA {plot_var}')
+    #         ax.set_xscale('log')
+    #         if(plot_var=='lstar' or plot_var=='mstar'):
+    #             ax.set_yscale('log')
+    #         if(plot_var=='nstar'):
+    #             ax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+    #         ax.set_title(f'r/a={self.roa:.2f}')
+    #         ax.grid()
+    #         ax.legend(fontsize=12)
+     
+    #     pyplot.show()
+    
+    # def write_PENTA1_coeffs_to_files(self,where_to):
+    #     # name of the files are 'lstar_lijs_##' , 'mstar_lijs_##', 'nstar_lijs_##'
+        
+    #     #where_to save -- path should not have final /
+        
+    #     #checks that data is regular, i.e.: for each efield there are always the same cmul
+    #     # if data is regular the following arrays are computed:
+    #     # self.cmul_regular
+    #     # self.efield_regular
+        
+    #     self.check_data_is_regular(self.cmul,self.efield)
+        
+    #     for var in ['lstar', 'mstar', 'nstar']:
+            
+    #         filename = where_to + '/' + var + '_lijs_' + 'surface_' + f'{self.surface}'
+    #         y = getattr(self,var)
+
+    #         combined = np.concatenate((self.cmul_regular,self.efield_regular,y))
+            
+    #         #create file
+    #         with open(filename, 'w') as file:
+    #             file.write(f'{self.ncmul} {self.nefield}\n')
+    #             for value in combined:
+    #                 file.write(f'{value:.10e}\n') 
+                
     # def plot_PENTA_Lcoeffs_vs_roa_ambi(self,folder_path=None,plot=True):
     #     #plots L11,L12 and L13 for each species if PENTA3 was run in DKES mode
         
@@ -1560,6 +1584,550 @@ class DKES:
     #     plt.legend()
     #     if plot:
     #         plt.show()
+    
+    # def set_PENTA1_integrands_energy_conv(self,intj,plasma_class,make_plots=True):
+    #     # This function computes the integrand of the energy convolution as in PENTA for each efield
+    #     # and plots it as function of K
+    #     # Integrand = sqrt(K) * exp(-K) * (K-5/2)^{intj-1} * [lstar,m,star,nstar] * K^{3/2}
+    #     # This function requires computing collisionality nu_D
+    #     # We also spline interpolate lstar,mstar and star as function of cmul for each efield
+        
+    #     import matplotlib.pyplot as plt
+        
+    #     self.plasma_class = plasma_class
+        
+    #     # Computes dicitionary of arrays self.cmul_species. 
+    #     # Contains cmul for each species for array K
+    #     self.set_cmul_species(K,make_plot=make_plots)
+        
+    #     # Set integrands = l/m/n-star * fix func
+    #     # this creates dictionary of arrays: self.lstar_integrand, self.nstar_integrand, self.mstar_integrand
+    #     # for instance, self.lstar_integrand['electrons'][3] gives the arrays of integrand (as function of K) 
+    #     # for l* for electrons for the 4th (3+1) electric field 
+    #     self.set_integrands(intj,K,make_plot=make_plots)  
+            
+            
+    # def get_fix_func(self,K,intj,make_plot=False):
+        
+    #     import matplotlib.pyplot as plt
+        
+    #     fix_func = np.sqrt(K) * np.exp(-K) * (K-2.5)**(intj-1) * K**1.5
+        
+    #     if make_plot is True:
+    #         fig, ax = plt.subplots(figsize=(8,6))
+    #         ax.plot(K,fix_func,'o-')
+    #         #ax.set_yscale('log')
+    #         ax.set_ylabel(r'$\sqrt{K}e^{-K}\left(K-5/2\right)^{j-1}\,K^{3/2}$')
+    #         ax.set_xlabel(f'K')   
+    #         ax.set_title(f'j={intj}')
+    #         ax.grid()    
+    #         plt.show()
+        
+    #     return fix_func
+    
+    # def set_integrands(self,intj,K,make_plot=False):
+        
+    #     from scipy.interpolate import interp1d
+    #     import matplotlib.pyplot as plt
+    #     from collections import defaultdict
+        
+    #     print('\n ############################################################')
+    #     print('############# COMPUTING INTEGRANDS AS IN PENTA #################')
+    #     print('############################################################')
+        
+    #     # fix_func = f_j(K)*K^(3/2)
+    #     fix_func = self.get_fix_func(K,intj,make_plot=False)
+        
+    #     # create dicionaries of lists
+    #     self.lstar_integrand = defaultdict(list)
+    #     self.mstar_integrand = defaultdict(list)
+    #     self.nstar_integrand = defaultdict(list)
+        
+    #     for i in range(self.nefield):
+    #         i1 = i*self.ncmul
+    #         i2 = i1 + self.ncmul
+            
+    #         efield = self.efield[i1]
+            
+    #         x = self.cmul[i1:i2]
+    #         yl = self.lstar[i1:i2]
+    #         yn = self.nstar[i1:i2]
+    #         ylogm = np.log( self.mstar[i1:i2] )
+            
+    #         # quadratic spline as in PENTA. Assuming log_interp = true
+    #         xlog = np.log(x)
+    #         lstar_interp = interp1d(xlog,yl,kind='quadratic',bounds_error=False,fill_value=0.0)
+    #         nstar_interp = interp1d(xlog,yn,kind='quadratic',bounds_error=False,fill_value=0.0)
+    #         logmstar_interp = interp1d(xlog,ylogm,kind='quadratic',bounds_error=False,fill_value=0.0)
+    #         #this function is used to multiply exp(logmstar_interp1d), otherwise exp(0)=1 is taken outside the interpolating region
+    #         filter_logmstar = interp1d(xlog,np.ones_like(xlog),bounds_error=False,fill_value=0.0)
+            
+    #         xspline = np.logspace(np.log10(x[0]),np.log10(x[-1]),100)
+            
+    #         fig, ax = plt.subplots(1,3,figsize=(17,6))
+    #         ax[0].plot(x,yl,'ob')
+    #         ax[0].plot(xspline, lstar_interp(np.log(xspline)),'red',label='spline')
+    #         ax[0].set_yscale('log')
+    #         ax[0].set_xscale('log')
+    #         ax[0].set_ylabel(r'lstar')
+    #         ax[0].set_xlabel(f'cmul')   
+    #         ax[0].set_title(f'Er/v={efield}')
+    #         ax[0].grid()
+    #         ax[0].legend()
+            
+    #         ax[1].plot(x,yn,'ob')
+    #         ax[1].plot(xspline, nstar_interp(np.log(xspline)),'red',label='spline')
+    #         ax[1].set_xscale('log')
+    #         ax[1].set_ylabel(r'nstar')
+    #         ax[1].set_xlabel(f'cmul')   
+    #         ax[1].set_title(f'Er/v={efield}')
+    #         ax[1].grid()   
+    #         #ax[1].legend()
+            
+    #         ax[2].plot(x,ylogm,'ob')
+    #         ax[2].plot(xspline, logmstar_interp(np.log(xspline)),'red',label='spline')
+    #         ax[2].set_xscale('log')
+    #         ax[2].set_ylabel('ln(mstar)')
+    #         ax[2].set_xlabel(f'cmul')   
+    #         ax[2].set_title(f'Er/v={efield}')
+    #         ax[2].grid()   
+    #         #ax[1].legend()
+            
+    #         plt.tight_layout(pad=2)
+            
+    #         # full integrand of l*
+    #         fig,ax = plt.subplots(figsize=(8,6))
+    #         for species in self.plasma_class.list_of_species:
+    #             integrand = lstar_interp(np.log(self.cmul_species[species]))*fix_func
+    #             integral = self.get_integral(integrand,K)
+                
+    #             #save integrand
+    #             self.lstar_integrand[species].append( integrand )
+                
+    #             #plot
+    #             ax.plot(K,integrand,'o-',label=f'{species}, {integral:.3e}')       
+    #             ax.set_xlabel('K')
+    #             ax.set_ylabel(fr'$f_{intj}(K)~l^*(K)~K^{{3/2}}$')
+    #             ax.set_title(f'Er/v={efield}')
+    #             ax.grid()
+    #         plt.legend()
+                      
+    #         # full integrand of n*
+    #         fig,ax = plt.subplots(figsize=(10,6))
+    #         for species in self.plasma_class.list_of_species:
+    #             integrand = nstar_interp(np.log(self.cmul_species[species]))*fix_func
+    #             integral = self.get_integral(integrand,K)
+                
+    #             #save integrand
+    #             self.nstar_integrand[species].append( integrand )                
+                
+    #             #plot
+    #             ax.plot(K,integrand,'o-',label=f'{species}, {integral:.3e}')       
+    #             ax.set_xlabel('K')
+    #             ax.set_ylabel(f'$f_{intj}(K)~n^*(K)~K^{{3/2}}$')
+    #             ax.set_title(f'Er/v={efield}')
+    #             ax.grid()
+    #         plt.legend()
+            
+    #         # full integrand of m*
+    #         fig,ax = plt.subplots(figsize=(10,6))
+    #         for species in self.plasma_class.list_of_species:
+    #             integrand = np.exp(logmstar_interp(np.log(self.cmul_species[species])))*filter_logmstar(np.log(self.cmul_species[species]))*fix_func
+    #             integral = self.get_integral(integrand,K)
+                
+    #             #save integrand
+    #             self.mstar_integrand[species].append( integrand )
+                
+    #             #plot
+    #             ax.plot(K,integrand,'o-',label=f'{species}, {integral:.3e}')       
+    #             ax.set_xlabel('K')
+    #             ax.set_ylabel(f'$f_{intj}(K)~m^*(K)~K^{{3/2}}$')
+    #             ax.set_title(f'Er/v={efield}')
+    #             ax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+    #             ax.grid()
+    #         plt.legend()
+    #         if make_plot:
+    #             plt.show()
+    #         else:
+    #             plt.close('all')
+    
+    # def get_integral(self,y,x,xmin=None,xmax=None,make_plot=False,plot_title=None):
+    #     # this function computes the trapezoid integral of y=y(x)
+    #     # if xmin or xmax are provided, the limits of the integral are changed
+    #     # an error is raised if xmin or xmax fall outside the domain defined by x
+    #     # if the array x does not contain xmin or xmax exactly, then the closest value is considered
+        
+    #     import matplotlib.pyplot as plt
+    #     from scipy.integrate import trapezoid
+        
+    #     # Check if xmin and xmax are within the domain of x
+    #     if xmin is not None and (xmin < x.min() or xmin > x.max()):
+    #         raise ValueError(f"xmin ({xmin}) is outside the domain of x.")
+    #     if xmax is not None and (xmax < x.min() or xmax > x.max()):
+    #         raise ValueError(f"xmax ({xmax}) is outside the domain of x.")
+
+    #     # If xmin or xmax are provided, adjust the limits
+    #     if xmin is not None:
+    #         xmin_index = np.argmin(np.abs(x - xmin))  # Find closest value to xmin in x
+    #     else:
+    #         xmin_index = 0  # If xmin is None, start from the beginning
+
+    #     if xmax is not None:
+    #         xmax_index = np.argmin(np.abs(x - xmax))  # Find closest value to xmax in x
+    #     else:
+    #         xmax_index = len(x) - 1  # If xmax is None, go to the end
+
+    #     # Perform the trapezoidal integration
+    #     x_selected = x[xmin_index:xmax_index+1]
+    #     y_selected = y[xmin_index:xmax_index+1]
+    #     integral = trapezoid(y_selected, x_selected)
+        
+    #     integral_exact = trapezoid(y,x)
+    #     rel_error = np.abs(integral_exact-integral) / integral_exact
+
+    #     # Optionally plot the function
+    #     if make_plot:
+    #         plt.rc('font', size=16)
+    #         fig=plt.figure(figsize=(10,8))
+    #         plt.plot(x, y, '.-')
+    #         plt.fill_between(x_selected, y_selected, alpha=0.3, label=f'rel. error={rel_error*100:.1f}%')
+    #         plt.xlabel('x')
+    #         plt.legend()
+    #         if plot_title is not None:
+    #             plt.title(plot_title)
+    #         plt.show()
+
+    #     return integral
+    
+    # def compute_energy_convolution(self,which_convol, cmin, cmax):
+    #     #which_convol should be 'lstar', 'mstar or nstar'
+        
+    #     convol_type = ['lstar','mstar','nstar']
+        
+    #     if which_convol not in convol_type:
+    #         print(f'ERROR: which_convol should take one of the following: {convol_type}')
+    #         exit(1)
+            
+    #     #check if integrand exist
+    #     if not hasattr(self,which_convol+'_integrand'):
+    #         print('ERROR: integrand does not exist! Need to set it up first!!')
+    #         exit(1)
+    #     else:
+    #         integrand = getattr(self,which_convol+'_integrand')
+            
+    #     #check if cmin and cmax are inside the cmul domain
+    #     if cmin>cmax or cmin<np.min(self.cmul) or cmax>np.max(self.cmul):
+    #         print('ERROR: limits of integral not correct. Cannot proceed')
+    #         exit(1)
+            
+    #     #loop in field
+    #     for i in range(self.nefield):
+    #         i1 = i*self.ncmul
+    #         #i2 = i1 + self.ncmul
+            
+    #         efield = self.efield[i1]
+          
+    #         for species in self.plasma_class.list_of_species:
+                
+    #             # compute Kmin and Kmax according to cmin and cmax
+    #             # we take the values in self.cmul closest to cmin and cmax
+    #             cmin_index = np.argmin(np.abs(self.cmul_species[species] - cmin))
+    #             cmax_index = np.argmin(np.abs(self.cmul_species[species] - cmax))
+            
+    #             Kmin = self.K[np.min([cmin_index,cmax_index])]
+    #             Kmax = self.K[np.max([cmin_index,cmax_index])]
+                
+    #             self.get_integral(integrand[species][i],self.K,xmin=Kmin,xmax=Kmax,make_plot=True,plot_title=which_convol+f', {species}, Er/v={efield}')
+
+import math
+def define_friction_coeffs(masses, charges, v_ths, Temps, dens,
+                           loglambda, num_species, Smax):
+    """
+    Compute the classical friction coefficients lmat.
+
+    Parameters:
+      masses, charges, v_ths, Temps, dens : arrays (length num_species)
+      loglambda : float
+      num_species : int
+      Smax : int
+
+    Returns:
+      lmat : numpy array shape ((Smax+1)*num_species, (Smax+1)*num_species)
+    """
+
+    # ---------------------------
+    # Low-level helpers (local)
+    # ---------------------------
+    def ifactorial(n: int) -> int:
+        if n < 0:
+            raise ValueError("ifactorial: negative input")
+        return math.factorial(n)
+
+    def Gamma_aux(X: float) -> float:
+        """
+        Port of the Fortran Gamma_aux:
+        - If X is positive integer -> return (X-1)! exactly.
+        - If X is non-positive integer -> raise ValueError (singularity).
+        - Otherwise evaluate using polynomial coefficients G (Fortran code).
+        """
+        PI = math.pi
+        tol = 1e-12
+
+        # Check integer
+        xi = int(round(X))
+        if abs(X - xi) < tol:
+            # treat as integer
+            if xi > 0:
+                return float(ifactorial(xi - 1))
+            else:
+                raise ValueError("Gamma_aux: negative integer input (singularity)")
+
+        # Non-integer case
+        if abs(X) > 1.0:
+            Z = abs(X)
+            M = int(Z)
+            R = 1.0
+            for K in range(1, M + 1):
+                R = R * (Z - K)
+            Z = Z - M
+        else:
+            Z = X
+            R = 1.0
+
+        # Coefficients G (26 entries) from Fortran
+        G = [1.0,
+             0.5772156649015329,
+             -0.6558780715202538,
+             -0.0420026350340952,
+             0.1665386113822915,
+             -0.0421977345555443,
+             -0.0096219715278770,
+             0.0072189432466630,
+             -0.0011651675918591,
+             -0.0002152416741149,
+             0.0001280502823882,
+             -0.0000201348547807,
+             -0.00000012504934821,
+             0.00000011330272320,
+             -0.000000002056338417,
+             0.000000000061160950,
+             0.0000000000050020075,
+             -0.0000000000011812746,
+             0.0000000000001043427,
+             0.000000000000000077823,
+             -0.000000000000000036968,
+             0.00000000000000000051,
+             -0.000000000000000000000206,
+             -0.00000000000000000000000054,
+             0.00000000000000000000000014,
+             0.000000000000000000000000001]
+        # Note: last two tiny entries adjusted to match Fortran's Data (approx)
+
+        GR = G[-1]
+        # Evaluate polynomial via Horner from G[24] down to G[0]
+        for K in range(len(G) - 2, -1, -1):
+            GR = GR * Z + G[K]
+
+        # GR * Z might be zero if Z==0 (shouldn't happen since X not integer)
+        GA = 1.0 / (GR * Z)
+        if abs(X) > 1.0:
+            GA = GA * R
+            if X < 0.0:
+                GA = -PI / (X * GA * math.sin(PI * X))
+        return float(GA)
+
+    # ---------------------------
+    # eab / Eba
+    # ---------------------------
+    sqrtpi = math.sqrt(math.pi)
+
+    def calc_eab(k: int, Q: float) -> float:
+        Xab = Q ** (-(k + 0.5))
+        Gamma_k = Gamma_aux(k + 0.5)
+        eab = Gamma_k * Xab / sqrtpi
+        return float(eab)
+
+    def calc_Eba(k: int, chi: float, Q: float) -> float:
+        coeff = ifactorial(k) / (2.0 * chi)
+        Etmp = 0.0
+        for jtest in range(0, k + 1):
+            Etmp += (chi ** (1 + 2 * jtest)) * calc_eab(jtest, Q) / ifactorial(jtest)
+        Eba = coeff * Etmp
+        return float(Eba)
+
+    # ---------------------------
+    # Astar / Bstar
+    # ---------------------------
+    def calc_Astar(qtest: int, mtest: int, theta: float, mu: float, chi: float, Q: float) -> float:
+        iOne = 1
+        iTwo = 2
+        One = 1.0
+        Two = 2.0
+
+        a_big_E0 = -Two * (One - theta) / mu
+        a_big_E1 = -One + (One + Two * mtest) * (One - Two * theta) / mu
+        a_big_E2 = Two * theta * (mtest ** iTwo) / mu
+        a_lit_e0 = Two * (One - theta) * (One / theta + One / mu)
+        a_lit_e1 = (One + Two * mtest) * (One - One / mu + Two * theta / mu)
+        a_lit_e2 = -Two * theta * (mtest ** iTwo) / mu
+
+        alpha_big_E0 = calc_Eba(iOne + qtest + mtest, chi, Q)
+        alpha_big_E1 = calc_Eba(qtest + mtest, chi, Q)
+        if (qtest == 0) and (mtest == 0):
+            alpha_big_E2 = 0.0
+        else:
+            alpha_big_E2 = calc_Eba(qtest + mtest - iOne, chi, Q)
+
+        alpha_lit_e0 = (chi ** (iOne + iTwo * (iTwo + qtest + mtest))) * calc_eab(iTwo + qtest + mtest, Q) / chi
+        alpha_lit_e1 = (chi ** (iOne + iTwo * (iOne + qtest + mtest))) * calc_eab(iOne + qtest + mtest, Q) / chi
+        alpha_lit_e2 = (chi ** (iOne + iTwo * (qtest + mtest))) * calc_eab(qtest + mtest, Q) / chi
+
+        Astar = (a_big_E0 * alpha_big_E0 + a_big_E1 * alpha_big_E1 + a_big_E2 * alpha_big_E2
+                 + a_lit_e0 * alpha_lit_e0 + a_lit_e1 * alpha_lit_e1 + a_lit_e2 * alpha_lit_e2)
+        return float(Astar)
+
+    def calc_Bstar(qtest: int, mtest: int, theta: float, mu: float, chi: float, Q: float) -> float:
+        iOne = 1
+        iTwo = 2
+        iThree = 3
+        iFive = 5
+        One = 1.0
+        Two = 2.0
+        Three = 3.0
+        Four = 4.0
+        Five = 5.0
+        Eight = 8.0
+
+        b_e0 = Two * mu / (theta ** iTwo)
+        b_e1 = - Four / Five
+        b_p0 = Four + Eight / Five * mtest + Four / Three * mu / theta - Eight / Three / theta
+        b_m0 = - Eight / Three * mu / theta + Four / Three / theta
+        b_m1 = Eight / Five
+
+        beta_e0 = (chi ** (iTwo * qtest + iFive)) * calc_eab(iTwo + qtest + mtest, Q)
+        beta_e1 = (chi ** (iTwo * qtest + iFive)) * calc_eab(iThree + qtest + mtest, Q)
+
+        back_p0 = 0.0
+        for j in range(0, qtest + 1):
+            back_p0 += ifactorial(qtest) / ifactorial(j) * (chi ** (iTwo * j)) * calc_eab(iTwo + mtest + j, Q)
+
+        back_m0 = 0.0
+        back_m1 = 0.0
+        for j in range(0, mtest + 1):
+            back_m0 += 1.0 / ifactorial(j) * calc_eab(iTwo + qtest + j, Q)
+            back_m1 += 1.0 / ifactorial(j) * calc_eab(iThree + qtest + j, Q)
+
+        beta_p0 = 0.5 * (chi ** iThree) * back_p0
+        beta_m0 = 0.5 * (chi ** (iTwo * qtest + iFive)) * ifactorial(mtest) * back_m0
+        beta_m1 = 0.5 * (chi ** (iTwo * qtest + iFive)) * ifactorial(mtest) * back_m1
+
+        Bstar = (b_e0 * beta_e0 + b_e1 * beta_e1 + b_p0 * beta_p0
+                 + b_m0 * beta_m0 + b_m1 * beta_m1)
+        return float(Bstar)
+
+    # ---------------------------
+    # Mak / Nab
+    # ---------------------------
+    def calc_Mak_Ji(irow: int, icol: int, theta_ak: float, mu_ak: float, chi_ak: float, Q_ak: float) -> float:
+        Gamma_p = Gamma_aux(irow + 2.5)
+        Gamma_k = Gamma_aux(icol + 2.5)
+        Apk = 0.0
+        for qtest in range(0, irow + 1):
+            Gamma_q = Gamma_aux(qtest + 2.5)
+            cpq = ((-1.0) ** qtest) * Gamma_p / (Gamma_q * ifactorial(irow - qtest) * ifactorial(qtest))
+            for mtest in range(0, icol + 1):
+                Gamma_m = Gamma_aux(mtest + 2.5)
+                ckm = ((-1.0) ** mtest) * Gamma_k / (Gamma_m * ifactorial(icol - mtest) * ifactorial(mtest))
+                Astar = calc_Astar(qtest, mtest, theta_ak, mu_ak, chi_ak, Q_ak)
+                Apk += cpq * ckm * Astar
+        return 2.0 * Apk
+
+    def calc_Nab_Ji(ptest: int, ktest: int, theta: float, mu: float, chi: float, Q: float) -> float:
+        Gamma_p = Gamma_aux(ptest + 2.5)
+        Gamma_k = Gamma_aux(ktest + 2.5)
+        Bpk = 0.0
+        for qtest in range(0, ptest + 1):
+            Gamma_q = Gamma_aux(qtest + 2.5)
+            cpq = ((-1.0) ** qtest) * Gamma_p / (Gamma_q * ifactorial(ptest - qtest) * ifactorial(qtest))
+            for mtest in range(0, ktest + 1):
+                Gamma_m = Gamma_aux(mtest + 2.5)
+                ckm = ((-1.0) ** mtest) * Gamma_k / (Gamma_m * ifactorial(ktest - mtest) * ifactorial(mtest))
+                Bstar = calc_Bstar(qtest, mtest, theta, mu, chi, Q)
+                Bpk += cpq * ckm * Bstar
+        return (2.0 / chi) * Bpk
+
+    # ---------------------------
+    # Main lmat build
+    # ---------------------------
+    eps0 = 8.854187817e-12
+    pi_val = math.pi
+    tau_coeff = 3.0 * math.sqrt(pi_val) * pi_val * eps0 ** 2
+
+    dim = (Smax + 1) * num_species
+    lmat = np.zeros((dim, dim), dtype=float)
+
+    for ispec1 in range(num_species):
+        ma = masses[ispec1]
+        Ta = Temps[ispec1]
+        vth_a = v_ths[ispec1]
+        charge_a = charges[ispec1]
+        na = dens[ispec1]
+
+        for ispec2 in range(num_species):
+            lab = np.zeros((Smax + 1, Smax + 1), dtype=float)
+
+            mb = masses[ispec2]
+            Tb = Temps[ispec2]
+            vth_b = v_ths[ispec2]
+            charge_b = charges[ispec2]
+            nb = dens[ispec2]
+
+            chi_ab = vth_b / vth_a
+            theta_ab = Tb / Ta
+            mu_ab = mb / ma
+            Q_ab = 1.0 + chi_ab ** 2
+
+            for irow in range(0, Smax + 1):
+                for icol in range(0, Smax + 1):
+                    val = 0.0
+
+                    # Diagonal M-sum only if same species
+                    if ispec1 == ispec2:
+                        M_ovr_tau_sum = 0.0
+                        for spec_k in range(num_species):
+                            mk = masses[spec_k]
+                            Tk = Temps[spec_k]
+                            vth_k = v_ths[spec_k]
+                            nk = dens[spec_k]
+                            charge_k = charges[spec_k]
+
+                            tau_ak = (tau_coeff * ma ** 2 * vth_a ** 3 /
+                                      (nk * charge_a ** 2 * charge_k ** 2 * loglambda))
+
+                            chi_ak = vth_k / vth_a
+                            theta_ak = Tk / Ta
+                            mu_ak = mk / ma
+                            Q_ak = 1.0 + chi_ak ** 2
+
+                            Mak = calc_Mak_Ji(irow, icol, theta_ak, mu_ak, chi_ak, Q_ak)
+                            M_ovr_tau_sum += Mak / tau_ak
+
+                        val += na * ma * M_ovr_tau_sum
+
+                    # N term (always present)
+                    tau_ab = (tau_coeff * ma ** 2 * vth_a ** 3 /
+                              (nb * charge_a ** 2 * charge_b ** 2 * loglambda))
+                    Nab = calc_Nab_Ji(irow, icol, theta_ab, mu_ab, chi_ab, Q_ab)
+                    val += na * ma * (Nab / tau_ab)
+
+                    lab[irow, icol] = val
+
+            ind1 = ispec1 * (Smax + 1)
+            ind2 = ispec2 * (Smax + 1)
+            lmat[ind1:ind1 + (Smax + 1), ind2:ind2 + (Smax + 1)] = lab
+
+    return lmat
+
   
 # Main routine
 if __name__=="__main__":
