@@ -1118,7 +1118,7 @@
                     M_targ_global = M_targ_loc
                 ELSE
                     CALL MPI_SEND(lambda(maxi), 1, MPI_DOUBLE_PRECISION, 0, 1240, comm_world, ierr_mpi) 
-                    CALL MPI_SEND(mydom(maxi), 1, MPI_INTEGER, 0, 1241, comm_world, ierr_mpi) ]
+                    CALL MPI_SEND(mydom(maxi), 1, MPI_INTEGER, 0, 1241, comm_world, ierr_mpi)
                     CALL MPI_SEND(M_targ_loc, 1, MPI_DOUBLE_PRECISION, 0, 1242, comm_world, ierr_mpi) 
 
                 END IF
