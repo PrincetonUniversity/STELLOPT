@@ -1068,7 +1068,7 @@
           END SELECT
             
           residual(:,i) = M_new - M(:,i_tile) ! New - old
-          residual_rel = NORM2(residual(:,i))/Mnorm(i) 
+          residual_rel = NORM2(residual(:,i))/NORM2(M_new)
 
           ! New estimate
           M(:,i_tile) = M(:,i_tile) + lambda(i)*residual(:,i)
@@ -1182,13 +1182,13 @@
           dipole_fields = INV4PI*(3.0*SPREAD(mrdotrhat,DIM=1,NCOPIES=3)*rhats-moments)*SPREAD(r3invs,DIM=1,NCOPIES=3)
           Happ(:,i) = Happ(:,i) + SUM(dipole_fields,DIM=2)
 
-          DEALLOCATE(rhats,r3invs,moments,mrdotrhat,dipole_fields,non_Nb_indices,residual,residual_prev)
+          DEALLOCATE(rhats,r3invs,moments,mrdotrhat,dipole_fields,non_Nb_indices)
 
         END DO  
 
 
       END DO
-      DEALLOCATE(Mnorm,inv_mat_local)
+      DEALLOCATE(Mnorm,inv_mat_local,residual,residual_prev)
 
       RETURN
       END SUBROUTINE mumaterial_iterate_M
