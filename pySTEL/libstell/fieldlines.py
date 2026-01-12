@@ -198,7 +198,7 @@ class FIELDLINES():
 		Parameters
 		----------
 		k : int
-			Index to plot.
+			Field line index to plot.
 		pointsize : float (optional)
 			Size of points (default=0.01)
 		color : string (optional)
@@ -231,7 +231,55 @@ class FIELDLINES():
 			# Colorbar
 			plt.colorbar()
 		else:
-			plt.add3Dpoints(points,pointsize=pointsize)
+			plt.add3Dpoints(points,pointsize=pointsize,color=color)
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Render if requested
+		if lplotnow: plt.render()
+
+	def plot_index3d(self,k,pointsize=0.01,color='red',plot3D=None):
+		"""Plots the FIELDILNES Points in 3D (by index)
+
+		This routine plots the FIELDLINES poincare points in 3D by
+		the index
+
+		Parameters
+		----------
+		k : int
+			Poincare index to plot.
+		pointsize : float (optional)
+			Size of points (default=0.01)
+		color : string (optional)
+			Dot color (default='red')
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		"""
+		import numpy as np
+		import vtk
+		from libstell.plot3D import PLOT3D
+		# Handle optionals
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
+		else:
+			lplotnow = True
+			plt = PLOT3D()
+		vertices = []
+		scalar   = []
+		for i in range(self.nlines):
+			if (self.R_lines[i,k] > 0):
+				vertices.append([self.X_lines[i,k],self.Y_lines[i,k],self.Z_lines[i,k]])
+				scalar.append(self.B_lines[i,k])
+		vertices = np.array(vertices)
+		scalar = plt.valuesToScalar(np.array(scalar))
+		points = plt.vertexToPoints(vertices)
+		# Add to Render
+		if float(scalar.GetValueRange()[1]) > 0:
+			plt.add3Dpoints(points,scalars=scalar,pointsize=pointsize)
+			# Colorbar
+			plt.colorbar()
+		else:
+			plt.add3Dpoints(points,pointsize=pointsize,color=color)
 		# In case it isn't set by user.
 		plt.setBGcolor()
 		# Render if requested
@@ -351,22 +399,44 @@ class FIELDLINES():
 		"""
 		import numpy as np
 		f = open(filename,'w')
-		if max(phi) <= self.nfp:
-			phi_temp = np.mod(self.PHI_lines,self.phiaxis[-1])
-			x_temp = self.R_lines*np.cos(phi_temp)
-			y_temp = self.R_lines*np.sin(phi_temp)
-		else:
-			x_temp = self.X_lines
-			y_temp = self.Y_lines
-		for phi_temp in phi:
-			k = int(self.npoinc*phi_temp/self.phiaxis[-1])
-			rmin = np.amin(self.raxis)
-			rmax = np.amax(self.raxis)
-			x = 1000.*x_temp[0:self.nlines:nskip,k:self.nsteps-1:self.npoinc].flatten()
-			y = 1000.*y_temp[0:self.nlines:nskip,k:self.nsteps-1:self.npoinc].flatten()
-			z = 1000.*self.Z_lines[0:self.nlines:nskip,k:self.nsteps-1:self.npoinc].flatten()
+		phi_arr = np.linspace(0,np.pi*2,self.npoinc*self.nfp+1)
+		for phival in phi:
+			k = (np.abs(phi_arr - phival)).argmin() # Find nearest value
+			r = 1000.*self.R_lines[0:self.nlines:nskip,k:self.nsteps-2:self.npoinc].flatten()
+			z = 1000.*self.Z_lines[0:self.nlines:nskip,k:self.nsteps-2:self.npoinc].flatten()
+			p = np.mod(self.PHI_lines[0:self.nlines:nskip,k:self.nsteps-2:self.npoinc].flatten(),self.phiaxis[-1])
+			x = r*np.cos(p)
+			y = r*np.sin(p)
 			for i,x0 in enumerate(x):
 				f.write(f"{x0:10.3f} {y[i]:10.3f} {z[i]:10.3f}\n")
+		f.close()
+
+	def write_orbit_asc(self,k,filename='fieldlines_orbit.asc'):
+		"""Writes field line orbit to an ASC file
+
+		This routine writes the Poincare data into an ASC file for
+		reading into CAD software (FreeCAD). ASC files are just
+		ASCII files with the points written in x,y,z format. Output is
+		in mm.
+
+		Parameters
+		----------
+		k : int
+			Field line to output
+		nskip : int (optional)
+			Number of fieldlines to skip.
+		filename: str
+			Filename to output to (default: fieldlines_poincare.asc)
+		"""
+		import numpy as np
+		f = open(filename,'w')
+		r = 1000.*self.R_lines[k,:].flatten()
+		z = 1000.*self.Z_lines[k,:].flatten()
+		p = self.PHI_lines[k,:].flatten()
+		x = r*np.cos(p)
+		y = r*np.sin(p)
+		for i,x0 in enumerate(x):
+			f.write(f"{x0:10.3f} {y[i]:10.3f} {z[i]:10.3f}\n")
 		f.close()
 
 	def plot_heatflux(self,factor=1.0,colormap='hot',plot3D=None):

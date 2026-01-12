@@ -52,7 +52,7 @@
 !            s_iota             s Rotational Transform location array
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      LOGICAL     ::  lneed_magdiag, lneed_bnormal
+      LOGICAL     ::  lneed_magdiag, lneed_bnormal, lneed_dkes
       LOGICAL, DIMENSION(nsd)  :: lbooz
       INTEGER     ::  mboz, nboz, NumJstar
       INTEGER, PARAMETER :: nprof = 512
@@ -62,6 +62,8 @@
       INTEGER, PARAMETER :: nsys   = 16
       INTEGER, PARAMETER :: npart_max = 16384
       INTEGER, PARAMETER :: maxkopoly = 16, maxpolypts = 128
+      INTEGER, PARAMETER :: bnorm_nmax = 64
+      INTEGER, PARAMETER :: bnorm_mmax = 64
       REAL(rprec) ::  target_phiedge, sigma_phiedge
       REAL(rprec) ::  target_curtor, sigma_curtor
       REAL(rprec) ::  target_curtor_max, sigma_curtor_max
@@ -140,12 +142,12 @@
                                         r_mse, z_mse, phi_mse, s_mse,&
                                         a1_mse, a2_mse, a3_mse, a4_mse,&
                                         a5_mse, a6_mse, a7_mse, vac_mse
-      LOGICAL,     DIMENSION(nprof) ::  lmse_extcur
+      LOGICAL,     DIMENSION(nigroup) ::  lmse_extcur
       REAL(rprec), DIMENSION(nprobes)  ::  target_bprobe, sigma_bprobe       ! Note this number is hardcoded in chisq_brobes SAL 2/10/14
       REAL(rprec), DIMENSION(nprof) ::  target_segrog, sigma_segrog, &
                                         target_fluxloop, sigma_fluxloop
       CHARACTER(256)                ::  magdiag_coil
-      REAL(rprec), DIMENSION(nprof) ::  target_extcur, sigma_extcur 
+      REAL(rprec), DIMENSION(nigroup) ::  target_extcur, sigma_extcur 
       CHARACTER(256)                ::  vessel_string
       REAL(rprec)                   ::  target_vessel, sigma_vessel
       REAL(rprec), DIMENSION(nprof) ::  balloon_theta, balloon_zeta
@@ -176,6 +178,7 @@
       REAL(rprec), DIMENSION(nsd)   ::  target_DKES_11, sigma_DKES_11
       REAL(rprec), DIMENSION(nsd)   ::  target_DKES_31, sigma_DKES_31
       REAL(rprec), DIMENSION(nsd)   ::  target_DKES_33, sigma_DKES_33
+      REAL(rprec), DIMENSION(nsd)   ::  target_DKES_boot, sigma_DKES_boot
       REAL(rprec), DIMENSION(nprof) ::  E_DKES, nu_DKES
       REAL(rprec), DIMENSION(nsd)   ::  target_DKES_erdiff, sigma_DKES_erdiff
       REAL(rprec)                   ::  nu_dkes_erdiff, Ep_dkes_erdiff, Em_dkes_erdiff
@@ -204,9 +207,14 @@
       ! Coil or Bnormal related
       INTEGER     ::  nu_bnormal, nv_bnormal
       REAL(rprec) ::  target_bnormal, sigma_bnormal
+      REAL(rprec), DIMENSION(-bnorm_nmax:bnorm_nmax,0:bnorm_mmax) :: &
+                      target_bnmns, sigma_bnmns, &
+                      target_bnmnc, sigma_bnmnc
       REAL(rprec) ::  target_coil_curvature, sigma_coil_curvature
       REAL(rprec) ::  target_coil_torsion, sigma_coil_torsion
       REAL(rprec) ::  target_coilcoil_distance, sigma_coilcoil_distance
+      REAL(rprec) ::  target_coil_baxis, sigma_coil_baxis
+      REAL(rprec),DIMENSION(nigroup) ::  target_coil_length, sigma_coil_length
 
 
       INTEGER, PARAMETER :: jtarget_aspect     = 100
@@ -235,9 +243,13 @@
       INTEGER, PARAMETER :: jtarget_separatrix = 111
       INTEGER, PARAMETER :: jtarget_limiter    = 112
       INTEGER, PARAMETER :: jtarget_bnormal    = 113
+      INTEGER, PARAMETER :: jtarget_bnmns      = 1131
+      INTEGER, PARAMETER :: jtarget_bnmnc      = 1132
       INTEGER, PARAMETER :: jtarget_coil_curvature  = 114
       INTEGER, PARAMETER :: jtarget_coil_torsion    = 115
       INTEGER, PARAMETER :: jtarget_coilcoil_distance = 116
+      INTEGER, PARAMETER :: jtarget_coil_baxis  = 117
+      INTEGER, PARAMETER :: jtarget_coil_length = 118
       INTEGER, PARAMETER :: jtarget_ne         = 200
       INTEGER, PARAMETER :: jtarget_line_ne    = 2001
       INTEGER, PARAMETER :: jtarget_te         = 201
@@ -281,6 +293,7 @@
       INTEGER, PARAMETER :: jtarget_dkes_33    = 6082
       INTEGER, PARAMETER :: jtarget_dkes_erdiff       = 6083
       INTEGER, PARAMETER :: jtarget_dkes_alpha        = 6084
+      INTEGER, PARAMETER :: jtarget_dkes_boot         = 6085
       INTEGER, PARAMETER :: jtarget_jdotb      = 609
       INTEGER, PARAMETER :: jtarget_jcurv      = 6091
       INTEGER, PARAMETER :: jtarget_bmin       = 610
@@ -433,6 +446,8 @@
             WRITE(iunit, out_format) 'Drift-Kinetics (DKES) L31'
          CASE(jtarget_dkes_33)
             WRITE(iunit, out_format) 'Drift-Kinetics (DKES) L33'
+         CASE(jtarget_dkes_boot)
+            WRITE(iunit, out_format) 'Drift-Kinetics (DKES) Bootstrap proxy'
          CASE(jtarget_dkes_erdiff)
             WRITE(iunit, out_format) 'DKES Delta-Er'
          CASE(jtarget_dkes_alpha)
@@ -457,12 +472,20 @@
             WRITE(iunit, out_format) 'Gamma_c'
          CASE(jtarget_bnormal)
             WRITE(iunit, out_format) 'B-Normal'
+         CASE(jtarget_bnmns)
+            WRITE(iunit, out_format) 'B-Normal Harmonics (sin)'
+         CASE(jtarget_bnmnc)
+            WRITE(iunit, out_format) 'B-Normal Harmonics (cos)'
          CASE(jtarget_coil_curvature)
             WRITE(iunit, out_format) 'Coil Curvature (mean)'
          CASE(jtarget_coil_torsion)
             WRITE(iunit, out_format) 'Coil Torsion (mean)'
+         CASE(jtarget_coil_length)
+            WRITE(iunit, out_format) 'Coil Length'
          CASE(jtarget_coilcoil_distance)
             WRITE(iunit, out_format) 'Coil-coil distance (minimum)'
+         CASE(jtarget_coil_baxis)
+            WRITE(iunit, out_format) 'Magnetic Axis Magnetic Field'
       END SELECT
       END SUBROUTINE write_targets
       

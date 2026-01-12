@@ -47,7 +47,7 @@
             targets(mtargets) = target(ik)
             sigmas(mtargets)  = sigma(ik)
             !vals(mtargets)    = growth_kink(ik)
-            vals(mtargets)    = wp_kink(ik)/wk_kink(ik)  ! Rayleigh Quotient
+            vals(mtargets)    = wp_kink(ik)/wk_kink(ik)  ! Rayleigh Quotient (+ is stable)
             IF (iflag == 1) WRITE(iunit_out,'(7ES22.12E3)') target(ik),sigma(ik),vals(mtargets),wp_kink(ik),wk_kink(ik), omega_kink(ik), growth_kink(ik)
          END DO
       ELSE

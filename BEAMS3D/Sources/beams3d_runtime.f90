@@ -50,6 +50,8 @@
 !     v4.05 08/25/23 - Fast Tritium only calculation added
 !     v4.07 01/11/24 - Added ability to specifiy weights in the input
 !     v4.10 01/12/24 - Mu material interface added.
+!     v4.50 10/23/25 - Memory handling improved and cleanup of code.
+!     v5.00 12/01/25 - Magnetic material module implemented.
 !-----------------------------------------------------------------------
 MODULE beams3d_runtime
     !-------------------------------------------------------------------
@@ -153,20 +155,33 @@ MODULE beams3d_runtime
     INTEGER, PARAMETER :: MPI_FINE_ERR = 89
 
     DOUBLE PRECISION, PARAMETER :: one           = 1.0D0 ! 1.0
+
+! MUMAT_MODS 
+    LOGICAL :: lmumat_readmag, lmumat_skipiter, lmumat_writemagfile
+    CHARACTER(256) :: mumat_magfile
+
+! DEVELOP
     LOGICAL :: lvmec, lpies, lspec, lcoil, lmgrid, &
                lvessel, lvac, lcontinue_grid, lneut, &
                lhitonly, lread_input, lplasma_only, lraw, &
-               ldepo, lbeam_simple, lw7x, lsuzuki, &
+               ldepo, lbeam_simple, lsuzuki, &
                lascot, lascot4, lfidasim, lfidasim_cyl, lsplit, &
                lvessel_beam, lascotfl, lrandomize, leqdsk, lhint, &
                lboxsim, limas, lfieldlines, lbeamdensity, lmumat, &
                luser_init
     INTEGER :: nextcur, nprocs_beams, ndt, ndt_max
-    INTEGER, ALLOCATABLE :: beam(:)
+    INTEGER :: win_beam
+    INTEGER, DIMENSION(:), POINTER :: beam
     REAL(rprec) :: dt, pi, invpi2, mu0, to3, dt_save, rminor_norm
-    LOGICAL, ALLOCATABLE :: lgc2fo_start(:)
-    REAL(rprec), ALLOCATABLE :: R_start(:), phi_start(:), Z_start(:), vll_start(:), mu_start(:), &
-                                & mass(:), charge(:), Zatom(:), t_end(:), weight(:), vr_start(:), vphi_start(:), vz_start(:)
+    INTEGER :: win_lgc2fo_start
+    LOGICAL, DIMENSION(:), POINTER :: lgc2fo_start
+    INTEGER :: win_R_start, win_phi_start, win_z_start, &
+                win_vll_start, win_mu_start, win_mass, win_charge, &
+                win_zatom, win_t_end, win_weight, &
+                win_vr_start, win_vphi_start, win_vz_start
+    REAL(rprec), DIMENSION(:), POINTER :: R_start, phi_start, z_start, &
+                vll_start, mu_start, mass, charge, zatom, t_end, weight, &
+                vr_start, vphi_start, vz_start
     REAL(rprec), ALLOCATABLE :: extcur(:)
     CHARACTER(LEN=10) ::  qid_str_saved ! For ASCOT5
     CHARACTER(256) :: mgrid_string, coil_string, &
@@ -174,7 +189,7 @@ MODULE beams3d_runtime
                       continue_grid_string, bbnbi_string, &
                       eqdsk_string, mumat_string
 
-    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 4.10 ! this is the full orbit test version
+    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 5.00
 
     !-----------------------------------------------------------------------
     !     Subroutines

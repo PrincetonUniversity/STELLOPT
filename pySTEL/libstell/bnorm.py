@@ -35,8 +35,8 @@ class BNORM(FourierRep):
 		lines = f.readlines()
 		f.close()
 		self.mnmax = len(lines)
-		self.xm = np.zeros((self.mnmax))
-		self.xn = np.zeros((self.mnmax))
+		self.xm = np.zeros((self.mnmax,1))
+		self.xn = np.zeros((self.mnmax,1))
 		self.bnmnc = np.zeros((1,self.mnmax))
 		self.bnmns = np.zeros((1,self.mnmax))
 		mn = 0
@@ -185,12 +185,10 @@ class BNORM(FourierRep):
 		if not ax:
 			ax = pyplot.axes()
 			lplotnow = True
-		theta = np.ndarray((360,1))
-		zeta  = np.ndarray((256,1))
-		for j in range(360): theta[j]=2.0*np.pi*j/359.0
-		for j in range(256):  zeta[j]=2.0*np.pi*j/256.0
+		theta = np.deg2rad(np.linspace([0],[360],360))
+		zeta  = np.deg2rad(np.linspace([0],[360],256))
 		b = self.sfunct(theta,zeta,self.bnmns,self.xm,self.xn)
-		hmesh=ax.pcolormesh(np.squeeze(zeta),np.squeeze(theta),np.squeeze(b[1,:,:]),cmap='jet',shading='gouraud')
+		hmesh=ax.pcolormesh(np.squeeze(zeta),np.squeeze(theta),np.squeeze(b[0,:,:]),cmap='jet',shading='gouraud')
 		ax.set_xlabel(r'Toroidal Angle ($\phi$) [rad]')
 		ax.set_ylabel(r'Poloidal Angle ($\theta$) [rad]')
 		ax.set_title(rf'BNORM')

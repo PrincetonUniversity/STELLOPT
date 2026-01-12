@@ -27,8 +27,7 @@ MODULE beams3d_physics_mod
                                fact_vsound, fact_coul, fact_kick, &
                                ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                                ns_prof5, my_end, h1_prof, fact_crit_legacy
-      USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, &
-                              MODB_spl, MODB4D, OMEG4D, nomeg,&
+      USE beams3d_grid, ONLY: delta_t, MODB4D, OMEG4D, nomeg,&
                               phimax, TE4D, NE4D, TI4D, ZEFF4D, &
                               RHO4D, XRHO4D, YRHO4D, &
                               nr, nphi, nz, rmax, rmin, zmax, zmin, &

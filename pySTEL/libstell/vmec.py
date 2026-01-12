@@ -940,9 +940,73 @@ class VMEC(FourierRep):
 		# Render if requested
 		if lrender: plt.render()
 
+	def wout_to_indata(self):
+		"""Converts an wout to indata
 
-
-
+		This routine sets the VMEC INDATA namelist via values from a
+		VMEC wout file.
+		"""
+		import numpy as np
+		indata = VMEC_INDATA()
+		indata.read_indata('')
+		#### setup indata
+		indata.delt = 1.0
+		indata.nstep = 200
+		indata.ns_array = np.round(np.array([0.125,0.25,0.5,1.0])*float(self.ns)).astype(int)
+		indata.niter_array = np.array([2000,4000,8000,20000])
+		indata.ftol_array = np.array([1E-30,1E-30,1E-30,self.ftolv])
+		indata.precon_type = 'none'
+		indata.prec2d_threshold = 1.0E-19
+		indata.lasym = self.lasym
+		indata.nfp = self.nfp
+		indata.mpol = int(np.max(self.xm)+1)
+		indata.ntor = int(np.max(self.xn)/self.nfp)
+		indata.ntheta = int(2*indata.mpol+6)
+		if indata.ntor == 0: 
+			indata.nzeta = 1
+		else:
+			indata.nzeta  = int(2*indata.ntor+4)
+		indata.phiedge = float(self.phi[-1,0])
+		indata.lfreeb  = self.lfreeb
+		if indata.lfreeb:
+			indata.extcur = self.extcur
+		indata.nvacskip = 6
+		indata.mgrid_file = self.mgrid_file.strip()
+		indata.gamma = self.gamma
+		indata.bloat = 1.0
+		indata.ncurr = 1
+		indata.curtor = self.itor
+		indata.ai = np.squeeze(self.ai)
+		indata.ac = np.squeeze(self.ac)
+		indata.am = np.squeeze(self.am)
+		indata.pmass_type = self.pmass_type.strip()
+		indata.piota_type = self.piota_type.strip()
+		indata.pcurr_type = self.pcurr_type.strip()
+		indata.pres_scale = 1.0
+		indata.update_indata()
+		pvmec = self.presf[0,0]
+		pindata = indata.pmass(0.0)/(np.pi*4E-7)
+		indata.pres_scale = float(np.round(float(pvmec/pindata),decimals=4))
+		i = 0
+		for mn in range(self.mnmax):
+			if (self.xm[mn] == 0):
+				indata.raxis_cc[i] = self.rmnc[0,mn]
+				indata.zaxis_cs[i] = self.zmns[0,mn]
+				if indata.lasym:
+					indata.raxis_cs[i] = self.rmns[0,mn]
+					indata.zaxis_cc[i] = self.zmnc[0,mn]
+				i = i + 1
+			mdex = int(self.xm[mn,0])
+			ndex = int(-self.xn[mn,0]/self.nfp+101)
+			#print(self.xn[mn,0],self.xm[mn,0],mdex,ndex)
+			#print(indata.rbc.shape)
+			indata.rbc[mdex,ndex] = self.rmnc[-1,mn]
+			indata.zbs[mdex,ndex] = self.zmns[-1,mn]
+			if indata.lasym:
+				indata.rbs[mdex,ndex] = self.rmns[-1,mn]
+				indata.zbc[mdex,ndex] = self.zmnc[-1,mn]
+		indata.update_indata()
+		indata.write_indata('input.'+self.input_extension.strip()+'_new')
 
 	def extrapSurface(self,surf=None,dist=0.1):
 		"""Returns an extrapolated surface.

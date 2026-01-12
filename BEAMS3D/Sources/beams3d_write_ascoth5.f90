@@ -23,7 +23,7 @@
                                  plasma_mass, reff_eq, therm_factor, &
                                  X_BEAMLET, Y_BEAMLET, Z_BEAMLET, &
                                  NX_BEAMLET, NY_BEAMLET, NZ_BEAMLET, &
-                                 NI_spl_s
+                                 NI_spl_s, s_max_te, s_max_ne, s_max_ti, s_max_zeff
       USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, &
                                     lvmec, lpies, lspec, lcoil, lmgrid, lbeam, lplasma_only, &
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
@@ -56,7 +56,7 @@
                         nbi_gid, inj_gid, boozer_gid, mhd_gid
       INTEGER, ALLOCATABLE, DIMENSION(:) :: itemp
       REAL :: qid_flt
-      DOUBLE PRECISION :: rho_temp, s_temp, rho_max, dbl_temp, gammarel, v_total
+      DOUBLE PRECISION :: rho_temp, s_temp, rho_max, dbl_temp, gammarel, v_total, s_max_prof
       DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), r1dtemp(:)
       CHARACTER(LEN=10) ::  qid_str
       CHARACTER(LEN=8) :: temp_str8, inj_str8
@@ -305,14 +305,22 @@
                DO i = 1, nr
                   rtemp(i,1,1)=rho_max*DBLE(i-1)/DBLE(nr-1)
                END DO
-               d1 = COUNT(rtemp(:,1,1) <= 1)+1
+               !d1 = COUNT(rtemp(:,1,1) <= 1)+1
                IF (nte > 0)   CALL EZspline_interp( TE_spl_s,   nr, rtemp(:,1,1)**2, rtemp(:,2,1), ier)
                IF (nne > 0)   CALL EZspline_interp( NE_spl_s,   nr, rtemp(:,1,1)**2, rtemp(:,3,1), ier)
                IF (nti > 0)   CALL EZspline_interp( TI_spl_s,   nr, rtemp(:,1,1)**2, rtemp(:,4,1), ier)
                DO i = 1,nion_local
                   IF (nzeff > 0) CALL EZspline_interp( NI_spl_s(i), nr, rtemp(:,1,1)**2, rtemp(:,i+4,1), ier)
                END DO
-               rtemp(d1:,2:4+nion_local,1) = 0
+               ! Set values outside domain to zero
+               d1 = COUNT(rtemp(:,1,1) <= s_max_te)+1
+               rtemp(d1:,2,1) = 0
+               d1 = COUNT(rtemp(:,1,1) <= s_max_ne)+1
+               rtemp(d1:,3,1) = 0
+               d1 = COUNT(rtemp(:,1,1) <= s_max_ti)+1
+               rtemp(d1:,4,1) = 0
+               d1 = COUNT(rtemp(:,1,1) <= s_max_zeff)+1
+               FORALL(i=1:nion_local) rtemp(d1:,i+4,1) = 0
                WHERE(rtemp(:,2,1) < 0.03) rtemp(:,2,1)=0.03
                WHERE(rtemp(:,4,1) < 0.03) rtemp(:,4,1)=0.03
                WHERE(rtemp(:,3,1) < 1.0E10) rtemp(:,3,1)=1.0E10

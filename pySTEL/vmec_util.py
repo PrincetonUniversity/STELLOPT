@@ -24,6 +24,8 @@ if __name__=="__main__":
 		help="Output STL file of VMEC boundary", default = False)
 	parser.add_argument("--magaxis", dest="lmagaxis", action='store_true',
 		help="Output xyz data of magnetic axis", default = False)
+	parser.add_argument("--wout2indata", dest="lwout2indata", action='store_true',
+		help="Create input file from wout data.", default = False)
 	parser.add_argument("--scale_volume", dest="new_vol",
 		help="Write indata with volume rescaled to new_vol m^3", 
 		default = 0.0, type=float)
@@ -49,6 +51,7 @@ if __name__=="__main__":
 			vmec_wout.read_wout(args.vmec_ext)
 			loutput = True
 		except:
+			vmec_wout.read_wout(args.vmec_ext)
 			print(f'Could not file input file: wout_{args.vmec_ext}.nc or wout.{args.vmec_ext}')
 		if not (linput or loutput): sys.exit(-1)
 		# Write rescaled indata
@@ -229,6 +232,9 @@ if __name__=="__main__":
 			for j in range(3):   zeta[j]=     np.pi*j/2.0
 			r = vmec_wout.cfunct(theta,zeta,vmec_wout.rmnc,vmec_wout.xm,vmec_wout.xn/vmec_wout.nfp)
 			z = vmec_wout.sfunct(theta,zeta,vmec_wout.zmns,vmec_wout.xm,vmec_wout.xn/vmec_wout.nfp)
+			if vmec_wout.lasym:
+				r = r + vmec_wout.sfunct(theta,zeta,vmec_wout.rmns,vmec_wout.xm,vmec_wout.xn/vmec_wout.nfp)
+				z = z + vmec_wout.cfunct(theta,zeta,vmec_wout.zmnc,vmec_wout.xm,vmec_wout.xn/vmec_wout.nfp)
 			ax.plot(r[1,1,0],z[1,1,0],'+r')
 			ax.plot(r[1,1,1],z[1,1,1],'+g')
 			ax.plot(r[1,1,2],z[1,1,2],'+b')
@@ -251,6 +257,8 @@ if __name__=="__main__":
 			theta = np.linspace([0],[2.0*np.pi],256)
 			zeta  = np.linspace([0],[2.0*np.pi],256)
 			b = vmec_wout.cfunct(theta,zeta,vmec_wout.bmnc,vmec_wout.xm_nyq,vmec_wout.xn_nyq/vmec_wout.nfp)
+			if vmec_wout.lasym:
+				b = b + vmec_wout.sfunct(theta,zeta,vmec_wout.bmns,vmec_wout.xm_nyq,vmec_wout.xn_nyq/vmec_wout.nfp)
 			j = int(vmec_wout.ns/4)
 			h=ax.pcolormesh(np.squeeze(theta),np.squeeze(zeta),np.squeeze(b[j,:,:]),cmap='Greens',shading='gouraud')
 			ax.contour(np.squeeze(theta),np.squeeze(zeta),np.squeeze(b[j,:,:]),10,colors='black')
@@ -259,6 +267,9 @@ if __name__=="__main__":
 			ax.set_title("|B| at mid radius")
 			fig.colorbar(h,label='[T]')
 			pyplot.show()
+		# Output an input file from wout
+		if (loutput and args.lwout2indata):
+			vmec_wout.wout_to_indata()
 		# Output an STL file
 		if (loutput and args.lstl):
 			theta = np.linspace([0],[np.pi*2],512)

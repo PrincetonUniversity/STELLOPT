@@ -58,14 +58,12 @@
       REAL(rprec), DIMENSION(Ns_fine) :: sfincs_ac_half, sfincs_ac_low_beta_limit, AC_profile_fine, AC_fit_results
       CHARACTER(LEN=32) :: B_squared_flux_surface_average_profile_type
       LOGICAL :: exit_after_next_vmec_run
+      REAL(rprec), DIMENSION(21) :: bootj_aux_temp
 
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
-      lscreen_local = .FALSE.
-      lfirst_pass = .TRUE.
-      IF (lscreen) lscreen_local = .TRUE.
       IF (lscreen) WRITE(6,'(a)') ' ---------------------------  VBOOT CALCULATION  -------------------------'
 
       ! Handle boozer flags
@@ -97,12 +95,14 @@
       ier = 0
       exit_after_next_vmec_run = .false.
       AC_profile_fine = 0
+      lfirst_pass = .true.
       DO
          vboot_iteration = vboot_iteration + 1
+         lscreen_local = lfirst_pass .and. lscreen
 
          ! Run VMEC
          iflag = 0
-         CALL stellopt_paraexe('paravmec_run',proc_string,lfirst_pass)
+         CALL stellopt_paraexe('paravmec_run',proc_string,lscreen_local)
          iflag = ier_paraexe
          IF (iflag .ne.0) THEN
             PRINT *,"WARNING: paravmec returned with an error flag: iflag =",iflag
@@ -115,7 +115,7 @@
          CALL stellopt_paraexe('paravmec_write',trim(proc_string)//"_vboot"//trim(iteration_string),.false.) 
 
          ! Load Equilibrium
-         CALL stellopt_load_equil(lfirst_pass,iflag)
+         CALL stellopt_load_equil(lscreen_local,iflag)
 
          ! Don't do anything if pressure is zero
          IF (wp <= 0 .or. beta<=0) EXIT
@@ -132,31 +132,36 @@
 
             IF (irup > Ns_fine) STOP "irup must be <= Ns_fine."
 
+            ! Log results in the boot_log file:
             IF (vboot_iteration>0) THEN
-               ! Log results in the boot_log file:
                WRITE(ibootlog,'(a,512(1X,E20.10))')  "AC_profile_fine: ",(AC_profile_fine(ik), ik=1,irup)
                CALL FLUSH(ibootlog)
             END IF
 
+            ! Exit condition
             IF (exit_after_next_vmec_run) EXIT
 
+            ! Run Boozer Transformation
             lbooz(1:ns) = .TRUE.
             lbooz(1)    = .FALSE.
-            CALL stellopt_paraexe('booz_xform',proc_string,lfirst_pass); iflag = ier_paraexe
+            CALL stellopt_paraexe('booz_xform',proc_string,lscreen_local); iflag = ier_paraexe
             IF (iflag .ne.0) RETURN
 
-            CALL stellopt_paraexe('bootsj',proc_string,lfirst_pass); iflag = ier_paraexe
+            ! Run BOOTSJ
+            CALL stellopt_paraexe('bootsj',proc_string,lscreen_local); iflag = ier_paraexe
+            IF (iflag .ne.0) RETURN
+            dibs = dibs * 1D6 ! dI/ds in A
+            aibs = aibs * 1D6 ! I(s) in A
 
-            IF (lfirst_pass .and. lscreen_local) THEN
+            ! Print to Screen
+            IF (lscreen_local) THEN
                WRITE(6,'(A)')           ' --------------------  BOOTSJ SELF-CONSISTENT BOOTSTRAP  -------------------'
                WRITE(6,'(A,2X,I6)')     '   MAX ITERATIONS: ',vboot_max_iterations
                WRITE(6,'(A,2X,ES10.3)') '        TOLERANCE: ',vboot_tolerance
-               WRITE(6,'(A)')           '     ITERATION   CURTOR   CONVERGENCE'
+               WRITE(6,'(A,2X,A)')      '        BOOT_TYPE: ',TRIM(bootj_type)
+               WRITE(6,'(A,2X,ES10.3)') '      CURTOR_BEAM: ',curtor_beam
+               WRITE(6,'(A)')           '     ITERATION      CURTOR   CONVERGENCE'
             END IF
-
-            IF (iflag .ne.0) RETURN
-            dibs = dibs * 1D6 ! Convert megaAmperes to Amperes.
-            aibs = aibs * 1D6 ! Convert megaAmperes to Amperes.
             
             ! Log results in the boot_log file:
             IF (vboot_iteration == 0) THEN
@@ -165,38 +170,51 @@
                AC_profile_fine = 0
                DO radius_index = 1,irup
                   CALL get_equil_bootj(rhoar(radius_index),AC_profile_fine(radius_index),ier)
-                  !CALL eval_profile(rhoar(radius_index), bootj_type, AC_profile_fine(radius_index), bootj_aux_s, bootj_aux_f, ier)
                END DO
                WRITE(ibootlog,'(a,512(1X,E20.10))')  "AC_profile_fine: ",(AC_profile_fine(ik), ik=1,irup)
             END IF
             WRITE(ibootlog,'(a,512(1X,E20.10))')  "dibs: ",dibs
+            WRITE(ibootlog,'(a,512(1X,E20.10))')  "aibs: ",aibs
             CALL FLUSH(ibootlog)
 
             ! Fit the resulting AC profile
-            CALL fit_profile(bootj_type, irup, rhoar, dibs, 21, bootj_aux_f)
+            IF ((bootj_type == 'power_series_i') &
+               .or. (bootj_type == 'power_series_0i0') &
+               .or. (bootj_type == 'power_series_i_edge0')) THEN
+               CALL fit_profile(bootj_type, irup, rhoar, aibs, 21, bootj_aux_s, bootj_aux_temp)
+            ELSE
+               CALL fit_profile(bootj_type, irup, rhoar, dibs, 21, bootj_aux_s, bootj_aux_temp)
+            ENDIF
+
+            ! Picard iteration
+            bootj_aux_f(1:21) = bootj_aux_f(1:21) + 0.5*(bootj_aux_temp-bootj_aux_f(1:21))
+
             ! Evaluate the fit:
             DO radius_index = 1, irup
                CALL get_equil_bootj(rhoar(radius_index),AC_fit_results(radius_index),ier)
-               !CALL eval_profile(rhoar(radius_index), bootj_type, AC_fit_results(radius_index), bootj_aux_s, bootj_aux_f, ier)
             END DO
 
-            !Test if the vboot iterations have converged, by comparing "L_1 norm of the difference between the last two AC profiles" to "L_1 norm of the latest AC profile":
-            vboot_convergence_factor = SUM(ABS(AC_fit_results(1:irup) - AC_profile_fine(1:irup))) / SUM(ABS(AC_fit_results(1:irup)))
-            AC_profile_fine = AC_fit_results
-                        
-            ! In this next line, perhaps the first and last point should be treated differently for greater accuracy?
+            ! Compute the total current
             ds_fine = rhoar(2)-rhoar(1)
             curtor_bootstrap = SUM(AC_fit_results(1:irup)) * ds_fine
             curtor_vmec = curtor_bootstrap + curtor_beam
 
+            !Test if the vboot iterations have converged, by comparing "L_1 norm of the difference between the last two AC profiles" to "L_1 norm of the latest AC profile":
+            !vboot_convergence_factor = SUM(ABS(AC_fit_results(1:irup) - AC_profile_fine(1:irup))) / SUM(ABS(AC_fit_results(1:irup)))
+            !vboot_convergence_factor = MAXVAL(ABS((AC_fit_results(1:irup) - AC_profile_fine(1:irup)) / AC_fit_results(1:irup)))
+            vboot_convergence_factor = ABS(SUM(AC_fit_results(1:irup)) - SUM(AC_profile_fine(1:irup))) / ABS(SUM(AC_fit_results(1:irup)))
+
+            ! Save for next round
+            AC_profile_fine = AC_fit_results
+
             ! Print to screen
-            IF (lscreen_local) WRITE(6,'(2X,I4,2X,ES10.3,2X,ES10.3)') vboot_iteration,curtor_vmec,vboot_convergence_factor
+            IF (lscreen) WRITE(6,'(10X,I4,2X,ES10.3,4X,ES10.3)') vboot_iteration,curtor_vmec,vboot_convergence_factor
 
             IF (vboot_convergence_factor < vboot_tolerance) THEN
-               IF (lscreen_local) WRITE(6,'(A)') '----- VBOOT Converged -----'
+               IF (lscreen) WRITE(6,'(A)') '----- VBOOT Converged -----'
                exit_after_next_vmec_run = .true. ! VMEC is cheap, so always finish the vboot iteration with 1 last vmec run.
             ELSE IF (vboot_iteration >= vboot_max_iterations) THEN
-               IF (lscreen_local) WRITE(6,'(A)') '----- VBOOT Maximum Iterations -----'
+               IF (lscreen) WRITE(6,'(A)') '----- VBOOT Maximum Iterations -----'
                exit_after_next_vmec_run = .true. ! VMEC is cheap, so always finish the vboot iteration with 1 last vmec run.
             END IF
 

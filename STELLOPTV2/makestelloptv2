@@ -17,7 +17,7 @@ VPATH = $(SPATH):$(SPATH)/Chisq:$(SPATH)/General:$(SPATH)/Modules
 .SUFFIXES : .f .f90 .o
 xstelloptv2:  $(LIB) $(LIB_VMEC) $(LIB_BEAMS3D) $(LIB_BNORM) $(LIB_BOOTSJ) \
 	$(LIB_BOOZ) $(LIB_COBRA) $(LIB_DIAGNO) $(LIB_DKES) $(LIB_FIELDLINES) \
-	$(LIB_JINV) $(LIB_MGRID) $(LIB_NEO)  $(LIB_COILOPTPP) $(LIB_GENE) \
+	$(LIB_JINV) $(LIB_MGRID) $(LIB_NEO) $(LIB_NESCOIL) $(LIB_COILOPTPP) $(LIB_GENE) \
 	$(LIB_REGCOIL) $(LIB_TERPSICHORE) $(ObjectFiles)
 	$(LINK) $@ $(ObjectFiles) $(LIB_LINK)
 ifdef VMEC_DIR 
@@ -55,6 +55,9 @@ ifdef MGRID_DIR
 endif
 ifdef NEO_DIR
 	@rm $(NEO_DIR)/$(LOCTYPE)/$(LIB_NEO)
+endif
+ifdef NESCOIL_DIR
+	@rm $(NESCOIL_DIR)/$(LOCTYPE)/$(LIB_NESCOIL)
 endif
 ifdef GENE_DIR
 	@rm $(GENE_DIR)/$(LIB_GENE)
@@ -159,6 +162,10 @@ $(LIB_MGRID) :
 #Construct NEO library. 
 $(LIB_NEO) :
 	@cd $(NEO_DIR); make $(TYPE); cd $(LOCTYPE); rm -f $@; ar -cruv $@ *.o
+	
+#Construct NESCOIL library. 
+$(LIB_NESCOIL) :
+	@cd $(NESCOIL_DIR); make $(TYPE); cd $(LOCTYPE); rm -f $@; ar -cruv $@ *.o
 
 #Construct COILOPT library. 
 $(LIB_COILOPTPP) :

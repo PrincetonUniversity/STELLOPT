@@ -31,19 +31,22 @@
       REAL(rprec) :: dist_min
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: xc1,yc1,zc1,xc2,yc2,zc2
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: x2d,y2d,z2d,d2d
+      REAL(rprec), PARAMETER :: DCC_EXP = -5.0
       
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
-      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'COILCOIL_DISTANCE ',1,3
-      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  MINDIST'
+      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'COILCOIL_DISTANCE ',1,4
+      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  MINDIST_INV  MINDIST'
       IF (niter >= 0) THEN
          dist_min = 1.0D+30
          ncoilgroups = SIZE(coil_group)
-         ! OK note we really need two loops.
          !--------------------------------------------------------------
-         !    First compare every coil to every coil inside a 
+         !    Self-distance loop
+         !    This loop compares a given coil group to all other coils
+         !    in that same group. This catches the self-coil
+         !    intersections.
          !--------------------------------------------------------------
          DO i1 = 1, ncoilgroups
             DO j1 = 1, nw_coil*nh_coil
@@ -59,14 +62,16 @@
                   FORALL(k=1:nc2) y2d(:,k) = y2d(:,k) - coil_group(i1)%coils(j2)%xnod(2,k)
                   FORALL(k=1:nc2) z2d(:,k) = z2d(:,k) - coil_group(i1)%coils(j2)%xnod(3,k)
                   d2d = x2d*x2d+y2d*y2d+z2d*z2d
-                  WHERE(d2d < 1.0E-6) d2d = 1.0E6
-                  dist_min = MIN(SQRT(MINVAL(d2d)),dist_min)
+                  !WHERE(d2d < 1.0E-6) d2d = 1.0E6
+                  !dist_min = MIN(SQRT(MINVAL(d2d)),dist_min)
+                  !WHERE(d2d > target) d2d = target*100.0
+                  dist_min = MIN((MINVAL(d2d)),dist_min)
                   DEALLOCATE(x2d,y2d,z2d,d2d)
                END DO
             END DO
          END DO
          !--------------------------------------------------------------
-         !    Now we compare differnt coil groups 
+         !    In this loop we compare coils in different groups. 
          !--------------------------------------------------------------
          DO i1 = 1, ncoilgroups
             n1 = i1+1
@@ -83,18 +88,21 @@
                      FORALL(k=1:nc2) y2d(:,k) = y2d(:,k) - coil_group(i2)%coils(j2)%xnod(2,k)
                      FORALL(k=1:nc2) z2d(:,k) = z2d(:,k) - coil_group(i2)%coils(j2)%xnod(3,k)
                      d2d = x2d*x2d+y2d*y2d+z2d*z2d
-                     WHERE(d2d < 1.0E-6) d2d = 1.0E6
-                     dist_min = MIN(SQRT(MINVAL(d2d)),dist_min)
+                     !WHERE(d2d < 1.0E-6) d2d = 1.0E6
+                     !dist_min = MIN(SQRT(MINVAL(d2d)),dist_min)
+                     !WHERE(d2d > target) d2d = target*100.0
+                     dist_min = MIN((MINVAL(d2d)),dist_min)
                      DEALLOCATE(x2d,y2d,z2d,d2d)
                   END DO
                END DO
             END DO
          END DO
+         dist_min = SQRT(dist_min)
          mtargets = mtargets + 1
          targets(mtargets) = target
          sigmas(mtargets)  = sigma
-         vals(mtargets)     = 1.0/dist_min
-         IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3)') target,sigma,dist_min
+         vals(mtargets)     = EXP(DCC_EXP*(dist_min-target))
+         IF (iflag == 1) WRITE(iunit_out,'(4ES22.12E3)') target,sigma,vals(mtargets),dist_min
       ELSE
          IF (sigma < bigno) THEN
             mtargets = mtargets + 1

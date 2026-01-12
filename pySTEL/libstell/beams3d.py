@@ -293,7 +293,7 @@ class BEAMS3D():
 
 		# Radial grid
 		if not ns:
-			ns = self.ns_prof1
+			ns = max(self.ns_prof1,32)
 		s  = np.linspace(0.0,1.0,ns)
 
 		# Extract data
@@ -371,7 +371,7 @@ class BEAMS3D():
 
 		# Radial grid
 		if not ns:
-			ns = self.ns_prof1
+			ns = max(self.ns_prof1,32)
 		s  = np.linspace(0.0,1.0,ns)
 
 		# Extract data
@@ -420,7 +420,7 @@ class BEAMS3D():
 		return np.array(raxis),np.array(zaxis)
 
 
-	def calcDepo(self,ns=None):
+	def calcDepo(self,ns=None,beams=None):
 		"""Calculates the deposition profile
 
 		This routine calcualtes the radial birth profile in
@@ -443,7 +443,7 @@ class BEAMS3D():
 
 		# Setup rho on centered grid
 		if not ns:
-			ns = self.ns_prof1
+			ns = max(self.ns_prof1,32)
 		edges = np.linspace(0.0,1.0,ns+1)
 		rho  = (edges[1:]+edges[0:-1])/2.0
 
@@ -458,10 +458,16 @@ class BEAMS3D():
 		if self.lbeam:
 			dex_start = 1
 
+		# Handle beams
+		if type(beams) is type(None):
+			beams_use = list(range(self.nbeams))
+		else:
+			beams_use = [x - 1 for x in beams] 
+
 		# Calc births
 		births    = np.zeros((self.nbeams,ns))
 		rho_lines = np.sqrt(self.S_lines)
-		for b in range(self.nbeams):
+		for b in beams_use:
 			#dexb = np.nonzero(self.Beam == (b+1))
 			dexb = self.Beam == (b+1)
 			rho_temp = rho_lines[dex_start,dexb]
@@ -532,7 +538,7 @@ class BEAMS3D():
 		import numpy as np
 		# Setup rho on centered grid
 		if not ns:
-			ns = self.ns_prof1
+			ns = max(self.ns_prof1,32)
 		edges = np.linspace(0.0,1.0,ns+1)
 		# Determine subset of particles for initial distribution
 		tdex = 1
@@ -665,6 +671,54 @@ class BEAMS3D():
 		scalar = plt.valuesToScalar(val*factor)
 		# Add to Render
 		plt.add3Dmesh(points,triangles,FaceScalars=scalar,opacity=1.0,color=colormap)
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Render if requested
+		if lplotnow: plt.render()
+
+	def plot_index3d(self,k,pointsize=0.01,color='red',plot3D=None):
+		"""Plots the BEAMS3D Points in 3D (by index)
+
+		This routine plots the BEAMS3D poincare points in 3D by
+		the index
+
+		Parameters
+		----------
+		k : int
+			Orbit index to plot.
+		pointsize : float (optional)
+			Size of points (default=0.01)
+		color : string (optional)
+			Dot color (default='red')
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		"""
+		import numpy as np
+		import vtk
+		from libstell.plot3D import PLOT3D
+		# Handle optionals
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
+		else:
+			lplotnow = True
+			plt = PLOT3D()
+		vertices = []
+		scalar   = []
+		for i in range(self.nparticles):
+			if (self.R_lines[k,i] > 0):
+				vertices.append([self.X_lines[k,i],self.Y_lines[k,i],self.Z_lines[k,i]])
+				scalar.append(self.B_lines[k,i])
+		vertices = np.array(vertices)
+		scalar = plt.valuesToScalar(np.array(scalar))
+		points = plt.vertexToPoints(vertices)
+		# Add to Render
+		if float(scalar.GetValueRange()[1]) > 0:
+			plt.add3Dpoints(points,scalars=scalar,pointsize=pointsize)
+			# Colorbar
+			plt.colorbar()
+		else:
+			plt.add3Dpoints(points,pointsize=pointsize,color=color)
 		# In case it isn't set by user.
 		plt.setBGcolor()
 		# Render if requested

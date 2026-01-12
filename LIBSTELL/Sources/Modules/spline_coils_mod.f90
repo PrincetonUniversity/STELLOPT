@@ -125,7 +125,9 @@
       INTEGER :: i, j, mn, ns1, ier
       DOUBLE PRECISION :: AX, AY, AZ, BX, BY, BZ, NX, NY, NZ, N, &
             R, Z, RU, ZU, RV, ZV, rho, theta, zeta, cop, sip, l, &
-            X, Y, phi, RAX, ZAX
+            X, Y, phi, RAX, ZAX, slope, ycept, &
+            smax, slo, shi, rholo, rhohi, whi, wlo, wloo, whio, &
+            REDGE, ZEDGE, rho_ext
       DOUBLE PRECISION, DIMENSION(ns) :: Rc,Zc,Pc
       DOUBLE PRECISION, DIMENSION(3,ns) :: xnod_in, xnod_ss, xnod_bb
       CHARACTER(len=100) :: s_name
@@ -133,12 +135,6 @@
       CHARACTER(len=100) :: c_name
       TYPE(bsc_coil)     :: coil_temp
       TYPE(bsc_rs)       :: rot_mat
-      !INTERFACE
-      !   REAL FUNCTION bvalue( t, bcoef, n, k, x, jderiv )
-      !      integer jderiv,k,n
-      !      double precision bcoef(n),t(n+k),x
-      !   END FUNCTION bvalue
-      !END INTERFACE
       nw_coil = 1; nh_coil = 1
       ns1 = ns - 1
       ! Deallocated the coils if allocated
@@ -154,68 +150,68 @@
       DO i = 1,ncoilgroups
          WRITE(l_name,*) 'i = ',i
          WRITE(c_name,'(A,I2.2)') 'MODULAR_COIL_',i
-         CALL bsc_construct_coilcoll(coil_group(i),TRIM(c_name),l_name)
+         CALL bsc_construct_coilcoll(coil_group(i),TRIM(c_name),TRIM(l_name))
          DO j = 1, ns
             l = DBLE(j-1)/DBLE(ns-1)
             ier = 0
             CALL EZspline_interp(RHO_spl(i),l,rho,ier)
             CALL EZspline_interp(THETA_spl(i),l,theta,ier)
             CALL EZspline_interp(ZETA_spl(i),l,zeta,ier)
-            !CALL spline_it(n_kts,t_kts,rho_kts(i,:),1,l,rho,0)
-            !CALL spline_it(n_kts,t_kts,theta_kts(i,:),1,l,theta,0)
-            !CALL spline_it(n_kts,t_kts,zeta_kts(i,:),1,l,zeta,0)
-            !PRINT *,rho,theta,zeta
-            !rho = bvalue(t_kts,rho_kts(i,:),n_kts,k_kts,l,0)
-            !theta = bvalue(t_kts,theta_kts(i,:),n_kts,k_kts,l,0)
-            !zeta = bvalue(t_kts,zeta_kts(i,:),n_kts,k_kts,l,0)
             R = zero; Z = zero; RU = zero; ZU = zero; RV = zero; ZV=zero
-            RAX = zero; ZAX= zero;
+            RAX = zero; ZAX= zero; REDGE = zero; ZEDGE = zero
             phi = zeta/nfp
+            ! Extrapolation stuff (like VMEC)
+            !smax = 2.0
+            !slo  = 1.0
+            !shi  = 2.0
+            !rholo = SQRT(slo)
+            !rhohi = SQRT(shi)
+            !rholo = 1.0
+            !rhohi = SQRT(2.0)
+            !whi   = (rho*rho-slo)*smax
+            !wlo   = (smax - whi)/smax
+            rho_ext = rho + 1.0
+            whi   = (rho_ext*rho_ext-1.0)*2.0
+            wlo   = (2.0 - whi)/2.0
+            !wloo  = wlo*rho/rholo
+            !whio  = whi*rho/rhohi
+            wloo  = wlo*rho_ext
+            whio  = whi*rho_ext/SQRT(2.0)
             DO mn = 1, mnmax
                cop = cos(xm(mn)*theta+xn(mn)*zeta)
                sip = sin(xm(mn)*theta+xn(mn)*zeta)
-               R   =   R + rmnc(mn)*cop
-               Z   =   Z + zmns(mn)*sip
-               RAX = RAX + rmnc0(mn)*cop
-               ZAX = ZAX + zmns0(mn)*sip
-               RU  =  RU - rmnc(mn)*sip*xm(mn)
-               ZU  =  ZU + zmns(mn)*cop*xm(mn)
-               RV  =  RV - rmnc(mn)*sip*xn(mn) ! dR/dzeta
-               ZV  =  ZV + zmns(mn)*cop*xn(mn) ! dZ/dzeta
+               REDGE = REDGE + rmnc(mn)*cop
+               ZEDGE = ZEDGE + zmns(mn)*sip
+               IF ((xm(mn) == 0) .and. (xn(mn) == 0)) THEN
+                  R =  R  + rmnc(mn)*cop
+               ELSEIF (MOD(int(xm(mn)),2)==0) THEN
+                  R = R + rmnc(mn)*wlo*cop
+                  Z = Z + zmns(mn)*wlo*sip
+               ELSE
+                  R = R + rmnc(mn)*wloo*cop
+                  Z = Z + zmns(mn)*wloo*sip
+               END IF
+               IF ((xm(mn)==1) .and. (xn(mn)==0)) THEN
+                  ! Note we use odd here since xm==1
+                  R    =  R + 4.0*whio*cop
+                  Z    =  Z + 4.0*whio*sip
+               END IF
             END DO
-            cop = cos(phi)
-            sip = sin(phi)
-! New Polar Way
-            Ax = R-RAX; Az = Z-ZAX
-            N  = SQRT(Ax*Ax+Az*Az)
-            Ax = Ax * (N+rho) / N
-            Az = Az * (N+rho) / N
-            X  = (Ax + RAX) * cop
-            Y  = (Ax + RAX) * sip
-            Z  = Az + ZAX
-! Old NX,NY,NZ way
-!            Ax = RU * cop; Ay = RU * sip; Az = ZU
-!            ! dR/dzeta
-!            Bx = RV * cop - R * sip/nfp; By = RV * sip + R * cop/nfp; Bz = ZV
-!            Nx = Ay*Bz - Az*By
-!            Ny = Az*Bx - Ax*Bz
-!            Nz = Ax*By - Ay*Bx
-!            N  = SQRT(Nx*Nx+Ny*Ny+Nz*Nz)*normal_sign
-!            Nx = Nx/N; Ny = Ny/N; Nz = Nz/N
-!            X  = R*cop + rho*Nx
-!            Y  = R*sip + rho*Ny
-!            Z  = Z    + rho*Nz
-            Rc(j) = SQRT(X*X + Y*Y)
-            Zc(j) = Z
-            Pc(j) = ATAN2(Y,X)
-            xnod_in(1,j) = X
-            xnod_in(2,j) = Y 
-            xnod_in(3,j) = Z 
+            RU    = R - REDGE
+            ZU    = Z - ZEDGE
+            N     = SQRT(RU*RU+ZU*ZU)
+            RU    = RU/N; ZU = ZU/N
+            Rc(j) = REDGE + rho*RU
+            Zc(j) = ZEDGE + rho*ZU
+            Pc(j) = phi
+            xnod_in(1,j) = Rc(j)*COS(phi)
+            xnod_in(2,j) = Rc(j)*SIN(phi)
+            xnod_in(3,j) = Zc(j)
          END DO
          xnod_in(:,ns) = xnod_in(:,1)
          ! Now create the first coil
-         WRITE(s_name, '(a4,i5.5)') 'ID #', 1
-         CALL bsc_construct_coil(coil_temp,'fil_loop',s_name,'',one,xnod_in(1:3,1:ns))
+         WRITE(s_name, '(a4,i5.5)') 'ID ', 1
+         CALL bsc_construct_coil(coil_temp,'fil_loop',TRIM(s_name),'',one,xnod_in(1:3,1:ns))
          CALL bsc_append(coil_group(i),coil_temp)
          ! Now create the stellarator symmetric coil
          Zc = -Zc
@@ -224,7 +220,7 @@
          xnod_ss(2,2:ns) = Rc(ns1:1:-1)*sin(Pc(ns1:1:-1))
          xnod_ss(3,2:ns) = Zc(ns1:1:-1)
          xnod_ss(:,1) = xnod_ss(:,ns)
-         CALL bsc_construct_coil(coil_temp,'fil_loop',s_name,'',one,xnod_ss(1:3,1:ns))
+         CALL bsc_construct_coil(coil_temp,'fil_loop',TRIM(s_name),'',one,xnod_ss(1:3,1:ns))
          CALL bsc_append(coil_group(i),coil_temp)
          ! Now create rest of the coils
          DO j = 2, nfp
@@ -273,7 +269,7 @@
       ! Save the original coil
       ALLOCATE(coil_single(ncoilgroups))
       DO i = 1, ncoilgroups
-         CALL bsc_construct_coilcoll(coil_single(i),coil_group(i)%s_name,coil_group(i)%l_name)
+         CALL bsc_construct_coilcoll(coil_single(i),TRIM(coil_group(i)%s_name),TRIM(coil_group(i)%l_name))
          coil_single(i)%ncoil = coil_group(i)%ncoil
          coil_single(i)%coils = coil_group(i)%coils
       END DO
@@ -292,7 +288,7 @@
       ALLOCATE(xb(ns1),yb(ns1),zb(ns1))
       ! Now loop over each coil
       DO i = 1, ncoilgroups
-         CALL bsc_construct_coilcoll(coil_group(i),coil_group(i)%s_name,coil_group(i)%l_name)
+         CALL bsc_construct_coilcoll(coil_group(i),TRIM(coil_single(i)%s_name),TRIM(coil_single(i)%l_name))
          DO j = 1, coil_single(i)%ncoil
             ! Compute geometric center
             ntotal = SIZE(coil_single(i)%coils(j)%xnod(1,:))-1
@@ -327,14 +323,14 @@
             DO l = 1, nw
                DO k = 1, nh
                   xnod = coil_single(i)%coils(j)%xnod
-                  xnod(1,:) = xnod(1,:) - xb*width/2 - xn*height/2 &
+                  xnod(1,1:ns1) = xnod(1,1:ns1) - xb*width/2 - xn*height/2 &
                             + xb*width*(l-1)/(nw-1) + xn*height*(k-1)/(nh-1)
-                  xnod(2,:) = xnod(2,:) - yb*width/2 - yn*height/2 &
+                  xnod(2,1:ns1) = xnod(2,1:ns1) - yb*width/2 - yn*height/2 &
                             + yb*width*(l-1)/(nw-1) + yn*height*(k-1)/(nh-1)
-                  xnod(3,:) = xnod(3,:) - zb*width/2 - zn*height/2 &
+                  xnod(3,1:ns1) = xnod(3,1:ns1) - zb*width/2 - zn*height/2 &
                             + zb*width*(l-1)/(nw-1) + zn*height*(k-1)/(nh-1)
                   xnod(:,ns) = xnod(:,1)
-                  CALL bsc_construct_coil(coil_temp,'fil_loop',coil_single(i)%coils(j)%s_name,'',coil_single(i)%coils(j)%current/(nh*nw),xnod(1:3,1:ns))
+                  CALL bsc_construct_coil(coil_temp,'fil_loop',TRIM(coil_single(i)%coils(j)%s_name),'',coil_single(i)%coils(j)%current/(nh*nw),xnod(1:3,1:ns))
                   CALL bsc_append(coil_group(i),coil_temp)
                END DO
             END DO
@@ -351,6 +347,113 @@
       DEALLOCATE(xn,yn,zn,nt,xb,yb,zb)
       RETURN
       END SUBROUTINE coils_to_multifilament
+
+      SUBROUTINE dump_coil_info(iunit)
+      IMPLICIT NONE
+      INTEGER, INTENT(in) :: iunit
+      INTEGER :: k,j
+      WRITE(iunit,'(A,2X,I6)') ' Number of coil groups',SIZE(coil_group)
+      WRITE(iunit,'(A)')       ' ======================================='
+      DO k = 1, SIZE(coil_group)
+         WRITE(iunit,'(I6)') k
+         WRITE(iunit,'(A,2X,A)') ' S_NAME ',TRIM(coil_group(k)%s_name)
+         WRITE(iunit,'(A,2X,A)') ' L_NAME ',TRIM(coil_group(k)%l_name)
+         WRITE(iunit,'(A,2X,I6)') ' Number of coils ',coil_group(k)%ncoil
+         WRITE(iunit,'(A)')       ' ---------------------------------------'
+         DO j = 1, coil_group(k)%ncoil
+            WRITE(iunit,'(I6)') j
+            WRITE(iunit,'(A,2X,A)') ' S_NAME ',TRIM(coil_group(k)%coils(j)%c_type)
+            WRITE(iunit,'(A,2X,A)') ' S_NAME ',TRIM(coil_group(k)%coils(j)%s_name)
+            WRITE(iunit,'(A,2X,A)') ' L_NAME ',TRIM(coil_group(k)%coils(j)%l_name)
+            WRITE(iunit,'(A,2X,ES20.10)') ' Current ',coil_group(k)%coils(j)%current
+            WRITE(iunit,'(A,2X,I6)') ' Number of points ',SIZE(coil_group(k)%coils(j)%xnod)
+         ENDDO
+      WRITE(iunit,'(A)')       ' ======================================='
+
+      END DO
+      END SUBROUTINE dump_coil_info
+
+      ! SUBROUTINE compute_coil_coil_distance(outext)
+      ! IMPLICIT NONE
+      ! CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: outext
+      ! INTEGER :: nc1, nc2
+      ! DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: dist
+      ! DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: x2d, y2d, z2d, d2d
+      ! !--------------------------------------------------------------
+      ! !    Output the coil_coil_distance
+      ! !--------------------------------------------------------------
+      ! loutput = .FALSE.
+      ! IF (PRESENT(outext)) THEN
+      !    loutput = .TRUE.
+      !    CALL safe_open(iunit_out,ier,TRIM('coil_dist.'//TRIM(outext)),'unknown','formatted')
+      !    WRITE(iunit_out,'(I6,2X,I6,2X,I6,2X,I6)') ncoilgroups,nw_coil,nh_coil,ns
+      ! END IF
+      ! !--------------------------------------------------------------
+      ! !    First compare every coil to every coil inside a given group
+      ! ! This is a mess
+      ! !--------------------------------------------------------------
+      ! ALLOCATE(dist(nw_coil*nh_coil*ncoilgroups,1))
+      ! DO i1 = 1, ncoilgroups
+      !    DO j1 = 1, nw_coil*nh_coil
+      !       n1 = nw_coil*nh_coil + 1
+      !       nc1 = SIZE(coil_group(i1)%coils(j1)%xnod,2)
+      !       ALLOCATE(dist(nc1))
+      !       DO j2 = n1, coil_group(i1)%ncoil
+      !          nc2 = SIZE(coil_group(i1)%coils(j2)%xnod,2)
+      !          ALLOCATE(x2d(nc1,nc2),y2d(nc1,nc2),z2d(nc1,nc2),d2d(nc1,nc2))
+      !          FORALL(k=1:nc1) x2d(k,:) = coil_group(i1)%coils(j1)%xnod(1,k)
+      !          FORALL(k=1:nc1) y2d(k,:) = coil_group(i1)%coils(j1)%xnod(2,k)
+      !          FORALL(k=1:nc1) z2d(k,:) = coil_group(i1)%coils(j1)%xnod(3,k)
+      !          FORALL(k=1:nc2) x2d(:,k) = x2d(:,k) - coil_group(i1)%coils(j2)%xnod(1,k)
+      !          FORALL(k=1:nc2) y2d(:,k) = y2d(:,k) - coil_group(i1)%coils(j2)%xnod(2,k)
+      !          FORALL(k=1:nc2) z2d(:,k) = z2d(:,k) - coil_group(i1)%coils(j2)%xnod(3,k)
+      !          d2d = x2d*x2d+y2d*y2d+z2d*z2d
+      !          WHERE(d2d < 1.0E-6) d2d = 1.0E6
+      !          dist = SQRT(MINVAL(d2d,DIM=2))
+      !          dist_min = MIN(SQRT(MINVAL(d2d)),dist_min)
+      !          DEALLOCATE(x2d,y2d,z2d,d2d)
+      !       END DO
+      !       IF (loutput) THEN
+      !          DO k = 1, nc1
+      !             WRITE(iunit_out,'(2(2X,I3),14(2X,ES22.12))') &
+      !                i1,j1,coil_group(i1)%coils(j1)%xnod(1,k), &
+      !                coil_group(i1)%coils(j1)%xnod(2,k), &
+      !                coil_group(i1)%coils(j1)%xnod(3,k), &
+      !                dist(k)
+      !          END DO
+      !       END IF
+      !       DEALLOCATE(dist)
+      !    END DO
+      ! END DO
+      ! !--------------------------------------------------------------
+      ! !    Now we compare differnt coil groups 
+      ! !--------------------------------------------------------------
+      ! DO i1 = 1, ncoilgroups
+      !    n1 = i1+1
+      !    DO i2 = n1,ncoilgroups
+      !       DO j1 = 1, coil_group(i1)%ncoil
+      !          nc1 = SIZE(coil_group(i1)%coils(j1)%xnod,2)
+      !          ALLOCATE(dist(nc1))
+      !          DO j2 = 1, coil_group(i2)%ncoil
+      !             nc2 = SIZE(coil_group(i2)%coils(j2)%xnod,2)
+      !             ALLOCATE(x2d(nc1,nc2),y2d(nc1,nc2),z2d(nc1,nc2),d2d(nc1,nc2))
+      !             FORALL(k=1:nc1) x2d(k,:) = coil_group(i1)%coils(j1)%xnod(1,k)
+      !             FORALL(k=1:nc1) y2d(k,:) = coil_group(i1)%coils(j1)%xnod(2,k)
+      !             FORALL(k=1:nc1) z2d(k,:) = coil_group(i1)%coils(j1)%xnod(3,k)
+      !             FORALL(k=1:nc2) x2d(:,k) = x2d(:,k) - coil_group(i2)%coils(j2)%xnod(1,k)
+      !             FORALL(k=1:nc2) y2d(:,k) = y2d(:,k) - coil_group(i2)%coils(j2)%xnod(2,k)
+      !             FORALL(k=1:nc2) z2d(:,k) = z2d(:,k) - coil_group(i2)%coils(j2)%xnod(3,k)
+      !             d2d = x2d*x2d+y2d*y2d+z2d*z2d
+      !             WHERE(d2d < 1.0E-6) d2d = 1.0E6
+      !             dist_min = MIN(SQRT(MINVAL(d2d)),dist_min)
+      !             DEALLOCATE(x2d,y2d,z2d,d2d)
+      !          END DO
+      !       END DO
+      !    END DO
+      ! END DO
+      ! IF (loutput) CLOSE(iunit_out)
+      ! RETURN
+      ! END SUBROUTINE compute_coil_coil_distance
 
       SUBROUTINE compute_coil_curvature(outext)
       IMPLICIT NONE
@@ -415,7 +518,7 @@
             ycppp(nc) = ycppp(1)
             zcppp(nc) = zcppp(1)
             xcppp = xcppp * hs; ycppp = ycppp * hs; zcppp = zcppp * hs;
-            dLength(ntotal_coils,:) = SQRT(xcp*xcp+ycp*ycp+zcp*zcp)
+            dLength(ntotal_coils,:) = SQRT(xcp*xcp+ycp*ycp+zcp*zcp)/hs
             curvature(ntotal_coils,:)   = &
                  SQRT((zcpp*ycp-ycpp*zcp)**2 &
                     + (xcpp*zcp-zcpp*xcp)**2 &
@@ -457,6 +560,13 @@
       IF (loutput) CLOSE(iunit_out)
       RETURN
       END SUBROUTINE compute_coil_curvature
+
+      SUBROUTINE get_coil_ns(ns_out)
+      IMPLICIT NONE
+      INTEGER, INTENT(out) :: ns_out
+      ns_out = ns
+      RETURN
+      END SUBROUTINE get_coil_ns
 
       SUBROUTINE get_coil_curvature(coil_filament,coil_seg,curvature_out)
       IMPLICIT NONE

@@ -19,7 +19,7 @@ class PLASMA:
         
         self.lverb = lverb
         
-        self.species_database = ['electrons','hydrogen','deuterium','tritium','helium3','helium4','tungsten74']
+        self.species_database = ['electrons','hydrogen','deuterium','tritium','helium3','helium4','neon','tungsten74']
         self.mass_database = {
             'electrons' : ME,
             'hydrogen'  : 1.007276466621*DA,
@@ -27,6 +27,7 @@ class PLASMA:
             'tritium'   : 3.01604928*DA,
             'helium3'   : 3.0160293*DA,
             'helium4'   : 4.002603254*DA,
+            'neon'      : 20.1797*DA,
             'tungsten74': 183.84*DA
         }
         self.charge_database = {
@@ -36,6 +37,7 @@ class PLASMA:
             'tritium'   : EC,
             'helium3'   : 2.0*EC,
             'helium4'   : 2.0*EC,
+            'neon'      : 10.0*EC,  
             'tungsten74': 74.0*EC
         }
         self.Zcharge_database = {
@@ -45,6 +47,7 @@ class PLASMA:
             'tritium'   : 1,
             'helium3'   : 2,
             'helium4'   : 2,
+            'neon'      : 10,
             'tungsten74': 74
         }
         
@@ -435,7 +438,6 @@ class PLASMA:
                 loglambda = 25.3 - 1.15*np.log10(ne/1e6) + 2.3*np.log10(Te)
             else:
                 loglambda = 23.4 - 1.15*np.log10(ne/1e6) + 3.45*np.log10(Te)
-            
             clog = np.full(len(m),loglambda)
             
             nu = np.sum( coll.collisionfreq_PENTA(vt,m,Z,T,n,clog) )

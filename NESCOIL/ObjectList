@@ -1,4 +1,5 @@
 ObjectFiles = \
+nescoil_stellopt_mod.o \
 Voptim1.o \
 Vsurface7.o \
 Vculine1.o \

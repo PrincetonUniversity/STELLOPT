@@ -74,6 +74,7 @@
       ELSE
          DO ii = 1, nsd
             IF (sigma(ii) >= bigno) CYCLE
+               lneed_dkes = .TRUE.
                DO ij = 1, nprof
                   IF (E_dkes(ij) <= -bigno .or. nu_dkes(ij) <= -bigno) CYCLE
                   lbooz(ii) = .TRUE.

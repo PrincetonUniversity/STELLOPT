@@ -32,8 +32,6 @@
       INTEGER :: i,n,k, numcoilgroups
       INTEGER, PARAMETER :: nscoil = 128
       REAL(rprec) :: c1, c2, c3
-      REAL(rprec), DIMENSION(:), ALLOCATABLE :: tvec
-      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: rho, theta, zeta
 
 !-----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -50,7 +48,6 @@
       !n = MAXVAL(MAXLOC(rho_coil_kts,DIM=2,BACK=.TRUE.))
       numcoilgroups = COUNT(ANY(rho_coil_kts>0,DIM=2))
       k=1
-      ALLOCATE(tvec(n))
 
       !-----------------------------------------------------------------
       !     Screen Output
@@ -108,7 +105,6 @@
          CALL get_coil_torsion_avg(c1,c2,c3)
          WRITE(6,'(A)')            '          COIL TORSION:  '
          WRITE(6,'(A,3(2X,F7.3))') '              MIN/MEAN/MAX:  ',c3,c1,c2
-         WRITE(6,'(A)')      '-------------------------------------'
          CALL FLUSH(6)
       END IF
 
@@ -121,7 +117,6 @@
       !-----------------------------------------------------------------
       !     Deallocations
       !-----------------------------------------------------------------
-      DEALLOCATE(tvec)
 
 !-----------------------------------------------------------------------
 !     END SUBROUTINE
