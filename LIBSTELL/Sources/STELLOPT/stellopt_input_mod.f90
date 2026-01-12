@@ -1186,7 +1186,7 @@
       ! Vector quantities
       CALL write_stel_lvar_vec(iunit,lextcur_opt,extcur_min,extcur_max,dextcur_opt,'EXTCUR',1,nigroup)
 
-      CALL write_stel_lvar_vec(iunit,laphi_opt,aphi_min,aphi_max,daphi_opt,'APHI',0,20)
+      CALL write_stel_lvar_vec(iunit,laphi_opt,aphi_min,aphi_max,daphi_opt,'APHI',1,20)
 
       CALL write_stel_lvar_vec(iunit,lam_opt,am_min,am_max,dam_opt,'AM',0,20)
 
