@@ -818,17 +818,27 @@ class DKES:
         else:
             return cmul_species,Erv_species,auxiliary_integrand
         
-    def get_BS_current(self,Er,plasma_class,Smax,inspect=False):
-        """ This function computes the SN Bootstrap Current <JBS> as PENTA3 does using the Sugama-Nishimura method. This amounts to 
+    def get_BS_current(self,Er_Vcm,plasma_class,Smax,inspect=False):
+        """ This function computes the SN Bootstrap Current <JBS.b> as PENTA3 does using the Sugama-Nishimura method. This amounts to 
         solve Eq. (3.2.1.1) in PENTA documentation by Jeremy Lore. The equation has one typo though: they are missing the elementary 
         charge multiplying Ta (since it was defined to be in eV)
         
-        Er is given in V/cm
+        Note that the equation gives <u_parallel x B>/<B^2> for each species. The parallel BS current of each species is then:
+        <JBS.b>_species = n[species] * q[species] * np.sqrt(self.Bsq) * <u_parallel x B>/<B^2>[species]
+        
+        And the total BS current is simply:
+        <JBS.b> = sum_species ( <JBS.b>_species )
+        
+        !! Er is given in V/cm !!
+        
+        This function returns an array with <JBS.b>_species of each species
+        
         If inspect is True, then will plot inv(flow_mat)*A1 and inv(flow_mat)*A2 point-wise, to check which terms
         are contributing the most to the BS current
         """
         from scipy.special import assoc_laguerre
         
+        Er = Er_Vcm
         # Check Er!=0
         if(np.abs(Er) < 1E-6):
             raise ValueError('Please Choose Er != 0, cause this brings problems when taking the log of Er')
