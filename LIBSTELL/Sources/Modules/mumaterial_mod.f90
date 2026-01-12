@@ -926,7 +926,7 @@
 
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: Mnorm,lambda
       DOUBLE PRECISION ::  maxlambda
-      DOUBLE PRECISION :: residual_rel, residual_rel_worst_loc, residual_rel_worst_global, residual_rel_targ
+      DOUBLE PRECISION :: residual_rel, residual_rel_worst_loc, residual_rel_worst_global, M_targ_loc, M_targ_global
       DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: residual, residual_prev
       INTEGER          :: lambdaCount
       LOGICAL          :: lalldone, lboxdone, lprocdone, lbreakiterH, landerson
@@ -963,10 +963,12 @@
       maxiterH = maxiter
       residual = 0.0
       residual_rel_worst_loc = 0.0
+      M_targ_loc = 0.0
+
 
       IF (lverb) THEN
         WRITE(6,*) ''
-        WRITE(6,*) '  Count   %Done    Index        Mnorm         Diff       Target       Lamda'
+        WRITE(6,*) '  Count   %Done     Tile        Mnorm        Mtarg         Res       Target       Lamda'
         WRITE(6,*) '=============================================================================='
       END IF
 
@@ -975,7 +977,6 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       DO
         icount = icount + 1        
-
         M_new = 0.0
         maxi = mystart
         convergedproc = 0.0
@@ -1076,6 +1077,7 @@
           
           IF (residual_rel.GT.residual_rel_worst_loc) THEN
             residual_rel_worst_loc = residual_rel
+            M_targ_loc = NORM2(M_new)
             maxi = i
           END IF
 
@@ -1113,13 +1115,17 @@
                 IF (lismaster) THEN
                     maxlambda = lambda(maxi)
                     maxtile = mydom(maxi)
+                    M_targ_global = M_targ_loc
                 ELSE
                     CALL MPI_SEND(lambda(maxi), 1, MPI_DOUBLE_PRECISION, 0, 1240, comm_world, ierr_mpi) 
-                    CALL MPI_SEND(mydom(maxi), 1, MPI_INTEGER, 0, 1241, comm_world, ierr_mpi) 
+                    CALL MPI_SEND(mydom(maxi), 1, MPI_INTEGER, 0, 1241, comm_world, ierr_mpi) ]
+                    CALL MPI_SEND(M_targ_loc, 1, MPI_DOUBLE_PRECISION, 0, 1242, comm_world, ierr_mpi) 
+
                 END IF
             ELSE IF (lismaster) THEN
                 CALL MPI_RECV(maxlambda, 1, MPI_DOUBLE_PRECISION, maxrank, 1240, comm_world, mstat, ierr_mpi)
                 CALL MPI_RECV(maxtile, 1, MPI_INTEGER, maxrank, 1241, comm_world, mstat, ierr_mpi)
+                CALL MPI_RECV(M_targ_global, 1, MPI_DOUBLE_PRECISION, maxrank, 1242, comm_world, mstat, ierr_mpi)
             END IF
             CALL MPI_BARRIER(comm_world, ierr_mpi)
 
@@ -1133,10 +1139,9 @@
         convergedperc = convergedtot*100.0/SUM(tet_vol) 
         lalldone = (convergedperc.GE.convCheck)
         IF (ldosync) CALL mumaterial_syncM(M,ntet,outmydom)
-        residual_rel_targ = NORM2(M(:,maxtile))*threshold
 
         IF (lverb) THEN 
-          WRITE(6,'(2X,I6,1X,F7.1,1X,I8,1X,E12.4,1X,E12.4,1X,E12.4,1X,E12.4)') icount, convergedperc, maxtile, NORM2(M(:,maxtile)), residual_rel_worst_global, residual_rel_targ, maxlambda
+          WRITE(6,'(2X,I6,1X,F7.1,1X,I8,1X,E12.4,1X,E12.4,1X,E12.4,1X,E12.4,1X,E12.4)') icount, convergedperc, maxtile, NORM2(M(:,maxtile)), M_targ_global,residual_rel_worst_global, threshold, maxlambda
           CALL FLUSH(6)
         END IF
 
