@@ -943,6 +943,69 @@ class THRIFT():
         x    = np.vstack((tval,sflx))
         ftemp = RegularGridInterpolator((self.THRIFT_T,self.THRIFT_S),self.THRIFT_AMINOR)
         return sflx,ftemp(x.T)
+    
+    def create_dkes_results_file_from_DKES_coeffs(self,DKES_coeffs_file,k):
+        """This function creates a results.surface_k file similar to the results file outputed by DKES
+        The DKES_coeffs_file is a file outputed by THRIFT with the DKES coefficients at all surfaces
+        """
+        # Containers for rows with the requested k
+        selected_rows = []
+
+        with open(DKES_coeffs_file, "r") as f:
+            for line in f:
+                line = line.strip()
+
+                # Skip empty lines or header
+                if not line or line.lower().startswith("dkes_k"):
+                    continue
+
+                parts = line.split()
+                if len(parts) != 6:
+                    continue  # defensive: ignore malformed lines
+
+                k_val = int(parts[0])
+
+                if k_val == k:
+                    # Parse values
+                    _, Er_v, nu_v, D11, D31, D33 = parts
+                    selected_rows.append(
+                        (
+                            float(nu_v),   # cmul
+                            float(Er_v),   # efield
+                            float(D11),
+                            float(D31),
+                            float(D33),
+                        )
+                    )
+
+        # Check that k was found
+        if not selected_rows:
+            raise ValueError("The given k is not in the input file!")
+
+        # Output file
+        outname = f"results.surface_{k}"
+
+        with open(outname, "w") as fout:
+            # Header
+            fout.write("*\n")
+            fout.write(
+                "cmul\tefield\tweov\twtov\t"
+                "L11m\tL11p\tL31m\tL31p\tL33m\tL33p\n"
+            )
+
+            # Write data preserving original order
+            for nu_v, Er_v, D11, D31, D33 in selected_rows:
+                weov = 0.0
+                wtov = 0.0
+
+                fout.write(
+                    f"{nu_v:.8e}\t{Er_v:.8e}\t{weov:.1f}\t{wtov:.1f}\t"
+                    f"{D11:.8e}\t{D11:.8e}\t"
+                    f"{D31:.8e}\t{D31:.8e}\t"
+                    f"{D33:.8e}\t{D33:.8e}\n"
+                )
+
+        return outname
         
 # THRIFT Class
 class THRIFT_plasma_solver():
