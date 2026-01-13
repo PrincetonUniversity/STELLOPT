@@ -1046,7 +1046,7 @@
                 H_new = H_old + lambda_s*residual_H
                 
                 ! Exit loop
-                IF ((NORM2(residual_H).LE.threshold*lambda_s).or.(iterH.GT.maxIterH)) THEN
+                IF ((NORM2(residual_H).LE.threshold*lambda_s*NORM2(H_new)).or.(iterH.GT.maxIterH)) THEN
                   Hnorm = NORM2(H_new)
                   CALL mumaterial_getState(stateFunction(state_dex(i_tile))%H, stateFunction(state_dex(i_tile))%M, Hnorm, M_tmp_norm)
                   M_new = M_tmp_norm * H_new / Hnorm
