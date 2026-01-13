@@ -921,7 +921,7 @@
       INTEGER :: stype
       DOUBLE PRECISION :: H(3), N(3,3), Bx, By, Bz
       DOUBLE PRECISION :: MAT(3,3)
-      DOUBLE PRECISION :: H_old(3), H_new(3),  lambda_s,  Hnorm, M_tmp_norm, M_new(3), M_old(3)
+      DOUBLE PRECISION :: H_old(3), H_new(3),  residual_H(3), lambda_s,  Hnorm, M_tmp_norm, M_new(3), M_old(3)
       DOUBLE PRECISION :: M_tmp(3), M_tmp_local(3), Mrem_norm, u_ea(3), u_oa_1(3), u_oa_2(3) ! hard magnet
 
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: Mnorm,lambda
@@ -993,8 +993,8 @@
           END DO
 
           ! Determine field and magnetization at tile due to all other tiles and itself
-          H_new = H
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          H_new = H
           iterH = 0
           stype = state_type(state_dex(i_tile))
           SELECT CASE (stype)
@@ -1033,7 +1033,7 @@
                 iterH = iterH + 1
                 H_old = H_new
                 Hnorm = NORM2(H_new)
-                IF (Hnorm .ne. 0) THEN
+                IF (Hnorm .GT. 1E-12) THEN
                   CALL mumaterial_getState(stateFunction(state_dex(i_tile))%H, stateFunction(state_dex(i_tile))%M, Hnorm, M_tmp_norm)
                   M_new = M_tmp_norm * H_new / Hnorm
                   lambda_s = MIN(Hnorm/M_tmp_norm, 0.5)
@@ -1042,16 +1042,24 @@
                   lambda_s = 0.5
                 END IF
                 H_new = H + MATMUL(N, M_new)
-                H_new = H_old + lambda_s * (H_new - H_old)
-                ! If converged or exceeded maxiter, stop on next iter (calculates M one last time)
-                IF (iterH.GT.maxiterH)  WRITE(6,*) "  Exceeded maxiterH on tile ", i_tile
-                IF ((MAXVAL(ABS((H_new-H_old)/H_old)).lt.threshold*lambda_s).or.(iterH.GT.maxIterH)) EXIT
+                residual_H = H_new - H_old
+                H_new = H_old + lambda_s*residual_H
+                
+                ! Exit loop
+                IF ((NORM2(residual_H).LE.threshold*lambda_s).or.(iterH.GT.maxIterH)) THEN
+                  Hnorm = NORM2(H_new)
+                  CALL mumaterial_getState(stateFunction(state_dex(i_tile))%H, stateFunction(state_dex(i_tile))%M, Hnorm, M_tmp_norm)
+                  M_new = M_tmp_norm * H_new / Hnorm
+                  IF (iterH.GT.maxiterH)  WRITE(6,*) "  Exceeded maxiterH on tile ", i_tile                  
+                  EXIT
+                END IF
               END DO
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             CASE (3) ! Soft magnet using constant permeability, solve directly using inverse: 
               ! MAT = (I-(mu_r-1)*N)
               ! H = inv(MAT)*Hext
               M_new = (constant_mu(state_dex(i_tile)) - 1) * MATMUL(inv_mat_local(:,:,i),H)
+              H_new = M_new/(constant_mu(state_dex(i_tile)) - 1)
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             CASE DEFAULT
               WRITE(6,*) "  Unknown magnet type: ", stype
@@ -1067,11 +1075,11 @@
           IF (residual_rel.GT.residual_rel_loc) THEN
             residual_rel_loc = residual_rel
             M_targ_loc = NORM2(M_new)
-            H_new_loc = NORM2(H_new)
+            H_new_loc = Hnorm
             maxi = i
           END IF
           
-	  IF ((residual_rel < threshold) &
+	    IF ((residual_rel < threshold) &
              .OR. (icount.GE.maxIter)) THEN                     ! or exceed maxiter
                 ldone(i) = .TRUE.                               ! then this tile is done
           END IF
@@ -1095,20 +1103,17 @@
                 IF (lismaster) THEN
                     bad_tile = mydom(maxi)
                     lambda_bad = lambda(maxi)
-                    M_new_bad = NORM2(M(:,bad_tile))
                     M_targ_bad = M_targ_loc
                     H_bad = H_new_loc
                 ELSE
                     CALL MPI_SEND(mydom(maxi),             1, MPI_INTEGER,          0, 1240, comm_world, ierr_mpi)
                     CALL MPI_SEND(lambda(maxi),            1, MPI_DOUBLE_PRECISION, 0, 1241, comm_world, ierr_mpi) 
-                    CALL MPI_SEND(NORM2(M(:,mydom(maxi))), 1, MPI_DOUBLE_PRECISION, 0, 1242, comm_world, ierr_mpi) 
                     CALL MPI_SEND(M_targ_loc,              1, MPI_DOUBLE_PRECISION, 0, 1243, comm_world, ierr_mpi) 
                     CALL MPI_SEND(H_new_loc,               1, MPI_DOUBLE_PRECISION, 0, 1244, comm_world, ierr_mpi) 
                 END IF
             ELSE IF (lismaster) THEN
                 CALL MPI_RECV(bad_tile,   1, MPI_INTEGER,          maxrank, 1240, comm_world, mstat, ierr_mpi)
                 CALL MPI_RECV(lambda_bad, 1, MPI_DOUBLE_PRECISION, maxrank, 1241, comm_world, mstat, ierr_mpi) 
-                CALL MPI_RECV(M_new_bad,  1, MPI_DOUBLE_PRECISION, maxrank, 1242, comm_world, mstat, ierr_mpi)
                 CALL MPI_RECV(M_targ_bad, 1, MPI_DOUBLE_PRECISION, maxrank, 1243, comm_world, mstat, ierr_mpi)
                 CALL MPI_RECV(H_bad,      1, MPI_DOUBLE_PRECISION, maxrank, 1244, comm_world, mstat, ierr_mpi)
             END IF
@@ -1118,10 +1123,18 @@
         ELSE
             bad_tile = mydom(maxi)
             lambda_bad = lambda(maxi)
-            M_new_bad = NORM2(M(:,bad_tile))
             M_targ_bad = M_targ_loc
             H_bad = H_new_loc            
             convergedtot = convergedproc
+        END IF
+
+      ! Dampen evolution during oscillations in residual
+        IF ((DOT_PRODUCT(residual(:,i),residual_prev(:,i))<0.0) .AND. (NORM2(residual(:,i))>NORM2(residual_prev(:,i)))) THEN 
+            lambda(i) = lambda(i) * lambdaFactor
+            lambda(i) = MAX(lambda(i),0.001)
+        ELSE IF (NORM2(residual(:,i)).LT.NORM2(residual_prev(:,i))) THEN
+            lambda(i) = lambda(i) * 1.05
+            lambda(i) = MIN(lambda(i), 0.75)
         END IF
 
         convergedperc = convergedtot*100.0/SUM(tet_vol) 
@@ -1134,6 +1147,7 @@
             WRITE(6,*) '  Count   %Done     Tile     Mnorm      Hbad     Mtarg       Res     Lamda'
             WRITE(6,*) '=============================================================================='
           END IF
+          M_new_bad = NORM2(M(:,bad_tile))
           WRITE(6,'(2X,I6,1X,F7.1,1X,I8,1X,ES10.3,1X,ES10.3,1X,ES10.3,1X,ES10.3,1X,ES10.2)') & 
                   icount, convergedperc, bad_tile, M_new_bad, H_bad, M_targ_bad, residual_rel_bad, lambda_bad
           CALL FLUSH(6)
@@ -1147,15 +1161,6 @@
         IF (lalldone) THEN
             IF (lverb) WRITE(6,*) "  MUMAT:  Stopping"
             EXIT
-        END IF
-
-        ! Dampen evolution during oscillations in residual
-        IF ((DOT_PRODUCT(residual(:,i),residual_prev(:,i))<0.0) .AND. (NORM2(residual(:,i))>NORM2(residual_prev(:,i)))) THEN 
-            lambda(i) = lambda(i) * lambdaFactor
-            lambda(i) = MAX(lambda(i),0.001)
-        ELSE IF (NORM2(residual(:,i)).LT.NORM2(residual_prev(:,i))) THEN
-            lambda(i) = lambda(i) * 1.05
-            lambda(i) = MIN(lambda(i), 0.75)
         END IF
           
         ! Update H-field from non-Nb
