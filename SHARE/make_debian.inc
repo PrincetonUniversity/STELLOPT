@@ -33,7 +33,8 @@ SILOHOME = /usr/lib/$(ARCH)-linux-gnu
   LIBS    = -L/usr/lib -lopenblas -lscalapack-openmpi
 
   GFORTRAN_VERSION := $(shell $(FC) -dumpversion)
-  ifeq "$(shell [ $(GFORTRAN_VERSION) -gt 9 ] && echo true)" "true"
+  GFORTRAN_VERSION_MAJOR := $(firstword $(subst ., ,$(GFORTRAN_VERSION)))
+  ifeq "$(shell [ $(GFORTRAN_VERSION_MAJOR) -gt 9 ] && echo true)" "true"
       FLAGS_R += -fallow-argument-mismatch
       FLAGS_D += -fallow-argument-mismatch
   endif
