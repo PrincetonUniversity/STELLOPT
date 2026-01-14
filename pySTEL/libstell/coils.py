@@ -192,7 +192,7 @@ class COILSET():
 				for point in points_array:
 					points.InsertNextPoint(point)
 				# Add to render
-				if type(color) is type(None):
+				if type(color_txt) is type([]):
 					plot_color = color_txt[i % len(color_txt)]
 				else:
 					plot_color = color

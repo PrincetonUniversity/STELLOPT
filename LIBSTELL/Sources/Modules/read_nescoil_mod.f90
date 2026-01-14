@@ -30,7 +30,9 @@
                  mnmax_surface, nmax, mnd, nuv, nuv1, nuvh, nuvh1, &
                  nvp, mnmax_pot
       REAL(rprec) :: iota_edge, phip_edge, curpol, cut, cup, curwt, &
-                     trgwt, fnuv, alp
+                     trgwt, fnuv, alp, complexity, jsurf_max, &
+                     jsurf_min, jsurf_ave, jcurvr_min, jcurvr_max, &
+                     Berr_ave, Berr_max, Berr_var, Bmod_rms, Bmod_ave
       INTEGER, DIMENSION(:), ALLOCATABLE ::xm_plasma, xn_plasma,      & 
                                           xm_surface, xn_surface,     &
                                           xm_pot, xn_pot 
@@ -362,9 +364,11 @@
                   DO n = 1, mnmax_pot
                      READ(iunit,'(i3,2x,i3,2x,g25.16)') xm_pot(n),xn_pot(n),potmns_surface(n)
                   END DO
+                  READ(iunit, '(A)', iostat=istat) line
+                  READ(iunit, '(T13,e16.8)') complexity
                CASE("----- Calling Surfcur_Diag -----")
-                  READ(iunit, '(A)', iostat=istat) line
-                  READ(iunit, '(A)', iostat=istat) line
+                  READ(iunit, '(T23,3(e16.8))') jsurf_max, jsurf_min, jsurf_ave
+                  READ(iunit, '(T23,2(e16.8))') jcurvr_min, jcurvr_max
                   IF (w_jsurf>0 .or. w_jsurf==-1) THEN
                      READ(iunit, '(A)', iostat=istat) line
                   END IF
@@ -372,6 +376,8 @@
                      READ(iunit, '(A)', iostat=istat) line
                   END IF
                CASE("----- Calling Accuracy -----")
+                  READ(iunit, '(T22,3(e16.8))') Berr_ave, Berr_max, Berr_var
+                  READ(iunit, '(T17,2(e16.8))') Bmod_ave, Bmod_rms
                   IF (w_bnuv>0 .or. w_bnuv==-1) CALL read_nescout_accuracy(iunit,istat)
 
 
