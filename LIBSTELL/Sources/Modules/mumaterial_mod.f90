@@ -962,9 +962,7 @@
       ldone = .FALSE.
       maxiterH = maxiter
       residual = 0.0
-      residual_rel_loc = 0.0
-      M_targ_loc = 0.0
-      H_new_loc = 0.0
+
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Main Iteration Loop
@@ -977,7 +975,10 @@
         convergedtot = 0.0
         residual_prev = residual
         residual = 0.0
-
+        residual_rel_loc = 0.0
+        M_targ_loc = 0.0
+        H_new_loc = 0.0
+        
         DO i = mystart, myend ! Get the field and new magnetization for each tile
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           IF (icount.LT.maxIter) ldone(i) = .FALSE.
@@ -1144,7 +1145,7 @@
         IF (lverb) THEN 
           IF (icount.EQ.1) THEN
             WRITE(6,*) ''
-            WRITE(6,*) '  Count   %Done     Tile     Mnorm      Hbad     Mtarg       Res     Lamda'
+            WRITE(6,*) '  Count   %Done     Tile     Mnorm          H     Mtarg       Res     Lamda'
             WRITE(6,*) '=============================================================================='
           END IF
           M_new_bad = NORM2(M(:,bad_tile))
