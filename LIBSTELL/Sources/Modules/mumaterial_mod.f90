@@ -925,7 +925,8 @@
       DOUBLE PRECISION :: lambda_k
       DOUBLE PRECISION :: H_ext(3), N_self(3,3)
       DOUBLE PRECISION :: H_old(3), H_targ(3), H_new(3), H_norm, res_H(3)
-      DOUBLE PRECISION :: M_targ_norm, M_targ(3)
+      DOUBLE PRECISION :: M_targ_norm, M_targ(3), M_old(3)
+      DOUBLE PRECISION :: res_M_2(3), relM, relH
       ! Hard magnet:
       DOUBLE PRECISION :: M_rem_norm
       DOUBLE PRECISION :: u_ea(3), u_oa_1(3), u_oa_2(3), mu_ea, mu_oa
@@ -993,6 +994,7 @@
           H_new = H_ext
           iter_2 = 0
           stype = state_type(state_dex(i_tile))
+          M_targ = 0.0
           ! Select type (hard magnet, soft magnet, linear medium)
           SELECT CASE (stype)
             !-----------------------------------------------------------------!   
@@ -1018,17 +1020,24 @@
               DO
                 iter_2 = iter_2 + 1
                 H_old = H_new
+                M_old = M_targ
                 ! Determine magnetization taking into account easy axis
                 M_targ = (M_rem_norm + (mu_ea-1)*DOT_PRODUCT(H_new,u_ea))*u_ea &
                                      + (mu_oa-1)*DOT_PRODUCT(H_new,u_oa_1)*u_oa_1 &
                                      + (mu_oa-1)*DOT_PRODUCT(H_new,u_oa_2)*u_oa_2
-               ! Update H-field
+                ! Update H-field
                 H_targ = H_ext + MATMUL(N_self, M_targ)
                 res_H = H_targ - H_old
                 H_new = H_old + lambda_k * res_H
-                
+
+                res_M_2 = M_targ - M_old
+                relM = NORM2(res_M_2)/MAX(NORM2(M_targ), 1E-12)
+                relH = NORM2(res_H  )/MAX(NORM2(H_targ), 1E-12)
+
                 ! Exit loop if converged or max iter exceeded
-                IF ((NORM2(res_H)/NORM2(H_targ).LE.threshold*lambda_k).or.(iter_2.GE.maxIterH)) THEN
+                IF (((relH.LE.threshold).AND.(relM.LE.threshold)) & 
+                    .OR.(iter_2.GE.maxIterH)) THEN
+
                   M_targ = (M_rem_norm + (mu_ea-1)*DOT_PRODUCT(H_new,u_ea))*u_ea &
                                        + (mu_oa-1)*DOT_PRODUCT(H_new,u_oa_1)*u_oa_1 &
                                        + (mu_oa-1)*DOT_PRODUCT(H_new,u_oa_2)*u_oa_2
@@ -1041,6 +1050,7 @@
               DO
                 iter_2 = iter_2 + 1
                 H_old = H_new
+                M_old = M_targ
                 H_norm = NORM2(H_new)
                 CALL mumaterial_getState(stateFunction(state_dex(i_tile))%H, stateFunction(state_dex(i_tile))%M, H_norm, M_targ_norm)
                 IF (H_norm .GT. 1E-12) THEN
@@ -1056,8 +1066,13 @@
                 res_H = H_targ - H_old
                 H_new = H_old + lambda_k * res_H
                 
+                res_M_2 = M_targ - M_old
+                relM = NORM2(res_M_2)/MAX(NORM2(M_targ), 1E-12)
+                relH = NORM2(res_H  )/MAX(NORM2(H_targ), 1E-12)
+                
                 ! Exit loop if converged or max iter exceeded
-                IF ((NORM2(res_H)/NORM2(H_targ).LE.threshold*lambda_k).or.(iter_2.GE.maxIterH)) THEN
+                IF (((relH.LE.threshold).AND.(relM.LE.threshold)) & 
+                    .OR.(iter_2.GE.maxIterH)) THEN
                   H_norm = NORM2(H_new)
                   CALL mumaterial_getState(stateFunction(state_dex(i_tile))%H, stateFunction(state_dex(i_tile))%M, H_norm, M_targ_norm)
                   M_targ = M_targ_norm * H_new / H_norm
@@ -1066,7 +1081,7 @@
                 END IF
               END DO
             !-----------------------------------------------------------------!
-            CASE (3) ! Soft magnet using constant permeability, solve directly using inverse: 
+            CASE (3) ! Constant permeability, solve directly using inverse: 
               ! MAT = (I-(mu_r-1)*N)
               ! H = inv(MAT)*Hext
               mu_ea = constant_mu(state_dex(i_tile))
@@ -1091,7 +1106,7 @@
             converged_proc = converged_proc + tet_vol(i_tile)
           END IF
 
-          ! Find worst residual
+          ! Find worst residual for printing
           IF (res_rel.GT.res_rel_loc) THEN
             res_rel_loc = res_rel
             M_targ_loc = NORM2(M_targ)
@@ -1124,7 +1139,7 @@
           IF (world_rank.EQ.rank_bad) THEN ! If this proc has the bad element:
             IF (lismaster) THEN            ! If this proc is also the master, just grab info
               i_tile_bad = mydom(i_bad)
-              lambda_bad = lambda_n(i_bad)
+              lambda_bad = lambda_n(i_bad) ! I know lambda_n has already been updated at this point.
               M_targ_bad = M_targ_loc
               H_bad = H_new_loc
             ELSE                           ! If this proc is NOT the master, send info to master
