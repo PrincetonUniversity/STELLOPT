@@ -1186,39 +1186,41 @@
         END IF
         !---------------------------------------------------------------------!
         !--------------------- UPDATE BACKGROUND H_APP -----------------------!
-        DO i = mystart, myend
-          i_tile = mydom(i)
-          ! Get background field
-          CALL getBfld(tet_cen(1,i_tile), tet_cen(2,i_tile), tet_cen(3,i_tile), Bx, By, Bz)
-          H_app(:,i) = [Bx/mu0, By/mu0, Bz/mu0]
-      
-          ! Get all non-neighbors
-          ALLOCATE(is_Nb_mask(ntet))
-          is_Nb_mask = .FALSE.
-          is_Nb_mask(i_tile) = .TRUE.
-          is_Nb_mask(Nb(1:NbC(i),i)) = .TRUE. 
-          N_non_Nb = COUNT(.NOT.is_Nb_mask)
-          ALLOCATE(non_Nb_indices(N_non_Nb),r_vec(3,N_non_Nb),r_norm(N_non_Nb),r3_inv(N_non_Nb),r_hat(3,N_non_Nb))
-          non_Nb_indices = PACK([(j, j=1, ntet)], MASK=.NOT.is_Nb_mask)
-          DEALLOCATE(is_Nb_mask)
-                  
-          ! Get r-related stuff
-          r_vec = SPREAD(tet_cen(:, i_tile),DIM=2, NCOPIES=N_non_Nb)-tet_cen(:, non_Nb_indices)
-          r_norm = NORM2(r_vec, DIM=1)
-          r3_inv = 1.0 / (r_norm**3)
-          r_hat = r_vec / SPREAD(r_norm, DIM=1, NCOPIES=3)
-          DEALLOCATE(r_vec,r_norm)
+        IF ((MOD(iter_n, 10).EQ.0).OR.(iter_n.LE.10)) THEN
+          DO i = mystart, myend
+            i_tile = mydom(i)
+            ! Get background field
+            CALL getBfld(tet_cen(1,i_tile), tet_cen(2,i_tile), tet_cen(3,i_tile), Bx, By, Bz)
+            H_app(:,i) = [Bx/mu0, By/mu0, Bz/mu0]
+        
+            ! Get all non-neighbors
+            ALLOCATE(is_Nb_mask(ntet))
+            is_Nb_mask = .FALSE.
+            is_Nb_mask(i_tile) = .TRUE.
+            is_Nb_mask(Nb(1:NbC(i),i)) = .TRUE. 
+            N_non_Nb = COUNT(.NOT.is_Nb_mask)
+            ALLOCATE(non_Nb_indices(N_non_Nb),r_vec(3,N_non_Nb),r_norm(N_non_Nb),r3_inv(N_non_Nb),r_hat(3,N_non_Nb))
+            non_Nb_indices = PACK([(j, j=1, ntet)], MASK=.NOT.is_Nb_mask)
+            DEALLOCATE(is_Nb_mask)
+                    
+            ! Get r-related stuff
+            r_vec = SPREAD(tet_cen(:, i_tile),DIM=2, NCOPIES=N_non_Nb)-tet_cen(:, non_Nb_indices)
+            r_norm = NORM2(r_vec, DIM=1)
+            r3_inv = 1.0 / (r_norm**3)
+            r_hat = r_vec / SPREAD(r_norm, DIM=1, NCOPIES=3)
+            DEALLOCATE(r_vec,r_norm)
 
-          ! Physics
-          ALLOCATE(moments(3,N_non_Nb),mrdotrhat(N_non_Nb),H_dipole(3,N_non_Nb))
-          moments = M(:,non_Nb_indices)*SPREAD(tet_vol(non_Nb_indices),DIM=1,NCOPIES=3)
-          mrdotrhat = SUM(moments*r_hat,DIM=1)
-          H_dipole = INV4PI*(3.0*SPREAD(mrdotrhat,DIM=1,NCOPIES=3)*r_hat-moments)*SPREAD(r3_inv,DIM=1,NCOPIES=3)
-          H_app(:,i) = H_app(:,i) + SUM(H_dipole,DIM=2)
+            ! Physics
+            ALLOCATE(moments(3,N_non_Nb),mrdotrhat(N_non_Nb),H_dipole(3,N_non_Nb))
+            moments = M(:,non_Nb_indices)*SPREAD(tet_vol(non_Nb_indices),DIM=1,NCOPIES=3)
+            mrdotrhat = SUM(moments*r_hat,DIM=1)
+            H_dipole = INV4PI*(3.0*SPREAD(mrdotrhat,DIM=1,NCOPIES=3)*r_hat-moments)*SPREAD(r3_inv,DIM=1,NCOPIES=3)
+            H_app(:,i) = H_app(:,i) + SUM(H_dipole,DIM=2)
 
-          DEALLOCATE(r_hat,r3_inv,moments,mrdotrhat,H_dipole,non_Nb_indices)
+            DEALLOCATE(r_hat,r3_inv,moments,mrdotrhat,H_dipole,non_Nb_indices)
 
-        END DO  
+          END DO  
+        END IF
         !---------------------------------------------------------------------!
       END DO
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
