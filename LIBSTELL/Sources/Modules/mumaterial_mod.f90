@@ -1180,7 +1180,7 @@
           CALL FLUSH(6)
         END IF
 
-        IF (((converged_print.GE.convCheck).AND.(MOD(iter_n,100).LE.20s)).OR.(iter_n.GE.maxIter)) THEN
+        IF (((converged_print.GE.convCheck).AND.(MOD(iter_n,100).LE.20)).OR.(iter_n.GE.maxIter)) THEN
             IF (lverb) WRITE(6,*) "  MUMAT:  Stopping"
             EXIT
         END IF
