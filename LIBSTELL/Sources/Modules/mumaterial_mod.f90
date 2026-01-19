@@ -1180,13 +1180,13 @@
           CALL FLUSH(6)
         END IF
 
-        IF ((converged_print.GE.convCheck).OR.(iter_n.GE.maxIter)) THEN
+        IF (((converged_print.GE.convCheck).AND.(MOD(iter_n,100).LE.20s)).OR.(iter_n.GE.maxIter)) THEN
             IF (lverb) WRITE(6,*) "  MUMAT:  Stopping"
             EXIT
         END IF
         !---------------------------------------------------------------------!
         !--------------------- UPDATE BACKGROUND H_APP -----------------------!
-        IF ((MOD(iter_n, 10).EQ.0).OR.(iter_n.LE.10)) THEN
+        IF ((MOD(iter_n, 100).EQ.0).OR.(iter_n.LE.100)) THEN
           DO i = mystart, myend
             i_tile = mydom(i)
             ! Get background field
