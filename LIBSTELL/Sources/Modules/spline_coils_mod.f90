@@ -561,6 +561,66 @@
       RETURN
       END SUBROUTINE compute_coil_curvature
 
+      SUBROUTINE compute_coil_energy(nw,nh,width,height,icoil,E)
+      IMPLICIT NONE
+      INTEGER, INTENT(IN) :: nw
+      INTEGER, INTENT(IN) :: nh
+      DOUBLE PRECISION, INTENT(IN) :: width
+      DOUBLE PRECISION, INTENT(IN) :: height
+      INTEGER, INTENT(IN) :: icoil
+      DOUBLE PRECISION, INTENT(out) :: E
+      INTEGER :: i, ic, ix, j, jc, jx, nc, nc1
+      DOUBLE PRECISION :: hs, Lij, &
+         xi, yi, zi, xip, yip, zip, &
+         xj, yj, zj, xjp, yjp, zjp, &
+         dx, dy, dz, delta, a, b, aob, boa, kcoef
+      E=0.0D+00
+      i = icoil
+      nc = ns
+      nc1 = nc - 1
+      hs = 1.0E+00/nc1
+      ! Compute the normalizaton factor
+      a = width / nw_coil
+      b = height / nh_coil
+      aob = a/b
+      boa = b/a
+      !kcoef = (4.0/3.0)*boa*ATAN(aob) + (4.0/3.0)*aob*ATAN(boa) + (1.0/6.0)*boa*boa*LOG(boa) + (1.0/6.0)*aob*aob*LOG(aob)
+      kcoef = (8.0*boa*ATAN(aob) + 8.0*aob*ATAN(boa) + boa*boa*LOG(boa) + aob*aob*LOG(aob))/6.0
+      kcoef = kcoef - (a**4 - 6*a*a*b*b + b**4)*LOG(aob+boa)/(6*a*a*b*b)
+      delta = EXP(kcoef - 25.0/6.0)
+      ! Compute the Mutual inductance
+      DO ic = 1, nw_coil*nh_coil
+         DO ix = 1, nc1
+            xi  = 0.5*(coil_group(icoil)%coils(ic)%xnod(1,ix) + coil_group(icoil)%coils(ic)%xnod(1,ix+1))
+            yi  = 0.5*(coil_group(icoil)%coils(ic)%xnod(2,ix) + coil_group(icoil)%coils(ic)%xnod(2,ix+1))
+            zi  = 0.5*(coil_group(icoil)%coils(ic)%xnod(3,ix) + coil_group(icoil)%coils(ic)%xnod(3,ix+1))
+            xip = (coil_group(icoil)%coils(ic)%xnod(1,ix+1) - coil_group(icoil)%coils(ic)%xnod(1,ix))
+            yip = (coil_group(icoil)%coils(ic)%xnod(2,ix+1) - coil_group(icoil)%coils(ic)%xnod(2,ix))
+            zip = (coil_group(icoil)%coils(ic)%xnod(3,ix+1) - coil_group(icoil)%coils(ic)%xnod(3,ix))
+            DO j = 1, ncoilgroups
+               Lij = 0.0D+00
+               DO jc = 1, nw_coil*nh_coil
+                  DO jx = 1, nc1
+                     xj  = 0.5*(coil_group(j)%coils(jc)%xnod(1,jx) + coil_group(j)%coils(jc)%xnod(1,jx+1))
+                     yj  = 0.5*(coil_group(j)%coils(jc)%xnod(2,jx) + coil_group(j)%coils(jc)%xnod(2,jx+1))
+                     zj  = 0.5*(coil_group(j)%coils(jc)%xnod(3,jx) + coil_group(j)%coils(jc)%xnod(3,jx+1))
+                     xjp = (coil_group(j)%coils(jc)%xnod(1,jx+1) - coil_group(j)%coils(jc)%xnod(1,jx))
+                     yjp = (coil_group(j)%coils(jc)%xnod(2,jx+1) - coil_group(j)%coils(jc)%xnod(2,jx))
+                     zjp = (coil_group(j)%coils(jc)%xnod(3,jx+1) - coil_group(j)%coils(jc)%xnod(3,jx))
+                     dx = xi - xj
+                     dy = yi - yj
+                     dz = zi - zj
+                     Lij   = Lij + (xip * xjp + yip * yjp + zip * zjp) / SQRT(dx*dx+dy*dy+dz*dz + delta*a*b)
+                  END DO
+               END DO
+               E = E + Lij * coil_group(j)%coils(1)%current
+            END DO
+         END DO
+      END DO
+      E = 0.5 * E * coil_group(icoil)%coils(1)%current * 1.0E-7 * pi2 * pi2 * hs *hs
+      RETURN
+      END SUBROUTINE compute_coil_energy
+
       SUBROUTINE get_coil_ns(ns_out)
       IMPLICIT NONE
       INTEGER, INTENT(out) :: ns_out
