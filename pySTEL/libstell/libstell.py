@@ -945,6 +945,8 @@ class LIBSTELL():
 			'target_coilcoil_distance','sigma_coilcoil_distance', \
 			'target_curvature_p2', 'sigma_curvature_p2']
 		realLen=[1]*len(realList)
+		realList.extend(['target_coil_length', 'sigma_coil_length', 'target_coil_energy', 'sigma_coil_energy'])
+		realLen.extend([(nigroup,1)]*4)
 		realList.extend(['target_rosenbrock_f','sigma_rosenbrock_f'])
 		realLen.extend([(20,1),(20,1)])
 		realList.extend(['target_press', 'sigma_press', 'r_press', 'z_press', 'phi_press', \
