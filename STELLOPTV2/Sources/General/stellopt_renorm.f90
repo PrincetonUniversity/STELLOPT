@@ -173,9 +173,9 @@
             CASE(jtarget_bnormal)
                sigma_bnormal = sigma_bnormal/temp
             CASE(jtarget_bnmns)
-               sigma_bnmns = sigma_bnmns/temp
+               WHERE(sigma_bnmns<bigno) sigma_bnmns = sigma_bnmns/temp
             CASE(jtarget_bnmnc)
-               sigma_bnmnc = sigma_bnmnc/temp
+               WHERE(sigma_bnmnc<bigno) sigma_bnmnc = sigma_bnmnc/temp
             CASE(jtarget_coil_curvature)
                sigma_coil_curvature = sigma_coil_curvature/temp
             CASE(jtarget_coil_torsion)
