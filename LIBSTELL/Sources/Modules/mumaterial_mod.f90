@@ -1037,7 +1037,7 @@
                 IF (((relH.LE.threshold).AND.(relM.LE.threshold)) & 
                     .OR.(iter_2.GE.maxIterH)) THEN
                   ! Cap change in H
-                  dH = H_new-H_prev
+                  dH = H_new-H_prev(:,i)
                   dH_norm = NORM2(dH)
                   IF (NORM2(H_prev(:,i)).GE.1E-12) THEN
                     H_new = H_prev(:,i) + MIN(dH_norm/NORM2(H_prev(:,i)),dH_rel_max)*NORM2(H_prev(:,i))*dH/dH_norm
@@ -1079,7 +1079,7 @@
                 IF (((relH.LE.threshold).AND.(relM.LE.threshold)) & 
                     .OR.(iter_2.GE.maxIterH)) THEN
                   ! Cap change in H
-                  dH = H_new-H_prev
+                  dH = H_new-H_prev(:,i)
                   dH_norm = NORM2(dH)
                   IF (NORM2(H_prev(:,i)).GE.1E-12) THEN
                     H_new = H_prev(:,i) + MIN(dH_norm/NORM2(H_prev(:,i)),dH_rel_max)*NORM2(H_prev(:,i))*dH/dH_norm
@@ -2023,7 +2023,7 @@
             WRITE(6,*) "Outputting magnetization"
             OPEN(13, file='./mumat_mag.dat')
             DO i = 1, ntet
-                  WRITE(13, "(ES15.7,X2,ES15.7,X2,ES15.7)") M(1,i),M(2,i),M(3,i)
+                  WRITE(13, "(ES15.7,ES15.7,ES15.7)") M(1,i),M(2,i),M(3,i)
             END DO
             CLOSE(13)
       END IF
