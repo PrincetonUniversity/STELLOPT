@@ -690,7 +690,6 @@
       ELSE
         Bx = master_size ! master_size needs to be dbl for next line
         color = world_rank*Bx/world_size
-        WRITE(strcount, '(I0)') color
       END IF
 #endif
 
@@ -729,6 +728,7 @@
             splits = splits-1 
 
             IF (ldebugs) THEN
+              WRITE(strcount, '(I0)') color
               WRITE(splitcount, '(I0)') splits
               OPEN(color, file='./mydom_' // TRIM(ADJUSTL(strcount)) // '_' // TRIM(ADJUSTL(splitcount)) // '.dat')
               DO i = 1, domsize
@@ -766,6 +766,7 @@
           END DO
           CLOSE(color)
         END IF
+
         ! Now every master needs to know their range relative to other 
         lwork = (color.EQ.0)
         splits = 0
@@ -807,7 +808,6 @@
       
       CALL MPI_Bcast(mydom,   domsize,  MPI_INTEGER, 0, comm_shar, ierr_mpi)
       CALL MPI_Bcast(outmydom,odomsize, MPI_INTEGER, 0, comm_shar, ierr_mpi)
-!      IF (shar_rank.EQ.1) WRITE(6,'(A37,I8,A1)') '  MUMAT_DEBUG: SUBJECT received box [', domsize, ']'; FLUSH(6)
       CALL MPI_Bcast(ourstart, 1, MPI_INTEGER, 0, comm_shar, ierr_mpi)
       CALL MPI_Bcast(ourend,   1, MPI_INTEGER, 0, comm_shar, ierr_mpi)
       CALL MPI_BARRIER(comm_world, ierr_mpi)
@@ -844,9 +844,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Calculate N_store
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Calculating N_store"
-
       NULLIFY(N_store)
       ALLOCATE(N_store(3,3,maxNbC,mystart:myend))
       N_store(:,:,:,:) = 0.0
@@ -859,9 +857,8 @@
       END DO
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      ! Calculate inv_N_local for constant-mu-cases
+      ! Calculate inv_mat_local for constant-mu-cases
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
       ALLOCATE(inv_mat_local(3,3,mystart:myend))
       inv_mat_local = 0.0
       DO i = mystart, myend
@@ -886,15 +883,11 @@
       ! Begin iterations
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Beginning Iterations"
-      
       CALL mumaterial_iterate_M(getBfld, mystart, myend)
-
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  End Iterations"
-
       ! DEALLOCATE Helpers
       DEALLOCATE(Nb, NbC)
-      ! DEALLOCATE( Nb_domidx, NbC_dom)
-      DEALLOCATE(N_store)
+      DEALLOCATE(N_store,inv_mat_local)
       DEALLOCATE(H_app)
 
       RETURN
@@ -1171,7 +1164,7 @@
         IF (lverb) THEN 
           IF (iter_n.EQ.1) THEN
             WRITE(6,*) ''
-            WRITE(6,*) '  Count   %Done     Tile      Mnorm          H      Mtarg        Res     Lamda'
+            WRITE(6,*) '  Count   %Good     Tile      Mnorm          H      Mtarg        Res     Lambda'
             WRITE(6,*) '==============================================================================='
           END IF
           M_new_bad = NORM2(M(:,i_tile_bad))
@@ -1226,7 +1219,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !---------------------------- END PRIMARY LOOP -------------------------------!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      DEALLOCATE(Mnorm,inv_mat_local,res_M,res_M_prev)
+      DEALLOCATE(Mnorm,res_M,res_M_prev)
       RETURN
       END SUBROUTINE mumaterial_iterate_M
 
@@ -1960,9 +1953,10 @@
       RETURN
       END SUBROUTINE mumaterial_getb_vector
 
-
       SUBROUTINE mumaterial_readmag(filename)
-
+      !-----------------------------------------------------------------------
+      ! mumaterial_readmag: Reads magnetization .dat file
+      !-----------------------------------------------------------------------
 #if defined(MPI_OPT)
       USE mpi
       USE mpi_params
@@ -1972,10 +1966,9 @@
       CHARACTER(LEN=*), INTENT(in) :: filename
       INTEGER :: i, istat, iunit
 
-
       IF (lismaster) THEN
-            WRITE(6,'(A)')           ' -------- MUMAT MAGFILE --------'
-            WRITE(6,'(3X,A,A)')     'FILENAME     : ',filename
+            WRITE(6,'(A)')           ' -------- MUMAT magfile --------'
+            WRITE(6,'(3X,A,A)')     'File         : ',filename
             ! open file, return if fails
             iunit = 327; istat = 0
             CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
@@ -1983,13 +1976,12 @@
                   WRITE(6,*) "ISSUE READING MAG; STOPPING"
                   RETURN
             END IF
-            WRITE(6,*) "READING MAGFILE"
             DO i = 1, ntet
                   READ(iunit, *) M(1,i),M(2,i),M(3,i)
             END DO
             CLOSE(iunit)
       END IF    
-      ! Broadcast
+
 #if defined(MPI_OPT)
       IF ((lcomm).AND.(shar_rank.EQ.0)) THEN
             CALL MPI_Bcast(M,3*ntet,MPI_DOUBLE_PRECISION,0,comm_master,ierr_mpi)
@@ -2000,7 +1992,7 @@
 
       SUBROUTINE mumaterial_writemag()
       !-----------------------------------------------------------------------
-      ! mumaterial_writemag: Outputs magnetization to text file
+      ! mumaterial_writemag: Outputs magnetization to .dat file
       !-----------------------------------------------------------------------
       IMPLICIT NONE
 
@@ -2010,7 +2002,7 @@
             WRITE(6,*) "Outputting magnetization"
             OPEN(13, file='./mumat_mag.dat')
             DO i = 1, ntet
-                  WRITE(13, "(E15.7,A,E15.7,A,E15.7)") M(1,i),' ',M(2,i),' ',M(3,i)
+                  WRITE(13, "(ES15.7,X2,ES15.7,X2,ES15.7)") M(1,i),M(2,i),M(3,i)
             END DO
             CLOSE(13)
       END IF
@@ -2039,9 +2031,6 @@
       INTEGER :: i 
       INTEGER :: npoints
       DOUBLE PRECISION, ALLOCATABLE :: B(:,:)
-!      LOGICAL, OPTIONAL :: linclvac
-
-!      IF (.NOT.(PRESENT(linclvac))) linclvac = .TRUE.
 
       IF (lismaster) THEN
         npoints = size(x)
@@ -2053,7 +2042,7 @@
         CLOSE(13)
       END IF
 
-      CALL mumaterial_getb_vector(x, y, z, B, getBfld)!, linclvac)
+      CALL mumaterial_getb_vector(x, y, z, B, getBfld)
  
       IF (lismaster) THEN
         WRITE(6,*) "Outputting B-field"
