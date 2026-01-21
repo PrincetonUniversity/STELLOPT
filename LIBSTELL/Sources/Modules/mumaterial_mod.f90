@@ -920,6 +920,9 @@
       DOUBLE PRECISION :: H_old(3), H_targ(3), H_new(3), H_norm, res_H(3)
       DOUBLE PRECISION :: M_targ_norm, M_targ(3), M_old(3)
       DOUBLE PRECISION :: res_M_2(3), relM, relH
+      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: H_prev
+      DOUBLE PRECISION :: dH_rel_max, dH, dH_norm
+      LOGICAL :: lgoodsec
       ! Hard magnet:
       DOUBLE PRECISION :: M_rem_norm
       DOUBLE PRECISION :: u_ea(3), u_oa_1(3), u_oa_2(3), mu_ea, mu_oa
@@ -947,13 +950,16 @@
       ! Allocate helpers
       ALLOCATE(Mnorm(mystart:myend))
       ALLOCATE(res_M(3,mystart:myend),res_M_prev(3,mystart:myend))
+      ALLOCATE(H_prev(3,mystart:myend))
       ALLOCATE(lambda_n(mystart:myend))
-
-      lambda_n = lambdaStart
-      Mnorm = 1.0E-5
       maxiterH = maxiter
+      Mnorm = 1.0E-5
+      lambda_n = lambdaStart
       res_M = 0.0
+      H_prev = 0.0
       iter_n = 0
+      dH_rel_max = 0.1
+      lgoodsec = .TRUE.
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !------------------------------ PRIMARY LOOP ---------------------------------!
@@ -1030,7 +1036,13 @@
                 ! Exit loop if converged or max iter exceeded
                 IF (((relH.LE.threshold).AND.(relM.LE.threshold)) & 
                     .OR.(iter_2.GE.maxIterH)) THEN
-
+                  ! Cap change in H
+                  dH = H_new-H_prev
+                  dH_norm = NORM2(dH)
+                  IF (NORM2(H_prev(:,i)).GE.1E-12) THEN
+                    H_new = H_prev(:,i) + MIN(dH_norm/NORM2(H_prev(:,i)),dH_rel_max)*NORM2(H_prev(:,i))*dH/dH_norm
+                  END IF
+                  IF (dH_norm/NORM2(H_prev(:,i)).GT.dH_rel_max) lgoodsec = .FALSE.
                   M_targ = (M_rem_norm + (mu_ea-1)*DOT_PRODUCT(H_new,u_ea))*u_ea &
                                        + (mu_oa-1)*DOT_PRODUCT(H_new,u_oa_1)*u_oa_1 &
                                        + (mu_oa-1)*DOT_PRODUCT(H_new,u_oa_2)*u_oa_2
@@ -1066,13 +1078,22 @@
                 ! Exit loop if converged or max iter exceeded
                 IF (((relH.LE.threshold).AND.(relM.LE.threshold)) & 
                     .OR.(iter_2.GE.maxIterH)) THEN
+                  ! Cap change in H
+                  dH = H_new-H_prev
+                  dH_norm = NORM2(dH)
+                  IF (NORM2(H_prev(:,i)).GE.1E-12) THEN
+                    H_new = H_prev(:,i) + MIN(dH_norm/NORM2(H_prev(:,i)),dH_rel_max)*NORM2(H_prev(:,i))*dH/dH_norm
+                  END IF
+                  IF (dH_norm/NORM2(H_prev(:,i)).GT.dH_rel_max) lgoodsec = .FALSE.
                   H_norm = NORM2(H_new)
+                  ! Recalculate M
                   CALL mumaterial_getState(stateFunction(state_dex(i_tile))%H, stateFunction(state_dex(i_tile))%M, H_norm, M_targ_norm)
                   M_targ = M_targ_norm * H_new / H_norm
                   IF (iter_2.GT.maxiterH)  WRITE(6,*) "  Exceeded maxiterH on tile ", i_tile                  
                   EXIT
                 END IF
               END DO
+              H_prev(:,i) = H_new
             !-----------------------------------------------------------------!
             CASE (3) ! Constant permeability, solve directly using inverse: 
               ! MAT = (I-(mu_r-1)*N)
@@ -1095,7 +1116,7 @@
 
           ! Check convergence progress
           res_rel = NORM2(res_M(:,i))/NORM2(M_targ)
-	        IF (res_rel < threshold) THEN                     
+	        IF ((res_rel.LT.threshold) .AND. (lgoodsec)) THEN                     
             converged_proc = converged_proc + tet_vol(i_tile)
           END IF
 
