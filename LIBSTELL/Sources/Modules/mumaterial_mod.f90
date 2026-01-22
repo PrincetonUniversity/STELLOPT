@@ -959,7 +959,6 @@
       H_prev = 0.0
       iter_n = 0
       dH_rel_max = 0.1
-      lgoodsec = .TRUE.
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !------------------------------ PRIMARY LOOP ---------------------------------!
@@ -994,6 +993,7 @@
           iter_2 = 0
           stype = state_type(state_dex(i_tile))
           M_targ = 0.0
+          lgoodsec = .TRUE.
           ! Select type (hard magnet, soft magnet, linear medium)
           SELECT CASE (stype)
             !-----------------------------------------------------------------!   
