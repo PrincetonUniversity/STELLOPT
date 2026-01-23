@@ -736,9 +736,8 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Local Variables
          !--------------------------------------------------------------
-         INTEGER :: ier
-         DOUBLE PRECISION :: t_nag, rkh_work(6, 2)
-         DOUBLE PRECISION :: xav, yav, zav, vav, neutdens, vol
+         INTEGER :: ier, i
+         DOUBLE PRECISION :: xav, yav, zav, vav, neutdens, vol, mtemp
          TYPE(box_reaction) :: reaction_info 
 
          !--------------------------------------------------------------
@@ -759,19 +758,48 @@ MODULE beams3d_physics_mod
 
          ! Attenuate life
          mylife = mylife*exp(-neutdens*vol)
-         IF (mylife<=mylife_end) THEN ! Update particle
+         IF (mylife<=mylife_end) THEN 
+            ! Update particle
             reaction_count(myline) = reaction_count(myline)+1
             reaction_info = reactions_db(reaction_dex)
-            mymass_int = reaction_info%output_A_1
+
+            mtemp = mass(myline)
+            mymass_int = reaction_info%output_A(1)
             mymass = mymass_int*p_mass
             mass(myline) = mymass
-            mycharge_int = reaction_info%output_Z_1
+
+            mycharge_int = reaction_info%output_Z(1)
             mycharge = mycharge_int*e_charge
             charge(myline) = mycharge
+
             lneut = (mycharge_int==0)
             myqm = mycharge/mymass
             E_by_v=mymass*0.5d-3/e_charge
 
+            ! Dissociation; skipped if nproducts = 1
+            DO i = 2, reaction_info%nproducts
+               is_active(myfreedex) = .TRUE.
+               reaction_count(myfreedex) = 0
+               weight(myfreedex) = weight(myline)
+
+               mass(myfreedex) = reaction_info%output_A(i)*p_mass
+               charge(myfreedex) = reaction_info%output_Z(i)*e_charge
+               neut_lines(0, myfreedex)   = (charge(myfreedex)==0)
+               Zatom(myfreedex) = Zatom(myline) ! Atomic Z doesn't change
+
+               ! Neglect internal energy release for now, which simplifies things
+               R_lines(0,myfreedex)    = q(1)
+               phi_lines(0,myfreedex)  = q(2)
+               Z_lines(0,myfreedex)    = q(3)
+               vr_lines(0,myfreedex)   = q(4)
+               vphi_lines(0,myfreedex) = q(5)
+               vz_lines(0,myfreedex)   = q(6)
+               vll_lines(0,myfreedex) = vll_lines(mytdex,myline)
+               moment_lines(0,myfreedex) = mass(myfreedex)/mtemp*moment_lines(mytdex,myline)
+
+               ! Next free slot
+               myfreedex = myfreedex + 1
+            END DO
             ! Reset for next reaction
             mylife = 1.0
             CALL RANDOM_NUMBER(mylife_end)
@@ -781,7 +809,7 @@ MODULE beams3d_physics_mod
          RETURN ! Go back to out_beams3d_part
 
          !--------------------------------------------------------------
-         !     Begin Subroutine
+         !     End Subroutine
          !--------------------------------------------------------------
 
       END SUBROUTINE beams3d_physics_boxsim

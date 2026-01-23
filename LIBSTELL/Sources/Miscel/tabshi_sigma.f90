@@ -539,17 +539,19 @@ CONTAINS
 !---------------------------------------------------------------------------
 !       TRIPLE-PROTON REACTIONS (H3+)
 !           Reaction      Reactant      Product(s)     Note
-!               18           H3+           H+, H2       Mom. loss to gas    
-!               19           H3+           H,  H2+      Mom. loss to gas
-!               20           H3+           H,  H2+      CX - no loss
-!               21           H3+           H+, H2       CX - no loss
+!               18           H3+         at least 1 H+
+!               19           H3+         at least 1 H2+
+!               20           H3+         at least 1 H
+!               21           H3+         at least 1 H2
+!         Most of these reactions do not translate nicely to a simple MC
+!         cross-section (e.g. reaction 18 can imply (H+,H2) dissociation or
+!         (H+,H,H) dissociation) so have to do some linear algebra
 !---------------------------------------------------------------------------
 !---------------------------------------------------------------------------
 
-    FUNCTION get_sigma_kindiss_H3neut_Hplus(E) result(sigma)
+    FUNCTION get_sigma_18(E) result(sigma)
         !-------------------------------------------------------------------
-        !     Reaction (18) in Tabata (2000) [H3+ + H2 -> fast H+, H2, H2]
-        !      Note that "fast" here means relative to beam
+        !     Reaction (18) in Tabata (2000)
         !       Input parameters
         !           E       energy in keV
         !       Output parameters
@@ -568,12 +570,11 @@ CONTAINS
         sigma = get_sigma_eq3(a1,a2,a3,a4,a5,a6,a7,a8)
         RETURN
 
-    END FUNCTION get_sigma_kindiss_H3neut_Hplus
+    END FUNCTION get_sigma_18
 
-    FUNCTION get_sigma_kindiss_H3neut_H2plus(E) result(sigma)
+    FUNCTION get_sigma_19(E) result(sigma)
         !-------------------------------------------------------------------
-        !     Reaction (19) in Tabata (2000) [H3+ + H2 -> fast H, H2+, H2]
-        !      Note that "fast" here means relative to beam
+        !     Reaction (19) in Tabata (2000)
         !       Input parameters
         !           E       energy in keV
         !       Output parameters
@@ -592,12 +593,11 @@ CONTAINS
         sigma = get_sigma_eq3(a1,a2,a3,a4,a5,a6,a7,a8)
 
         RETURN
-    END FUNCTION get_sigma_kindiss_H3neut_H2plus
+    END FUNCTION get_sigma_19
 
-    FUNCTION get_sigma_cxdiss_H3neut_Hneut(E) result(sigma)
+    FUNCTION get_sigma_20(E) result(sigma)
         !-------------------------------------------------------------------
-        !     Reaction (20) in Tabata (2000) [H3+ + H2 -> fast H, fast H2+]
-        !      Note that "fast" here means relative to beam
+        !     Reaction (20) in Tabata (2000)
         !       Input parameters
         !           E       energy in keV
         !       Output parameters
@@ -611,18 +611,17 @@ CONTAINS
 
         Eth = 1.55E-2 ! Threshold energy in keV
         E1 = E - Eth
-        a1 = 5.89E-1; a2 = 1.0 a3 = 2.5E-2; a4 = 1.5; a5 = 4.05E-2; a6 = 7.59E-1;
+        a1 = 5.89E-1; a2 = 1.0; a3 = 2.5E-2; a4 = 1.5; a5 = 4.05E-2; a6 = 7.59E-1;
         a7 = 4.64E+1; a8 = 1.1
         
         sigma = get_sigma_eq3(a1,a2,a3,a4,a5,a6,a7,a8)
 
         RETURN
-    END FUNCTION get_sigma_cxdiss_H3neut_Hneut
+    END FUNCTION get_sigma_20
 
-    FUNCTION get_sigma_cxdiss_H3neut_H2neut(E) result(sigma)
+    FUNCTION get_sigma_21(E) result(sigma)
         !-------------------------------------------------------------------
-        !     Reaction (21) in Tabata (2000) [H3+ + H2 -> fast H+, fast H2]
-        !      Note that "fast" here means relative to beam
+        !     Reaction (21) in Tabata (2000) 
         !       Input parameters
         !           E       energy in keV
         !       Output parameters
@@ -641,5 +640,88 @@ CONTAINS
         sigma = get_sigma_eq3(a1,a2,a3,a4,a5,a6,a7,a8)
 
         RETURN
-    END FUNCTION get_sigma_cxdiss_H3neut_H2neut
+    END FUNCTION get_sigma_21
+!---------------------------------------------------------------------------
+!---------------------------------------------------------------------------
+!       ACTUAL TRIPLE-PROTON REACTIONS (H3+)
+!           1. H3+ + H2 -> H2+ + H       + (H2) 
+!           2. H3+ + H2 -> H+  + H2      + (H2)
+!           3. H3+ + H2 -> H   + H2      + (H2+)
+!           4. H3+ + H2 -> H+  + H  + H  + (H2)
+!           5. H3+ + H2 -> H+  + H+ + H  + (H2)
+!           6. H3+ + H2 -> H+  + H+ + H+ + (H2)
+!       System underdetermined: Assume sigma_5~0 and sigma_6~0 
+!---------------------------------------------------------------------------
+!---------------------------------------------------------------------------
+    FUNCTION get_sigma_diss_H3plus_H2plus(E) result(sigma)
+        !-------------------------------------------------------------------
+        !    H3+ + H2 -> H2+ + H       + (H2) 
+        !       Input parameters
+        !           E       energy in keV
+        !       Output parameters
+        !           sigma   cross-section in m^-2
+        !-------------------------------------------------------------------
+        IMPLICIT NONE
+        DOUBLE PRECISION :: sigma
+        DOUBLE PRECISION, INTENT(in) :: E
+
+        sigma = get_sigma_19(E)
+
+        RETURN
+    END FUNCTION get_sigma_diss_H3plus_H2plus
+
+
+
+    FUNCTION get_sigma_diss_H3plus_Hplus(E) result(sigma)
+        !-------------------------------------------------------------------
+        !    H3+ + H2 -> H+ + H2       + (H2) 
+        !       Input parameters
+        !           E       energy in keV
+        !       Output parameters
+        !           sigma   cross-section in m^-2
+        !-------------------------------------------------------------------
+        IMPLICIT NONE
+        DOUBLE PRECISION :: sigma
+        DOUBLE PRECISION, INTENT(in) :: E
+
+        sigma = get_sigma_18(E)-get_sigma_diss_H3plus_triple(E)
+
+        RETURN
+    END FUNCTION get_sigma_diss_H3plus_Hplus
+
+    FUNCTION get_sigma_diss_H3plus_neut(E) result(sigma)
+        !-------------------------------------------------------------------
+        !    H3+ + H2 -> H  + H2       + (H2+)
+        !       Input parameters
+        !           E       energy in keV
+        !       Output parameters
+        !           sigma   cross-section in m^-2
+        !-------------------------------------------------------------------
+        IMPLICIT NONE
+        DOUBLE PRECISION :: sigma
+        DOUBLE PRECISION, INTENT(in) :: E
+
+        sigma = get_sigma_21(E)-get_sigma_18(E)+get_sigma_diss_H3plus_triple(E)
+
+        RETURN
+    END FUNCTION get_sigma_diss_H3plus_neut
+
+
+
+    FUNCTION get_sigma_diss_H3plus_triple(E) result(sigma)
+        !-------------------------------------------------------------------
+        !    H3+ + H2 -> H+  + H  + H  + (H2)
+        !       Input parameters
+        !           E       energy in keV
+        !       Output parameters
+        !           sigma   cross-section in m^-2
+        !-------------------------------------------------------------------
+        IMPLICIT NONE
+        DOUBLE PRECISION :: sigma
+        DOUBLE PRECISION, INTENT(in) :: E
+
+        sigma = (get_sigma_18(E)+get_sigma_20(E)-get_sigma_19(E)-get_sigma_21(E))/3.0
+
+        RETURN
+    END FUNCTION get_sigma_diss_H3plus_triple
 END MODULE 

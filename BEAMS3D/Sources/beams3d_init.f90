@@ -28,7 +28,8 @@
                                win_epower, win_ipower, win_ndot, win_jprof, &
                                win_dense, nsh_prof4, &
                                h1_prof,h2_prof, h3_prof, h4_prof, h5_prof, &
-                               r_h, p_h, z_h, e_h, pi_h, win_end_state
+                               r_h, p_h, z_h, e_h, pi_h, win_end_state, &
+                               is_active, myfreedex
       USE fidasim_input_mod, ONLY: beams3d_write_fidasim
       USE wall_mod
       USE mpi_params
@@ -53,6 +54,9 @@
       REAL(rprec) :: br, bphi, bz, ti_temp, vtemp
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: R_wall_temp
       REAL(rprec) :: stemp, utemp, rtemp, ztemp, phitemp
+      INTEGER :: buffer, mynpart, nproc_sharmem, offset_sharmem, myoffset, offset_global,
+      INTEGER :: master_rank
+      INTEGER, DIMENSION(:), ALLOCATABLE :: offset_proc, npart_sharmem
 !-----------------------------------------------------------------------
 !     External Functions
 !          A00ADF               NAG Detection
@@ -568,6 +572,44 @@
       ENDIF
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!              Boxsim: preallocate more memory
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      IF (lboxsim) THEN 
+         nparticles_start = nparticles
+         nparticles = nparticles*buffer
+         ! Get offsets of all threads to set up 
+         CALL MPI_COMM_SIZE(MPI_COMM_SHARMEM, nproc_sharmem)
+         CALL MPI_CALC_MYRANGE(MPI_COMM_BEAMS, 1, nparticles, mystart, myend)
+         mynpart = myend-mystart+1
+         ALLOCATE(npart_sharmem(nproc_sharmem))
+         CALL MPI_GATHER(mynpart, 1, MPI_INTEGER, npart_sharmem, 1, MPI_INTEGER, master, MPI_COMM_SHARMEM, ierr_mpi)
+         if (myid_sharmem == master) THEN
+            ALLOCATE(offset_proc(nproc_sharmem))
+            offset_proc(1) = 0
+            DO i = 2, nproc_sharmem
+               offset_proc(i) = offset_proc(i-1) + npart_sharmem(i-1)
+            END DO
+            offset_sharmem = offset_proc(nproc_sharmem)+npart_sharmem(nproc_sharmem)
+         END IF
+         ! myoffset current has offset in shared memory communicator
+         CALL MPI_SCATTER(offset_proc, 1, MPI_INTEGER, myoffset, 1, MPI_INTEGER, master, MPI_COMM_SHARMEM, ierr_mpi)
+         IF (myid_sharmem == master) DEALLOCATE(offset_proc)
+         DEALLOCATE(npart_sharmem)
+         ! get offset of each shared memory communicator
+         i = MPI_UNDEFINED
+         IF (myid_sharmem == master) i = 0
+         CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
+         IF (myid_sharmem == master) THEN
+            CALL MPI_COMM_RANK( MPI_COMM_LOCAL, master_rank, ierr_mpi)
+            CALL MPI_EXSCAN(offset_sharmem, offset_global, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+            IF (master_rank == 0) offset_global = 0
+         END IF
+         ! calculate global offset
+         CALL MPI_BCAST(offset_global, 1, MPI_INTEGER, master, MPI_COMM_SHARMEM, ierr_mpi)
+         myoffset = myoffset + offset_global
+      END IF
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!              Allocate Particles
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       CALL mpialloc(R_start,      nparticles, myid_sharmem, 0, MPI_COMM_SHARMEM, win_R_start)
@@ -594,6 +636,15 @@
          t_end = 0; beam = 0; weight = 0
          lgc2fo_start = .FALSE.
          end_state = 0
+      END IF
+
+      IF (lboxsim) THEN
+         ! Contiguous allocation
+         ALLOCATE(is_active(nparticles))
+         i = myoffset*buffer+1
+         myfreedex = i+mynpart
+         is_active(i:myfreedex-1) = .TRUE.
+         is_active(myfreedex:myfreedex+(buffer-1)*mynpart-1) = .FALSE.
       END IF
 
       

@@ -47,8 +47,8 @@
                                   S_lines(:,:),U_lines(:,:),B_lines(:,:), &
                                   vr_lines(:,:),vphi_lines(:,:),vz_lines(:,:)
       INTEGER, ALLOCATABLE :: charge_lines(:,:),mass_lines(:,:), reaction_count(:)
-      INTEGER :: mycharge_int, mymass_int, reaction_dex
-      LOGICAL :: lpartactive, lreaction
+      INTEGER :: mycharge_int, mymass_int, reaction_dex, myfreedex
+      LOGICAL, DIMENSION(:), ALLOCATABLE :: is_active
       DOUBLE PRECISION :: myenergy_keV, sigma_next
       REAL(rprec) :: mylife_end, mylife
       REAL(rprec) :: vlast

@@ -122,6 +122,9 @@ SUBROUTINE beams3d_follow_fo
                 ALLOCATE(w(neqs_nag * 21 + 28), STAT = ier)
                 IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'W', ier)
                 DO l = mystart_save, myend_save
+                    IF (lboxsim) THEN
+                     IF (.NOT.(is_active(l))) EXIT 
+                    END IF
                     tf_nag = t_last(l)
                     ! Don't do particle if stopped or beyond the full_orbit limit
                     IF (tf_nag>t_end(l)) CYCLE
@@ -178,6 +181,9 @@ SUBROUTINE beams3d_follow_fo
             CASE ("RKH68")
                 ier = 0
                 DO l = mystart_save, myend_save
+                    IF (lboxsim) THEN
+                     IF (.NOT.(is_active(l))) EXIT
+                    END IF
                     t_nag = t_last(l)
                     ! Don't do particle if stopped
                     IF (t_nag>t_end(l)) CYCLE
@@ -258,6 +264,9 @@ SUBROUTINE beams3d_follow_fo
                 ALLOCATE(iwork(liw))
                 ier = 0
                 DO l = mystart_save, myend_save
+                    IF (lboxsim) THEN
+                     IF (.NOT.(is_active(l))) EXIT 
+                    END IF
                     t_nag = t_last(l)
                     ! Particle indicies
                     myline = l

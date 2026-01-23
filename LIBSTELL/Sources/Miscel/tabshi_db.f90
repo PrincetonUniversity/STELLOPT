@@ -28,7 +28,8 @@ MODULE tabshi_db
     TYPE :: box_reaction
         CHARACTER(len=32) :: name 
         INTEGER :: input_Z, input_A ! charge and mass in 
-        INTEGER :: output_Z_1, output_A_1 ! charge and mass out
+        INTEGER :: output_Z(3), output_A(3) ! charge and mass out
+        INTEGER :: nproducts
         LOGICAL :: enabled ! for testing purposes
         PROCEDURE(sigma_interface), POINTER, NOPASS :: calc_sigma => NULL()
     END TYPE box_reaction
@@ -44,6 +45,7 @@ CONTAINS
         SUBROUTINE tabshi_init_reactions()
 
         IMPLICIT NONE
+        INTEGER :: unused = -10
 
         ! Initialize database
         ALLOCATE(reactions_db(12))
@@ -56,8 +58,9 @@ CONTAINS
         n_reactions = n_reactions + 1
         reactions_db(n_reactions) = box_reaction( & 
             name = "H+ + H2 -> fast H", &
+            nproducts = 1, &
             input_Z = 1, input_A = 1, &
-            output_Z_1 = 0, output_A_1 = 1, &
+            output_Z = [0, unused, unused], output_A = [1, unused, unused], &
             enabled = .TRUE.)
         reactions_db(n_reactions)%calc_sigma => get_sigma_neut_Hplus
 
@@ -65,8 +68,9 @@ CONTAINS
         n_reactions = n_reactions + 1
         reactions_db(n_reactions) = box_reaction( & 
             name = "H + H2 -> fast H+", &
+            nproducts = 1, &
             input_Z = 0, input_A = 1, &
-            output_Z_1 = 1, output_A_1 = 1, &            
+            output_Z = [1, unused,unused], output_A = [1,unused,unused], &
             enabled = .TRUE.)
         reactions_db(n_reactions)%calc_sigma => get_sigma_ionp_Hneut
 
@@ -74,8 +78,9 @@ CONTAINS
         n_reactions = n_reactions + 1
         reactions_db(n_reactions) = box_reaction( & 
             name = "H + H2 -> fast H-", &
+            nproducts = 1, &
             input_Z = 0, input_A = 1, &
-            output_Z_1 = -1, output_A_1 = 1, &
+            output_Z = [-1, unused,unused], output_A = [1,unused,unused], &
             enabled = .TRUE.)
         reactions_db(n_reactions)%calc_sigma => get_sigma_ionn_Hneut
 
@@ -83,8 +88,9 @@ CONTAINS
         n_reactions = n_reactions + 1
         reactions_db(n_reactions) = box_reaction( & 
             name = "H- + H2 -> fast H", &
+            nproducts = 1, &
             input_Z = -1, input_A = 1, &
-            output_Z_1 = 0, output_A_1 = 1, &
+            output_Z = [0, unused,unused], output_A = [1,unused,unused], &
             enabled = .TRUE.)
         reactions_db(n_reactions)%calc_sigma => get_sigma_neut_Hmin
 
@@ -92,8 +98,9 @@ CONTAINS
         n_reactions = n_reactions + 1
         reactions_db(n_reactions) = box_reaction( & 
             name = "H- + H2 -> fast H+", &
+            nproducts = 1, &
             input_Z = -1, input_A = 1, &
-            output_Z_1 = 1, output_A_1 = 1, &
+            output_Z = [1, unused,unused], output_A = [1,unused,unused], &
             enabled = .TRUE.)
         reactions_db(n_reactions)%calc_sigma => get_sigma_ionp_Hmin
 
@@ -104,17 +111,19 @@ CONTAINS
         n_reactions = n_reactions + 1
         reactions_db(n_reactions) = box_reaction( & 
             name = "H2+ + H2 -> fast H2", &
+            nproducts = 1, &
             input_Z = 1, input_A = 2, &
-            output_Z_1 = 0, output_A_1 = 2, &
+            output_Z = [0, unused,unused], output_A = [2,unused,unused], &
             enabled = .TRUE.)
         reactions_db(n_reactions)%calc_sigma => get_sigma_neut_H2plus
 
         ! Ionization of H2 to produce fast H2+
         n_reactions = n_reactions + 1
         reactions_db(n_reactions) = box_reaction( & 
-            name = "H2 + H2 -> fast H2+", &
+            name = "H2 + (H2) -> fast H2+", &
+            nproducts = 1, &
             input_Z = 0, input_A = 2, &
-            output_Z_1 = 1, output_A_1 = 2, &
+            output_Z = [1, unused,unused], output_A = [2,unused,unused], &
             enabled = .TRUE.)
         reactions_db(n_reactions)%calc_sigma => get_sigma_ionp_H2neut
 
@@ -123,48 +132,53 @@ CONTAINS
         reactions_db(n_reactions) = box_reaction( & 
             name = "H2 + H2 -> fast H+, fast H", &
             input_Z = 1, input_A = 2, &
-            output_Z_1 = 1, output_A_1 = 1, &
+            nproducts = 2, &
+            output_Z = [1, 0, unused], output_A = [1, 1, unused], &
             enabled = .TRUE.)
         reactions_db(n_reactions)%calc_sigma => get_sigma_diss_H2plus
 
     !-------------------------------------------------------------------
     !   TRIPLE PROTON
     !-------------------------------------------------------------------
-        ! Kinetic dissociation of H3+ forming H+ and H2
+        ! Dissociation of H3+ forming H+ and H2
         n_reactions = n_reactions + 1
         reactions_db(n_reactions) = box_reaction( & 
             name = "H3+ + H2 -> H+ + H2 + H2", &
+            nproducts = 2, &
             input_Z = 1, input_A = 3, &
-            output_Z_1 = 1, output_A_1 = 1, &
+            output_Z = [1, 2, unused], output_A = [1, 0, unused], &
             enabled = .TRUE.)
-        reactions_db(n_reactions)%calc_sigma => get_sigma_kindiss_H3neut_Hplus
+        reactions_db(n_reactions)%calc_sigma => get_sigma_diss_H3plus_Hplus
 
-        ! Kinetic dissociation of H3+ forming H2+ and H
+        ! Dissociation of H3+ forming H2+ and H
         n_reactions = n_reactions + 1
         reactions_db(n_reactions) = box_reaction( & 
             name = "H3+ + H2 -> H2+ + H + H2", &
+            nproducts = 2, &
             input_Z = 1, input_A = 3, &
-            output_Z_1 = 1, output_A_1 = 2, &
+            output_Z = [2, 1, unused], output_A = [1, 0, unused], &
             enabled = .TRUE.)
-        reactions_db(n_reactions)%calc_sigma => get_sigma_kindiss_H3neut_H2plus
+        reactions_db(n_reactions)%calc_sigma => get_sigma_diss_H3plus_H2plus
 
-        ! Dissociation of H3+ after charge exchange forming H and H2+
+        ! Dissociation of H3+ with charge exchange to gas
         n_reactions = n_reactions + 1
         reactions_db(n_reactions) = box_reaction( & 
-            name = "H3+ + (H2) -> H + H2+", &
+            name = "H3+ + H2 -> H + H2 + H2+", &
+            nproducts = 2, &
             input_Z = 1, input_A = 3, &
-            output_Z_1 = 0, output_A_1 = 1, &
+            output_Z = [1, 2, unused], output_A = [0, 0, unused], &
             enabled = .TRUE.)
-        reactions_db(n_reactions)%calc_sigma => get_sigma_cxdiss_H3neut_Hneut
+        reactions_db(n_reactions)%calc_sigma => get_sigma_diss_H3plus_neut
 
-        ! Dissociation of H3+ after charge exchange forming H2 and H+
+        ! Full breakup of H3+ forming H+, H, H
         n_reactions = n_reactions + 1
         reactions_db(n_reactions) = box_reaction( & 
-            name = "H3+ + (H2) -> H + H2+", &
+            name = "H3+ + (H2) -> H+ + H + H + H2", &
+            nproducts = 3, &
             input_Z = 1, input_A = 3, &
-            output_Z_1 = 0, output_A_1 = 2, &
+            output_Z = [1, 1, 1], output_A = [1, 0, 0], &
             enabled = .TRUE.)
-        reactions_db(n_reactions)%calc_sigma => get_sigma_cxdiss_H3neut_H2neut
+        reactions_db(n_reactions)%calc_sigma => get_sigma_diss_H3plus_triple
 
         END SUBROUTINE tabshi_init_reactions
         
