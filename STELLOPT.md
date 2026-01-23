@@ -247,7 +247,7 @@ invoked durring the run.
 
 ### Old STELLCOPT tutorials (depricated)
 
-[STELLOPT Coil Optimization COILOPT++ (OLD)](STELLOPT Coil Optimization)
+[STELLOPT Coil Optimization COILOPT++ (OLD)](STELLOPT Coil Optimization Old)
 
 [STELLCOPT Tutorial Document (OLD)](docs/STELLCOPT Tutorial.pdf)
 
