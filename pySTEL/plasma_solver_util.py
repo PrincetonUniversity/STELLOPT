@@ -13,11 +13,12 @@ if __name__=="__main__":
 	from libstell.fusion import FUSION,EC
 	from libstell.popcon import POPCON
 	from libstell.plasma import PLASMA
+	from libstell.plasma_solver import merge_output_files
 	from scipy.integrate import cumulative_trapezoid
 	parser = ArgumentParser(description= 
 		'''Utility for plotting 1D transport simulations.''')
-	parser.add_argument("--output", dest="output_ext",
-		help="Output joblib file name.", default = None)
+	parser.add_argument("--output", dest="output_files", nargs='+',
+		help="One or more output joblib files (without .joblib extension).", default = None)
 	parser.add_argument("-p", "--plot", dest="lplot", action='store_true',
 		help="Make plots.", default = False)
 	parser.add_argument("--plot_popcon", dest="lplot_popcon", action='store_true',
@@ -27,19 +28,21 @@ if __name__=="__main__":
 	parser.add_argument("--save", dest="lsave", action='store_true',
 		help="Save the plots with ext names.", default = False)
 	args = parser.parse_args()
-	if args.output_ext: 
-		solver = joblib.load(f'{args.output_ext}.joblib')
+	if args.output_files is not None:
+		output_files = [f"{f}.joblib" for f in args.output_files]
+		if len(output_files) == 1:
+			solver = joblib.load(output_files[0])
+		else:
+			solver = merge_output_files(*output_files)
 		nr     = len(solver.r_grid)
 		nt     = solver.Nt
-		try:     
-			Area = solver.dVdr(solver.rho_grid)
-		except:
-			Area = solver.dVdr
+		Area = solver.dVdr
+		#
 		keys = solver.explicit_energy_sources['electrons'].keys()
 		S_ECRH = np.zeros((nt,nr))
-		for ttype in ['external_gaussian','time_dependent_gaussian','PID_etemp_gaussian']:
+		for ttype in ['external_gaussian','time_dependent_gaussian','PID_etemp_gaussian','PID_itemp_gaussian','PID_pfuse_gaussian']:
 			if ttype in keys:
-				S_ECRH = solver.explicit_energy_sources['electrons'][ttype][:,:]
+				S_ECRH += solver.explicit_energy_sources['electrons'][ttype][:,:]
 		S_alpha = np.zeros((nt,nr))
 		for species in solver.list_of_species:
 			keys = solver.explicit_energy_sources[species].keys()
@@ -51,14 +54,14 @@ if __name__=="__main__":
 		P_Bremm = cumulative_trapezoid(S_Bremm*Area,solver.r_grid,axis=1,initial=0.0)
 		P_TOTAL = P_ECRH+P_alpha
 		keys = solver.explicit_particle_sources['deuterium'].keys()
-		S_fueling = None
+		S_fueling = np.zeros((nt,nr)) #None
 		for ttype in ['external_gaussian','time_dependent_gaussian','PID_edense_gaussian','PID_pfuse_gaussian']:
 			if ttype in keys:
-				if type(S_fueling) is type(None):
-					S_fueling = solver.explicit_particle_sources['deuterium'][ttype][:,:]
-				else:
-					S_fueling = S_fueling + solver.explicit_particle_sources['deuterium'][ttype][:,:]
-		pellet_content_times_freq = 5E20/0.1
+				S_fueling += solver.explicit_particle_sources['deuterium'][ttype][:,:]
+				# if type(S_fueling) is type(None):
+				# 	S_fueling = solver.explicit_particle_sources['deuterium'][ttype][:,:]
+				# else:
+				# 	S_fueling = S_fueling + solver.explicit_particle_sources['deuterium'][ttype][:,:]
 		P_fueling = np.trapezoid(S_fueling*Area, solver.r_grid, axis=1)
 		fusion  = FUSION()
 		tauiss04 = lambda a,R,P,n_avg,B,iota: 0.134 * a**2.28 * R**0.64 * (P/1e6)**-0.61 * (n_avg/1e19)**0.54 * B**0.84 * iota**0.41
@@ -67,13 +70,12 @@ if __name__=="__main__":
 		try:
 			B = solver.B[:,0] # use axes value
 		except:
-			B = solver.B
+			B = solver.Baxis
 		try:
 			ir2o3 = np.argmin(np.abs(solver.rho_grid-2/3))
 			iota = solver.iota[:,ir2o3]
 		except:
-			print('WARNING: Using iota=0.9 to compute ISS04')
-			iota = 0.9
+			iota = solver.iota23
 		n_avg = {}
 		for species in solver.list_of_species:
 			n_avg[species] = np.trapezoid(solver.N[species][:,:]*Area,solver.r_grid,axis=1) / np.trapezoid(Area,solver.r_grid)
@@ -84,7 +86,6 @@ if __name__=="__main__":
 		pressure = 0.0
 		for species in solver.list_of_species:
 			pressure += 1.5*solver.N[species][:,:]*solver.T[species][:,:]*EC
-			#pressure += (3.0/2.0)*solver.N[species][:,:]*solver.T[species][:,:]*EC
 		W_total = np.trapezoid(pressure*Area,solver.r_grid,axis=1)
 		dWdt = np.gradient(W_total,solver.time)
 		tau_E = W_total / (-dWdt+P_ECRH[:,-1]+P_alpha[:,-1])
@@ -98,35 +99,43 @@ if __name__=="__main__":
 			#fig,ax = plt.subplots(4,1,figsize=(1800*px,2400*px))
 			fig,ax = plt.subplots(4,1,figsize=(900*px,1200*px))
 			ax[0].plot(solver.time,P_TOTAL[:,-1]/1E6,linewidth=2.0,color='#5faf30',label=r'$P_{\mathrm{TOTAL}}$')
-			ax[0].plot(solver.time,10*P_ECRH[:,-1]/1E6,linewidth=2.0,color='blue',label=r'$P_{\mathrm{ECRH}}x10$')
+			# ax[0].plot(solver.time,10*P_ECRH[:,-1]/1E6,linewidth=2.0,color='blue',label=r'$P_{\mathrm{ECRH}}x10$')
+			ax[0].plot(solver.time,P_ECRH[:,-1]/1E6,linewidth=2.0,color='blue',label=r'$P_{\mathrm{ECRH}}$')
 			ax[0].plot(solver.time,P_alpha[:,-1]/1E6,linewidth=2.0,color='green',label=r'$P_{\mathrm{\alpha}}$')
+			# ax[0].plot(solver.time,5*P_alpha[:,-1]/1E6,linewidth=2.0,color='k',label=r'$P_{\mathrm{fusion}}$')
 			ax[0].plot(solver.time,-P_Bremm[:,-1]/1E6,linewidth=2.0,color='red',label=r'$P_{\mathrm{Brem.}}$')
 			ax[0].grid()
 			ax[0].legend()
-			ax[0].set_title('GIGA')
 			ax[0].set_ylabel('P [MW]')
+			Ne = np.trapezoid(solver.N['electrons'][:,:]*Area, solver.r_grid)
 			ax[1].plot(solver.time,solver.N['electrons'][:,0]/1E19,linewidth=2.0,color='#5faf30',label=r'$n_e$')
 			if 'hydrogen' in solver.N.keys():
-				ax[1].plot(solver.time,solver.N['hydrogen'][:,0]/1E19,':',linewidth=2.0,color='red',label=r'$n_D$')
+				ax[1].plot(solver.time,solver.N['hydrogen'][:,0]/1E19,':',linewidth=2.0,color='red',label=r'$n_H$')
 			if 'deuterium' in solver.N.keys():
 				ax[1].plot(solver.time,solver.N['deuterium'][:,0]/1E19,':',linewidth=2.0,color='red',label=r'$n_D$')
 			if 'tritium' in solver.N.keys():
 				ax[1].plot(solver.time,solver.N['tritium'][:,0]/1E19,linewidth=2.0,color='#004817',label=r'$n_T$')
 			if 'helium4' in solver.N.keys():
-				ax[1].plot(solver.time,solver.N['helium4'][:,0]/1E19,linewidth=2.0,color='#004817',label=r'$n_{He4}$')
+				# compute fraction of helium4
+				NHe4 = np.trapezoid(solver.N['helium4'][:,:]*Area, solver.r_grid)
+				frac = NHe4/Ne
+				ax[1].plot(solver.time,solver.N['helium4'][:,0]/1E19,linewidth=2.0,color='#004817',label=fr'$n_{{He4}}$ (f={frac[-1]*100:.2f}%)')
 			if 'alphas_fast' in solver.N.keys():
 				ax[1].plot(solver.time,solver.N['alphas_fast'][:,0]/1E19,linewidth=2.0,color='green',label=r'$n_{He4-fast}$')
 			if 'neon' in solver.N.keys():
-				ax[1].plot(solver.time,solver.N['neon'][:,0]/1E19,linewidth=2.0,color='magenta',label=r'$n_{Ne}$')
+				# compute fraction of neon
+				NNe = np.trapezoid(solver.N['neon'][:,:]*Area, solver.r_grid)
+				frac = NNe/Ne
+				ax[1].plot(solver.time,solver.N['neon'][:,0]/1E19,linewidth=2.0,color='magenta',label=fr'$n_{{Ne}}$ (f={frac[-1]*100:.2f}%)')
 			ax[1].grid()
 			ax[1].legend()
 			ax12=ax[1].twinx()
 			ax12.plot(solver.time,P_fueling/1E22,linewidth=1.0,color='black',label=r'$N$')
-			ax[1].set_ylabel(r'$n_0~[10^{19}]~m^{-3}$')
-			ax12.set_ylabel(r'$\dot{N}~[10^{22}]~part/s$')
+			ax[1].set_ylabel(r'$n_0~[10^{19}~m^{-3}]$')
+			ax12.set_ylabel(r'$\dot{N}~[10^{22}~part/s]$')
 			ax[2].plot(solver.time,solver.T['electrons'][:,0]/1E3,linewidth=2.0,color='#5faf30',label=r'$T_e$')
 			if 'hydrogen' in solver.T.keys():
-				ax[2].plot(solver.time,solver.T['hydrogen'][:,0]/1E3,':',linewidth=2.0,color='red',label=r'$T_D$')
+				ax[2].plot(solver.time,solver.T['hydrogen'][:,0]/1E3,':',linewidth=2.0,color='red',label=r'$T_H$')
 			if 'deuterium' in solver.T.keys():
 				ax[2].plot(solver.time,solver.T['deuterium'][:,0]/1E3,':',linewidth=2.0,color='red',label=r'$T_D$')
 			if 'tritium' in solver.T.keys():
@@ -138,21 +147,20 @@ if __name__=="__main__":
 			ax[2].set_ylabel(r'$T_0~[keV]$')
 			ax[2].legend()
 			ax[2].grid()
-			ax[3].plot(solver.time,W_total/1E9,linewidth=2.0,color='#5faf30',label=r'$W_{therm} [GJ]$')
+			ax[3].plot(solver.time,W_total/1E9,linewidth=2.0,color='#5faf30',label=r'$W_{therm}$')
 			ax12=ax[3].twinx()
-			ax12.plot(solver.time,tau_E/tau_ISS04,label=r'$\tau_{\mathrm{ISS04}}$',linewidth=2.0)
+			ax12.plot(solver.time,tau_E/tau_ISS04,label=r'$\tau_E/\tau_{\mathrm{ISS04}}$',linewidth=2.0)
 			ax12.set_ylim(0.5,1.5)
-			ax[3].set_ylabel(r'$W_{therm} [GJ]$')
+			ax[3].set_ylabel(r'$W_{therm}~[GJ]$')
 			ax[3].set_xlabel('Time [s]')
 			ax[3].grid()
+			ax[3].legend(loc='upper left')
+			ax12.legend(loc='upper right')
+			ax12.set_ylabel(r'$\tau_E/\tau_{\mathrm{ISS04}}$')
 			plt.tight_layout()
 			plt.show()
 			if (args.lsave): fig.savefig(f'overview_{args.output_ext}.png', dpi=fig.dpi)
 		if args.lplot_popcon:
-			te_min = min(solver.T['electrons'][:,0])
-			te_max = max(solver.T['electrons'][:,0])
-			ne_min = min(solver.N['electrons'][:,0])
-			ne_max = max(solver.N['electrons'][:,0])
 			te_min = 2.0E3; te_max = 30.0E3
 			ne_min = 1.0E19; ne_max = 3.0E20
 			nte = 32; nne=32
@@ -169,9 +177,14 @@ if __name__=="__main__":
 						ne=ntemp*solver.N[spec][0,-1]/neE
 						t0=ttemp
 						te=t0*0.01
-						plasma[i][j].set_density(spec,'polynomial',n0=n0,nedge=ne,exponent=6.0)
-						plasma[i][j].set_temperature(spec,'polynomial',T0=t0,Tedge=te,exponent=1.0)
-			popcon = POPCON(solver.B,solver.aminor,solver.Rmajor,solver.iota23,plasma, make_plot=False)
+						# plasma[i][j].set_density(spec,'polynomial',n0=n0,nedge=ne,exponent=6.0)
+						profile = solver.N[spec][-1,:] / solver.N[spec][-1,0]
+						plasma[i][j].set_density(spec,'interp',rho_vals=solver.rho_grid,n_vals=ntemp*profile)
+						profile = solver.T[spec][-1,:] / solver.T[spec][-1,0]
+						# plasma[i][j].set_temperature(spec,'polynomial',T0=t0,Tedge=te,exponent=1.0)
+						plasma[i][j].set_temperature(spec,'interp',rho_vals=solver.rho_grid,T_vals=ttemp*profile)
+			fren = tau_E[-1]/tau_ISS04[-1]
+			popcon = POPCON(solver.B,solver.aminor,solver.Rmajor,solver.iota23,plasma, iss04_fact=fren, make_plot=False, popcon_title=f'fren={fren:.2f}')
 			px = 1/plt.rcParams['figure.dpi']
 			font = {'family' : 'Arial',
 					'weight' : 'normal',
@@ -268,6 +281,7 @@ if __name__=="__main__":
 			ax[3,1].legend()
 			ax[3,1].yaxis.set_label_position("right")
 			ax[3,1].yaxis.tick_right()
+			ax[0,0].set_title(f'Profiles at t={solver.time[tdex]}s')
 			plt.show()
 			if (args.lsave): fig.savefig(f'profs_{args.output_ext}_t{np.round(args.tslice_profs*1000)}ms.png', dpi=fig.dpi)
 
