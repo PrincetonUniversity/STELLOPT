@@ -1244,7 +1244,7 @@ MODULE thrift_plasma_solver_mod
         REAL(rprec), INTENT(in) :: t,te_eV,ne,ti_eV,ni,max_dp,max_dn
         CHARACTER(len = 200) :: progress_str
 
-        WRITE(progress_str,'(1X,F6.3,3X,I2,6X,F7.3,11X,ES8.2,11X,F7.3,13X,ES8.2,12X,ES8.2,11X,ES8.2)') &
+        WRITE(progress_str,'(1X,F7.3,3X,I2,6X,F7.3,11X,ES8.2,11X,F7.3,13X,ES8.2,12X,ES8.2,11X,ES8.2)') &
                   t,nsub,te_eV/1000,ne,ti_eV/1000,ni,max_dp,max_dn
         WRITE(ilogplasma,'(A)') TRIM(progress_str)
 
