@@ -51,50 +51,88 @@ discussed in [more detail here](STELLOPT MANGO algorithms).
 
 
 The user specifies which equilibrium input values to vary independently
-of the targets. Additionally, profiles for Ne, Te, and Ti (as functions
-of toroidal flux) have been added to STELLOPT. If utilized these
-profiles are used to calculate the equilibrium total pressure before a
-calculation is preformed. The code is capable of targeting a number of
-different parameters by either directly evaluating the equilibrium or
-calling subcodes once an equilibrium is found. The following list
+of the targets. Targets (Chisq values) are turned on by setting the
+SIGMA_VAR variables less than 1E30 in the input namelist. The X vector
+is determined by logical flags being set to True in the input namelist.
+It should be noted that in addition to the VMEC equilibrium inputs,
+X vector variables exist for electron density, electron temperature,
+ion temperature, electrostatic scalar potential, ion effective charge, 
+and three dimensional coil splines. The following list
 outlines the currently available targets:
 
  | Target | Dimension | Description |
  |--------|--------|--------|
- | ASPECT RATIO | Single | Equilibrium Aspect Ratio |
+ | ASPECT | Single | Equilibrium Aspect Ratio |
  | BETA | Single | Equilibrium Total Plasma Beta |
+ | BETATOR | Single | Equilibrium Toroidal Plasma Beta |
+ | BETAPOL | Single | Equilibrium Poloidal Plasma Beta |
  | CURTOR | Single | Equilibrium Total Toroidal Current |
  | PHIEDGE | Single | Equilibrium Total Enclosed Toroidal Flux |
- | R0 | Single | Equilibrium Radial Magnetic Axis Position |
+ | R0 | Single | Equilibrium Radial Magnetic Axis Position (phi=0) |
+ | Z0 | Single | Equilibrium Radial Magnetic Axis Position (phi=0,non-stellarator symmetric) |
+ | B0 | Single | Equilibrium Magnetic Field on axis (phi=0) |
  | RBTOR | Single | Equilibrium R-B_toroidal |
- | STORED ENERGY | Single | Equilibrium Stored Energy |
+ | WP | Single | Equilibrium Stored Energy |
  | VOLUME | Single | Equilibrium Volume |
+ | CURVVATURE | Single | Equilibrium Boundary Curvature |
+ | CURVVATURE_P2 | Single | Equilibrium Boundary Curvature (P2) |
+ | KAPPA | Single | Equilibrium Boundary Ellipticity |
+ | KAPPA_BOX | Single | Equilibrium Boundary Ellipticity (bounding box) |
+ | KAPPA_AVG | Single | Equilibrium Boundary Ellipticity (average) |
+ | LGRADB | Single | L.grad(B) coil distance metric |
  | EXTCUR | Vector | Vacuum Field Currents |
- | LINE_NE | Vector | Array of line integrated electron density measurements |
+ | NE_LINE | Vector | Array of line integrated electron density measurements |
+ | TE_LINE | Vector | Array of line integrated electron temperature measurements |
+ | TI_LINE | Vector | Array of line integrated ion temperature measurements |
+ | ZEFF_LINE | Vector | Array of line integrated Zeff measurements |
+ | VISBREM_LINE | Vector | Array of visual Bremsstrahlung measurements |
+ | XICS_BRIGHT | Vector | Array of XICS brightness measurements |
+ | XICS_TI | Vector | Array of XICS Ti measurements |
+ | XICS_W3 | Vector | Array of XICS W3 measurements |
+ | XICS_V | Vector | Array of XICS V measurements |
+ | SXR | Vector | Array of soft X-ray measurements |
  | FARADAY | Vector | Array of Faraday Rotation measurements |
+ | MSE | Vector | Array of MSE measurements (R,PHI,Z) |
  | PRESS | Vector | Array of pressure profile measurements (R,PHI,Z or S)|
  | NE | Vector | Array of electron density measurements (R,PHI, Z or S) |
  | TE | Vector | Array of electron temperature measurements (R, PHI, Z or S) |
  | TI | Vector | Array of ion temperature measurements (R, PHI, Z or S) |
- | LINE_TE | Vector | Array of line integrated electron temperature measurements |
- | LINE_TI | Vector | Array of line integrated ion temperature measurements |
+ | VPHI | Vector | Array of toroidal rotation measurements (R, PHI, Z or S) |
  | IOTA | Vector | Array of rotational transform measurements (R, PHI, Z or S) |
+ | VACIOTA | Vector | Array of vacuum transform -S12/S11 (R, PHI, Z or S) |
+ | JDOTB | Vector | Array of \<j.B\> -S12/S11 (S) |
+ | MAGWELL | Vector | Array of Magnetic Well/Hill (+/-)  (S) |
+ | JCURV | Vector | Array of average toroidal current density  (S) |
+ | GAMMA_C | Vector | Array of Gamma_C Fast Ion Confinement proxy  (S) |
+ | TXPORT | Vector | Array of Turbulent transport proxies  (S) |
+ | HELICITY | Vector | Array of magnetic field spectrum proxy (S) |
+ | QUASIISO | Vector | Array of magnetic quasi-isodynamic spectrum proxy (S) |
  | BPROBE | Vector | Array of B-Field measurements calculated by [DIAGNO](DIAGNO) |
  | FLUXLOOP | Vector | Array of Flux Loop measurements calculated by [DIAGNO](DIAGNO) |
  | ROGOWSKI | Vector | Array of Rogowski Coil measurements calculated by [DIAGNO](DIAGNO) |
  | VESSEL | Matrix | Limiting points in space |
  | SEPARATRIX | Matrix | Desired edge points in space |
  | BALLOON | Vector | Array of radial locations for ballooning stability calculation by [COBRAVMEC](COBRAVMEC) |
- | KINK | Single | Equilibrium kink stability as calculated by TERPSICHORE |
  | BOOTSTRAP | Vector | Array of radial locations for bootstrap calculation by [BOOTSJ](BOOTSJ) |
  | NEO | Vector | Array of radial locations for Neoclassical transport calculation by [NEO](NEO)|
- | HELICITY | Vector | Array of radial locations for Helicity calculation |
- | JSTAR | Vector | Array of radial locations for particle confinement calculation |
+ | DKES_11 | Vector | Array of surfaces on which to calculate L11 [DKES](DKES)|
+ | DKES_31 | Vector | Array of surfaces on which to calculate L31 [DKES](DKES)|
+ | DKES_33 | Vector | Array of surfaces on which to calculate L33 [DKES](DKES)|
+ | DKES_BOOT | Vector | Array of surfaces on which to calculate DKES Bootstrap proxy [DKES](DKES)|
+ | DKES_ERDIF | Vector | Array of surfaces on which to calculate L11 Er Spread [DKES](DKES)|
+ | DKES_ALPHA | Vector | Array of surfaces on which to calculate L11 Er Alpha [DKES](DKES)|
  | ORBIT | Vector | Array of radial locations on which to calculate confinement [BEAMS3D](BEAMS3D) |
- | COIL_BNORM | Single | Calculation of residual coil normal field after calculation by [COILOPT++](COILOPT)|
- | DKES | Vector | Array of surfaces on which to calculated L11 [DKES](DKES)|
- | DKES_ERDIF | Vector | Array of surfaces on which to calculated L11 Er Spread [DKES](DKES)|
- | DKES_ALPHA | Vector | Array of surfaces on which to calculated L11 Er Alpha [DKES](DKES)|
+ | JSTAR | Vector | Array of radial locations for particle confinement calculation |
+ | KINK | Single | Equilibrium kink stability as calculated by TERPSICHORE |
+ | BNORMAL | Single | Total Normal Magnetic field on surface (coil optimization) |
+ | COIL_BAXIS | Single | Alignment of magnetic field to maganetic axis (coil optimization) |
+ | COIL_BNMNS | Matrix | Total normal magnetic field spectrum on surface sine (coil optimization) |
+ | COIL_BNMNC | Matrix | Total normal magnetic field spectrum on surface cosine (coil optimization) |
+ | COIL_LENGTH | Vector | Array of lengths of coils (coil optimization) |
+ | COIL_ENERGY | Vector | Array of vacuum energy of coils (coil optimization) |
+ | COIL_CURVATURE | Single | Mean coil curvatures (coil optimization) |
+ | COIL_TORSION | Single | Mean coil torsion (coil optimization) |
+ | COILCOIL_DISTANCE | Single | Minimum coil-coil distance (coil optimization) |
 
 ------------------------------------------------------------------------
 
@@ -120,7 +158,7 @@ vary, any additional profiles, and the target parameters to match.
 
 The STELLOPT routine is designed to be run on a multi-processor machine
 or cluster. In general, it should be executed via a call to mpirun (most
-likely inside a PBS script). The call should take the form:
+likely inside a SLURM script). The call should take the form:
 
     mpirun -np $NPROCS /path-to/xstelloptv2 $runid > log.$runid
 
@@ -133,6 +171,8 @@ which control the code behavior are:
 
  | Argument | Default | Description |
  |--------|--------|--------|
+ | -one_iter | NONE | Overrides the OPTIMUM namelist and conducts a single iteration run. |
+ | -renorm | NONE | Renormalizes each TARGET group to have a total chi-squared of one. |
  | -restart | NONE | Use wout_reset_file.nc in directory to restart VMEC run on first iteration. |
  | -noverb  | NONE | Suppress screen output. |
  | -log | NONE | Send screen output to log file (useful on systems where `>&` doesn't work). |
@@ -199,14 +239,18 @@ invoked durring the run.
 
 [STELLOPT Turbulent Transport](STELLOPT Turbulent Transport)
 
-[STELLOPT Coil Optimization COILOPT++](STELLOPT Coil Optimization)
-
 [STELLOPT Energetic Particle Optimization](STELLOPT Energetic Particles)
+
+[STELLOPT Coil Optimization](STELLOPT Coil Optimization)
 
 [STELLOPT Adding A New Code](STELLOPT Adding A New Code)
 
-[STELLCOPT Tutorial Document](docs/STELLCOPT Tutorial.pdf)
+### Old STELLCOPT tutorials (depricated)
 
-[STELLCOPT B-Spline Document](docs/B-Spline Primer.pdf)
+[STELLOPT Coil Optimization COILOPT++ (OLD)](STELLOPT Coil Optimization)
 
-[STELLCOPT CWS Generation, NESCOIL, Cutting Coils](docs/Generating a CWS, Running NESCOIL, and Cutting Coils from Current Potential.pdf)
+[STELLCOPT Tutorial Document (OLD)](docs/STELLCOPT Tutorial.pdf)
+
+[STELLCOPT B-Spline Document (OLD)](docs/B-Spline Primer.pdf)
+
+[STELLCOPT CWS Generation, NESCOIL, Cutting Coils (OLD)](docs/Generating a CWS, Running NESCOIL, and Cutting Coils from Current Potential.pdf)
