@@ -189,16 +189,16 @@ The code will execute like any other STELLOPT run.
 ```shell
 > mpiexec --use-hw-threads xstelloptv2 input.myfilename
 ```
-# Examine the output**
+# Examine the output
 
 When run in this mode various output files are generated.
 
-## BNORM
+### BNORM
 
 These are the plasma bnormal harmonics as produced by 
 the [BNORM](BNORM) code.
 
-## BNORM_REAL
+### BNORM_REAL
 
 These text files contain information about the normal field on 
 the plasma bounday. The first line is the total number of rows 
@@ -209,7 +209,7 @@ a poloidal index and V is a toroidal index. The columns are:
 
 Here N is the outward pointing normal vector from the surface.
 
-## BNORM_HARM
+### BNORM_HARM
 
 These text files contain the Fourier decomposition of the normal 
 magnetic field harmonics. The first value is the total number
@@ -221,7 +221,7 @@ colums are:
 Note that for stellarator symmetry only the sine components
 should be considered.
 
-## BAXIS_REAL
+### BAXIS_REAL
 
 These text files contain information about the magnetic field
 along the VMEC magnetic axis. The first line is the total
@@ -233,7 +233,7 @@ Here the T vector is the tangential vector to the VMEC
 magnetic axis. The B vector is the coil field long the 
 magnetic axis. And B.N is the projection of B along the axis.
 
-## COIL_CURVATURE
+### COIL_CURVATURE
 
 These text file contain information about the coil curvature,
 torsion, and derivatives. The first line is:
@@ -250,7 +250,7 @@ where I is the index over the coil groups and j is the index
 over the windings. The prime is with respect to the coil
 trajectory. The curvature and torsion are local.
 
-## COILS Files
+### COILS Files
 
 These are the standard coils files as used by the 
 [MAKEGRID](MAKEGRID) code.
