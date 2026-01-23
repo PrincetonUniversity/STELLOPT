@@ -190,9 +190,12 @@ class PLASMA_SOLVER:
                     
                     self.dVdr = CubicSpline(roa,dVdr_analytic)
                     
-                    self.B0 = np.sqrt(np.squeeze(vmec_out.bdotb)[0])   
-                    self.Bsq = CubicSpline(roa,np.squeeze(vmec_out.bdotb))
-                    self.iota23 = CubicSpline(roa,np.squeeze(vmec_out.iotaf))(2.0/3.0) # Added to do POPCON plots
+                    self.Baxis = np.sqrt(np.squeeze(vmec_out.bdotb)[0])   
+                    self.iota23 = CubicSpline(roa,np.squeeze(vmec_out.iotaf))(2.0/3.0)
+                    
+                    # stella reference magnetic field
+                    self.Bref = vmec_out.phi[-1]/ (np.pi*self.aminor**2)
+                    
             case 'cylindrical':
                 if(aminor is None or Rmajor is None or B is None):
                     print('ERROR: For a cylindrical equilibrium, Rmajor, aminor and B must be given')
@@ -203,8 +206,8 @@ class PLASMA_SOLVER:
                     dVdr = lambda rho: 4*np.pi*np.pi*Rmajor*aminor  * rho
                     rho = np.linspace(0,1,100)
                     self.dVdr = CubicSpline(rho,dVdr(rho))
-                    self.B0 = B
-                    self.Bsq = lambda rho: B*B
+                    self.Baxis = B
+                    self.Bref = B
                     
     def set_energy_source(self,species,source_type, total_power=None, sigma_rho=None, rho_0=None, 
         fraction_alpha_heating=None, cte_source=None, time_dependent_factor=None, lambda_function_2D=None,
@@ -411,10 +414,10 @@ class PLASMA_SOLVER:
             case _:
                 raise ValueError(f'ERROR: Source type {source_type} is NOT possible')
                 
-    def set_heat_fluxes(self, type: str,surfaces=None,chi=None,chi_base=None,aLT_critical=None,alpha=None,stiffness=None,chi_electrons=None,convective_fact=None):
+    def set_heat_fluxes(self, type: str,surfaces=None,chi=None,chi_base=None,aLT_critical=None,alpha=None,stiffness=None,chi_electrons=None,convective_fact=None,mass_ref_species=None):
         """
         Sets heat flux for all species. In general, the heat flux for each species is:
-        Q = -n \chi dT/dr + convective_fact*T*Gamma_turb 
+        Q = -n chi dT/dr + convective_fact*T*Gamma_turb
         The 'type' argument will set how chi is computed:
         'diffusive' : 'chi' is constant and equal to all species
         'beurskens' : 'chi_e' is constant for electrons; chi_ions are computed according to Beurskens model
@@ -441,8 +444,8 @@ class PLASMA_SOLVER:
                 self.heat_fluxes_info[type]['convective_fact'] = convective_fact
                 
             case 'beurskens':
-                if( (chi_base is None) or (aLT_critical is None) or (alpha is None) or (stiffness is None) or (chi_electrons is None) or (convective_fact is None)):
-                    raise ValueError('ERROR: chi_base, aLT_critical, alpha, stiffness, chi_electrons and convective_fact must be given!')
+                if( (chi_base is None) or (aLT_critical is None) or (alpha is None) or (stiffness is None) or (chi_electrons is None) or (convective_fact is None) or (mass_ref_species is None)):
+                    raise ValueError('ERROR: chi_base, aLT_critical, alpha, stiffness, chi_electrons, convective_fact and ref_species must be given!')
                 self.heat_fluxes_info['type'] = type
                 self.heat_fluxes_info[type]['chi_base'] = chi_base
                 self.heat_fluxes_info[type]['aLT_critical'] = aLT_critical
@@ -450,6 +453,7 @@ class PLASMA_SOLVER:
                 self.heat_fluxes_info[type]['stiffness'] = stiffness
                 self.heat_fluxes_info[type]['chi_electrons'] = chi_electrons
                 self.heat_fluxes_info[type]['convective_fact'] = convective_fact
+                self.heat_fluxes_info[type]['mass_ref_species'] = mass_ref_species        
                 
             case 'dkespenta_beurskens':
                 raise ValueError('dkespenta_beurskens heat fluxes not working')
@@ -1302,6 +1306,7 @@ class PLASMA_SOLVER:
         alpha = self.heat_fluxes_info['beurskens']['alpha']
         stiffness = self.heat_fluxes_info['beurskens']['stiffness']
         convective_fact = self.heat_fluxes_info['beurskens']['convective_fact']
+        m_ref_species = self.heat_fluxes_info['beurskens']['mass_ref_species']
         
         if callable(stiffness) and callable(aLT_critical):
             stiffness = stiffness(self.rho_grid)
@@ -1312,18 +1317,16 @@ class PLASMA_SOLVER:
             raise ValueError('ERROR: stiffnes and aLTcritical can only be a function or integer/float!')
         
         chi = {}
+        r_grid = self.r_grid
         
         ## electrons
         chi['electrons'] = chi_electrons * np.ones(self.Nr)
         T_electrons = self.T['electrons'][it,:]
-        
-        Bsq = self.Bsq(self.rho_grid)
-        
-        r_grid = self.r_grid
-        
+         
         ## IONS
         for ion in self.plasma.ion_species:
             T_ion = self.T[ion][it,:]
+            n_ion = self.N[ion][it,:]
             
             # T_polyfit = np.poly1d( np.polyfit(r_grid,T_ion,deg=12) )
             # dTdr_polyfit = np.poly1d( T_polyfit.deriv() )
@@ -1339,10 +1342,15 @@ class PLASMA_SOLVER:
             
             chi_turb = stiffness * X * np.heaviside(X,1) * (T_electrons/T_ion)**alpha
             
-            mi = self.plasma.mass[ion]
-            qi = self.plasma.charge[ion]
-    
-            chi_gB = (EC*T_ion/mi)**1.5 * mi*mi / (qi**2 * Bsq) / self.aminor
+            # gyro-Bohm heat flux
+            Tref = T_ion         # self.T[ref_species][it,:]
+            mref = m_ref_species # self.plasma.mass[ref_species]
+            # nref = self.N[ref_species][it,:] # we cannot use this one, as this poses issue to the impurities
+            nref = n_ion
+            
+            Q_gB = 2.0*np.sqrt(2)*nref*np.sqrt(mref)*(EC*Tref)**2.5 / (EC*self.Bref*self.aminor)**2
+            
+            chi_gB = Q_gB * self.aminor/(n_ion*EC*T_ion)
             
             chi_turb = chi_gB * chi_turb
             
@@ -1993,12 +2001,15 @@ class PLASMA_SOLVER:
         saved_class = SimpleNamespace()
         saved_class.rho_grid = self.rho_grid
         saved_class.r_grid = self.r_grid
-        saved_class.dVdr = self.dVdr
+        saved_class.dVdr = self.dVdr(self.rho_grid)
         saved_class.aminor = self.aminor
         saved_class.Rmajor = self.Rmajor
-        saved_class.B = self.B0
-        saved_class.iota23 = self.iota23
+        saved_class.Baxis = self.Baxis
+        saved_class.Bref  = self.Bref
         saved_class.list_of_species = self.list_of_species
+        # In case of a VMEC equilibrium
+        if hasattr(self,'iota23'):
+            saved_class.iota23 = self.iota23
         
         # only save at minimum every dt=0.1s 
         freq = max(1, round(0.1 / self.dt))
