@@ -876,10 +876,9 @@ class PLASMA_SOLVER:
                     power_max  = self.energy_sources[species]['PID_pfuse_gaussian']['max_total_power']
                     noise     = self.energy_sources[species]['PID_pfuse_gaussian']['noise_level']
                     error_old = self.energy_sources[species]['PID_pfuse_gaussian']['previous_error']
-                    t              = self.time[it]
-                    setpoint       = self.energy_sources[species]['PID_pfuse_gaussian']['time_dependent_fusion_power'](t) # Set Point
-                    it1            = max(it - 1,2)
-                    dt             = self.dt
+                    t         = self.time[it]
+                    setpoint  = self.energy_sources[species]['PID_pfuse_gaussian']['time_dependent_fusion_power'](t) # Set Point
+                    it1       = it #max(it - 1,2)
                     # Compute fusion power
                     nD = self.N['deuterium'][it1,:]
                     nT = self.N['tritium'][it1,:]
@@ -890,12 +889,16 @@ class PLASMA_SOLVER:
                     p_val = max(np.trapezoid(integrand,self.r_grid),0.0)*5.0 #from alpha power to fusion power
                     if np.isnan(p_val): p_val = 0.0
                     p_val = p_val * (1.0 + (rand()-0.5)*2.0*noise)
-                    control, error, Ival = self.pid_controller(setpoint, p_val, pid_K, pid_Ti, pid_Td, error_old, Ival, dt)
+                    # Run PID algorithm
+                    control, error, Ival = self.pid_controller(setpoint, p_val, pid_K, pid_Ti, pid_Td, error_old, Ival, self.dt)
                     self.energy_sources[species]['PID_pfuse_gaussian']['pid_I'] = Ival
                     self.energy_sources[species]['PID_pfuse_gaussian']['previous_error'] = error
-                    # Adjust U 
+                    # Threshold control
+                    control = np.round(control,-6) # round to nearest MW
                     control = np.clip(control,0,power_max)
-                    # print(f'setpoint={setpoint/1E6}MW        pval={p_val/1E6:.2f}MW       ECRH={control/1E6}MW')
+                    # If clipped, then set previous integral to zero (anti wind-up)
+                    if np.isclose(control,0) or np.isclose(control,power_max):
+                        self.energy_sources[species]['PID_pfuse_gaussian']['pid_I'] = 0.0                  
                     # Compute integrand
                     integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
                     integrand = integrand.flatten()
@@ -915,19 +918,20 @@ class PLASMA_SOLVER:
                     power_max = self.energy_sources[species]['PID_etemp_gaussian']['max_total_power']
                     noise     = self.energy_sources[species]['PID_etemp_gaussian']['noise_level']
                     error_old = self.energy_sources[species]['PID_etemp_gaussian']['previous_error']
-                    t              = self.time[it]
-                    setpoint       = self.energy_sources[species]['PID_etemp_gaussian']['time_dependent_electron_temp_axis'](t) # Set Point
-                    it1            = max(it - 1,2)
-                    dt             = self.dt
-                    p_val          = self.T['electrons'][it1,0] * (1.0 + (rand()-0.5)*2.0*noise)
-                    # Run PID algo
-                    control, error, Ival = self.pid_controller(setpoint, p_val, pid_K, pid_Ti, pid_Td, error_old, Ival, dt)
-                    #
+                    t         = self.time[it]
+                    setpoint  = self.energy_sources[species]['PID_etemp_gaussian']['time_dependent_electron_temp_axis'](t) # Set Point
+                    it1       = it #max(it - 1,2)
+                    p_val     = self.T['electrons'][it1,0] * (1.0 + (rand()-0.5)*2.0*noise)
+                    # Run PID algorithm
+                    control, error, Ival = self.pid_controller(setpoint, p_val, pid_K, pid_Ti, pid_Td, error_old, Ival, self.dt)
                     self.energy_sources[species]['PID_etemp_gaussian']['pid_I'] = Ival
                     self.energy_sources[species]['PID_etemp_gaussian']['previous_error'] = error
                     # Threshold control
                     control = np.round(control,-6) # round to nearest MW
                     control = np.clip(control,0,power_max)
+                    # If clipped, then set previous integral to zero (anti wind-up)
+                    if np.isclose(control,0) or np.isclose(control,power_max):
+                        self.energy_sources[species]['PID_etemp_gaussian']['pid_I'] = 0.0  
                     # Compute integrand
                     integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
                     integrand = integrand.flatten()
@@ -947,19 +951,20 @@ class PLASMA_SOLVER:
                     power_max = self.energy_sources[species]['PID_itemp_gaussian']['max_total_power']
                     noise     = self.energy_sources[species]['PID_itemp_gaussian']['noise_level']
                     error_old = self.energy_sources[species]['PID_itemp_gaussian']['previous_error']
-                    t              = self.time[it]
-                    setpoint       = self.energy_sources[species]['PID_itemp_gaussian']['time_dependent_DT_temp_axis'](t) # Set Point
-                    it1            = max(it - 1,2)
-                    dt             = self.dt
+                    t         = self.time[it]
+                    setpoint  = self.energy_sources[species]['PID_itemp_gaussian']['time_dependent_DT_temp_axis'](t) # Set Point
+                    it1       = it # max(it - 1,2)
                     p_val          = 0.5*(self.T['deuterium'][it1,0]+self.T['tritium'][it1,0])* (1.0 + (rand()-0.5)*2.0*noise)
-                    # Run PID algo
-                    control, error, Ival = self.pid_controller(setpoint, p_val, pid_K, pid_Ti, pid_Td, error_old, Ival, dt)
-                    #
+                    # Run PID algorithm
+                    control, error, Ival = self.pid_controller(setpoint, p_val, pid_K, pid_Ti, pid_Td, error_old, Ival, self.dt)
                     self.energy_sources[species]['PID_itemp_gaussian']['pid_I'] = Ival
                     self.energy_sources[species]['PID_itemp_gaussian']['previous_error'] = error
                     # Threshold control
-                    # control = np.round(control,-6) # round to nearest MW
+                    control = np.round(control,-6) # round to nearest MW
                     control = np.clip(control,0,power_max)
+                    # If clipped, then set previous integral to zero (anti wind-up)
+                    if np.isclose(control,0) or np.isclose(control,power_max):
+                        self.energy_sources[species]['PID_itemp_gaussian']['pid_I'] = 0.0 
                     # Compute integrand
                     integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
                     integrand = integrand.flatten()
@@ -1037,28 +1042,30 @@ class PLASMA_SOLVER:
                     lambda_function_2D = self.particle_sources[species][source_type]['lambda_function_2D'] #func(r,t)
                     #
                     aux_source = [lambda_function_2D(r,self.time[it]) for r in self.r_grid]
+                    
                 case 'PID_edense_gaussian':
-                    # These define the gaussian
                     rho_0 = self.particle_sources[species]['PID_edense_gaussian']['rho_0']
                     sigma_rho = self.particle_sources[species]['PID_edense_gaussian']['sigma_rho']
                     pid_K     = self.particle_sources[species]['PID_edense_gaussian']['pid_K']
                     pid_Ti    = self.particle_sources[species]['PID_edense_gaussian']['pid_Ti']
                     pid_Td    = self.particle_sources[species]['PID_edense_gaussian']['pid_Td']
                     Ival      = self.particle_sources[species]['PID_edense_gaussian']['pid_I']
-                    N_IN_max      = self.particle_sources[species]['PID_edense_gaussian']['max_injected_particles_per_sec']
+                    N_IN_max  = self.particle_sources[species]['PID_edense_gaussian']['max_injected_particles_per_sec']
                     noise     = self.particle_sources[species]['PID_edense_gaussian']['noise_level']
                     error_old = self.particle_sources[species]['PID_edense_gaussian']['previous_error']
-                    t              = self.time[it]
-                    setpoint       = self.particle_sources[species]['PID_edense_gaussian']['time_dependent_electron_dens_axis'](t) # Set Point
-                    it1            = max(it - 1,2)
-                    dt             = self.dt
-                    p_val          = self.N['electrons'][it1,0] * (1.0 + (rand()-0.5)*2.0*noise)
-                    # Fix values
-                    control, error, Ival = self.pid_controller(setpoint, p_val, pid_K, pid_Ti, pid_Td, error_old, Ival, dt)
+                    t         = self.time[it]
+                    setpoint  = self.particle_sources[species]['PID_edense_gaussian']['time_dependent_electron_dens_axis'](t) # Set Point
+                    it1       = it #max(it - 1,2)
+                    p_val     = self.N['electrons'][it1,0] * (1.0 + (rand()-0.5)*2.0*noise)
+                    # Run PID algorithm
+                    control, error, Ival = self.pid_controller(setpoint, p_val, pid_K, pid_Ti, pid_Td, error_old, Ival, self.dt)
                     self.particle_sources[species]['PID_edense_gaussian']['pid_I'] = Ival
                     self.particle_sources[species]['PID_edense_gaussian']['previous_error'] = error
                     # Threshold control
                     control = np.clip(control,0,N_IN_max)
+                    # If clipped, then set previous integral to zero (anti wind-up)
+                    if np.isclose(control,0) or np.isclose(control,N_IN_max):
+                        self.particle_sources[species]['PID_edense_gaussian']['pid_I'] = 0.0                  
                     # Compute integrand
                     integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
                     integrand = integrand.flatten()
@@ -1066,6 +1073,7 @@ class PLASMA_SOLVER:
                     cte = control / np.trapezoid(integrand,self.r_grid)
                     #
                     aux_source = cte * np.exp(-(rho_grid-rho_0)**2/sigma_rho**2)
+                    
                 case 'PID_pfuse_gaussian':
                     # These define the gaussian
                     rho_0 = self.particle_sources[species]['PID_pfuse_gaussian']['rho_0']
@@ -1077,10 +1085,9 @@ class PLASMA_SOLVER:
                     N_IN_max  = self.particle_sources[species]['PID_pfuse_gaussian']['max_injected_particles_per_sec']
                     noise     = self.particle_sources[species]['PID_pfuse_gaussian']['noise_level']
                     error_old = self.particle_sources[species]['PID_pfuse_gaussian']['previous_error']
-                    t              = self.time[it]
-                    setpoint       = self.particle_sources[species]['PID_pfuse_gaussian']['time_dependent_fusion_power'](t) # Set Point
-                    it1            = max(it - 1,2)
-                    dt             = self.dt
+                    t         = self.time[it]
+                    setpoint  = self.particle_sources[species]['PID_pfuse_gaussian']['time_dependent_fusion_power'](t) # Set Point
+                    it1       = it #max(it - 1,2)
                     # Compute fusion power
                     nD = self.N['deuterium'][it1,:]
                     nT = self.N['tritium'][it1,:]
@@ -1091,11 +1098,15 @@ class PLASMA_SOLVER:
                     p_val = max(np.trapezoid(integrand,self.r_grid),0.0)*5.0 #from alpha power to fusion power
                     if np.isnan(p_val): p_val = 0.0
                     p_val = p_val * (1.0 + (rand()-0.5)*2.0*noise)
-                    control, error, Ival = self.pid_controller(setpoint, p_val, pid_K, pid_Ti, pid_Td, error_old, Ival, dt)
+                    # Run PID algorithm
+                    control, error, Ival = self.pid_controller(setpoint, p_val, pid_K, pid_Ti, pid_Td, error_old, Ival, self.dt)
                     self.particle_sources[species]['PID_pfuse_gaussian']['pid_I'] = Ival
                     self.particle_sources[species]['PID_pfuse_gaussian']['previous_error'] = error
-                    # Adjust U 
+                    # Threshold control
                     control = np.clip(control,0,N_IN_max)
+                    # If clipped, then set previous integral to zero (anti wind-up)
+                    if np.isclose(control,0) or np.isclose(control,N_IN_max):
+                        self.particle_sources[species]['PID_edense_gaussian']['pid_I'] = 0.0                  
                     # Compute integrand
                     integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
                     integrand = integrand.flatten()
@@ -1116,16 +1127,17 @@ class PLASMA_SOLVER:
                     noise     = self.particle_sources[species]['PID_itemp_gaussian']['noise_level']
                     error_old = self.particle_sources[species]['PID_itemp_gaussian']['previous_error']
                     t         = self.time[it]
-                    setpoint       = self.particle_sources[species]['PID_itemp_gaussian']['time_dependent_DT_temp_axis'](t) # Set Point
-                    it1            = max(it - 1,2)
-                    dt             = self.dt
-                    p_val          = 0.5*(self.T['deuterium'][it1,0]+self.T['tritium'][it1,0])* (1.0 + (rand()-0.5)*2.0*noise)
-                    # Run PID algo
-                    control, error, Ival = self.pid_controller(setpoint, p_val, pid_K, pid_Ti, pid_Td, error_old, Ival, dt)
-                    #
+                    setpoint  = self.particle_sources[species]['PID_itemp_gaussian']['time_dependent_DT_temp_axis'](t) # Set Point
+                    it1       = it #max(it - 1,2)
+                    p_val     = 0.5*(self.T['deuterium'][it1,0]+self.T['tritium'][it1,0])* (1.0 + (rand()-0.5)*2.0*noise)
+                    # Run PID algorithm
+                    control, error, Ival = self.pid_controller(setpoint, p_val, pid_K, pid_Ti, pid_Td, error_old, Ival, self.dt)
                     self.particle_sources[species]['PID_itemp_gaussian']['pid_I'] = Ival
                     self.particle_sources[species]['PID_itemp_gaussian']['previous_error'] = error
-                    # Adjust U 
+                    # If clipped, then set previous integral to zero (anti wind-up)
+                    if np.isclose(control,0) or np.isclose(control,N_IN_max):
+                        self.particle_sources[species]['PID_edense_gaussian']['pid_I'] = 0.0                  
+                    # Threshold control
                     control = np.clip(control,0,N_IN_max)
                     # Compute integrand
                     integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
@@ -2011,8 +2023,184 @@ class PLASMA_SOLVER:
                 saved_class.__dict__[attr].setdefault(species, {})
                 for type_string, arr in getattr(self, attr)[species].items():
                     saved_class.__dict__[attr][species][type_string] = arr[sl, :]
+                    
+            # Save particle PID's info (if they exist). This is useful for restarts
+            pid_keys = [k for k in self.particle_sources[species] if k.startswith("PID_")]
+            if pid_keys:
+                if not hasattr(saved_class, "particle_sources"):
+                    saved_class.particle_sources = {}
+                if species not in saved_class.particle_sources:
+                    saved_class.particle_sources[species] = {}
+            for key in pid_keys:
+                saved_class.particle_sources[species][key] = {
+                    "previous_error": self.particle_sources[species][key]["previous_error"],
+                    "pid_I": self.particle_sources[species][key]["pid_I"]}
+                
+            # Save energy PID's info (if they exist). This is useful for restarts
+            pid_keys = [k for k in self.energy_sources[species] if k.startswith("PID_")]
+            if pid_keys:
+                if not hasattr(saved_class, "energy_sources"):
+                    saved_class.energy_sources = {}
+                if species not in saved_class.energy_sources:
+                    saved_class.energy_sources[species] = {}
+            for key in pid_keys:
+                saved_class.energy_sources[species][key] = {
+                    "previous_error": self.energy_sources[species][key]["previous_error"],
+                    "pid_I": self.energy_sources[species][key]["pid_I"]}
 
         joblib.dump(saved_class, output_filename)
+        
+def merge_output_files(*output_files,concatenated_file=None):
+    """ Merges sequential joblib output files into a single one. 
+    Returns concatenated class and only saves concatenated joblib file if concatenated_file is not None"""
+    from types import SimpleNamespace
+    import joblib
+    import warnings
+    from copy import deepcopy
+    
+    ATTR_TIME_DEP = ('N','T','Dn','cn','Dp','cp','Q_NEO','Q_turb','Gamma_NEO','Gamma_turb')
+    
+    SOURCE_ATTRS = ('explicit_energy_sources', 'explicit_particle_sources')
+
+    GRID_ATTRS = ('rho_grid', 'r_grid', 'dVdr')
+
+    SCALAR_ATTRS = ('aminor', 'Rmajor', 'Baxis', 'Bref')
+    
+    OPTIONAL_ATTRS = ('iota23')
+    
+    ########################## AUX FUNCT ##################################
+    def check_same(name, ref, val):
+        if isinstance(ref, np.ndarray):
+            if not np.allclose(ref, val):
+                warnings.warn(f"Invariant mismatch in {name}")
+        else:
+            if ref != val:
+                warnings.warn(f"Invariant mismatch in {name}")
+
+   
+    ################ CHECK TIME IS SEQUENTIAL ##################################
+    time_all = []
+    for file in output_files:
+        solver = joblib.load(file)
+        time_all.append(solver.time)
+    #
+    time_all = np.concatenate(time_all)
+    is_sequential = np.all(time_all[1:] >= time_all[:-1])
+    if(not is_sequential):
+        raise ValueError('ERROR: Time is not sequential in the given files...')
+    
+    ######################## CONCATENATE DATA ##################################
+    # ------------------------------------------------------------
+    # Load first solver as reference
+    # ------------------------------------------------------------
+    ref_solver = joblib.load(output_files[0])
+    concatenated_class = deepcopy(ref_solver)
+    
+    # ------------------------------------------------------------
+    # Loop over remaining solvers
+    # ------------------------------------------------------------
+    for file in output_files[1:]:
+        solver = joblib.load(file)
+
+        # -------------------------------
+        # (1) Check invariant attributes
+        # -------------------------------
+        for attr in GRID_ATTRS:
+            check_same(attr, getattr(ref_solver, attr), getattr(solver, attr))
+
+        for attr in SCALAR_ATTRS:
+            check_same(attr, getattr(ref_solver, attr), getattr(solver, attr))
+
+        if solver.list_of_species != ref_solver.list_of_species:
+            warnings.warn("list_of_species mismatch")
+
+        # -------------------------------
+        # (2) Concatenate time
+        # -------------------------------
+        t_old = concatenated_class.time
+        t_new = solver.time
+
+        if np.isclose(t_old[-1], t_new[0]):
+            time_slice = slice(1, None)
+        else:
+            time_slice = slice(None)
+
+        concatenated_class.time = np.concatenate(
+            [t_old, t_new[time_slice]]
+        )
+
+        # -------------------------------
+        # (3) Concatenate time-dependent attributes
+        # -------------------------------
+        for attr in ATTR_TIME_DEP:
+            ref_attr = getattr(concatenated_class, attr)
+            new_attr = getattr(solver, attr)
+
+            # species in list_of_species
+            for species in ref_solver.list_of_species:
+                if species in new_attr:
+                    ref_attr[species] = np.concatenate(
+                    [ref_attr[species],
+                     new_attr[species][time_slice, :]],
+                    axis=0
+                )
+                else:
+                    warnings.warn(
+                        f"{attr}: species '{species}' missing in one solver"
+                    )
+
+            # special species: alphas_fast
+            if attr == 'N' and 'alphas_fast' in new_attr:
+                if 'alphas_fast' not in ref_attr:
+                    ref_attr['alphas_fast'] = new_attr['alphas_fast'][time_slice, :]
+                else:
+                    ref_attr['alphas_fast'] = np.concatenate(
+                        [ref_attr['alphas_fast'],
+                        new_attr['alphas_fast'][time_slice, :]],
+                        axis=0
+                    )
+                    
+        # ------------------------------------------------------------
+        # (4) Concatenate explicit source terms
+        #     Structure: sources[species][key][time, space]
+        # ------------------------------------------------------------
+        for attr in SOURCE_ATTRS:
+
+            ref_sources = getattr(concatenated_class, attr)
+            new_sources = getattr(solver, attr)
+
+            # Loop over species in the reference solver
+            for species in ref_sources.keys():
+
+                if species not in new_sources:
+                    warnings.warn(
+                        f"{attr}: species '{species}' missing in one solver"
+                    )
+                    continue
+
+                for key in ref_sources[species]:
+
+                    if key not in new_sources[species]:
+                        warnings.warn(
+                            f"{attr}[{species}]: key '{key}' missing in one solver"
+                        )
+                        continue
+
+                    ref_sources[species][key] = np.concatenate(
+                        [
+                            ref_sources[species][key],
+                            new_sources[species][key][time_slice, :]
+                        ],
+                        axis=0
+                    )
+        
+        concatenated_class.Nt = len(concatenated_class.time)
+        
+        if(concatenated_file is not None):
+            joblib.dump(concatenated_class, concatenated_file)
+        
+        return concatenated_class
+                    
         
 # def process_surfaces(surface,wout_path):
 #     import time
