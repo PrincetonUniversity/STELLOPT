@@ -1264,11 +1264,11 @@ MODULE thrift_plasma_solver_mod
         ! Ion database
         REAL(rprec), PARAMETER :: DA = 1.66053906660E-27
         CHARACTER(len=10), PARAMETER :: names(*) = [ &
-            'hydrogen  ', 'deuterium ', 'tritium   ', 'helium3   ', 'helium4   ', 'tungsten74' ]
+            'hydrogen  ', 'deuterium ', 'tritium   ', 'helium3   ', 'helium4   ','neon      ', 'tungsten74' ]
         REAL(rprec), PARAMETER :: mass_database(*) = [ &
             1.007276466621_rprec, 2.01410177811_rprec, 3.01604928_rprec, &
-            3.0160293_rprec, 4.002603254_rprec, 183.84_rprec ]
-        REAL(rprec), PARAMETER :: Zcharge_database(*) = [ 1., 1., 1., 2., 2., 74. ]
+            3.0160293_rprec, 4.002603254_rprec, 20.1797_rprec, 183.84_rprec ]
+        REAL(rprec), PARAMETER :: Zcharge_database(*) = [ 1., 1., 1., 2., 2., 10., 74. ]
 
         DO i = 1, num_ions
             found = .false.
