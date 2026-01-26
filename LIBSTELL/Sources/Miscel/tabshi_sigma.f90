@@ -128,7 +128,7 @@ CONTAINS
 
     END FUNCTION get_sigma_eq2    
     
-    FUNCTION get_sigma_eq3(E1,a1,a2,a3,a4,a5,a6)   result(sigma3)
+    FUNCTION get_sigma_eq3(E1,a1,a2,a3,a4,a5,a6,a7,a8)   result(sigma3)
         !-------------------------------------------------------------------
         !     Equation (3) in Tabata (2000) 
         !       
