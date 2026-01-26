@@ -1037,12 +1037,16 @@
                 IF (((relH.LE.threshold).AND.(relM.LE.threshold)) & 
                     .OR.(iter_2.GE.maxIterH)) THEN
                   ! Cap change in H
+                  H_norm_prev = NORM2(H_prev(:,i))
                   dH = H_new-H_prev(:,i)
                   dH_norm = NORM2(dH)
-                  IF (NORM2(H_prev(:,i)).GE.1E-12) THEN
-                    H_new = H_prev(:,i) + MIN(dH_norm/NORM2(H_prev(:,i)),dH_rel_max)*NORM2(H_prev(:,i))*dH/dH_norm
+                  IF (H_norm_prev.GE.1E-12) THEN
+                    IF (dH_norm/H_norm_prev.GT.dH_rel_max) THEN
+                      H_new = H_prev(:,i) + (dH_rel_max*H_norm_prev)*(dH/dH_norm)
+                      lgoodsec = .FALSE.
+                    END IF
                   END IF
-                  IF (dH_norm/NORM2(H_prev(:,i)).GT.dH_rel_max) lgoodsec = .FALSE.
+                  H_norm = NORM2(H_new)
                   M_targ = (M_rem_norm + (mu_ea-1)*DOT_PRODUCT(H_new,u_ea))*u_ea &
                                        + (mu_oa-1)*DOT_PRODUCT(H_new,u_oa_1)*u_oa_1 &
                                        + (mu_oa-1)*DOT_PRODUCT(H_new,u_oa_2)*u_oa_2
@@ -1058,7 +1062,7 @@
                 M_old = M_targ
                 H_norm = NORM2(H_new)
                 CALL mumaterial_getState(stateFunction(state_dex(i_tile))%H, stateFunction(state_dex(i_tile))%M, H_norm, M_targ_norm)
-                IF (H_norm .GT. 1E-12) THEN
+                IF (H_norm .GE. 1E-12) THEN
                   M_targ = M_targ_norm * H_new / H_norm
                   lambda_k = MIN(H_norm/M_targ_norm, 0.5)
                 ELSE
@@ -1079,16 +1083,23 @@
                 IF (((relH.LE.threshold).AND.(relM.LE.threshold)) & 
                     .OR.(iter_2.GE.maxIterH)) THEN
                   ! Cap change in H
+                  H_norm_prev = NORM2(H_prev(:,i))
                   dH = H_new-H_prev(:,i)
                   dH_norm = NORM2(dH)
-                  IF (NORM2(H_prev(:,i)).GE.1E-12) THEN
-                    H_new = H_prev(:,i) + MIN(dH_norm/NORM2(H_prev(:,i)),dH_rel_max)*NORM2(H_prev(:,i))*dH/dH_norm
+                  IF (H_norm_prev.GT.1E-12) THEN
+                    IF (dH_norm/H_norm_prev.GT.dH_rel_max.AND.dH_norm.GT.1E-12) THEN
+                      H_new = H_prev(:,i) + (dH_rel_max*H_norm_prev)*(dH/dH_norm)
+                      lgoodsec = .FALSE.
+                    END IF
                   END IF
-                  IF (dH_norm/NORM2(H_prev(:,i)).GT.dH_rel_max) lgoodsec = .FALSE.
                   H_norm = NORM2(H_new)
                   ! Recalculate M
                   CALL mumaterial_getState(stateFunction(state_dex(i_tile))%H, stateFunction(state_dex(i_tile))%M, H_norm, M_targ_norm)
-                  M_targ = M_targ_norm * H_new / H_norm
+                  IF (H_norm .GT. 1E-12) THEN
+                        M_targ = M_targ_norm * H_new / H_norm
+                  ELSE
+                        M_targ = 0
+                  END IF
                   IF (iter_2.GT.maxiterH)  WRITE(6,*) "  Exceeded maxiterH on tile ", i_tile                  
                   EXIT
                 END IF
@@ -1200,7 +1211,7 @@
         END IF
         !---------------------------------------------------------------------!
         !--------------------- UPDATE BACKGROUND H_APP -----------------------!
-        IF ((MOD(iter_n, 100).EQ.0).OR.(iter_n.LE.100)) THEN
+        IF ((MOD(iter_n, 40).EQ.0).OR.(iter_n.LE.40)) THEN
           DO i = mystart, myend
             i_tile = mydom(i)
             ! Get background field
