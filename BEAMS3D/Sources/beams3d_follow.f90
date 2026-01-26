@@ -31,7 +31,7 @@ SUBROUTINE beams3d_follow
     IMPLICIT NONE
     INTEGER :: MPI_COMM_LOCAL
     INTEGER :: i, j, l, ier, mystart, mypace
-    INTEGER :: mynpart_active, npart_global
+    INTEGER :: mynpart_active, npart_global, nproc_sharmem
     INTEGER, ALLOCATABLE :: npart_counts(:), mystart_proc(:)
     INTEGER, ALLOCATABLE :: mnum(:), moffsets(:)
     INTEGER, ALLOCATABLE :: itemp(:,:)
@@ -298,6 +298,7 @@ SUBROUTINE beams3d_follow
     IF (lboxsim) THEN
       ! Get starting write position
       mynpart_active = COUNT(is_active(mystart:myend))
+      CALL MPI_COMM_SIZE(MPI_COMM_SHARMEM, nproc_sharmem)
       ALLOCATE(npart_counts(nproc_sharmem))
       CALL MPI_GATHER(mynpart_active, 1, MPI_INTEGER, npart_counts, 1, MPI_INTEGER, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (myworkid == master) THEN
