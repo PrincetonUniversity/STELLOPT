@@ -29,7 +29,7 @@ MODULE beams3d_physics_mod
                                ns_prof5, my_end, h1_prof, fact_crit_legacy, &
                                mycharge_int, mymass_int, mylife, mylife_end, reaction_dex, &
                                myenergy_keV, sigma_next, E_by_v, myqm, vlast, xlast, ylast, zlast, &
-                               reaction_count
+                               reaction_count, myfreedex, is_active, neut_lines
       USE beams3d_grid, ONLY: delta_t, MODB4D, OMEG4D, nomeg,&
                               phimax, TE4D, NE4D, TI4D, ZEFF4D, &
                               RHO4D, XRHO4D, YRHO4D, &
