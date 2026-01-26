@@ -167,7 +167,7 @@ CONTAINS
         f2_a = get_functional_2(E1,    a1,a2,a3,a4)
         f2_b = get_functional_2(E1,    a5,a6,a7,a8)
         f2_c = get_functional_2(E1/a10,a5,a6,a7,a8)
-        sigma2 = f2_a+f2_b+a9*f2_c
+        sigma4 = f2_a+f2_b+a9*f2_c
         RETURN
 
     END FUNCTION get_sigma_eq4   
@@ -275,7 +275,7 @@ CONTAINS
         sigma12 = f3 + f2_a + a11*f2_b
         RETURN
 
-    END FUNCTION get_sigma_eq11
+    END FUNCTION get_sigma_eq12
 
     FUNCTION get_sigma_eq13(E1,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12)   result(sigma13)
         !-------------------------------------------------------------------
@@ -477,13 +477,13 @@ CONTAINS
         DOUBLE PRECISION :: sigma
         DOUBLE PRECISION, INTENT(in) :: E 
         DOUBLE PRECISION :: Eth, E1
-        DOUBLE PRECISION :: a1, a2, a3, a4, a5, a6, a7, a8, a9, a10
+        DOUBLE PRECISION :: a1, a2, a3, a4, a5, a6, a7, a8
 
         Eth = 3.2E-2 ! Threshold energy in keV
         E1 = E - Eth
         a1 = 1.879E-3; a2 = 2.497; a3 = 6.62E-2; a4 = -4.67E-1; a5 = 3.58E-1; a6 = 5.0E-1;
         a7 = 7.67;     a8 = 2.01E2;
-        sigma = get_sigma_eq12(E1,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12)
+        sigma = get_sigma_eq10(E1,a1,a2,a3,a4,a5,a6,a7,a8)
         RETURN
 
     END FUNCTION get_sigma_ionp_H2neut
@@ -530,7 +530,7 @@ CONTAINS
         Eth = 2.0E-2 ! Threshold energy in keV
         E1 = E - Eth
         a1 = 1.307E-5; a2 = 1.586; a3 = 1.066E+1; a4 = 2.03; a5 = 2.73; a6 = 4.71
-        sigma = get_sigma_eq2(a1,a2,a3,a4,a5,a6)
+        sigma = get_sigma_eq2(E1,a1,a2,a3,a4,a5,a6)
         RETURN
 
     END FUNCTION get_sigma_diss_H2neut
@@ -567,7 +567,7 @@ CONTAINS
         E1 = E - Eth
         a1 = 6.67E-1; a2 = 1.35; a3 = 4.42E-2; a4 = 7.1E-1; a5 = 6.7E-5; a6 = 1.54;
         a7 = 1.1E1; a8 = -1.0E-1;
-        sigma = get_sigma_eq3(a1,a2,a3,a4,a5,a6,a7,a8)
+        sigma = get_sigma_eq3(E1,a1,a2,a3,a4,a5,a6,a7,a8)
         RETURN
 
     END FUNCTION get_sigma_18
@@ -590,7 +590,7 @@ CONTAINS
         E1 = E - Eth
         a1 = 5.03E-1; a2 = 1.0; a3 = 2.5E-2; a4 = 2.0; a5 = 1.17E-1; a6 = 3.18E-1;
         a7 = 9.4E+1; a8 = 1.35
-        sigma = get_sigma_eq3(a1,a2,a3,a4,a5,a6,a7,a8)
+        sigma = get_sigma_eq3(E1,a1,a2,a3,a4,a5,a6,a7,a8)
 
         RETURN
     END FUNCTION get_sigma_19
@@ -614,7 +614,7 @@ CONTAINS
         a1 = 5.89E-1; a2 = 1.0; a3 = 2.5E-2; a4 = 1.5; a5 = 4.05E-2; a6 = 7.59E-1;
         a7 = 4.64E+1; a8 = 1.1
         
-        sigma = get_sigma_eq3(a1,a2,a3,a4,a5,a6,a7,a8)
+        sigma = get_sigma_eq3(E1,a1,a2,a3,a4,a5,a6,a7,a8)
 
         RETURN
     END FUNCTION get_sigma_20
@@ -637,7 +637,7 @@ CONTAINS
         E1 = E - Eth
         a1 = 3.78E+1; a2 = 1.0; a3 = 2.0E-3; a4 = 2.5E-1; a5 = 4.14E-2; a6 = 6.25E-1;
         a7 = 4.89E+1; a8 = 1.69
-        sigma = get_sigma_eq3(a1,a2,a3,a4,a5,a6,a7,a8)
+        sigma = get_sigma_eq3(E1,a1,a2,a3,a4,a5,a6,a7,a8)
 
         RETURN
     END FUNCTION get_sigma_21
