@@ -31,8 +31,8 @@ SUBROUTINE beams3d_follow
     IMPLICIT NONE
     INTEGER :: MPI_COMM_LOCAL
     INTEGER :: i, j, l, ier, mystart, mypace
-    INTEGER :: mynpart, npart_global
-    INTEGER, ALLOCATABLE :: count_proc(:), mystart_proc(:)
+    INTEGER :: mynpart_active, npart_global
+    INTEGER, ALLOCATABLE :: npart_counts(:), mystart_proc(:)
     INTEGER, ALLOCATABLE :: mnum(:), moffsets(:)
     INTEGER, ALLOCATABLE :: itemp(:,:)
     REAL :: dist
@@ -300,7 +300,8 @@ SUBROUTINE beams3d_follow
       mynpart_active = COUNT(is_active(mystart:myend))
       ALLOCATE(npart_counts(nproc_sharmem))
       CALL MPI_GATHER(mynpart_active, 1, MPI_INTEGER, npart_counts, 1, MPI_INTEGER, master, MPI_COMM_BEAMS, ierr_mpi)
-      IF (myrank == master) THEN
+      CALL
+      IF (myworkid == master) THEN
          ALLOCATE(mystart_proc(nprocs_beams))
          mystart_proc(1) = 1
          DO i = 2, nprocs_beams
@@ -309,7 +310,7 @@ SUBROUTINE beams3d_follow
          npart_global = SUM(npart_counts)
       END IF
       CALL MPI_SCATTER(mystart_proc, 1, MPI_INTEGER, mystart_save, 1, MPI_INTEGER, master, MPI_COMM_BEAMS, ierr_mpi)
-      IF (myrank==master) DEALLOCATE(mystart_proc)
+      IF (myworkid==master) DEALLOCATE(mystart_proc)
       DEALLOCATE(npart_counts)
       ! Now start squishing
       i = mystart_save
@@ -327,7 +328,7 @@ SUBROUTINE beams3d_follow
             S_lines(:,i) = S_lines(:,j)
             U_lines(:,i) = U_lines(:,j)
             B_lines(:,i) = B_lines(:,j)
-            t_end(:,i) = t_end(:,j)
+            t_end(i) = t_end(j)
             neut_lines(:,i) = neut_lines(:,j)
             charge_lines(:,i) = charge_lines(:,j)
             mass_lines(:,i) = mass_lines(:,j)
