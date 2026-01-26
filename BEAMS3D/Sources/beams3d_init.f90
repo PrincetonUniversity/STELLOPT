@@ -54,7 +54,7 @@
       REAL(rprec) :: br, bphi, bz, ti_temp, vtemp
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: R_wall_temp
       REAL(rprec) :: stemp, utemp, rtemp, ztemp, phitemp
-      INTEGER :: buffer, mynpart, nproc_sharmem, offset_sharmem, myoffset, offset_global,
+      INTEGER :: buffer, mynpart, nproc_sharmem, offset_sharmem, myoffset, offset_global
       INTEGER :: master_rank
       INTEGER, DIMENSION(:), ALLOCATABLE :: offset_proc, npart_sharmem
 !-----------------------------------------------------------------------
