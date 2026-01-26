@@ -136,6 +136,7 @@
       DOUBLE PRECISION, PARAMETER, PRIVATE :: PI = 4.0D0*ATAN(1.0D0)
       DOUBLE PRECISION, PARAMETER, PRIVATE :: INVPI = 1.0D0/PI
       DOUBLE PRECISION, PARAMETER, PRIVATE :: INV4PI = 1.0D0/(4.0D0*PI)
+      DOUBLE PRECISION, PARAMETER, PRIVATE :: small = 1E-12
 
 
 !------------------------------------------------------------------------------
@@ -617,7 +618,7 @@
       DOUBLE PRECISION :: tol, delta, xmin, xmax, ymin, ymax, zmin, zmax, pad
       DOUBLE PRECISION :: MAT(3,3)
       INTEGER :: splits, dim, ydomsize, reci
-      INTEGER, ALLOCATABLE :: domin(:), yourdom(:), tdom(:), idx(:)
+      INTEGER, ALLOCATABLE :: domin(:), yourdom(:), tdom(:)
 
       EXTERNAL:: getBfld
       
@@ -674,14 +675,8 @@
         CALL mumaterial_sync_array2d_dbl(tet_edge,1,ntet,mystart,myend)
       END IF
 #endif
-      IF (ldebugm) THEN
-        CALL mumaterial_writedebug(tet_cen, 3, ntet, 'tet_cen.dat')
-        CALL mumaterial_writedebug(tet_vol, 1, ntet, 'tet_vol.dat')
-        CALL mumaterial_writedebug(tet_edge,1, ntet, 'tet_edge.dat')
-      END IF
-
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      ! Domain split
+      ! Split domain across MPI nodes
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       color = 0
 #if defined(MPI_OPT)
@@ -704,45 +699,23 @@
 
 #if defined(MPI_OPT)   
       IF (ldosync.AND.(shar_rank.EQ.0)) THEN                  
-        IF (ldebugs) WRITE(6,'(A22,I3,A11,L1)') '  MUMAT_DEBUG: MASTER ', color,': LWORK is ', lwork; FLUSH(6)
-
         splits = NINT(LOG(Bx)/LOG(2.0)) ! log_2(X) = ln(X)/log(2)
-        tol = 0.001
+        tol = 0.0001
         delta = 1.0
 
         DO
-          IF (splits.EQ.0) THEN
-            IF (ldebugs) WRITE(6,'(A22,I3,A13)') '  MUMAT_DEBUG: MASTER ', color,' EXITING LOOP'; FLUSH(6)
-            EXIT ! Reached end
-          END IF
+          IF (splits.EQ.0) EXIT ! Reached end
 
           IF (lwork) THEN 
             ALLOCATE(domin(domsize))
             domin = mydom
             DEALLOCATE(mydom)
 
-            CALL mumaterial_split(domsize, domin, ntet, tet_cen, tol, delta, mydom, yourdom) ! Split box
+            CALL mumaterial_split(domsize, domin, ntet, tet_cen, tol, delta, 0.5, mydom, yourdom) ! Split box
             DEALLOCATE(domin)
             domsize  = SIZE(mydom)
             ydomsize = SIZE(yourdom)            
             splits = splits-1 
-
-            IF (ldebugs) THEN
-              WRITE(strcount, '(I0)') color
-              WRITE(splitcount, '(I0)') splits
-              OPEN(color, file='./mydom_' // TRIM(ADJUSTL(strcount)) // '_' // TRIM(ADJUSTL(splitcount)) // '.dat')
-              DO i = 1, domsize
-                WRITE(color, "(I8)") mydom(i)
-              END DO
-              CLOSE(color)
-              OPEN(color, file='./yourdom_' // TRIM(ADJUSTL(strcount)) // '_' // TRIM(ADJUSTL(splitcount)) // '.dat')
-              DO i = 1, ydomsize
-                WRITE(color, "(I8)") yourdom(i)
-              END DO
-              CLOSE(color)
-            END IF
-
-            IF (ldebugs) WRITE(6,'(A22,I3,A14,I2)') '  MUMAT_DEBUG: MASTER ', color,' splits left: ', splits; FLUSH(6)
 
             ! now mail one of new boxes to the appropriate recipient
             reci = color + 2**splits 
@@ -753,19 +726,9 @@
             CALL MPI_RECV(domsize,     1, MPI_INTEGER, MPI_ANY_SOURCE, 1234, comm_master, mstat, ierr_mpi); ALLOCATE(mydom(domsize))
             CALL MPI_RECV(mydom, domsize, MPI_INTEGER, MPI_ANY_SOURCE, 1235, comm_master, mstat, ierr_mpi)
             CALL MPI_RECV(splits,      1, MPI_INTEGER, MPI_ANY_SOURCE, 1236, comm_master, mstat, ierr_mpi);  
-            IF (ldebugs) WRITE(6,'(A22,I3,A28,I8,A1)') '  MUMAT_DEBUG: MASTER ', color,' received box [', domsize, ']'; FLUSH(6)
             lwork = .TRUE. ! Activate node
           END IF
         END DO
-
-        IF (ldebugs) THEN
-          WRITE(strcount, '(I0)') color
-          OPEN(color, file='./mydom_' // TRIM(ADJUSTL(strcount)) // '.dat')
-          DO i = 1, domsize
-            WRITE(color, "(I8)") mydom(i)
-          END DO
-          CLOSE(color)
-        END IF
 
         ! Now every master needs to know their range relative to other 
         lwork = (color.EQ.0)
@@ -774,7 +737,6 @@
           IF (lwork) THEN
             ourstart = splits+1
             ourend   = splits+domsize
-            IF (ldebugs) WRITE(6,'(A22,I3,A12,I8,I8,A1)') '  MUMAT_DEBUG: MASTER ', color,' has range [', ourstart, ourend, ']'; FLUSH(6)
             reci = color + 1
             IF (reci.EQ.master_size) EXIT
             CALL MPI_SEND(ourend, 1, MPI_INTEGER, reci, 1234, comm_master, ierr_mpi)             
@@ -797,7 +759,6 @@
         END DO
       END IF
 
-      IF (ldebugs) WRITE(6,'(A22,I3,A19,I8,A1)') '  MUMAT_DEBUG: MASTER ', color,' broadcasting box [', domsize, ']'; FLUSH(6)
       CALL MPI_Bcast(domsize,    1, MPI_INTEGER, 0, comm_shar, ierr_mpi)
       
       IF (shar_rank.NE.0) THEN
@@ -812,6 +773,8 @@
       CALL MPI_Bcast(ourend,   1, MPI_INTEGER, 0, comm_shar, ierr_mpi)
       CALL MPI_BARRIER(comm_world, ierr_mpi)
 #endif
+
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Determine nearest Nb (includes self)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1030,8 +993,8 @@
                 H_new = H_old + lambda_k * res_H
 
                 res_M_2 = M_targ - M_old
-                relM = NORM2(res_M_2)/MAX(NORM2(M_targ), 1E-12)
-                relH = NORM2(res_H  )/MAX(NORM2(H_targ), 1E-12)
+                relM = NORM2(res_M_2)/MAX(NORM2(M_targ), small)
+                relH = NORM2(res_H  )/MAX(NORM2(H_targ), small)
 
                 ! Exit loop if converged or max iter exceeded
                 IF (((relH.LE.threshold).AND.(relM.LE.threshold)) & 
@@ -1040,7 +1003,7 @@
                   H_norm_prev = NORM2(H_prev(:,i))
                   dH = H_new-H_prev(:,i)
                   dH_norm = NORM2(dH)
-                  IF (H_norm_prev.GE.1E-12) THEN
+                  IF (H_norm_prev.GE.small) THEN
                     IF (dH_norm/H_norm_prev.GT.dH_rel_max) THEN
                       H_new = H_prev(:,i) + (dH_rel_max*H_norm_prev)*(dH/dH_norm)
                       lgoodsec = .FALSE.
@@ -1062,7 +1025,7 @@
                 M_old = M_targ
                 H_norm = NORM2(H_new)
                 CALL mumaterial_getState(stateFunction(state_dex(i_tile))%H, stateFunction(state_dex(i_tile))%M, H_norm, M_targ_norm)
-                IF (H_norm .GE. 1E-12) THEN
+                IF (H_norm .GE. small) THEN
                   M_targ = M_targ_norm * H_new / H_norm
                   lambda_k = MIN(H_norm/M_targ_norm, 0.5)
                 ELSE
@@ -1076,8 +1039,8 @@
                 H_new = H_old + lambda_k * res_H
                 
                 res_M_2 = M_targ - M_old
-                relM = NORM2(res_M_2)/MAX(NORM2(M_targ), 1E-12)
-                relH = NORM2(res_H  )/MAX(NORM2(H_targ), 1E-12)
+                relM = NORM2(res_M_2)/MAX(NORM2(M_targ), small)
+                relH = NORM2(res_H  )/MAX(NORM2(H_targ), small)
                 
                 ! Exit loop if converged or max iter exceeded
                 IF (((relH.LE.threshold).AND.(relM.LE.threshold)) & 
@@ -1086,8 +1049,8 @@
                   H_norm_prev = NORM2(H_prev(:,i))
                   dH = H_new-H_prev(:,i)
                   dH_norm = NORM2(dH)
-                  IF (H_norm_prev.GT.1E-12) THEN
-                    IF (dH_norm/H_norm_prev.GT.dH_rel_max.AND.dH_norm.GT.1E-12) THEN
+                  IF (H_norm_prev.GT.small) THEN
+                    IF (dH_norm/H_norm_prev.GT.dH_rel_max.AND.dH_norm.GT.small) THEN
                       H_new = H_prev(:,i) + (dH_rel_max*H_norm_prev)*(dH/dH_norm)
                       lgoodsec = .FALSE.
                     END IF
@@ -1095,7 +1058,7 @@
                   H_norm = NORM2(H_new)
                   ! Recalculate M
                   CALL mumaterial_getState(stateFunction(state_dex(i_tile))%H, stateFunction(state_dex(i_tile))%M, H_norm, M_targ_norm)
-                  IF (H_norm .GT. 1E-12) THEN
+                  IF (H_norm .GT. small) THEN
                         M_targ = M_targ_norm * H_new / H_norm
                   ELSE
                         M_targ = 0
@@ -1140,7 +1103,9 @@
           END IF
 
           ! Dampen evolution during oscillations in res_M
-          IF ((DOT_PRODUCT(res_M(:,i),res_M_prev(:,i))<0.0) .AND. (NORM2(res_M(:,i))>NORM2(res_M_prev(:,i)))) THEN 
+          IF (res_rel.LT.threshold) THEN
+            ! Change nothing
+          ELSE IF ((DOT_PRODUCT(res_M(:,i),res_M_prev(:,i))<0.0) .AND. (NORM2(res_M(:,i))>NORM2(res_M_prev(:,i)))) THEN 
             lambda_n(i) = lambda_n(i) * lambdaFactor
             lambda_n(i) = MAX(lambda_n(i),0.001)
           ELSE IF (NORM2(res_M(:,i)).LT.NORM2(res_M_prev(:,i))) THEN
@@ -1571,15 +1536,15 @@
 
       END SUBROUTINE mumaterial_getneighbours
 
-      SUBROUTINE mumaterial_split(boxsize,boxin,ncoords,coords,tol,delta,box1,box2)
+      SUBROUTINE mumaterial_split_n(boxsize,boxin,ncoords,coords,tol,delta_start,targ,box1,box2)
       !-----------------------------------------------------------------------
-      ! mumaterial_split: Divides a set of neighboring tetrahedrons into two
+      ! mumaterial_split_n: Divides a set of neighboring tetrahedrons into two
       ! approximately equally sized groups of neighboring tetrahedrons
       !-----------------------------------------------------------------------
       ! param[in]: coords. coordinates of tetrahedrons given in boxin
-      ! param[in]: dim. dimension over which to split (1:X, 2:Y, 3:Z)
-      ! param[in]: tol. allowed deviation from exact 50/50 split
-      ! param[in]: delta. initial increment in dim
+      ! param[in]: tol. allowed deviation from target split
+      ! param[in]: delta_start. initial increment in dim
+      ! param[in]: targ. relative size of box1 out compared to boxin.
       ! param[out]: box1. collection of half the input tets.
       ! param[out]: box2. collection of other half of input tets.
       !-----------------------------------------------------------------------
@@ -1593,112 +1558,183 @@
       INTEGER, INTENT(in) :: boxsize, ncoords
       DOUBLE PRECISION, DIMENSION(3,ncoords), INTENT(in) :: coords
       INTEGER, INTENT(in)  :: boxin(boxsize)
-      DOUBLE PRECISION, INTENT(in) :: tol, delta
+      DOUBLE PRECISION, INTENT(in) :: tol, delta_start, targ
       INTEGER, ALLOCATABLE, INTENT(out) :: box1(:), box2(:) 
 
-      INTEGER :: i1, i2, iter, dim, dimc, itermax, ptsinbox1, ptsinbox2, cnochange, idx(boxsize)
-      DOUBLE PRECISION, ALLOCATABLE :: xyz(:,:), com(:), dx(:,:)
-      DOUBLE PRECISION :: divval, prevdev, currdev, usedelta, pts_dbl, small
-      DOUBLE PRECISION :: dist1, dist2, mean, prevmean
-      INTEGER, ALLOCATABLE :: tbox1(:), tbox2(:)
+      INTEGER :: iter, dim, itermax, ptsinbox1, ptsinbox2
+      DOUBLE PRECISION :: r_tet(3,boxsize), r_com(3)
+      DOUBLE PRECISION, ALLOCATABLE :: dx(:,:)
+      DOUBLE PRECISION :: r_median, diff_prev, diff, dr
+      DOUBLE PRECISION :: d1, d2, d_avg, d_avg_prev
+      INTEGER, ALLOCATABLE :: box1_temp(:), box2_temp(:)
+      LOGICAL :: lnochange
 
-      ALLOCATE(xyz(3,boxsize))
-      DO i1 = 1, boxsize
-        xyz(:,i1) = coords(:,boxin(i1))
-      END DO
+      r_tet = coords(:,boxin)
       itermax = 201
-      small = 1E-12
-      prevmean = 1E+12
+
+      d_avg_prev = 1E+12
       ALLOCATE(box1(1),box2(1))
 
+      ! Loop over each direction
       DO dim = 1, 3
-        usedelta = delta
-        iter = 0
-        cnochange = 0
-        prevdev = 2 
-        divval = (MINVAL(xyz(dim,:))+MAXVAL(xyz(dim,:)))/2 ! initial estimate of dividing value
-        
-        DO
-          iter = iter + 1 
-          IF (iter.GE.itermax) EXIT ! exceeding max iteration
+        ! Find median of direction
+        dr = delta_start
+        lnochange = .FALSE.
+        diff_prev = 100
 
-          ptsinbox1 = COUNT(xyz(dim,:).LT.divval); pts_dbl = ptsinbox1
-          currdev = ABS(pts_dbl/boxsize-0.5) ! deviation from 50/50 split
-
-          IF (ldebugs) WRITE(6,'(I3,A2,E15.7,A2,I9,A2,E15.7,A2,I2)') iter, ', ', divval, ', ', ptsinbox1, ', ', currdev, ', ', cnochange
-
-          IF (ABS(currdev-prevdev).LE.small) THEN 
-            cnochange = cnochange + 1
-            IF (cnochange.GE.2) EXIT ! no improvement
+        r_median = (MINVAL(r_tet(dim,:))+MAXVAL(r_tet(dim,:)))/2 ! initial estimate of median
+        DO iter = 1, itermax
+          ptsinbox1 = COUNT(r_tet(dim,:).LT.r_median)
+          diff = ABS(DBLE(ptsinbox1)/boxsize-targ) ! deviation from 50/50 split
+          IF (diff.LE.tol) EXIT ! within tolerance
+          IF (ABS(diff-diff_prev).LE.small) THEN 
+            IF (lnochange) EXIT ! no improvement
+            lnochange = .TRUE.
           ELSE
-            cnochange = 0
+            lnochange = .FALSE.
           END IF
-          IF (currdev.LE.tol) EXIT ! within tolerance
-
-          IF (currdev-prevdev>0) usedelta = -0.5*usedelta ! reverse direction, decrease step size
-          divval = divval + usedelta
-          prevdev = currdev
+          ! Estimate new median
+          IF (diff>diff_prev) dr = -0.5*dr ! reverse direction, decrease step size
+          r_median = r_median + dr
+          diff_prev = diff
         END DO
 
-        ptsinbox1 = COUNT(xyz(dim,:).LT.divval)
+        ptsinbox1 = COUNT(r_tet(dim,:).LT.r_median)
         ptsinbox2 = boxsize - ptsinbox1
-        ALLOCATE(tbox1(ptsinbox1),tbox2(ptsinbox2))
+        ALLOCATE(box1_temp(ptsinbox1),box2_temp(ptsinbox2))
 
         ! Make boxes
-        i1 = 1; i2 = 1
-        DO iter = 1, boxsize
-          IF (xyz(dim,iter).LT.divval) THEN
-            tbox1(i1) = boxin(iter)
-            i1 = i1+1
-          ELSE
-            tbox2(i2) = boxin(iter)
-            i2 = i2+1
-          END IF
-        END DO
+        box1_temp = PACK(boxin, r_tet(dim,:).LT.r_median)
+        box2_temp = PACK(boxin, r_tet(dim,:).GE.r_median)
 
         ! Evaluate distances from center of masses
-        dist1 = 0; dist2 = 0
-        ALLOCATE(com(3), dx(3, ptsinbox1)) 
-        com = 0
-        DO i1 = 1, ptsinbox1
-          com = com + coords(:, tbox1(i1))
-        END DO
-        com = com/ptsinbox1
-        DO i1 = 1, ptsinbox1
-          dx(:,i1) = coords(:,tbox1(i1)) - com
-        END DO
-        dist1 = SUM(NORM2(dx, DIM=1))/ptsinbox1
-
+        IF (ALLOCATED(dx)) DEALLOCATE(dx)
+        ALLOCATE(dx(3,ptsinbox1))
+        r_com = SUM(coords(:,box1_temp),DIM=2) / ptsinbox1
+        dx = coords(:,box1_temp) - SPREAD(r_com, DIM=2, NCOPIES=ptsinbox1)
+        d1 = SUM(NORM2(dx, DIM=1))/ptsinbox1
         DEALLOCATE(dx)
-        ALLOCATE(dx(3, ptsinbox2)) 
-        com = 0
-        DO i2 = 1, ptsinbox2
-          com = com + coords(:, tbox2(i2))
-        END DO
-        com = com/ptsinbox2
-        DO i2 = 1, ptsinbox2
-          dx(:,i2) = coords(:,tbox2(i2)) - com
-        END DO
-        dist2 = SUM(NORM2(dx, DIM=1))/ptsinbox2
+        ALLOCATE(dx(3,ptsinbox2))
+        r_com = SUM(coords(:,box2_temp),DIM=2) / ptsinbox2
+        dx = coords(:,box2_temp) - SPREAD(r_com, DIM=2, NCOPIES=ptsinbox2)
+        d2 = SUM(NORM2(dx, DIM=1))/ptsinbox2
+        d_avg = (d1+d2)/2
+        DEALLOCATE(dx)
 
-        mean = (dist1+dist2)/2
-        IF (ldebugs) WRITE(6,'(3X,A31,I1,A1,E15.7)') "Mean distance from COM for dim=", dim, ':', mean
         ! Update if dimension is better
-        IF (mean.LT.prevmean) THEN
+        IF (d_avg.LT.d_avg_prev) THEN
           DEALLOCATE(box1, box2)
           ALLOCATE(box1(ptsinbox1),box2(ptsinbox2))
-          box1 = tbox1
-          box2 = tbox2
-          prevmean = mean
-          dimc = dim
+          box1 = box1_temp
+          box2 = box2_temp
+          d_avg_prev = d_avg
         END IF
-        DEALLOCATE(tbox1, tbox2, com, dx)
+        DEALLOCATE(box1_temp, box2_temp)
         
       END DO
-      IF (ldebugs) WRITE(6,'(3X,A18,I1)') "Dimension chosen: ", dimc
-      DEALLOCATE(xyz)
+      DEALLOCATE(r_tet)
 
-      END SUBROUTINE mumaterial_split
+      END SUBROUTINE mumaterial_split_n
+
+      SUBROUTINE mumaterial_split(boxsize,boxin,ncoords,coords,tol,delta_start,targ,box1,box2)
+      !-----------------------------------------------------------------------
+      ! mumaterial_split_n: Divides a set of neighboring tetrahedrons into two
+      ! approximately equally sized groups of neighboring tetrahedrons
+      !-----------------------------------------------------------------------
+      ! param[in]: coords. coordinates of tetrahedrons given in boxin
+      ! param[in]: tol. allowed deviation from target split
+      ! param[in]: delta_start. initial increment in dim
+      ! param[in]: targ. relative size of box1 out compared to boxin.
+      ! param[out]: box1. collection of half the input tets.
+      ! param[out]: box2. collection of other half of input tets.
+      !-----------------------------------------------------------------------
+#if defined(MPI_OPT)
+      USE mpi
+      USE mpi_params
+#endif     
+
+      IMPLICIT NONE
+
+      INTEGER, INTENT(in) :: boxsize, ncoords
+      DOUBLE PRECISION, DIMENSION(3,ncoords), INTENT(in) :: coords
+      INTEGER, INTENT(in)  :: boxin(boxsize)
+      DOUBLE PRECISION, INTENT(in) :: tol, delta_start, targ
+      INTEGER, ALLOCATABLE, INTENT(out) :: box1(:), box2(:) 
+
+      INTEGER :: iter, dim, itermax, ptsinbox1, ptsinbox2
+      DOUBLE PRECISION :: r_tet(3,boxsize), r_com(3)
+      DOUBLE PRECISION, ALLOCATABLE :: dx(:,:)
+      DOUBLE PRECISION :: r_median, diff_prev, diff, dr
+      DOUBLE PRECISION :: d1, d2, d_avg, d_avg_prev
+      INTEGER, ALLOCATABLE :: box1_temp(:), box2_temp(:)
+      LOGICAL :: lnochange
+
+      r_tet = coords(:,boxin)
+      itermax = 201
+
+      d_avg_prev = 1E+12
+      ALLOCATE(box1(1),box2(1))
+
+      ! Loop over each direction
+      DO dim = 1, 3
+            ! Find median of direction
+            dr = delta_start
+            lnochange = .FALSE.
+            diff_prev = 100
+
+            r_median = (MINVAL(r_tet(dim,:))+MAXVAL(r_tet(dim,:)))/2 ! initial estimate of median
+            DO iter = 1, itermax
+            ptsinbox1 = COUNT(r_tet(dim,:).LT.r_median)
+            diff = ABS(DBLE(ptsinbox1)/boxsize-targ) ! deviation from 50/50 split
+            IF (diff.LE.tol) EXIT ! within tolerance
+            IF (ABS(diff-diff_prev).LE.small) THEN 
+            IF (lnochange) EXIT ! no improvement
+            lnochange = .TRUE.
+            ELSE
+            lnochange = .FALSE.
+            END IF
+            ! Estimate new median
+            IF (diff>diff_prev) dr = -0.5*dr ! reverse direction, decrease step size
+            r_median = r_median + dr
+            diff_prev = diff
+            END DO
+
+            ptsinbox1 = COUNT(r_tet(dim,:).LT.r_median)
+            ptsinbox2 = boxsize - ptsinbox1
+            ALLOCATE(box1_temp(ptsinbox1),box2_temp(ptsinbox2))
+
+            ! Make boxes
+            box1_temp = PACK(boxin, r_tet(dim,:).LT.r_median)
+            box2_temp = PACK(boxin, r_tet(dim,:).GE.r_median)
+
+            ! Evaluate distances from center of masses
+            IF (ALLOCATED(dx)) DEALLOCATE(dx)
+            ALLOCATE(dx(3,ptsinbox1))
+            r_com = SUM(coords(:,box1_temp),DIM=2) / ptsinbox1
+            dx = coords(:,box1_temp) - SPREAD(r_com, DIM=2, NCOPIES=ptsinbox1)
+            d1 = SUM(NORM2(dx, DIM=1))/ptsinbox1
+            DEALLOCATE(dx)
+            ALLOCATE(dx(3,ptsinbox2))
+            r_com = SUM(coords(:,box2_temp),DIM=2) / ptsinbox2
+            dx = coords(:,box2_temp) - SPREAD(r_com, DIM=2, NCOPIES=ptsinbox2)
+            d2 = SUM(NORM2(dx, DIM=1))/ptsinbox2
+            d_avg = (d1+d2)/2
+            DEALLOCATE(dx)
+
+            ! Update if dimension is better
+            IF (d_avg.LT.d_avg_prev) THEN
+            DEALLOCATE(box1, box2)
+            ALLOCATE(box1(ptsinbox1),box2(ptsinbox2))
+            box1 = box1_temp
+            box2 = box2_temp
+            d_avg_prev = d_avg
+            END IF
+            DEALLOCATE(box1_temp, box2_temp)
+            
+      END DO
+      DEALLOCATE(r_tet)
+
+      END SUBROUTINE mumaterial_split 
 
       SUBROUTINE mumaterial_sync_array2d_dbl(array, n1, n2, mystart,myend)
 
