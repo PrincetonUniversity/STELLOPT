@@ -300,7 +300,6 @@ SUBROUTINE beams3d_follow
       mynpart_active = COUNT(is_active(mystart:myend))
       ALLOCATE(npart_counts(nproc_sharmem))
       CALL MPI_GATHER(mynpart_active, 1, MPI_INTEGER, npart_counts, 1, MPI_INTEGER, master, MPI_COMM_BEAMS, ierr_mpi)
-      CALL
       IF (myworkid == master) THEN
          ALLOCATE(mystart_proc(nprocs_beams))
          mystart_proc(1) = 1
