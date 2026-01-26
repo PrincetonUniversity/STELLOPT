@@ -921,7 +921,7 @@
       DOUBLE PRECISION :: M_targ_norm, M_targ(3), M_old(3)
       DOUBLE PRECISION :: res_M_2(3), relM, relH
       DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: H_prev
-      DOUBLE PRECISION :: dH_rel_max, dH(3), dH_norm
+      DOUBLE PRECISION :: dH_rel_max, dH(3), dH_norm, H_norm_prev
       LOGICAL :: lgoodsec
       ! Hard magnet:
       DOUBLE PRECISION :: M_rem_norm
