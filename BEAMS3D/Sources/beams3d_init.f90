@@ -55,7 +55,7 @@
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: R_wall_temp
       REAL(rprec) :: stemp, utemp, rtemp, ztemp, phitemp
       INTEGER :: buffer, mynpart, nproc_sharmem, offset_sharmem, myoffset, offset_global
-      INTEGER :: master_rank, mystart, myrank
+      INTEGER :: master_rank, mystart, myend
       INTEGER, DIMENSION(:), ALLOCATABLE :: offset_proc, npart_sharmem
 !-----------------------------------------------------------------------
 !     External Functions
