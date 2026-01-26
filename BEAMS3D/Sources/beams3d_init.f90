@@ -578,7 +578,7 @@
          nparticles_start = nparticles
          nparticles = nparticles*buffer
          ! Get offsets of all threads to set up 
-         CALL MPI_COMM_SIZE(MPI_COMM_SHARMEM, nproc_sharmem)
+         CALL MPI_COMM_SIZE(MPI_COMM_SHARMEM, nproc_sharmem, ierr_mpi)
          CALL MPI_CALC_MYRANGE(MPI_COMM_BEAMS, 1, nparticles, mystart, myend)
          mynpart = myend-mystart+1
          ALLOCATE(npart_sharmem(nproc_sharmem))

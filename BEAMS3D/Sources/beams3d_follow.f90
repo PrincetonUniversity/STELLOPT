@@ -298,7 +298,7 @@ SUBROUTINE beams3d_follow
     IF (lboxsim) THEN
       ! Get starting write position
       mynpart_active = COUNT(is_active(mystart:myend))
-      CALL MPI_COMM_SIZE(MPI_COMM_SHARMEM, nproc_sharmem)
+      CALL MPI_COMM_SIZE(MPI_COMM_SHARMEM, nproc_sharmem, ierr_mpi)
       ALLOCATE(npart_counts(nproc_sharmem))
       CALL MPI_GATHER(mynpart_active, 1, MPI_INTEGER, npart_counts, 1, MPI_INTEGER, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (myworkid == master) THEN
