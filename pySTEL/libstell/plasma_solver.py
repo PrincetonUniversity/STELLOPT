@@ -445,7 +445,7 @@ class PLASMA_SOLVER:
                 
             case 'beurskens':
                 if( (chi_base is None) or (aLT_critical is None) or (alpha is None) or (stiffness is None) or (chi_electrons is None) or (convective_fact is None) or (mass_ref_species is None)):
-                    raise ValueError('ERROR: chi_base, aLT_critical, alpha, stiffness, chi_electrons, convective_fact and ref_species must be given!')
+                    raise ValueError('ERROR: chi_base, aLT_critical, alpha, stiffness, chi_electrons, convective_fact and mass_ref_species must be given!')
                 self.heat_fluxes_info['type'] = type
                 self.heat_fluxes_info[type]['chi_base'] = chi_base
                 self.heat_fluxes_info[type]['aLT_critical'] = aLT_critical
@@ -469,7 +469,7 @@ class PLASMA_SOLVER:
                 # self.heat_fluxes_info[type]['chi_electrons'] = chi_electrons
                 # self.heat_fluxes_info[type]['convective_fact'] = convective_fact
                 
-    def set_particle_fluxes(self, type: str, surfaces=None,Dn=None):
+    def set_particle_fluxes(self, type: str, surfaces=None, Dn=None, cn=None, mass_ref_species=None):
         """
         Sets particle flux for all species. Currently, only 'diffusive' type is implemented:
         Gamma = -Dn dn/dr with Dn constant and equal to all species
@@ -492,6 +492,26 @@ class PLASMA_SOLVER:
                     raise ValueError('ERROR: Dn must be provided!')
                 self.particle_fluxes_info['type'] = type
                 self.particle_fluxes_info[type]['Dn'] = Dn
+                
+            case 'normalized_Dn_cn_rho_aLn_dependent':
+                if( (Dn is None) or (cn is None) or (mass_ref_species is None)):
+                    raise ValueError('ERROR: Dn, cn and mass_ref_species must be given!')
+                # checks that Dn and cn are 2D function:
+                if( callable(Dn) and callable(cn) ):
+                    import inspect
+                    num_args = len(inspect.signature(Dn).parameters)
+                    if( num_args !=2 ):
+                        raise ValueError('ERROR: Dn must be a function of (rho,aLn)'   )
+                    num_args = len(inspect.signature(cn).parameters)
+                    if( num_args !=2 ):
+                        raise ValueError('ERROR: cn must be a function of (rho,aLn)'   )
+                else:
+                    raise ValueError('ERROR: Dn and cn must be functions of (rho,aLn)'   )
+                #
+                self.particle_fluxes_info['type'] = type
+                self.particle_fluxes_info[type]['Dn'] = Dn
+                self.particle_fluxes_info[type]['cn'] = cn             
+                self.particle_fluxes_info[type]['mass_ref_species'] = mass_ref_species             
                 
     def run(self,Nr,dt,tstart,tend,tolerance=1E-2,max_subiter=12,output_filename=None,restart_filename=None):
         """
@@ -762,6 +782,8 @@ class PLASMA_SOLVER:
             self.particle_flux_func = self.compute_diffusive_particle_flux
         elif ptype == 'dkespenta':
             self.particle_flux_func = self.compute_NEO_particle_flux
+        elif ptype == 'normalized_Dn_cn_rho_aLn_dependent':
+            self.particle_flux_func = self.compute_normalized_Dn_cn_rho_aLn_dependent_particle_flux
         else:
             raise ValueError('Unsupported particle flux type')
 
@@ -1266,11 +1288,9 @@ class PLASMA_SOLVER:
             
     def compute_diffusive_particle_flux(self,it):
         """
-        Computes the coefficients Dn (diffusion) and cn (convection) of
-        each species, which are then used to fill the LHS_density matrices. The
-        coefficients are computed such that the particle flux is
-        Gamma = -Dn*dn/dr + cn*n. This allows for the density to be evolved in time
-        according to LoDestro's method
+        Computes the coefficient Dn (diffusion) which is used to fill the LHS_density matrices. 
+        The coefficient is computed such that the particle flux is
+        Gamma = -Dn*dn/dr. Here we assume that advection is zero and that Dn is a constant
         """
         from scipy.interpolate import CubicSpline
         
@@ -1292,6 +1312,52 @@ class PLASMA_SOLVER:
                         
             # this is used in heat flux (Q=-n\chi*dT/dr + convective_fact*T*Gamma_turb)
             self.Gamma_turb[species][it,:] = -Dn * dndr
+            
+    def compute_normalized_Dn_cn_rho_aLn_dependent_particle_flux(self,it):
+        """
+        Computes the coefficients Dn (diffusion) and cn (convection) of
+        each species. Here Dn and cn are the normalized diffusion coefficient and advection velocity
+        which are functions of rho and a/Ln. The denormalization is:
+        
+        Dn = Dn_normalized * Gamma_gB * a/n_j
+        cn = cn_normalized * Gamma_gB / n_j
+        
+        where Gamma_gB = 2.0*sqrt(2)*n_ref*sqrt(m_ref)*(EC*T_ref)**1.5 / (EC*Bref*aminor)**2
+        
+        The particle flux is then:
+        Gamma = -Dn*dn/dr + cn*n. 
+        This allows for the density to be evolved in time according to LoDestro's method
+        """
+        
+        r_grid = self.r_grid
+        
+        Dn_normalized_func = self.particle_fluxes_info['normalized_Dn_cn_rho_aLn_dependent']['Dn'] # This is a 2D function of (rho,aLn)
+        cn_normalized_func = self.particle_fluxes_info['normalized_Dn_cn_rho_aLn_dependent']['cn'] # This is a 2D function of (rho,aLn)
+        mref = self.particle_fluxes_info['normalized_Dn_cn_rho_aLn_dependent']['mass_ref_species']
+        
+        for species in self.list_of_species:
+            
+            n_r = self.N[species][it,:]
+            dndr = polyfit_derivative_fast(r_grid,n_r,deg=12)
+            # dndr = akima_derivative(r_grid,n_r)
+            
+            a_Ln = - self.aminor * dndr / n_r
+            
+            Dn_normalized = Dn_normalized_func(self.rho_grid, a_Ln)
+            cn_normalized = cn_normalized_func(self.rho_grid, a_Ln)  
+            
+            nref = n_r
+            Tref = self.T[species][it,:]
+            
+            Gamma_gB = 2.0*np.sqrt(2)*nref*np.sqrt(mref)*(EC*Tref)**1.5 / (EC*self.Bref*self.aminor)**2       
+            
+            self.Dn[species][it,:] = Dn_normalized * Gamma_gB * self.aminor / n_r
+            self.cn[species][it,:] = cn_normalized * Gamma_gB / n_r
+            # Force cn(rho=0.0) to be 0.0
+            self.cn[species][it,0] = 0.0
+                        
+            # this is used in heat flux (Q=-n\chi*dT/dr + convective_fact*T*Gamma_turb)
+            self.Gamma_turb[species][it,:] = -self.Dn[species][it,:] * dndr + self.cn[species][it,:] * n_r
             
     def compute_beurskens_heat_flux(self,it):
         """
