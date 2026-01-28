@@ -792,9 +792,12 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Assign each MPI thread a spatially localized cluster
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      ntet_proc = SIZE(dom_shar)
-      ALLOCATE(dom_proc(ntet_proc))
-      dom_proc = dom_shar
+      IF (shar_size.EQ.1) THEN
+        ntet_proc = SIZE(dom_shar)
+        ALLOCATE(dom_proc(ntet_proc))
+        dom_proc = dom_shar
+      END IF
+
 #if defined(MPI_OPT)   
       IF (lcomm) THEN
         IF (shar_size.GT.1) THEN
@@ -806,7 +809,6 @@
             targ = DBLE(a)/DBLE(n_proc_targ)
             reci = master + 1
             ! Divide box initially and send to two threads
-            DEALLOCATE(dom_proc)
             CALL mumaterial_split(ntet_shar, dom_shar, ntet, tet_cen, tol, delta, targ, dom_proc, dom_out_2)
             ntet_proc = SIZE(dom_proc)
             CALL MPI_SEND(SIZE(dom_out_2),          1, MPI_INTEGER, reci, 101, comm_shar, ierr_mpi) 
