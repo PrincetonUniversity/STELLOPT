@@ -41,18 +41,16 @@
 !         COMM_rank:   Rank of thread in communicator COMM
 !         COMM_size:   Number of threads in communicator COMM
 !         
-!         mydom:    Collection of tetrahedrons worked on by comm_shar
+!         dom_shar:    Collection of tetrahedrons worked on by comm_shar
 !         outmydom: Collection of tetrahedrons NOT worked on by comm_shar
-!         domsize:  Size of mydom
+!         ntet_shar:  Size of dom_shar
 !         win_OBJ:  MPI shared memory window for OBJ
 !
 !       Neighbours
 !         Nb:         Array of neighbours for each tetrahedron (:,:)
 !         NbC:        Number of neighbours for each tetrahedron (:)
 !         maxNbC:     Largest neighbour count in NbC
-!         Nb_domidx:  Neighbours indexed by appearance in mydom (:,:)
-!         NbC_dom:    Number of neighbours per tet in mydom (:)
-!         maxNbC_dom: Largest neighbour count in NbC_dom
+!         Nb_domidx:  Neighbours indexed by appearance in dom_shar (:,:)
 !
 !       Mesh
 !         ntet:     Number of tetrahedrons in mesh
@@ -90,8 +88,9 @@
       ! mesh variables
       INTEGER, PRIVATE  ::  ntet, nvertex
       DOUBLE PRECISION, POINTER, PRIVATE :: vertex(:,:), tet_cen(:,:), & 
-                                            tet_vol(:), tet_edge(:)
-      INTEGER, POINTER, PRIVATE :: tet(:,:)
+                                            tet_vol(:), tet_edge(:), &
+                                            r_cluster(:,:), mom_cluster(:,:), d_cluster(:)
+      INTEGER, POINTER, PRIVATE :: tet(:,:), dom_clusters(:,:)
 
       ! magnetics variables
       INTEGER, POINTER, PRIVATE :: state_dex(:), state_type(:)
@@ -109,14 +108,15 @@
 
       ! neighbour variables
       INTEGER, DIMENSION(:,:), ALLOCATABLE, PRIVATE :: Nb, Nb_domidx
-      INTEGER, DIMENSION(:),   ALLOCATABLE, PRIVATE :: NbC, NbC_dom
-      INTEGER, PRIVATE                              :: maxNbC, maxNbC_dom
+      INTEGER, DIMENSION(:),   ALLOCATABLE, PRIVATE :: NbC
+      INTEGER, PRIVATE                              :: maxNbC
 
       ! MPI variables
       INTEGER, PRIVATE :: comm_shar,   shar_rank,   shar_size, &
                           comm_master, master_rank, master_size, &
                           comm_world,  world_rank,  world_size, &
                           color, ierr_mpi
+      INTEGER, PRIVATE :: master = 0
       LOGICAL, PRIVATE :: lcomm, lismaster, ldosync
 
       ! MPI windows
@@ -124,10 +124,15 @@
                           win_tet_vol, win_tet_edge,  &
                           win_state_dex, win_state_type, &
                           win_constant_mu, win_m, win_Mrem, &
-                          win_Happ, win_constant_mu_o
+                          win_Happ, win_constant_mu_o, & 
+                          win_r_cluster, win_mom_cluster, &
+                          win_d_cluster, win_dom_clusters
       ! box division variables
-      INTEGER, DIMENSION(:), ALLOCATABLE, PRIVATE :: mydom,  outmydom
-      INTEGER, PRIVATE                            :: domsize,odomsize
+      INTEGER, DIMENSION(:), ALLOCATABLE, PRIVATE :: dom_shar, outmydom, dom_proc
+      INTEGER, PRIVATE                            :: ntet_shar,odomsize, ntet_proc
+      LOGICAL, DIMENSION(:), ALLOCATABLE, PRIVATE :: lisfar
+      INTEGER, DIMENSION(:), ALLOCATABLE, PRIVATE :: dom_mid_proc
+      INTEGER, PRIVATE                            :: ntet_mid_proc
 
       ! verbose and debug variables
       LOGICAL, PRIVATE                    :: lverb, ldebugm, ldebugs, ldebugt
@@ -164,7 +169,7 @@
 !       MPI 
 !         mumaterial_split:            Divides domain amongst shar_mem nodes
 !         mumaterial_sync_array2d_dbl: Syncs any 2D,DBL array on shar_mem nodes
-!         mumaterial_syncM:       Syncs (3,domsize) DBL array on shar_mem nodes
+!         mumaterial_syncM:       Syncs (3,ntet_shar) DBL array on shar_mem nodes
 !         mumaterial_free:             Frees MPI memory
 !       Output
 !         mumaterial_output:  Output B-field and points to file
@@ -244,7 +249,10 @@
       IF (ASSOCIATED(M))             CALL free_mpi_array2d_dbl(win_M,M,.TRUE.)
       ! TODO: Remove once allocated locally (Make sure code works beforehand)
       IF (ASSOCIATED(Mrem))          CALL free_mpi_array2d_dbl(win_Mrem,Mrem,.TRUE.)
-!      IF (ASSOCIATED(Happ_shar))     CALL free_mpi_array2d_dbl(win_Happ,Happ_shar,.TRUE.)
+      IF (ASSOCIATED(r_cluster))     CALL free_mpi_array2d_dbl(win_r_cluster,r_cluster,.TRUE.)
+      IF (ASSOCIATED(mom_cluster))   CALL free_mpi_array2d_dbl(win_mom_cluster,mom_cluster,.TRUE.)
+      IF (ASSOCIATED(d_cluster))     CALL free_mpi_array1d_dbl(win_d_cluster,d_cluster,.TRUE.)
+      IF (ASSOCIATED(dom_clusters))  CALL free_mpi_array2d_int(win_dom_clusters,dom_clusters,.TRUE.)
 
       DO ik = 1, nstate
          IF (ALLOCATED(stateFunction(ik)%H)) DEALLOCATE(stateFunction(ik)%H)
@@ -371,7 +379,8 @@
 
       ! Nullify pointers
       NULLIFY(vertex, tet, tet_cen, tet_vol, tet_edge, state_dex, state_type, &
-              constant_mu, constant_mu_o, Mrem, M, H_app)
+              constant_mu, constant_mu_o, Mrem, M, H_app, N_store, &
+              r_cluster, mom_cluster, d_cluster, dom_cluster)
 
       ! open file, return if fails
       iunit = 327; istat = 0
@@ -407,8 +416,11 @@
         CALL mpialloc_1d_dbl(constant_mu,nstate,  shar_rank,0,comm_shar,win_constant_mu)
         CALL mpialloc_1d_dbl(constant_mu_o,nstate,shar_rank,0,comm_shar,win_constant_mu_o)
         CALL mpialloc_2d_dbl(M,            3,ntet,shar_rank,0,comm_shar,win_m)
-        CALL mpialloc_2d_dbl(Mrem,3,ntet,         shar_rank,0,comm_shar,win_Mrem)  ! TODO: Allocate locally
-!       CALL mpialloc_2d_dbl(Happ_shar,    3,ntet,shar_rank,0,comm_shar,win_Happ)
+        CALL mpialloc_2d_dbl(Mrem,3,nstate,       shar_rank,0,comm_shar,win_Mrem)  ! TODO: Allocate locally
+        CALL mpialloc_2d_dbl(r_cluster,3,world_size,  shar_rank,0,comm_shar,win_r_cluster)
+        CALL mpialloc_2d_dbl(mom_cluster,3,world_size,shar_rank,0,comm_shar,win_mom_cluster)
+        CALL mpialloc_1d_dbl(d_cluster,world_size,    shar_rank,0,comm_shar,win_d_cluster)
+
         ALLOCATE(stateFunction(nstate))
       ELSE
 #endif
@@ -416,7 +428,8 @@
          ALLOCATE(vertex(3,nvertex),tet(4,ntet),state_dex(ntet), &
                   state_type(nstate),constant_mu(nstate), &
                   tet_cen(3,ntet),tet_vol(ntet),tet_edge(ntet),M(3,ntet), &
-                  constant_mu_o(nstate),Mrem(3,ntet),stateFunction(nstate), &
+                  constant_mu_o(nstate),Mrem(3,nstate),stateFunction(nstate), &
+                  r_cluster(3,1),mom_cluster(3,1),d_cluster(1),dom_clusters(1,1), &
                   STAT=istat)
 #if defined(MPI_OPT)
       END IF
@@ -516,7 +529,7 @@
       INTEGER :: i,k
 
       IF (lnoiter) THEN
-            WRITE(iunit,'(A)') '  SKIPPING MUMAT ITERATIONS'
+        RITE(iunit,'(A)') '  SKIPPING MUMAT ITERATIONS'
       ELSE 
       WRITE(iunit,'(A)')           ' ---------- MUMAT MPI ----------'
       WRITE(iunit,'(3X,A,I7)')     'MPI Nodes    : ',master_size
@@ -615,10 +628,13 @@
       CHARACTER(LEN=6) :: strcount, splitcount
 
       DOUBLE PRECISION :: Bx, By, Bz
-      DOUBLE PRECISION :: tol, delta, xmin, xmax, ymin, ymax, zmin, zmax, pad
+      DOUBLE PRECISION :: tol, delta, targ
       DOUBLE PRECISION :: MAT(3,3)
-      INTEGER :: splits, dim, ydomsize, reci
-      INTEGER, ALLOCATABLE :: domin(:), yourdom(:), tdom(:)
+      INTEGER :: splits, ydomsize, reci, n_proc_targ, a, b
+      INTEGER, ALLOCATABLE :: dom_in(:), dom_out_2(:), dom_sizes(:),  &
+                              mid_ids(:), cluster(:), temp_dom(:)
+      LOGICAL, ALLOCATABLE :: mid_mask(:)
+      INTEGER :: n, idx
 
       EXTERNAL:: getBfld
       
@@ -641,7 +657,6 @@
           CALL mumaterial_sync_array2d_dbl(vertex,3,nvertex,mystart,myend)
         END IF
 #endif
-        IF (ldebugm) CALL mumaterial_writedebug(vertex,3,nvertex, 'verts.dat','vertices')
       END IF
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -690,11 +705,11 @@
 
       lwork = (color.EQ.0)
       IF (lwork) THEN ! Global master, create first box
-        ALLOCATE(mydom(ntet))
+        ALLOCATE(dom_shar(ntet))
         DO i = 1, ntet
-          mydom(i) = i
+          dom_shar(i) = i
         END DO
-        domsize = SIZE(mydom)
+        ntet_shar = SIZE(dom_shar)
       END IF
 
 #if defined(MPI_OPT)   
@@ -707,24 +722,24 @@
           IF (splits.EQ.0) EXIT ! Reached end
 
           IF (lwork) THEN 
-            ALLOCATE(domin(domsize))
-            domin = mydom
-            DEALLOCATE(mydom)
-
-            CALL mumaterial_split(domsize, domin, ntet, tet_cen, tol, delta, 0.5, mydom, yourdom) ! Split box
-            DEALLOCATE(domin)
-            domsize  = SIZE(mydom)
-            ydomsize = SIZE(yourdom)            
+            ALLOCATE(dom_in(ntet_shar))
+            dom_in = dom_shar
+            DEALLOCATE(dom_shar)
+            targ = 0.5
+            CALL mumaterial_split(ntet_shar, dom_in, ntet, tet_cen, tol, delta, targ, dom_shar, dom_out_2) ! Split box
+            DEALLOCATE(dom_in)
+            ntet_shar  = SIZE(dom_shar)
+            ydomsize = SIZE(dom_out_2)            
             splits = splits-1 
 
             ! now mail one of new boxes to the appropriate recipient
             reci = color + 2**splits 
             CALL MPI_SEND(ydomsize,      1, MPI_INTEGER, reci, 1234, comm_master, ierr_mpi) 
-            CALL MPI_SEND(yourdom,ydomsize, MPI_INTEGER, reci, 1235, comm_master, ierr_mpi);  DEALLOCATE(yourdom) 
+            CALL MPI_SEND(dom_out_2,ydomsize, MPI_INTEGER, reci, 1235, comm_master, ierr_mpi);  DEALLOCATE(dom_out_2) 
             CALL MPI_SEND(splits,        1, MPI_INTEGER, reci, 1236, comm_master, ierr_mpi)
           ELSE
-            CALL MPI_RECV(domsize,     1, MPI_INTEGER, MPI_ANY_SOURCE, 1234, comm_master, mstat, ierr_mpi); ALLOCATE(mydom(domsize))
-            CALL MPI_RECV(mydom, domsize, MPI_INTEGER, MPI_ANY_SOURCE, 1235, comm_master, mstat, ierr_mpi)
+            CALL MPI_RECV(ntet_shar,     1, MPI_INTEGER, MPI_ANY_SOURCE, 1234, comm_master, mstat, ierr_mpi); ALLOCATE(dom_shar(ntet_shar))
+            CALL MPI_RECV(dom_shar, ntet_shar, MPI_INTEGER, MPI_ANY_SOURCE, 1235, comm_master, mstat, ierr_mpi)
             CALL MPI_RECV(splits,      1, MPI_INTEGER, MPI_ANY_SOURCE, 1236, comm_master, mstat, ierr_mpi);  
             lwork = .TRUE. ! Activate node
           END IF
@@ -736,7 +751,7 @@
         DO
           IF (lwork) THEN
             ourstart = splits+1
-            ourend   = splits+domsize
+            ourend   = splits+ntet_shar
             reci = color + 1
             IF (reci.EQ.master_size) EXIT
             CALL MPI_SEND(ourend, 1, MPI_INTEGER, reci, 1234, comm_master, ierr_mpi)             
@@ -748,41 +763,197 @@
         END DO
         
         ! Construct outside domain (used for synchronization)
-        odomsize = ntet-domsize
+        odomsize = ntet-ntet_shar
         ALLOCATE(outmydom(odomsize))
         i = 0
         DO i_tile = 1, ntet
-          IF (.NOT.(ANY(i_tile==mydom))) THEN 
+          IF (.NOT.(ANY(i_tile==dom_shar))) THEN 
             i = i + 1
             outmydom(i) = i_tile
           END IF
         END DO
       END IF
 
-      CALL MPI_Bcast(domsize,    1, MPI_INTEGER, 0, comm_shar, ierr_mpi)
+      CALL MPI_Bcast(ntet_shar,    1, MPI_INTEGER, 0, comm_shar, ierr_mpi)
       
-      IF (shar_rank.NE.0) THEN
-        ALLOCATE(mydom(domsize))
-        odomsize = ntet-domsize
+      IF (shar_rank.NE.master) THEN
+        ALLOCATE(dom_shar(ntet_shar))
+        odomsize = ntet-ntet_shar
         ALLOCATE(outmydom(odomsize))
       END IF
       
-      CALL MPI_Bcast(mydom,   domsize,  MPI_INTEGER, 0, comm_shar, ierr_mpi)
+      CALL MPI_Bcast(dom_shar,   ntet_shar,  MPI_INTEGER, 0, comm_shar, ierr_mpi)
       CALL MPI_Bcast(outmydom,odomsize, MPI_INTEGER, 0, comm_shar, ierr_mpi)
       CALL MPI_Bcast(ourstart, 1, MPI_INTEGER, 0, comm_shar, ierr_mpi)
       CALL MPI_Bcast(ourend,   1, MPI_INTEGER, 0, comm_shar, ierr_mpi)
       CALL MPI_BARRIER(comm_world, ierr_mpi)
 #endif
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! Assign each MPI thread a spatially localized cluster
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ntet_proc = SIZE(dom_shar)
+      ALLOCATE(dom_proc(ntet_proc))
+      dom_proc = dom_shar
+#if defined(MPI_OPT)   
+      IF (lcomm) THEN
+        CALL MPI_COMM_SIZE(comm_shar, shar_size, ierr_mpi)
+        IF (shar_size.GT.1) THEN
+          IF (shar_rank.EQ.master) THEN 
+            ! Set up work initially
+            n_proc_targ = shar_size
+            a = n_proc_targ/2
+            b = n_proc_targ - a
+            targ = DBLE(a)/DBLE(n_proc_targ)
+            reci = master + 1
+            ! Divide box initially and send to two threads
+            DEALLOCATE(dom_proc)
+            CALL mumaterial_split(ntet_shar, dom_shar, ntet, tet_cen, tol, delta, targ, dom_proc, dom_out_2)
+            ntet_proc = SIZE(dom_proc)
+            CALL MPI_SEND(SIZE(dom_out_2),          1, MPI_INTEGER, reci, 101, comm_shar, ierr_mpi) 
+            CALL MPI_SEND(dom_out_2,  SIZE(dom_out_2), MPI_INTEGER, reci, 102, comm_shar, ierr_mpi)
+            CALL MPI_SEND(b,                        1, MPI_INTEGER, reci, 103, comm_shar, ierr_mpi)
+            IF (shar_size.GT.2) THEN ! Careful with 2 threads; then need to keep one.
+              reci = reci + 1
+              CALL MPI_SEND(ntet_proc,       1, MPI_INTEGER, reci, 101, comm_shar, ierr_mpi) 
+              CALL MPI_SEND(dom_proc,ntet_proc, MPI_INTEGER, reci, 102, comm_shar, ierr_mpi)
+              CALL MPI_SEND(a,               1, MPI_INTEGER, reci, 103, comm_shar, ierr_mpi)
+              DEALLOCATE(dom_proc)
+            END IF
+            DEALLOCATE(dom_out_2)
+            ! Now just be the messenger
+            IF (shar_size.GT.2) THEN
+              DO
+                reci = reci + 1
+                ! Receive from any source
+                CALL MPI_RECV(ntet_proc,        1, MPI_INTEGER, MPI_ANY_SOURCE, 101, comm_shar, mstat, ierr_mpi)
+                ALLOCATE(dom_proc(ntet_proc))
+                CALL MPI_RECV(dom_proc, ntet_proc, MPI_INTEGER, MPI_ANY_SOURCE, 102, comm_shar, mstat, ierr_mpi)
+                CALL MPI_RECV(n_proc_targ,      1, MPI_INTEGER, MPI_ANY_SOURCE, 103, comm_shar, mstat, ierr_mpi)
+                DEALLOCATE(dom_proc)
+                IF (reci.EQ.shar_size) THEN
+                  EXIT ! That's us!
+                ELSE
+                  CALL MPI_SEND(ntet_proc,        1, MPI_INTEGER, reci, 101, comm_shar, ierr_mpi) 
+                  CALL MPI_SEND(dom_proc, ntet_proc, MPI_INTEGER, reci, 102, comm_shar, ierr_mpi)
+                  CALL MPI_SEND(n_proc_targ,      1, MPI_INTEGER, reci, 103, comm_shar, ierr_mpi)
+                END IF
 
+              END DO
+            END IF
+          ELSE
+            ! non-master work
+            lwork = .FALSE.
+            DO
+              ! Receive box from master if doesn't yet have
+              IF (.NOT.lwork) THEN
+                CALL MPI_RECV(ntet_proc,        1, MPI_INTEGER, master, 101, comm_shar, mstat, ierr_mpi) 
+                ALLOCATE(dom_proc(ntet_proc))
+                CALL MPI_RECV(dom_proc, ntet_proc, MPI_INTEGER, master, 102, comm_shar, mstat, ierr_mpi)       
+                CALL MPI_RECV(n_proc_targ,      1, MPI_INTEGER, master, 103, comm_shar, mstat, ierr_mpi)
+              END IF
+              ! Check if should divide
+              IF (n_proc_targ.EQ.1) THEN
+                EXIT ! That's us!
+              ELSE
+                ! Divide box and send 
+                a = n_proc_targ/2
+                b = n_proc_targ - a
+                targ = DBLE(a)/DBLE(n_proc_targ)
+                ALLOCATE(temp_dom(ntet_proc))
+                temp_dom = dom_proc
+                DEALLOCATE(dom_proc)
+                CALL mumaterial_split(ntet_proc, temp_dom, ntet, tet_cen, tol, delta, targ, dom_proc, dom_out_2)
+                ntet_proc = SIZE(dom_proc)
+                CALL MPI_SEND(SIZE(dom_out_2),          1, MPI_INTEGER, master, 101, comm_shar, ierr_mpi) 
+                CALL MPI_SEND(dom_out_2,  SIZE(dom_out_2), MPI_INTEGER, master, 102, comm_shar, ierr_mpi)
+                CALL MPI_SEND(b,                        1, MPI_INTEGER, master, 103, comm_shar, ierr_mpi)
+                DEALLOCATE(dom_out_2,temp_dom)
 
+                n_proc_targ = a
+                lwork = .TRUE.
+              END IF
+            END DO
+          END IF
+        END IF
+        CALL MPI_BARRIER(comm_shar, ierr_mpi)
+
+      END IF
+
+#endif
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! Calculate and write cluster quantities
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      r_cluster = 0.0
+      mom_cluster = 0.0
+      d_cluster = 0.0
+#if defined(MPI_OPT)
+      IF (lcomm) THEN
+
+        ALLOCATE(dom_sizes(world_size))
+        dom_sizes = 0
+        dom_sizes(world_rank) = ntet_proc
+        CALL MPI_ALLREDUCE(MPI_IN_PLACE, dom_sizes, world_size, MPI_INTEGER, MPI_SUM, comm_world, ierr_mpi)
+        CALL mpialloc_2d_int(dom_clusters,MAXVAL(dom_sizes),world_size,shar_rank,0,comm_shar,win_dom_clusters)
+        IF (shar_rank.EQ.master) THEN 
+          dom_clusters = 0
+        END IF
+        CALL MPI_BARRIER(comm_shar, ierr_mpi)
+        dom_clusters(1:ntet_proc, world_rank) = dom_proc(1:ntet_proc)
+        IF (shar_rank.EQ.master) THEN
+          CALL MPI_ALLREDUCE( MPI_IN_PLACE, dom_clusters, MAXVAL(dom_sizes)*world_size, MPI_INTEGER, MPI_SUM, comm_master, ierr_mpi )
+        END IF
+
+        ! Cluster position and diameter
+        r_cluster(:,world_rank) = SUM(tet_cen(:,dom_proc(1:ntet_proc)),DIM=2)/ntet_proc 
+        d_cluster(world_rank) = 2.0 * SQRT( SUM(NORM2( &
+                                        tet_cen(:,dom_proc(1:ntet_proc)) - SPREAD(r_cluster(:,world_rank), DIM=2, NCOPIES=ntet_proc),
+                                        & DIM=1)**2) / ntet_proc)
+        CALL MPI_ALLREDUCE( MPI_IN_PLACE, r_cluster, 3*world_size, MPI_DOUBLE_PRECISION, MPI_SUM, comm_shar, ierr_mpi )
+        CALL MPI_ALLREDUCE( MPI_IN_PLACE, d_cluster,   world_size, MPI_DOUBLE_PRECISION, MPI_SUM, comm_shar, ierr_mpi )
+        IF (shar_rank.EQ.master) THEN
+          CALL MPI_ALLREDUCE( MPI_IN_PLACE, r_cluster, 3*world_size, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
+          CALL MPI_ALLREDUCE( MPI_IN_PLACE, d_cluster,   world_size, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
+        END IF
+        ALLOCATE(lisfar(world_size))
+        lisfar = NORM2(r_cluster - SPREAD(r_cluster(:,world_rank),DIM=2, NCOPIES=world_size),DIM=1) > 10.0 * d_cluster
+
+        ! Determine which clusters are in the "mid-field" from our cluster
+        ALLOCATE(mid_mask(world_size))
+        mid_mask = (.NOT.lisfar) .AND. ([(i, i=1, world_size)] .NE. world_rank)
+        ALLOCATE(mid_ids(COUNT(mid_mask)))
+
+        mid_ids = PACK([(i, i=1, world_size)], MASK=mid_mask)
+        ntet_mid_proc = SUM(dom_sizes(mid_ids))
+
+        ALLOCATE(dom_mid_proc(ntet_mid_proc))
+        idx = 0
+        DO i = 1, SIZE(mid_ids)
+          j = mid_ids(i)
+          cluster = PACK(dom_clusters(:,j),MASK=dom_clusters(:,j)>0)
+          n = SIZE(cluster)
+          dom_mid_proc(idx+1:idx+n) = cluster
+          idx = idx + n
+        END DO
+        DEALLOCATE(mid_ids,mid_mask)
+
+        DEALLOCATE(dom_sizes)
+        CALL MPI_BARRIER(comm_shar, ierr_mpi)
+      END IF
+#endif
+      ! Non-MPI
+      IF (.NOT.lcomm) THEN
+        ntet_mid_proc = 0
+        ALLOCATE(dom_mid_proc(0))
+        ALLOCATE(lisfar(1))
+        lisfar(1) = .FALSE.
+      END IF
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Determine nearest Nb (includes self)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Determining nearest Nb"
-      IF (lcomm) CALL MPI_CALC_MYRANGE(comm_shar, 1, domsize, mystart, myend)
-      CALL mumaterial_getneighbours(mystart, myend)
-      IF (ldebugt) WRITE(6,'(3X,A13,I6,A12,I8,I8,A3,I6,I6,A1)') 'MUMAT_DEBUG: ', world_rank, ' NB RANGE: [', MINVAL(NbC), maxNbC, '] [',MINLOC(NbC,1), MAXLOC(NbC,1) ,']'
+      IF (lcomm) CALL MPI_CALC_MYRANGE(comm_shar, 1, ntet_shar, mystart, myend)
+      CALL mumaterial_getneighbours()
 
 #if defined(MPI_OPT)
       IF (lcomm) CALL MPI_BARRIER(comm_world, ierr_mpi)
@@ -792,10 +963,10 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Calculating H_app"
       NULLIFY(H_app)
-      ALLOCATE(H_app(3,mystart:myend))
+      ALLOCATE(H_app(3,1:ntet_proc))
       H_app(:,:) = 0.0
-      DO i = mystart, myend
-        i_tile = mydom(i)
+      DO i = 1, ntet_proc
+        i_tile = dom_proc(i)
         CALL getBfld(tet_cen(1,i_tile), tet_cen(2,i_tile), tet_cen(3,i_tile), Bx, By, Bz)
         H_app(:,i) = [Bx/mu0, By/mu0, Bz/mu0]
       END DO
@@ -809,10 +980,10 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Calculating N_store"
       NULLIFY(N_store)
-      ALLOCATE(N_store(3,3,maxNbC,mystart:myend))
+      ALLOCATE(N_store(3,3,maxNbC,1:ntet_proc))
       N_store(:,:,:,:) = 0.0
-      DO i = mystart, myend
-        i_tile = mydom(i)
+      DO i = 1, ntet_proc
+        i_tile = dom_proc(i)
         DO j = 1, NbC(i)
           j_tile = Nb(j,i)
           CALL mumaterial_getN(vertex(:,tet(1,j_tile)), vertex(:,tet(2,j_tile)), vertex(:,tet(3,j_tile)), vertex(:,tet(4,j_tile)), tet_cen(:,i_tile), N_store(:,:,j,i)) 
@@ -822,14 +993,14 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Calculate inv_mat_local for constant-mu-cases
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      ALLOCATE(inv_mat_local(3,3,mystart:myend))
+      ALLOCATE(inv_mat_local(3,3,1:ntet_proc))
       inv_mat_local = 0.0
-      DO i = mystart, myend
-        i_tile = mydom(i)
+      DO i = 1, ntet_proc
+        i_tile = dom_proc(i)
         stype = state_type(state_dex(i_tile))
         IF (stype.EQ.3) THEN
             DO j = 1, NbC(i)
-              IF (Nb(j,i).EQ.i_tile) EXIT
+              IF (Nb(j,i).EQ.i_tile) EXIT ! i_tile is always in Nb.
             END DO 
             MAT = -(constant_mu(state_dex(i_tile)) - 1) * N_store(:,:,j,i)
             MAT(1,1) = MAT(1,1) + 1.0
@@ -846,12 +1017,13 @@
       ! Begin iterations
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Beginning Iterations"
-      CALL mumaterial_iterate_M(getBfld, mystart, myend)
+      CALL mumaterial_iterate_M(getBfld)
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  End Iterations"
       ! DEALLOCATE Helpers
       DEALLOCATE(Nb, NbC)
       DEALLOCATE(N_store,inv_mat_local)
       DEALLOCATE(H_app)
+      DEALLOCATE(lisfar)
 
       RETURN
       END SUBROUTINE mumaterial_init_new
@@ -861,7 +1033,7 @@
 !-----------------------------------------------------------------------
 ! param[in]: mystart, myend. range of tetrahedrons worked on by thread
 !-----------------------------------------------------------------------
-      SUBROUTINE mumaterial_iterate_M(getBfld, mystart, myend)
+      SUBROUTINE mumaterial_iterate_M(getBfld)
 #if defined(MPI_OPT)
       USE mpi
       USE mpi_params
@@ -872,7 +1044,6 @@
       CHARACTER(LEN=6) :: str
       !------------------------ PRIMARY PICARD LOOP --------------------------!
       INTEGER :: iter_n, i, i_tile, j, j_tile
-      INTEGER, INTENT(in) :: mystart, myend
       DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: res_M, res_M_prev
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: lambda_n
       !----------------------- SECONDARY PICARD LOOP -------------------------!
@@ -890,17 +1061,16 @@
       DOUBLE PRECISION :: M_rem_norm
       DOUBLE PRECISION :: u_ea(3), u_oa_1(3), u_oa_2(3), mu_ea, mu_oa
       !------------------ BACKGROUND FIELD CALCULATION -----------------------!
-      LOGICAL, DIMENSION(:), ALLOCATABLE :: is_Nb_mask
-      INTEGER, DIMENSION(:), ALLOCATABLE :: non_Nb_indices
-      INTEGER :: N_non_Nb 
+      LOGICAL, DIMENSION(:), ALLOCATABLE             :: is_midfield
+      INTEGER, DIMENSION(:), ALLOCATABLE             :: dom_mid_nn
+      INTEGER                                        :: n_mid_nn
       DOUBLE PRECISION, DIMENSION(:, :), ALLOCATABLE :: r_vec, r_hat
-      DOUBLE PRECISION, DIMENSION(:, :), ALLOCATABLE :: moments, H_dipole
-      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: r_norm, r3_inv, mrdotrhat
+      DOUBLE PRECISION, DIMENSION(:, :), ALLOCATABLE :: H_dipole, mom_nn
+      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: r_norm, mrdotrhat
       EXTERNAL:: getBfld
       DOUBLE PRECISION ::  Bx, By, Bz
       !--------------------------- CONVERGENCE  ------------------------------!
       DOUBLE PRECISION :: converged_proc, converged_global, converged_print
-      LOGICAL          :: lalldone
       !--------------------------- DISPLAY ONLY ------------------------------!
       INTEGER ::          rank_bad, i_bad, i_tile_bad
       DOUBLE PRECISION :: pair_in(2), pair_out(2)
@@ -911,10 +1081,10 @@
       !-----------------------------------------------------------------------!
 
       ! Allocate helpers
-      ALLOCATE(Mnorm(mystart:myend))
-      ALLOCATE(res_M(3,mystart:myend),res_M_prev(3,mystart:myend))
-      ALLOCATE(H_prev(3,mystart:myend))
-      ALLOCATE(lambda_n(mystart:myend))
+      ALLOCATE(Mnorm(1:ntet_proc))
+      ALLOCATE(res_M(3,1:ntet_proc),res_M_prev(3,1:ntet_proc))
+      ALLOCATE(H_prev(3,1:ntet_proc))
+      ALLOCATE(lambda_n(1:ntet_proc))
       maxiterH = maxiter
       Mnorm = 1.0E-5
       lambda_n = lambdaStart
@@ -936,9 +1106,9 @@
         res_M = 0.0
 
         !-------------------- START OF ELEMENT LOOP ----------------------!
-        DO i = mystart, myend 
+        DO i = 1, ntet_proc
           ! Get total field without contribution from self
-          i_tile = mydom(i)  ! Tile index in global array
+          i_tile = dom_proc(i)  ! Tile index in global array
           H_ext = H_app(:,i) ! Non-neighbors and external sourcess
           DO j = 1, NbC(i)   ! Get full N.M field from neighbors
             j_tile = Nb(j,i)
@@ -1016,7 +1186,8 @@
                   IF (iter_2.GT.maxiterH)  WRITE(6,*) "  Exceeded maxiterH on tile ", i_tile                  
                   EXIT
                 END IF
-            END DO
+              END DO
+              H_prev(:,i) = H_new
             !-----------------------------------------------------------------!   
             CASE (2) ! Soft magnet using state function
               DO
@@ -1128,12 +1299,12 @@
           ! Communicate info to master (only proc that prints)
           IF (world_rank.EQ.rank_bad) THEN ! If this proc has the bad element:
             IF (lismaster) THEN            ! If this proc is also the master, just grab info
-              i_tile_bad = mydom(i_bad)
+              i_tile_bad = dom_shar(i_bad)
               lambda_bad = lambda_n(i_bad) ! I know lambda_n has already been updated at this point.
               M_targ_bad = M_targ_loc
               H_bad = H_new_loc
             ELSE                           ! If this proc is NOT the master, send info to master
-              CALL MPI_SEND(mydom(i_bad),    1, MPI_INTEGER,          0, 1240, comm_world, ierr_mpi)
+              CALL MPI_SEND(dom_shar(i_bad),    1, MPI_INTEGER,          0, 1240, comm_world, ierr_mpi)
               CALL MPI_SEND(lambda_n(i_bad), 1, MPI_DOUBLE_PRECISION, 0, 1241, comm_world, ierr_mpi) 
               CALL MPI_SEND(M_targ_loc,      1, MPI_DOUBLE_PRECISION, 0, 1242, comm_world, ierr_mpi) 
               CALL MPI_SEND(H_new_loc,       1, MPI_DOUBLE_PRECISION, 0, 1243, comm_world, ierr_mpi) 
@@ -1148,7 +1319,7 @@
           CALL MPI_BARRIER(comm_world, ierr_mpi)
 #endif
         ELSE
-            i_tile_bad = mydom(i_bad)
+            i_tile_bad = dom_shar(i_bad)
             lambda_bad = lambda_n(i_bad)
             M_targ_bad = M_targ_loc
             H_bad = H_new_loc            
@@ -1156,7 +1327,7 @@
         END IF
 
         converged_print = converged_global*100.0/SUM(tet_vol) 
-        IF (ldosync) CALL mumaterial_syncM(M,ntet,outmydom)
+        IF (ldosync) CALL mumaterial_syncM()
 
         IF (lverb) THEN 
           IF (iter_n.EQ.1) THEN
@@ -1176,47 +1347,57 @@
         END IF
         !---------------------------------------------------------------------!
         !--------------------- UPDATE BACKGROUND H_APP -----------------------!
-        IF ((MOD(iter_n, 40).EQ.0).OR.(iter_n.LE.40)) THEN
-          DO i = mystart, myend
-            i_tile = mydom(i)
-            ! Get background field
-            CALL getBfld(tet_cen(1,i_tile), tet_cen(2,i_tile), tet_cen(3,i_tile), Bx, By, Bz)
-            H_app(:,i) = [Bx/mu0, By/mu0, Bz/mu0]
-        
-            ! Get all non-neighbors
-            ALLOCATE(is_Nb_mask(ntet))
-            is_Nb_mask = .FALSE.
-            is_Nb_mask(i_tile) = .TRUE.
-            is_Nb_mask(Nb(1:NbC(i),i)) = .TRUE. 
-            N_non_Nb = COUNT(.NOT.is_Nb_mask)
-            ALLOCATE(non_Nb_indices(N_non_Nb),r_vec(3,N_non_Nb),r_norm(N_non_Nb),r3_inv(N_non_Nb),r_hat(3,N_non_Nb))
-            non_Nb_indices = PACK([(j, j=1, ntet)], MASK=.NOT.is_Nb_mask)
-            DEALLOCATE(is_Nb_mask)
-                    
-            ! Get r-related stuff
-            r_vec = SPREAD(tet_cen(:, i_tile),DIM=2, NCOPIES=N_non_Nb)-tet_cen(:, non_Nb_indices)
+        ALLOCATE(is_midfield(ntet_mid_proc))
+        DO i = 1, ntet_proc
+          i_tile = dom_proc(i)
+        !----------------- CONTRIBUTION FROM EXTERNAL FIELD ------------------!
+          CALL getBfld(tet_cen(1,i_tile), tet_cen(2,i_tile), tet_cen(3,i_tile), Bx, By, Bz)
+          H_app(:,i) = [Bx/mu0, By/mu0, Bz/mu0]
+        !---------------- CONTRIBUTION FROM DISTANT CLUSTERS -----------------!
+          ALLOCATE(r_vec(3,world_size),r_norm(world_size),r_hat(3,world_size),&
+                   H_dipole(3,world_size),mrdotrhat(world_size))
+          r_vec = SPREAD(tet_cen(:,i_tile),DIM=2,NCOPIES=world_size)-r_cluster
+          r_norm = NORM2(r_vec, DIM=1)
+          r_hat = r_vec / SPREAD(r_norm, DIM=1, NCOPIES=3)
+          mrdotrhat = SUM(mom_cluster*r_hat,DIM=1)
+          H_dipole = INV4PI*(3.0*SPREAD(mrdotrhat,DIM=1,NCOPIES=3)*r_hat-mom_cluster)/SPREAD(r_norm**3,DIM=1,NCOPIES=3)
+          WHERE (.NOT. SPREAD(lisfar, DIM=1, NCOPIES=3))
+            H_dipole = 0.0
+          END WHERE
+          H_app(:,i) = H_app(:,i) + SUM(H_dipole,DIM=2)
+          DEALLOCATE(r_vec,r_norm,r_hat,H_dipole,mrdotrhat)
+        !---------------- CONTRIBUTION FROM MID-FIELD DIPOLES ----------------!
+          ! Get all non-neighbors
+          is_midfield = .FALSE.
+          DO j = 1, ntet_mid_proc
+            j_tile = dom_mid_proc(j)
+            is_midfield(j) = .NOT. ANY(Nb(1:NbC(i), i) .EQ. j_tile)
+          END DO
+          dom_mid_nn = PACK(dom_mid_proc, MASK=is_midfield)
+          n_mid_nn = SIZE(dom_mid_nn)
+
+          IF (n_mid_nn.GT.0) THEN
+            ALLOCATE(r_vec(3,n_mid_nn),r_norm(n_mid_nn),r_hat(3,n_mid_nn),&
+                     H_dipole(3,n_mid_nn),mrdotrhat(n_mid_nn),mom_nn(3,n_mid_nn))      
+            r_vec = SPREAD(tet_cen(:,i_tile),DIM=2,NCOPIES=n_mid_nn)-tet_cen(:,dom_mid_nn)
             r_norm = NORM2(r_vec, DIM=1)
-            r3_inv = 1.0 / (r_norm**3)
             r_hat = r_vec / SPREAD(r_norm, DIM=1, NCOPIES=3)
-            DEALLOCATE(r_vec,r_norm)
+            mom_nn = M(:,dom_mid_nn)*SPREAD(tet_vol(dom_mid_nn), DIM=1, NCOPIES=3)
+            mrdotrhat = SUM(mom_nn*r_hat,DIM=1)
+            H_dipole = INV4PI*(3.0*SPREAD(mrdotrhat,DIM=1,NCOPIES=3)*r_hat-mom_nn)/SPREAD(r_norm**3,DIM=1,NCOPIES=3)
+            H_app(:,i) = H_app(:,i) + SUM(H_dipole,DIM=2)              
+            DEALLOCATE(r_vec,r_norm,r_hat,H_dipole,mrdotrhat,mom_nn)
+          END IF
+          DEALLOCATE(dom_mid_nn)
 
-            ! Physics
-            ALLOCATE(moments(3,N_non_Nb),mrdotrhat(N_non_Nb),H_dipole(3,N_non_Nb))
-            moments = M(:,non_Nb_indices)*SPREAD(tet_vol(non_Nb_indices),DIM=1,NCOPIES=3)
-            mrdotrhat = SUM(moments*r_hat,DIM=1)
-            H_dipole = INV4PI*(3.0*SPREAD(mrdotrhat,DIM=1,NCOPIES=3)*r_hat-moments)*SPREAD(r3_inv,DIM=1,NCOPIES=3)
-            H_app(:,i) = H_app(:,i) + SUM(H_dipole,DIM=2)
-
-            DEALLOCATE(r_hat,r3_inv,moments,mrdotrhat,H_dipole,non_Nb_indices)
-
-          END DO  
-        END IF
+        END DO  
+        DEALLOCATE(is_midfield)
         !---------------------------------------------------------------------!
       END DO
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !---------------------------- END PRIMARY LOOP -------------------------------!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      DEALLOCATE(Mnorm,res_M,res_M_prev)
+      DEALLOCATE(Mnorm,res_M,res_M_prev,H_prev,lambda_n)
       RETURN
       END SUBROUTINE mumaterial_iterate_M
 
@@ -1491,21 +1672,20 @@
       END FUNCTION mumaterial_gettetvolume
 
 
-      SUBROUTINE mumaterial_getneighbours(mystart, myend)
+      SUBROUTINE mumaterial_getneighbours()
 
-      INTEGER, INTENT(in) :: mystart, myend
       INTEGER :: i, j, k, c, i_tile
       DOUBLE PRECISION, ALLOCATABLE ::  dist(:), dx(:,:)
       LOGICAL, ALLOCATABLE :: mask(:)
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      ALLOCATE(NbC(mystart:myend),mask(ntet),dist(ntet),dx(3,ntet))
+      ALLOCATE(NbC(1:ntet_proc),mask(ntet),dist(ntet),dx(3,ntet))
       NbC = 0
       
       ! Get largest neighbor count for allocation first
-      DO i = mystart, myend
-        i_tile = mydom(i)
+      DO i = 1, ntet_proc
+        i_tile = dom_shar(i)
         dx(1,:) = tet_cen(1,:) - tet_cen(1,i_tile)
         dx(2,:) = tet_cen(2,:) - tet_cen(2,i_tile)
         dx(3,:) = tet_cen(3,:) - tet_cen(3,i_tile)
@@ -1514,11 +1694,11 @@
       END DO
 
       maxNbC = MAXVAL(NbC)
-      ALLOCATE(Nb(maxNbC,mystart:myend))
+      ALLOCATE(Nb(maxNbC,1:ntet_proc))
 
       ! Actual neighbour loop
-      DO i = mystart, myend
-        i_tile = mydom(i)
+      DO i = 1, ntet_proc
+        i_tile = dom_shar(i)
         dx(1,:) = tet_cen(1,:) - tet_cen(1,i_tile)
         dx(2,:) = tet_cen(2,:) - tet_cen(2,i_tile)
         dx(3,:) = tet_cen(3,:) - tet_cen(3,i_tile)
@@ -1536,9 +1716,9 @@
 
       END SUBROUTINE mumaterial_getneighbours
 
-      SUBROUTINE mumaterial_split_n(boxsize,boxin,ncoords,coords,tol,delta_start,targ,box1,box2)
+      SUBROUTINE mumaterial_split(boxsize,boxin,ncoords,coords,tol,delta_start,targ,box1,box2)
       !-----------------------------------------------------------------------
-      ! mumaterial_split_n: Divides a set of neighboring tetrahedrons into two
+      ! mumaterial_split: Divides a set of neighboring tetrahedrons into two
       ! approximately equally sized groups of neighboring tetrahedrons
       !-----------------------------------------------------------------------
       ! param[in]: coords. coordinates of tetrahedrons given in boxin
@@ -1561,19 +1741,29 @@
       DOUBLE PRECISION, INTENT(in) :: tol, delta_start, targ
       INTEGER, ALLOCATABLE, INTENT(out) :: box1(:), box2(:) 
 
-      INTEGER :: iter, dim, itermax, ptsinbox1, ptsinbox2
+      INTEGER :: iter, dim, ptsinbox1, ptsinbox2
+      INTEGER :: itermax = 201
       DOUBLE PRECISION :: r_tet(3,boxsize), r_com(3)
       DOUBLE PRECISION, ALLOCATABLE :: dx(:,:)
       DOUBLE PRECISION :: r_median, diff_prev, diff, dr
       DOUBLE PRECISION :: d1, d2, d_avg, d_avg_prev
       INTEGER, ALLOCATABLE :: box1_temp(:), box2_temp(:)
-      LOGICAL :: lnochange
+      LOGICAL :: lnochange, lsuccess
+
+      ! Check for < 2 elements
+      IF (boxsize.LT.2) THEN
+        WRITE(6,*) "  MUMAT_INIT ERROR: MUMATERIAL_SPLIT RECEIVED BOX WITH NOT ENOUGH ELEMENTS"
+        WRITE(6,*) "  MUMAT_INIT ERROR: FORCE STOPPING CALCULATIONS"
+#if defined(MPI_OPT)
+        CALL MPI_ABORT(MPI_COMM_WORLD, 1, ierr_mpi)
+#else
+        STOP
+#endif
+      END IF
 
       r_tet = coords(:,boxin)
-      itermax = 201
-
       d_avg_prev = 1E+12
-      ALLOCATE(box1(1),box2(1))
+      lsuccess = .FALSE.
 
       ! Loop over each direction
       DO dim = 1, 3
@@ -1582,10 +1772,10 @@
         lnochange = .FALSE.
         diff_prev = 100
 
-        r_median = (MINVAL(r_tet(dim,:))+MAXVAL(r_tet(dim,:)))/2 ! initial estimate of median
+        r_median = (MINVAL(r_tet(dim,:))+MAXVAL(r_tet(dim,:)))*targ ! initial estimate of median
         DO iter = 1, itermax
           ptsinbox1 = COUNT(r_tet(dim,:).LT.r_median)
-          diff = ABS(DBLE(ptsinbox1)/boxsize-targ) ! deviation from 50/50 split
+          diff = ABS(DBLE(ptsinbox1)/boxsize-targ) ! deviation from target split
           IF (diff.LE.tol) EXIT ! within tolerance
           IF (ABS(diff-diff_prev).LE.small) THEN 
             IF (lnochange) EXIT ! no improvement
@@ -1601,9 +1791,12 @@
 
         ptsinbox1 = COUNT(r_tet(dim,:).LT.r_median)
         ptsinbox2 = boxsize - ptsinbox1
-        ALLOCATE(box1_temp(ptsinbox1),box2_temp(ptsinbox2))
+        IF (ptsinbox1.EQ.0 .OR. ptsinbox2.EQ.0) THEN
+          CYCLE
+        END IF
 
         ! Make boxes
+        ALLOCATE(box1_temp(ptsinbox1),box2_temp(ptsinbox2))
         box1_temp = PACK(boxin, r_tet(dim,:).LT.r_median)
         box2_temp = PACK(boxin, r_tet(dim,:).GE.r_median)
 
@@ -1623,118 +1816,27 @@
 
         ! Update if dimension is better
         IF (d_avg.LT.d_avg_prev) THEN
-          DEALLOCATE(box1, box2)
+          IF (dim.GT.1) DEALLOCATE(box1, box2)
           ALLOCATE(box1(ptsinbox1),box2(ptsinbox2))
           box1 = box1_temp
           box2 = box2_temp
           d_avg_prev = d_avg
+          lsuccess=.TRUE.
         END IF
         DEALLOCATE(box1_temp, box2_temp)
-        
       END DO
-      DEALLOCATE(r_tet)
 
-      END SUBROUTINE mumaterial_split_n
+      IF (.NOT. lsuccess) THEN
+        WRITE(6,*) "  MUMAT_INIT WARNING: MUMATERIAL_SPLIT COULD NOT FIND VALID SPLIT" 
+        WRITE(6,*) "  MUMAT_INIT WARNING: FALLING BACK TO SPLITTING BY INDEX" 
+        ptsinbox1 = boxsize/2
+        ptsinbox2 = boxsize-ptsinbox1
+        ALLOCATE(box1(ptsinbox1),box2(ptsinbox2))
+        box1 = boxin(1:ptsinbox1)
+        box2 = boxin(ptsinbox1+1:boxsize)
+      END IF
 
-      SUBROUTINE mumaterial_split(boxsize,boxin,ncoords,coords,tol,delta_start,targ,box1,box2)
-      !-----------------------------------------------------------------------
-      ! mumaterial_split_n: Divides a set of neighboring tetrahedrons into two
-      ! approximately equally sized groups of neighboring tetrahedrons
-      !-----------------------------------------------------------------------
-      ! param[in]: coords. coordinates of tetrahedrons given in boxin
-      ! param[in]: tol. allowed deviation from target split
-      ! param[in]: delta_start. initial increment in dim
-      ! param[in]: targ. relative size of box1 out compared to boxin.
-      ! param[out]: box1. collection of half the input tets.
-      ! param[out]: box2. collection of other half of input tets.
-      !-----------------------------------------------------------------------
-#if defined(MPI_OPT)
-      USE mpi
-      USE mpi_params
-#endif     
-
-      IMPLICIT NONE
-
-      INTEGER, INTENT(in) :: boxsize, ncoords
-      DOUBLE PRECISION, DIMENSION(3,ncoords), INTENT(in) :: coords
-      INTEGER, INTENT(in)  :: boxin(boxsize)
-      DOUBLE PRECISION, INTENT(in) :: tol, delta_start, targ
-      INTEGER, ALLOCATABLE, INTENT(out) :: box1(:), box2(:) 
-
-      INTEGER :: iter, dim, itermax, ptsinbox1, ptsinbox2
-      DOUBLE PRECISION :: r_tet(3,boxsize), r_com(3)
-      DOUBLE PRECISION, ALLOCATABLE :: dx(:,:)
-      DOUBLE PRECISION :: r_median, diff_prev, diff, dr
-      DOUBLE PRECISION :: d1, d2, d_avg, d_avg_prev
-      INTEGER, ALLOCATABLE :: box1_temp(:), box2_temp(:)
-      LOGICAL :: lnochange
-
-      r_tet = coords(:,boxin)
-      itermax = 201
-
-      d_avg_prev = 1E+12
-      ALLOCATE(box1(1),box2(1))
-
-      ! Loop over each direction
-      DO dim = 1, 3
-            ! Find median of direction
-            dr = delta_start
-            lnochange = .FALSE.
-            diff_prev = 100
-
-            r_median = (MINVAL(r_tet(dim,:))+MAXVAL(r_tet(dim,:)))/2 ! initial estimate of median
-            DO iter = 1, itermax
-            ptsinbox1 = COUNT(r_tet(dim,:).LT.r_median)
-            diff = ABS(DBLE(ptsinbox1)/boxsize-targ) ! deviation from 50/50 split
-            IF (diff.LE.tol) EXIT ! within tolerance
-            IF (ABS(diff-diff_prev).LE.small) THEN 
-            IF (lnochange) EXIT ! no improvement
-            lnochange = .TRUE.
-            ELSE
-            lnochange = .FALSE.
-            END IF
-            ! Estimate new median
-            IF (diff>diff_prev) dr = -0.5*dr ! reverse direction, decrease step size
-            r_median = r_median + dr
-            diff_prev = diff
-            END DO
-
-            ptsinbox1 = COUNT(r_tet(dim,:).LT.r_median)
-            ptsinbox2 = boxsize - ptsinbox1
-            ALLOCATE(box1_temp(ptsinbox1),box2_temp(ptsinbox2))
-
-            ! Make boxes
-            box1_temp = PACK(boxin, r_tet(dim,:).LT.r_median)
-            box2_temp = PACK(boxin, r_tet(dim,:).GE.r_median)
-
-            ! Evaluate distances from center of masses
-            IF (ALLOCATED(dx)) DEALLOCATE(dx)
-            ALLOCATE(dx(3,ptsinbox1))
-            r_com = SUM(coords(:,box1_temp),DIM=2) / ptsinbox1
-            dx = coords(:,box1_temp) - SPREAD(r_com, DIM=2, NCOPIES=ptsinbox1)
-            d1 = SUM(NORM2(dx, DIM=1))/ptsinbox1
-            DEALLOCATE(dx)
-            ALLOCATE(dx(3,ptsinbox2))
-            r_com = SUM(coords(:,box2_temp),DIM=2) / ptsinbox2
-            dx = coords(:,box2_temp) - SPREAD(r_com, DIM=2, NCOPIES=ptsinbox2)
-            d2 = SUM(NORM2(dx, DIM=1))/ptsinbox2
-            d_avg = (d1+d2)/2
-            DEALLOCATE(dx)
-
-            ! Update if dimension is better
-            IF (d_avg.LT.d_avg_prev) THEN
-            DEALLOCATE(box1, box2)
-            ALLOCATE(box1(ptsinbox1),box2(ptsinbox2))
-            box1 = box1_temp
-            box2 = box2_temp
-            d_avg_prev = d_avg
-            END IF
-            DEALLOCATE(box1_temp, box2_temp)
-            
-      END DO
-      DEALLOCATE(r_tet)
-
-      END SUBROUTINE mumaterial_split 
+      END SUBROUTINE mumaterial_split
 
       SUBROUTINE mumaterial_sync_array2d_dbl(array, n1, n2, mystart,myend)
 
@@ -1771,7 +1873,7 @@
 
         
         
-        SUBROUTINE mumaterial_syncM(array, n, outside)
+        SUBROUTINE mumaterial_syncM()
 
 #if defined(MPI_OPT)
       USE mpi
@@ -1780,17 +1882,34 @@
 
       IMPLICIT NONE
 
-      INTEGER, INTENT(in) :: n
-      DOUBLE PRECISION, DIMENSION(3,n), INTENT(inout) :: array
-      INTEGER, DIMENSION(n-domsize), INTENT(in) :: outside
-      INTEGER :: i
+      INTEGER :: i, i_tile
+      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: M_local
 
-      IF (shar_rank.EQ.0) THEN
-        DO i = 1, n-domsize
-          array(:,outside(i)) = 0
-        END DO
-        CALL MPI_ALLREDUCE( MPI_IN_PLACE, array, 3*n, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
+      ! First cluster moments
+      IF (shar_rank.EQ.master) THEN
+        mom_cluster = 0.0
       END IF
+
+      ALLOCATE(M_local(3,world_size))
+      M_local = 0.0
+      M_local(:,world_rank) = SUM(M(:, dom_proc(1:ntet_proc)) * &
+                                    SPREAD(tet_vol(dom_proc(1:ntet_proc)), DIM=1, NCOPIES=3), DIM=2)
+      CALL MPI_ALLREDUCE(M_local, mom_cluster, 3*world_size, MPI_DOUBLE_PRECISION, MPI_SUM, comm_shar, ierr_mpi )
+      DEALLOCATE(M_local)
+      IF (shar_rank.EQ.master) THEN
+        CALL MPI_ALLREDUCE(MPI_IN_PLACE, mom_cluster, 3*world_size, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
+      END IF
+
+      ! Global M array
+      ALLOCATE(M_local(3,ntet))
+      M_local = 0.0
+      M_local(:, dom_proc(1:ntet_proc)) = M(:, dom_proc(1:ntet_proc))
+      CALL MPI_ALLREDUCE(M_local, M, 3*ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_shar, ierr_mpi )
+      DEALLOCATE(M_local)
+      IF (shar_rank.EQ.master) THEN
+        CALL MPI_ALLREDUCE(MPI_IN_PLACE, M, 3*ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
+      END IF
+
       CALL MPI_BARRIER( comm_shar, ierr_mpi)
 
       END SUBROUTINE mumaterial_syncM
