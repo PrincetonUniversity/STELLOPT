@@ -1164,7 +1164,7 @@ class THRIFT_plasma_solver():
                 elif value.ndim == 3:
                     setattr(self,name,value[:,mask,:])        
         
-    def create_input_sources_file(self,filename,nt,nrho,tfin):
+    def create_input_sources_file(self,filename,nrho,tgrid):
         # creates 
         
         Zcharge_ions = np.array( [self.plasma_class.Zcharge[ion] for ion in self.plasma_class.ion_species], dtype=int )
@@ -1172,7 +1172,8 @@ class THRIFT_plasma_solver():
         nZ   = self.plasma_class.num_ion_species
         
         self.rho_grid_source = np.linspace(0,1,nrho)
-        self.t_grid_source = np.linspace(0,tfin,nt)
+        self.t_grid_source = tgrid
+        nt = len(tgrid)
         
         SE_out = np.zeros((nrho,nt,nZ+1))
         Sn_out = np.zeros((nrho,nt,nZ+1))
@@ -1196,9 +1197,6 @@ class THRIFT_plasma_solver():
         hf.close()
         
     def add_energy_source_to_input_file(self,filename,which_species,source_type,dVdrho=None,total_power=None,sigma_rho=None,rho_0=None,time_dependent_factor=None,cte_source=None):
-        
-        from scipy.integrate import quad
-        
         try:
             species_id = self.plasma_class.list_of_species.index(which_species) 
         except:
@@ -1210,11 +1208,6 @@ class THRIFT_plasma_solver():
                     print('ERROR: Need to provide total_power [W], dVdrho, sigma_rho and rho_0 for gaussian external source')
                     exit(1) 
                 else:
-                    # integrand = lambda rho: np.exp(-(rho-rho_0)**2/sigma_rho**2) * dVdrho(rho)
-                    # #
-                    # cte = total_power / quad(integrand,0,1)[0]
-                    # #
-                    # source = lambda t,rho: cte * np.exp(-(rho-rho_0)**2/sigma_rho**2)
                     integrand = np.exp(-(self.rho_grid_source - rho_0)**2/sigma_rho**2) * dVdrho(self.rho_grid_source)
                     integrand = integrand.flatten()
                     #
@@ -1249,9 +1242,10 @@ class THRIFT_plasma_solver():
         with h5py.File(filename, 'r+') as f:
             dset = f['S_energy']
             for it,t in enumerate(self.t_grid_source): 
-                dset[:,it,species_id] = source(t)#,self.rho_grid_source)
+                dset[:,it,species_id] = source(t)
                 
-    def add_particle_source_to_input_file(self,filename,which_species,source_type,dVdrho=None,injected_particles_per_sec=None,sigma_rho=None,rho_0=None,time_dependent_factor=None,cte_source=None):
+    def add_particle_source_to_input_file(self,filename,which_species,source_type,dVdrho=None,injected_particles_per_sec=None,
+                                          sigma_rho=None,rho_0=None,time_dependent_factor=None,cte_source=None,source_2D=None):
         
         from scipy.integrate import quad
         
@@ -1265,13 +1259,7 @@ class THRIFT_plasma_solver():
                 if((injected_particles_per_sec is None) or (sigma_rho is None) or (rho_0 is None) or (dVdrho is None)):
                     print('ERROR: Need to provide injected_particles_per_sec, dVdrho, sigma_rho and rho_0 for gaussian external source')
                     exit(1) 
-                else:
-                    # integrand = lambda rho: np.exp(-(rho-rho_0)**2/sigma_rho**2) * dVdrho(rho)
-                    # #
-                    # cte = injected_particles_per_sec / quad(integrand,0,1)[0]
-                    # #
-                    # source = lambda t,rho: cte * np.exp(-(rho-rho_0)**2/sigma_rho**2)
-                    
+                else:                    
                     integrand = np.exp(-(self.rho_grid_source - rho_0)**2/sigma_rho**2) * dVdrho(self.rho_grid_source)
                     integrand = integrand.flatten()
                     #
@@ -1291,6 +1279,20 @@ class THRIFT_plasma_solver():
                     #
                     source = lambda t: time_dependent_factor(t) * cte * np.exp(-(self.rho_grid_source - rho_0)**2/sigma_rho**2)
                     
+            case 'source_2D':
+                if(source_2D is None):
+                    raise ValueError('Need to provide the 2D arrays source_2D')
+                # Check if source_2D has the expected dimensions: nt x nrho
+                nt = len(self.t_grid_source)
+                nrho = len(self.rho_grid_source)
+                if(source_2D.shape != (nt,nrho)):
+                    raise ValueError(f'source_2D array does not have the expected ({nt},{nrho}) shape!')
+                # Save directly in file and leave
+                with h5py.File(filename, 'r+') as f:
+                    dset = f['S_particle']
+                    dset[:,:,species_id] = source_2D.T
+                return
+                            
             case 'constant':
                 if(cte_source is None):
                     print('ERROR: cte_source is needed in order to generate a constant source.')
@@ -1306,7 +1308,7 @@ class THRIFT_plasma_solver():
         with h5py.File(filename, 'r+') as f:
             dset = f['S_particle']
             for it,t in enumerate(self.t_grid_source): 
-                dset[:,it,species_id] = source(t) #,self.rho_grid_source)
+                dset[:,it,species_id] = source(t)
                 
     def convert_to_joblib(self,dt_save=0.1,filename='thrift_transport_simul',thrift_class=None):
         """ This function creates a joblib file with the transport simulation data
