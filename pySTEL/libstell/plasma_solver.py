@@ -493,6 +493,27 @@ class PLASMA_SOLVER:
                 self.particle_fluxes_info['type'] = type
                 self.particle_fluxes_info[type]['Dn'] = Dn
                 
+            case 'diffusive_advective':
+                #checks that Dn and cn are provided. Dn and cn can be floats or functions of rho
+                if(Dn is None or cn is None):
+                    raise ValueError('ERROR: Dn and cn must be provided!')
+                # If are functions, check they are 1D functions
+                if( callable(Dn) ):
+                    import inspect
+                    num_args = len(inspect.signature(Dn).parameters)
+                    if( num_args != 1 ):
+                        raise ValueError('ERROR: Dn must be a 1D function of rho')
+                #
+                if( callable(cn) ):
+                    import inspect
+                    num_args = len(inspect.signature(cn).parameters)
+                    if( num_args != 1 ):
+                        raise ValueError('ERROR: cn must be a 1D function of rho')
+                #  
+                self.particle_fluxes_info['type'] = type
+                self.particle_fluxes_info[type]['Dn'] = Dn
+                self.particle_fluxes_info[type]['cn'] = cn
+                
             case 'normalized_Dn_cn_rho_aLn_dependent':
                 if( (Dn is None) or (cn is None) or (mass_ref_species is None)):
                     raise ValueError('ERROR: Dn, cn and mass_ref_species must be given!')
@@ -780,6 +801,8 @@ class PLASMA_SOLVER:
         # Particle flux function
         if ptype == 'diffusive':
             self.particle_flux_func = self.compute_diffusive_particle_flux
+        elif ptype == 'diffusive_advective':
+            self.particle_flux_func = self.compute_diffusive_advective_particle_flux
         elif ptype == 'dkespenta':
             self.particle_flux_func = self.compute_NEO_particle_flux
         elif ptype == 'normalized_Dn_cn_rho_aLn_dependent':
@@ -1312,6 +1335,50 @@ class PLASMA_SOLVER:
                         
             # this is used in heat flux (Q=-n\chi*dT/dr + convective_fact*T*Gamma_turb)
             self.Gamma_turb[species][it,:] = -Dn * dndr
+            
+    def compute_diffusive_advective_particle_flux(self,it):
+        """
+        Computes the coefficient Dn (diffusion) and cn (convection) which are used to fill the LHS_density matrices. 
+        The coefficient is computed such that the particle flux is
+        Gamma = -Dn*dn/dr + cn*n. Dn and cn can be constants or functions of rho
+        """
+        from scipy.interpolate import CubicSpline
+        
+        r_grid = self.r_grid
+        
+        Dn = self.particle_fluxes_info['diffusive_advective']['Dn']
+        cn = self.particle_fluxes_info['diffusive_advective']['cn']
+        
+        if callable(Dn):
+            Dn = Dn(self.rho_grid)
+        elif isinstance(Dn, (float, int)):
+            pass
+        else:
+            raise ValueError('ERROR: Dn can only be a function of rho or an integer/float!')
+        
+        if callable(cn):
+            cn = cn(self.rho_grid)
+        elif isinstance(cn, (float, int)):
+            pass
+        else:
+            raise ValueError('ERROR: cn can only be a function of rho or an integer/float!')
+        
+        for species in self.list_of_species:
+            
+            # n_r = CubicSpline(r_grid,self.N[species][it,:])
+            n_r = self.N[species][it,:]
+            # dndr = n_r.derivative()
+            # dndr = dndr(r_grid)
+            dndr = akima_derivative(r_grid,n_r)
+            
+            self.Dn[species][it,:] = Dn
+            self.cn[species][it,:] = cn
+            
+            # Force cn(rho=0.0) to be 0.0
+            self.cn[species][it,0] = 0.0
+                        
+            # this is used in heat flux (Q=-n\chi*dT/dr + convective_fact*T*Gamma_turb)
+            self.Gamma_turb[species][it,:] = -Dn * dndr + cn * n_r
             
     def compute_normalized_Dn_cn_rho_aLn_dependent_particle_flux(self,it):
         """
