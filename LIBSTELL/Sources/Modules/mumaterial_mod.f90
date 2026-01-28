@@ -1051,7 +1051,7 @@
       INTEGER :: stype
       INTEGER :: iter_2, maxiter_2
       DOUBLE PRECISION :: lambda_k
-      DOUBLE PRECISION :: H_ext(3), N_self(3,3)
+      DOUBLE PRECISION :: H_i(3), N_self(3,3)
       DOUBLE PRECISION :: H_old(3), H_targ(3), H_new(3), H_norm, res_H(3)
       DOUBLE PRECISION :: M_targ_norm, M_targ(3), M_old(3)
       DOUBLE PRECISION :: res_M_2(3), relM, relH, threshold_2
