@@ -380,7 +380,7 @@
       ! Nullify pointers
       NULLIFY(vertex, tet, tet_cen, tet_vol, tet_edge, state_dex, state_type, &
               constant_mu, constant_mu_o, Mrem, M, H_app, N_store, &
-              r_cluster, mom_cluster, d_cluster, dom_cluster)
+              r_cluster, mom_cluster, d_cluster, dom_clusters)
 
       ! open file, return if fails
       iunit = 327; istat = 0
@@ -529,7 +529,7 @@
       INTEGER :: i,k
 
       IF (lnoiter) THEN
-        RITE(iunit,'(A)') '  SKIPPING MUMAT ITERATIONS'
+        WRITE(iunit,'(A)') '  SKIPPING MUMAT ITERATIONS'
       ELSE 
       WRITE(iunit,'(A)')           ' ---------- MUMAT MPI ----------'
       WRITE(iunit,'(3X,A,I7)')     'MPI Nodes    : ',master_size
@@ -905,9 +905,10 @@
 
         ! Cluster position and diameter
         r_cluster(:,world_rank) = SUM(tet_cen(:,dom_proc(1:ntet_proc)),DIM=2)/ntet_proc 
-        d_cluster(world_rank) = 2.0 * SQRT( SUM(NORM2( &
-                                        tet_cen(:,dom_proc(1:ntet_proc)) - SPREAD(r_cluster(:,world_rank), DIM=2, NCOPIES=ntet_proc),
-                                        & DIM=1)**2) / ntet_proc)
+        d_cluster(world_rank) = 2.0 * SQRT( SUM(
+                                  NORM2(tet_cen(:,dom_proc(1:ntet_proc)) - &
+                                    SPREAD(r_cluster(:,world_rank), DIM=2, NCOPIES=ntet_proc),DIM=1)**2 &
+                                      ) / ntet_proc)
         CALL MPI_ALLREDUCE( MPI_IN_PLACE, r_cluster, 3*world_size, MPI_DOUBLE_PRECISION, MPI_SUM, comm_shar, ierr_mpi )
         CALL MPI_ALLREDUCE( MPI_IN_PLACE, d_cluster,   world_size, MPI_DOUBLE_PRECISION, MPI_SUM, comm_shar, ierr_mpi )
         IF (shar_rank.EQ.master) THEN
