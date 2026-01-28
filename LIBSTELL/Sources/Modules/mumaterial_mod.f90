@@ -905,7 +905,7 @@
 
         ! Cluster position and diameter
         r_cluster(:,world_rank) = SUM(tet_cen(:,dom_proc(1:ntet_proc)),DIM=2)/ntet_proc 
-        d_cluster(world_rank) = 2.0 * SQRT( SUM(
+        d_cluster(world_rank) = 2.0 * SQRT( SUM( &
                                   NORM2(tet_cen(:,dom_proc(1:ntet_proc)) - &
                                     SPREAD(r_cluster(:,world_rank), DIM=2, NCOPIES=ntet_proc),DIM=1)**2 &
                                       ) / ntet_proc)
