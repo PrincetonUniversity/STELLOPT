@@ -1230,7 +1230,9 @@ class LIBSTELL():
 					'mnmax_surface', 'nmax', 'mnd', 'nuv', 'nuv1', 'nuvh', 'nuvh1',\
 					'mnmax_pot']
 		intLen   = [1]*len(intList)
-		realList = ['iota_edge', 'phip_edge', 'curpol', 'cut', 'cup', 'curwt', 'trgwt','alp']
+		realList = ['iota_edge', 'phip_edge', 'curpol', 'cut', 'cup', 'curwt', 'trgwt','alp',\
+					'complexity', 'jsurf_max', 'jsurf_min', 'jsurf_ave', 'jcurvr_min', \
+					'jcurvr_max', 'berr_ave', 'berr_max', 'berr_var', 'bmod_rms', 'bmod_ave']
 		realLen = [1]*len(realList)
 		scalar_data = self.get_module_vars(module_name,booList,booLen,intList,intLen,realList,realLen)
 		# Get 1D Int Arrays

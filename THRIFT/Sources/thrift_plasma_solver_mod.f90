@@ -1067,26 +1067,32 @@ MODULE thrift_plasma_solver_mod
     SUBROUTINE get_beurskens_ions_chi(iion,chi_beurskens)
         !--------------------------------------------------------------
         !--------------------------------------------------------------
-        REAL(rprec) :: mi,qi,B
+        REAL(rprec) :: Bref,mref
         INTEGER, INTENT(IN) :: iion
         INTEGER :: ier,Nr
         REAL(rprec), INTENT(INOUT), DIMENSION(:) :: chi_beurskens
-        REAL(rprec), DIMENSION(:), ALLOCATABLE :: Bsq,chi_gB,dTidrho,X,H,Te,Ti
-
-        mi = Matom_prof(iion)
-        qi = e_charge * Zatom_prof(iion)
+        REAL(rprec), DIMENSION(:), ALLOCATABLE :: chi_gB,dTidrho,X,H,Te,Ti,ni,nref,Tref,Q_gB
 
         Nr = Nr_plasma_solver
 
-        ALLOCATE(Bsq(Nr),chi_gB(Nr),dTidrho(Nr),X(Nr),H(Nr),Te(Nr),Ti(Nr))
-
-        CALL EZspline_interp(bsq_spl,Nr,rho_plasma_grid,Bsq,ier)
+        ALLOCATE(chi_gB(Nr),dTidrho(Nr),X(Nr),H(Nr),Te(Nr),Ti(Nr),ni(Nr),nref(Nr),Tref(Nr),Q_gB(Nr))
 
         Te = plasma_T(1,:)
         Ti = plasma_T(1+iion,:)
+        ni = plasma_N(1+iion,:)
 
-        !chi gyroBohm (for the scaling)
-        chi_gB = (e_charge*Ti/mi)**1.5 * mi*mi / (qi**2 * Bsq) / eq_Aminor
+        ! Currently we assume that T_ref~T_j and n_ref~n_j
+        nref = ni
+        Tref = Ti
+        mref = mass_ref_species
+        Bref = eq_phiedge / (pi*eq_Aminor**2)
+
+        !Q gyroBohm (for the scaling)
+        Q_gB = 2.0_rprec * SQRT(2.0_rprec) * nref * SQRT(mref) * (e_charge*Tref)**2.5_rprec
+        Q_gB = Q_gB / (e_charge*Bref*eq_Aminor)**2
+        
+        !chi gyroBohm
+        chi_gB = Q_gB * eq_Aminor/(ni*e_charge*Ti)
         
         ! dimensionless Beurskens model
         ! CALL EZspline_derivative1_array_r8(T_splines(1+iion), 1, Nr,rho_plasma_grid,dTidrho,ier)
@@ -1100,7 +1106,7 @@ MODULE thrift_plasma_solver_mod
         
         chi_beurskens = chi_gB * stiffness_beurskens * X * H * (Te/Ti)**alpha_beurskens
 
-        DEALLOCATE(Bsq,chi_gB,dTidrho,X,H,Te,Ti)
+        DEALLOCATE(chi_gB,dTidrho,X,H,Te,Ti,ni,nref,Tref,Q_gB)
         
         RETURN
 
@@ -1110,33 +1116,31 @@ MODULE thrift_plasma_solver_mod
         !--------------------------------------------------------------
         !--------------------------------------------------------------
         ! Computes chi by multiplying normalized chi with chi_gB
-        REAL(rprec) :: mi,qi,B
+        REAL(rprec) :: Bref,mref
         INTEGER, INTENT(IN) :: ispecies
         INTEGER :: ier,Nr,iion
         REAL(rprec), INTENT(INOUT), DIMENSION(:) :: chi_external
-        REAL(rprec), DIMENSION(:), ALLOCATABLE :: Bsq,chi_gB,dTdrho,T,Te,Ti,aLT,chi_normalized
+        REAL(rprec), DIMENSION(:), ALLOCATABLE :: chi_gB,dTdrho,T,n,Te,Ti,aLT,chi_normalized,nref,Tref,Q_gB
 
         Nr = Nr_plasma_solver
-        ALLOCATE(Bsq(Nr),chi_gB(Nr),dTdrho(Nr),T(Nr),Te(Nr),Ti(Nr),aLT(Nr),chi_normalized(Nr))
+        ALLOCATE(chi_gB(Nr),dTdrho(Nr),T(Nr),n(Nr),Te(Nr),aLT(Nr),chi_normalized(Nr),nref(Nr),Tref(Nr),Q_gB(Nr))
 
-        ! In case of electrons, use chi_gB of the 1st ion
-        IF(ispecies==1) THEN 
-            iion=1
-            Ti = plasma_T(1,:)
-        ELSE
-            iion=ispecies-1
-            Ti = plasma_T(ispecies,:)
-        ENDIF
-        mi = Matom_prof(iion)
-        qi = e_charge * Zatom_prof(iion)
-
-        T = plasma_T(ispecies,:)
         Te = plasma_T(1,:)
+        T = plasma_T(ispecies,:)
+        n = plasma_N(ispecies,:)
 
-        CALL EZspline_interp(bsq_spl,Nr,rho_plasma_grid,Bsq,ier)
+        ! Currently we assume that T_ref~T_j and n_ref~n_j
+        nref = n
+        Tref = T
+        mref = mass_ref_species
+        Bref = eq_phiedge / (pi*eq_Aminor**2)
 
-        !chi gyroBohm (for the scaling)
-        chi_gB = (e_charge*Ti/mi)**1.5 * mi*mi / (qi**2 * Bsq) / eq_Aminor
+        !Q gyroBohm (for the scaling)
+        Q_gB = 2.0_rprec * SQRT(2.0_rprec) * nref * SQRT(mref) * (e_charge*Tref)**2.5_rprec
+        Q_gB = Q_gB / (e_charge*Bref*eq_Aminor)**2
+        
+        !chi gyroBohm
+        chi_gB = Q_gB * eq_Aminor/(n*e_charge*T)
 
         ! CALL EZspline_derivative1_array_r8(T_splines(1+iion), 1, Nr,rho_plasma_grid,dTdrho,ier)
         ! IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'interpolating: T_splines',ier) 
@@ -1146,9 +1150,8 @@ MODULE thrift_plasma_solver_mod
         ! get normalized chi
         CALL EZspline_interp(chi_normalized_splines(ispecies),Nr,rho_plasma_grid,aLT,chi_normalized,ier)
         chi_external = chi_gB * chi_normalized * (Te/T)**alpha_chi_external
-        ! print *, chi_normalized
 
-        DEALLOCATE(Bsq,chi_gB,dTdrho,T,Te,Ti,aLT,chi_normalized)
+        DEALLOCATE(chi_gB,dTdrho,T,n,Te,aLT,chi_normalized,nref,Tref,Q_gB)
         
         RETURN
 
@@ -1241,7 +1244,7 @@ MODULE thrift_plasma_solver_mod
         REAL(rprec), INTENT(in) :: t,te_eV,ne,ti_eV,ni,max_dp,max_dn
         CHARACTER(len = 200) :: progress_str
 
-        WRITE(progress_str,'(1X,F6.3,3X,I2,6X,F7.3,11X,ES8.2,11X,F7.3,13X,ES8.2,12X,ES8.2,11X,ES8.2)') &
+        WRITE(progress_str,'(1X,F7.3,3X,I2,6X,F7.3,11X,ES8.2,11X,F7.3,13X,ES8.2,12X,ES8.2,11X,ES8.2)') &
                   t,nsub,te_eV/1000,ne,ti_eV/1000,ni,max_dp,max_dn
         WRITE(ilogplasma,'(A)') TRIM(progress_str)
 
@@ -1261,11 +1264,11 @@ MODULE thrift_plasma_solver_mod
         ! Ion database
         REAL(rprec), PARAMETER :: DA = 1.66053906660E-27
         CHARACTER(len=10), PARAMETER :: names(*) = [ &
-            'hydrogen  ', 'deuterium ', 'tritium   ', 'helium3   ', 'helium4   ', 'tungsten74' ]
+            'hydrogen  ', 'deuterium ', 'tritium   ', 'helium3   ', 'helium4   ','neon      ', 'tungsten74' ]
         REAL(rprec), PARAMETER :: mass_database(*) = [ &
             1.007276466621_rprec, 2.01410177811_rprec, 3.01604928_rprec, &
-            3.0160293_rprec, 4.002603254_rprec, 183.84_rprec ]
-        REAL(rprec), PARAMETER :: Zcharge_database(*) = [ 1., 1., 1., 2., 2., 74. ]
+            3.0160293_rprec, 4.002603254_rprec, 20.1797_rprec, 183.84_rprec ]
+        REAL(rprec), PARAMETER :: Zcharge_database(*) = [ 1., 1., 1., 2., 2., 10., 74. ]
 
         DO i = 1, num_ions
             found = .false.
