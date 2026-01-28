@@ -95,8 +95,9 @@
       ! magnetics variables
       INTEGER, POINTER, PRIVATE :: state_dex(:), state_type(:)
       DOUBLE PRECISION, POINTER, PRIVATE :: constant_mu(:), constant_mu_o(:)
-      DOUBLE PRECISION, POINTER, PRIVATE :: M(:,:), H_app(:,:), Mrem(:,:)
+      DOUBLE PRECISION, POINTER, PRIVATE :: M(:,:), Mrem(:,:)
       DOUBLE PRECISION, DIMENSION(:,:,:,:), POINTER, PRIVATE :: N_store
+      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: H_app
       DOUBLE PRECISION, DIMENSION(:,:,:), ALLOCATABLE :: inv_mat_local
       DOUBLE PRECISION, PRIVATE :: mu0
       INTEGER, PRIVATE :: nstate
@@ -379,7 +380,7 @@
 
       ! Nullify pointers
       NULLIFY(vertex, tet, tet_cen, tet_vol, tet_edge, state_dex, state_type, &
-              constant_mu, constant_mu_o, Mrem, M, H_app, N_store, &
+              constant_mu, constant_mu_o, Mrem, M, N_store, &
               r_cluster, mom_cluster, d_cluster, dom_clusters)
 
       ! open file, return if fails
@@ -963,8 +964,7 @@
       ! Calculate H_app
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Calculating H_app"
-      NULLIFY(H_app)
-      ALLOCATE(H_app(3,1:ntet_proc))
+      ALLOCATE(H_app(3,ntet_proc))
       H_app(:,:) = 0.0
       DO i = 1, ntet_proc
         i_tile = dom_proc(i)
@@ -981,7 +981,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Calculating N_store"
       NULLIFY(N_store)
-      ALLOCATE(N_store(3,3,maxNbC,1:ntet_proc))
+      ALLOCATE(N_store(3,3,maxNbC,ntet_proc))
       N_store(:,:,:,:) = 0.0
       DO i = 1, ntet_proc
         i_tile = dom_proc(i)
@@ -994,7 +994,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Calculate inv_mat_local for constant-mu-cases
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      ALLOCATE(inv_mat_local(3,3,1:ntet_proc))
+      ALLOCATE(inv_mat_local(3,3,ntet_proc))
       inv_mat_local = 0.0
       DO i = 1, ntet_proc
         i_tile = dom_proc(i)
@@ -1049,12 +1049,12 @@
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: lambda_n
       !----------------------- SECONDARY PICARD LOOP -------------------------!
       INTEGER :: stype
-      INTEGER :: iter_2, maxiterH
+      INTEGER :: iter_2, maxiter_2
       DOUBLE PRECISION :: lambda_k
       DOUBLE PRECISION :: H_ext(3), N_self(3,3)
       DOUBLE PRECISION :: H_old(3), H_targ(3), H_new(3), H_norm, res_H(3)
       DOUBLE PRECISION :: M_targ_norm, M_targ(3), M_old(3)
-      DOUBLE PRECISION :: res_M_2(3), relM, relH
+      DOUBLE PRECISION :: res_M_2(3), relM, relH, threshold_2
       DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: H_prev
       DOUBLE PRECISION :: dH_rel_max, dH(3), dH_norm, H_norm_prev
       LOGICAL :: lgoodsec
@@ -1062,6 +1062,7 @@
       DOUBLE PRECISION :: M_rem_norm
       DOUBLE PRECISION :: u_ea(3), u_oa_1(3), u_oa_2(3), mu_ea, mu_oa
       !------------------ BACKGROUND FIELD CALCULATION -----------------------!
+      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE  :: H_ext
       LOGICAL, DIMENSION(:), ALLOCATABLE             :: is_midfield
       INTEGER, DIMENSION(:), ALLOCATABLE             :: dom_mid_nn
       INTEGER                                        :: n_mid_nn
@@ -1082,15 +1083,18 @@
       !-----------------------------------------------------------------------!
 
       ! Allocate helpers
-      ALLOCATE(Mnorm(1:ntet_proc))
-      ALLOCATE(res_M(3,1:ntet_proc),res_M_prev(3,1:ntet_proc))
-      ALLOCATE(H_prev(3,1:ntet_proc))
-      ALLOCATE(lambda_n(1:ntet_proc))
-      maxiterH = maxiter
+      ALLOCATE(Mnorm(ntet_proc))
+      ALLOCATE(res_M(3,ntet_proc),res_M_prev(3,ntet_proc))
+      ALLOCATE(H_prev(3,ntet_proc))
+      ALLOCATE(lambda_n(ntet_proc))
+      ALLOCATE(H_ext(3,ntet_proc))
+      maxiter_2 = 5000
+      threshold_2 = 1E-6
       Mnorm = 1.0E-5
       lambda_n = lambdaStart
       res_M = 0.0
       H_prev = 0.0
+      H_ext = H_app
       iter_n = 0
       dH_rel_max = 0.1
 
@@ -1110,20 +1114,20 @@
         DO i = 1, ntet_proc
           ! Get total field without contribution from self
           i_tile = dom_proc(i)  ! Tile index in global array
-          H_ext = H_app(:,i) ! Non-neighbors and external sourcess
+          H_i = H_ext(:,i) ! Non-neighbors and external sources
           DO j = 1, NbC(i)   ! Get full N.M field from neighbors
             j_tile = Nb(j,i)
             IF (j_tile.EQ.i_tile) THEN ! Found N_self
               N_self = N_store(:,:,j,i)
               CYCLE
             END IF
-            H_ext = H_ext + MATMUL(N_store(:,:,j,i), M(:,j_tile))
+            H_i = H_i + MATMUL(N_store(:,:,j,i), M(:,j_tile))
           END DO
 
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !------------------------- SECONDARY LOOP --------------------------!
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!      
-          H_new = H_ext
+          H_new = H_i
           iter_2 = 0
           stype = state_type(state_dex(i_tile))
           M_targ = 0.0
@@ -1159,7 +1163,7 @@
                                      + (mu_oa-1)*DOT_PRODUCT(H_new,u_oa_1)*u_oa_1 &
                                      + (mu_oa-1)*DOT_PRODUCT(H_new,u_oa_2)*u_oa_2
                 ! Update H-field
-                H_targ = H_ext + MATMUL(N_self, M_targ)
+                H_targ = H_i + MATMUL(N_self, M_targ)
                 res_H = H_targ - H_old
                 H_new = H_old + lambda_k * res_H
 
@@ -1168,8 +1172,8 @@
                 relH = NORM2(res_H  )/MAX(NORM2(H_targ), small)
 
                 ! Exit loop if converged or max iter exceeded
-                IF (((relH.LE.threshold).AND.(relM.LE.threshold)) & 
-                    .OR.(iter_2.GE.maxIterH)) THEN
+                IF (((relH.LE.threshold_2).AND.(relM.LE.threshold_2)) & 
+                    .OR.(iter_2.GE.maxiter_2)) THEN
                   ! Cap change in H
                   H_norm_prev = NORM2(H_prev(:,i))
                   dH = H_new-H_prev(:,i)
@@ -1184,7 +1188,7 @@
                   M_targ = (M_rem_norm + (mu_ea-1)*DOT_PRODUCT(H_new,u_ea))*u_ea &
                                        + (mu_oa-1)*DOT_PRODUCT(H_new,u_oa_1)*u_oa_1 &
                                        + (mu_oa-1)*DOT_PRODUCT(H_new,u_oa_2)*u_oa_2
-                  IF (iter_2.GT.maxiterH)  WRITE(6,*) "  Exceeded maxiterH on tile ", i_tile                  
+                  IF (iter_2.GT.maxiter_2)  WRITE(6,*) "  Exceeded maxiter_2 on tile ", i_tile                  
                   EXIT
                 END IF
               END DO
@@ -1206,7 +1210,7 @@
                 END IF
 
                 ! Update H-field
-                H_targ = H_ext + MATMUL(N_self, M_targ)
+                H_targ = H_i + MATMUL(N_self, M_targ)
                 res_H = H_targ - H_old
                 H_new = H_old + lambda_k * res_H
                 
@@ -1215,8 +1219,8 @@
                 relH = NORM2(res_H  )/MAX(NORM2(H_targ), small)
                 
                 ! Exit loop if converged or max iter exceeded
-                IF (((relH.LE.threshold).AND.(relM.LE.threshold)) & 
-                    .OR.(iter_2.GE.maxIterH)) THEN
+                IF (((relH.LE.threshold_2).AND.(relM.LE.threshold_2)) & 
+                    .OR.(iter_2.GE.maxiter_2)) THEN
                   ! Cap change in H
                   H_norm_prev = NORM2(H_prev(:,i))
                   dH = H_new-H_prev(:,i)
@@ -1235,7 +1239,7 @@
                   ELSE
                         M_targ = 0
                   END IF
-                  IF (iter_2.GT.maxiterH)  WRITE(6,*) "  Exceeded maxiterH on tile ", i_tile                  
+                  IF (iter_2.GT.maxiter_2)  WRITE(6,*) "  Exceeded maxiter_2 on tile ", i_tile                  
                   EXIT
                 END IF
               END DO
@@ -1349,11 +1353,9 @@
         !---------------------------------------------------------------------!
         !--------------------- UPDATE BACKGROUND H_APP -----------------------!
         ALLOCATE(is_midfield(ntet_mid_proc))
+        H_ext =  H_app ! Static field using slice
         DO i = 1, ntet_proc
           i_tile = dom_proc(i)
-        !----------------- CONTRIBUTION FROM EXTERNAL FIELD ------------------!
-          CALL getBfld(tet_cen(1,i_tile), tet_cen(2,i_tile), tet_cen(3,i_tile), Bx, By, Bz)
-          H_app(:,i) = [Bx/mu0, By/mu0, Bz/mu0]
         !---------------- CONTRIBUTION FROM DISTANT CLUSTERS -----------------!
           ALLOCATE(r_vec(3,world_size),r_norm(world_size),r_hat(3,world_size),&
                    H_dipole(3,world_size),mrdotrhat(world_size))
@@ -1365,7 +1367,7 @@
           WHERE (.NOT. SPREAD(lisfar, DIM=1, NCOPIES=3))
             H_dipole = 0.0
           END WHERE
-          H_app(:,i) = H_app(:,i) + SUM(H_dipole,DIM=2)
+          H_ext(:,i) = H_ext(:,i) + SUM(H_dipole,DIM=2)
           DEALLOCATE(r_vec,r_norm,r_hat,H_dipole,mrdotrhat)
         !---------------- CONTRIBUTION FROM MID-FIELD DIPOLES ----------------!
           ! Get all non-neighbors
@@ -1386,7 +1388,7 @@
             mom_nn = M(:,dom_mid_nn)*SPREAD(tet_vol(dom_mid_nn), DIM=1, NCOPIES=3)
             mrdotrhat = SUM(mom_nn*r_hat,DIM=1)
             H_dipole = INV4PI*(3.0*SPREAD(mrdotrhat,DIM=1,NCOPIES=3)*r_hat-mom_nn)/SPREAD(r_norm**3,DIM=1,NCOPIES=3)
-            H_app(:,i) = H_app(:,i) + SUM(H_dipole,DIM=2)              
+            H_ext(:,i) = H_ext(:,i) + SUM(H_dipole,DIM=2)              
             DEALLOCATE(r_vec,r_norm,r_hat,H_dipole,mrdotrhat,mom_nn)
           END IF
           DEALLOCATE(dom_mid_nn)
@@ -1398,7 +1400,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !---------------------------- END PRIMARY LOOP -------------------------------!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      DEALLOCATE(Mnorm,res_M,res_M_prev,H_prev,lambda_n)
+      DEALLOCATE(Mnorm,res_M,res_M_prev,H_prev,lambda_n,H_ext)
       RETURN
       END SUBROUTINE mumaterial_iterate_M
 
@@ -1681,7 +1683,7 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      ALLOCATE(NbC(1:ntet_proc),mask(ntet),dist(ntet),dx(3,ntet))
+      ALLOCATE(NbC(ntet_proc),mask(ntet),dist(ntet),dx(3,ntet))
       NbC = 0
       
       ! Get largest neighbor count for allocation first
@@ -1695,7 +1697,7 @@
       END DO
 
       maxNbC = MAXVAL(NbC)
-      ALLOCATE(Nb(maxNbC,1:ntet_proc))
+      ALLOCATE(Nb(maxNbC,ntet_proc))
 
       ! Actual neighbour loop
       DO i = 1, ntet_proc
