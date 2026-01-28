@@ -99,7 +99,7 @@
       DOUBLE PRECISION, DIMENSION(:,:,:,:), POINTER, PRIVATE :: N_store
       DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: H_app
       DOUBLE PRECISION, DIMENSION(:,:,:), ALLOCATABLE :: inv_mat_local
-      DOUBLE PRECISION, PRIVATE :: mu0
+      DOUBLE PRECISION, PRIVATE :: mu0 = 16.0D-7 * ATAN(1.d0)
       INTEGER, PRIVATE :: nstate
       TYPE(stateFunctionType), PRIVATE, ALLOCATABLE :: stateFunction(:)
 
@@ -356,7 +356,8 @@
       END IF
 
       ! Default parameters for no MPI
-      shar_rank = 0; master_rank = 0; master_size = 1; world_size = 1
+      world_rank = 0; shar_rank = 0; master_rank = 0 
+      world_size = 1; shar_size = 1; master_size = 1
       lismaster = .TRUE.; ldosync = .FALSE. 
 
       ! Set up MPI parameters properly now
@@ -365,7 +366,8 @@
         lismaster = .FALSE.; master_rank = 1
         CALL MPI_COMM_RANK( comm_world, world_rank, ierr_mpi)
         CALL MPI_COMM_SIZE( comm_world, world_size, ierr_mpi)
-        CALL MPI_COMM_RANK( comm_shar,  shar_rank,  ierr_mpi )
+        CALL MPI_COMM_RANK( comm_shar,  shar_rank,  ierr_mpi)
+        CALL MPI_COMM_SIZE( comm_shar,  shar_size,  ierr_mpi)
         IF (shar_rank.eq.0) THEN
           CALL MPI_COMM_RANK( comm_master, master_rank, ierr_mpi )
           CALL MPI_COMM_SIZE( comm_master, master_size, ierr_mpi )
@@ -375,8 +377,6 @@
         ldosync = (master_size.GE.2) 
       END IF
 #endif
-
-      mu0 = 16.0D-7 * ATAN(1.d0)
 
       ! Nullify pointers
       NULLIFY(vertex, tet, tet_cen, tet_vol, tet_edge, state_dex, state_type, &
@@ -797,7 +797,6 @@
       dom_proc = dom_shar
 #if defined(MPI_OPT)   
       IF (lcomm) THEN
-        CALL MPI_COMM_SIZE(comm_shar, shar_size, ierr_mpi)
         IF (shar_size.GT.1) THEN
           IF (shar_rank.EQ.master) THEN 
             ! Set up work initially

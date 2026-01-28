@@ -74,7 +74,7 @@
       CALL mumaterial_setverb(lismaster)
       !CALL mumaterial_debug(lismaster,lissubmaster,.TRUE.)
       CALL mumaterial_debug(.FALSE.,.FALSE.,.FALSE.)
-
+      CALL mumaterial_free()
       ! Read the mu materials file
       CALL mumaterial_load(TRIM(mumat_string),istat, MPI_COMM_MUSHARE, MPI_COMM_MUMASTER, MPI_COMM_BEAMS)
 
