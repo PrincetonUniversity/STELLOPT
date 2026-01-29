@@ -127,8 +127,7 @@
       INTEGER, PRIVATE :: comm_shar,   shar_rank,   shar_size, &
                           comm_master, master_rank, master_size, &
                           comm_world,  world_rank,  world_size, &
-                          color, ierr_mpi
-      INTEGER, PRIVATE :: master = 0
+                          color
       LOGICAL, PRIVATE :: lcomm, lismaster, ldosync
 
       ! MPI windows
@@ -231,10 +230,10 @@
       IF (ASSOCIATED(vertex))        CALL mpidealloc(vertex,win_vertex)
       IF (ASSOCIATED(tet_cen))       CALL mpidealloc(tet_cen,win_tet_cen)
       IF (ASSOCIATED(tet_vol))       CALL mpidealloc(tet_vol,win_tet_vol)
-      IF (ASSOCIATED(tet_rad))      CALL mpidealloc(tet_rad,win_tet_rad)
+      IF (ASSOCIATED(tet_rad))       CALL mpidealloc(tet_rad,win_tet_rad)
       IF (ASSOCIATED(M))             CALL mpidealloc(M,win_M)
       ! TODO: Remove once allocated locally (Make sure code works beforehand)
-      IF (ASSOCIATED(Mrem))          CALL mpidealloc(,Mrem,win_Mrem)
+      IF (ASSOCIATED(Mrem))          CALL mpidealloc(Mrem,win_Mrem)
       IF (ASSOCIATED(r_cluster))     CALL mpidealloc(r_cluster,win_r_cluster)
       IF (ASSOCIATED(mom_cluster))   CALL mpidealloc(mom_cluster,win_mom_cluster)
       IF (ASSOCIATED(d_cluster))     CALL mpidealloc(d_cluster,win_d_cluster)
@@ -661,12 +660,12 @@
         myend = ntet
       END IF
 
-      tet_cen(:,mystart:myend) = SUM(vertex(:,tet(:,mystart:myend)), DIM=2) / 4.d0
       DO i = mystart, myend
-        tet_vol(i) = mumaterial_gettetvolume( &
-            vertex(:,tet(1,i)),vertex(:,tet(2,i)), vertex(:,tet(3,i)),vertex(:,tet(4,i)))
+          tet_cen(:,i) = SUM(vertex(:,tet(:,i)), DIM=2) / 4.d0
+          tet_vol(i) = mumaterial_gettetvolume( &
+              vertex(:,tet(1,i)),vertex(:,tet(2,i)), vertex(:,tet(3,i)),vertex(:,tet(4,i)))
+          tet_rad(i) = SQRT(6.0)/12.d0*(6.d0*SQRT(2.0)*tet_vol(i))**(1.0/3.0)
       END DO
-      tet_rad(mystart:myend) = SQRT(6.0)/12.d0*(6.d0*SQRT(2.0)*tet_vol(mystart:myend))**(1.0/3.0)
 
 #if defined(MPI_OPT)
     CALL MPI_ALLREDUCE( MPI_IN_PLACE, tet_cen, 3*ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_world, ierr_mpi )

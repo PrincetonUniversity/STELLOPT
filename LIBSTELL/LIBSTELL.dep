@@ -1374,6 +1374,7 @@ qsort.o :
 
 mumaterial_mod.o : \
       mpi_params.o \
+      mpi_sharmem.o \
       safe_open_mod.o \
       qsort.o
       
