@@ -149,7 +149,7 @@
             CALL MUMATERIAL_INIT_NEW(beams3d_BCART, offset)
       END IF
       ! Output magnetics file
-      IF (lmumat_writemagfile) CALL mumaterial_writemag()
+      IF (lmumat_writemagfile) CALL mumaterial_writemag(id_string)
 
       ! Break up the Work
       CALL MPI_CALC_MYRANGE(MPI_COMM_BEAMS, 1, nr*nphi*nz, mystart, myend)
