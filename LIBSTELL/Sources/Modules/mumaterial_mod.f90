@@ -515,45 +515,46 @@
       LOGICAL, INTENT(IN) :: lnoiter
       INTEGER :: i,k
 
-      IF (lnoiter) THEN
-        WRITE(iunit,'(A)') '  SKIPPING MUMAT ITERATIONS'
-      ELSE 
-        WRITE(iunit,'(A)')           ' -----  Magnetic Material  -----'
-        WRITE(iunit,'(3X,A,A)')      'File: ',TRIM(file_string)
-        WRITE(iunit,'(3X,A,A)')      'Model Name   : ',TRIM(machine_string)
-        WRITE(iunit,'(3X,A,A)')      'Date         : ',TRIM(date)
-        WRITE(iunit,'(3X,A,I9)')     'Vertices     : ',nvertex
-        WRITE(iunit,'(3X,A,I9)')     'Tetrahedrons : ',ntet
-        WRITE(iunit,'(3X,A,F9.3)')  'Pad factor   : ',padFactor
-        WRITE(iunit,'(3X,A,I9)')    'Max Iter.    : ',maxIter
-        WRITE(iunit,'(3X,A,EN9.3)') 'Max Error    : ',threshold
-        WRITE(iunit,'(3X,A,F9.3)')  'Lambda start : ',lambdaStart
-        WRITE(iunit,'(3X,A,F9.3)')  'Lambda fact. : ',lambdaFactor
-        WRITE(iunit,'(3X,A,I9)')     'Lambda thrsh.: ',lambdaThresh
-        WRITE(iunit,'(3X,A,F7.2,A)')'Converged at : ',convCheck,' %'
-        WRITE(iunit,'(3X,A,I9)')     'State Funcs. : ',nstate
-        DO i = 1, nstate
-          WRITE(iunit,'(5X,A,I0)') 'State Function ',i
-          IF (state_type(i)==1) THEN
-            WRITE(iunit,'(7X,A)') 'Type: Hard Magnet'
-            WRITE(iunit,'(7X,A,EN12.3)')    '  Mu   :',constant_mu(i)
-            WRITE(iunit,'(7X,A,EN12.3)')    '  Mu_o :',constant_mu_o(i)
-            WRITE(iunit,'(7X,A,3(EN12.3))') '  Mrem :',Mrem(:,i)
-          ELSEIF (state_type(i)==2) THEN
-            k = SIZE(stateFunction(i)%H)
-            WRITE(iunit,'(7X,A)')           '  Type : Soft Magnet (H-M)'
-            WRITE(iunit,'(7X,A,I3)')        'NKnots :',k
-            WRITE(iunit,'(7X,A,2(EN12.3))') '     H :',stateFunction(i)%H(1),stateFunction(i)%H(k)
-            WRITE(iunit,'(7X,A,2(EN12.3))') '     M :',stateFunction(i)%M(1),stateFunction(i)%M(k)
-          ELSEIF (state_type(i)==3) THEN
-            WRITE(iunit,'(7X,A)') 'Type: Soft Magnet (mu constant)'
-            WRITE(iunit,'(7X,A,F12.3)')    '    Mu :',constant_mu(i)
+          WRITE(iunit,'(A)')           ' -----  MUMAT calculation  -----'
+          IF (lnoiter) THEN
+            WRITE(iunit,'(3X,A)') '!!! SKIPPING ITERATIONS !!!'
           ELSE
-            WRITE(iunit,'(7X,A,I3)') 'Type: UNKNOWN (ERROR) state_type=',state_type(i)
+            WRITE(iunit,'(3X,A,F9.3)')  'Pad factor   : ',padFactor
+            WRITE(iunit,'(3X,A,I9)')    'Max Iter.    : ',maxIter
+            WRITE(iunit,'(3X,A,EN9.3)') 'Max Error    : ',threshold
+            WRITE(iunit,'(3X,A,F9.3)')  'Lambda start : ',lambdaStart
+            WRITE(iunit,'(3X,A,F9.3)')  'Lambda fact. : ',lambdaFactor
+            WRITE(iunit,'(3X,A,I9)')    'Lambda thrsh.: ',lambdaThresh
+            WRITE(iunit,'(3X,A,F7.2,A)')'Converged at : ',convCheck,' %'
           END IF
-        END DO
-      END IF
-      FLUSH(iunit)
+          WRITE(iunit,'(A)')           ' -----  Magnetic structure  ----'
+          WRITE(iunit,'(3X,A,A)')      'File: ',TRIM(file_string)
+          WRITE(iunit,'(3X,A,A)')      'Model Name   : ',TRIM(machine_string)
+          WRITE(iunit,'(3X,A,A)')      'Date         : ',TRIM(date)
+          WRITE(iunit,'(3X,A,I9)')     'Vertices     : ',nvertex
+          WRITE(iunit,'(3X,A,I9)')     'Tetrahedrons : ',ntet
+          WRITE(iunit,'(3X,A,I9)')     'State Funcs. : ',nstate
+          DO i = 1, nstate
+            WRITE(iunit,'(5X,A,I0)') 'State Function ',i
+            IF (state_type(i)==1) THEN
+              WRITE(iunit,'(7X,A)') 'Type: Hard Magnet'
+              WRITE(iunit,'(7X,A,EN12.3)')    '  Mu   :',constant_mu(i)
+              WRITE(iunit,'(7X,A,EN12.3)')    '  Mu_o :',constant_mu_o(i)
+              WRITE(iunit,'(7X,A,3(EN12.3))') '  Mrem :',Mrem(:,i)
+            ELSEIF (state_type(i)==2) THEN
+              k = SIZE(stateFunction(i)%H)
+              WRITE(iunit,'(7X,A)')           '  Type : Soft Magnet (H-M)'
+              WRITE(iunit,'(7X,A,I3)')        'NKnots :',k
+              WRITE(iunit,'(7X,A,2(EN12.3))') '     H :',stateFunction(i)%H(1),stateFunction(i)%H(k)
+              WRITE(iunit,'(7X,A,2(EN12.3))') '     M :',stateFunction(i)%M(1),stateFunction(i)%M(k)
+            ELSEIF (state_type(i)==3) THEN
+              WRITE(iunit,'(7X,A)') 'Type: Soft Magnet (mu constant)'
+              WRITE(iunit,'(7X,A,F12.3)')    '    Mu :',constant_mu(i)
+            ELSE
+              WRITE(iunit,'(7X,A,I3)') 'Type: UNKNOWN (ERROR) state_type=',state_type(i)
+            END IF
+          END DO
+        FLUSH(iunit)
 
       END SUBROUTINE mumaterial_info
 
@@ -646,8 +647,8 @@
       IF (lverb) WRITE(6,*) "  MUMAT_INIT:  Calculating tetrahedron quantities"; FLUSH(6)
       ! Wipe shared array
       IF (shar_rank.EQ.0) THEN 
-        tet_cen  = 0  
-        tet_vol  = 0  
+        tet_cen = 0  
+        tet_vol = 0  
         tet_rad = 0     
       END IF  
       ! Calculate range
@@ -1663,7 +1664,7 @@
       
       ! Get largest neighbor count for allocation first
       DO i = 1, ntet_proc
-        i_tile = dom_shar(i)
+        i_tile = dom_proc(i)
         dist = NORM2(tet_cen - SPREAD(SOURCE=tet_cen(:,i_tile), DIM=2, NCOPIES=ntet),DIM=1)
         nbrs_count(i) = COUNT(dist.LE.padFactor*tet_rad)
       END DO
@@ -1673,7 +1674,7 @@
 
       ! Actual neighbour loop
       DO i = 1, ntet_proc
-        i_tile = dom_shar(i)
+        i_tile = dom_proc(i)
         dist = NORM2(tet_cen - SPREAD(SOURCE=tet_cen(:,i_tile), DIM=2, NCOPIES=ntet),DIM=1)
         mask = dist.LE.padFactor*tet_rad
         j = 0
