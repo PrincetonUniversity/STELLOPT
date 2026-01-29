@@ -1867,7 +1867,7 @@
 
       END SUBROUTINE mumaterial_syncM
 
-      SUBROUTINE mumaterial_getState(fx, fy, xq, y)
+      SUBROUTINE mumaterial_getState(fx, fy, xq, yq)
       !-----------------------------------------------------------------------
       ! mumaterial_getState: Interpolates a function f at xq to get a value y 
       ! using B-splines based on De Boor's algorithm
@@ -2109,7 +2109,7 @@
       IMPLICIT NONE
 
       CHARACTER(LEN=*), INTENT(in) :: str
-      CHARACTER(LEN=*) :: filename
+      CHARACTER(LEN=256) :: filename
       INTEGER :: i
 
       IF (lismaster) THEN
