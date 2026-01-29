@@ -598,7 +598,6 @@
 !------------------------------------------------------------------------------
 ! mumaterial_init: Initial calculations, does MPI, and calls iterations
 !------------------------------------------------------------------------------
-!                 SUBROUTINE FCN(x,y,z,bx,by,bz)
 ! param[in]: offset. Offset of all tiles from the origin
 !------------------------------------------------------------------------------
       SUBROUTINE mumaterial_init_new(offset)
@@ -611,14 +610,14 @@
       IMPLICIT NONE
       
       DOUBLE PRECISION, INTENT(in), OPTIONAL :: offset(3)
-      INTEGER :: mystart, myend, ourstart, ourend
+      INTEGER :: mystart, myend, ourstart, ourend, wr_dex
       LOGICAL :: lwork
       INTEGER :: i, j, k, i_tile, j_tile, stype
       INTEGER :: mstat(MPI_STATUS_SIZE)
       CHARACTER(LEN=6) :: strcount, splitcount
 
       DOUBLE PRECISION :: Bx, By, Bz
-      DOUBLE PRECISION :: tol, delta, targ
+      DOUBLE PRECISION :: targ
       DOUBLE PRECISION :: MAT(3,3)
       INTEGER :: splits, ydomsize, reci, src, n_proc_targ, a, b
       INTEGER, ALLOCATABLE :: dom_in(:), dom_out_2(:), dom_sizes(:),  &
@@ -705,9 +704,7 @@
       IF (ldosync.AND.(shar_rank.EQ.0)) THEN         
         IF (lverb) WRITE(6,*) "  MUMAT_INIT:  Dividing input domain across MPI nodes"; FLUSH(6)         
         splits = NINT(LOG(Bx)/LOG(2.0)) ! log_2(X) = ln(X)/log(2)
-        tol = 0.0001
-        delta = 1.0
-
+        targ = 0.5
         DO
           IF (splits.EQ.0) EXIT ! Reached end
 
@@ -715,7 +712,6 @@
             ALLOCATE(dom_in(ntet_shar))
             dom_in = dom_shar
             DEALLOCATE(dom_shar)
-            targ = 0.5
             CALL mumaterial_split(dom_in,targ,dom_shar,dom_out_2) ! Split box
             DEALLOCATE(dom_in)
             ntet_shar  = SIZE(dom_shar)
@@ -736,44 +732,17 @@
         END DO
 
         ! Now every master needs to know their range relative to other 
-        lwork = (color.EQ.0)
-        splits = 0
-        DO
-          IF (lwork) THEN
-            ourstart = splits+1
-            ourend   = splits+ntet_shar
-            reci = color + 1
-            IF (reci.EQ.master_size) EXIT
-            CALL MPI_SEND(ourend, 1, MPI_INTEGER, reci, 1234, comm_master, ierr_mpi)             
-            EXIT
-          ELSE
-            CALL MPI_RECV(splits, 1, MPI_INTEGER, MPI_ANY_SOURCE, 1234, comm_master, mstat, ierr_mpi)
-            lwork = .TRUE.
-          END IF
-        END DO
-        
-        ! Construct outside domain (used for synchronization)
-        odomsize = ntet-ntet_shar
-        ALLOCATE(outmydom(odomsize))
-        i = 0
-        DO i_tile = 1, ntet
-          IF (.NOT.(ANY(i_tile==dom_shar))) THEN 
-            i = i + 1
-            outmydom(i) = i_tile
-          END IF
-        END DO
+        CALL MPI_SCAN(ntet_shar, ourend, 1, MPI_INTEGER, MPI_SUM, comm_master, ierr_mpi)
+        ourstart = ourend-ntet_shar+1
       END IF
 
       CALL MPI_Bcast(ntet_shar,    1, MPI_INTEGER, 0, comm_shar, ierr_mpi)
       
       IF (shar_rank.NE.master) THEN
         ALLOCATE(dom_shar(ntet_shar))
-        odomsize = ntet-ntet_shar
-        ALLOCATE(outmydom(odomsize))
       END IF
       
       CALL MPI_Bcast(dom_shar,   ntet_shar,  MPI_INTEGER, 0, comm_shar, ierr_mpi)
-      CALL MPI_Bcast(outmydom,odomsize, MPI_INTEGER, 0, comm_shar, ierr_mpi)
       CALL MPI_Bcast(ourstart, 1, MPI_INTEGER, 0, comm_shar, ierr_mpi)
       CALL MPI_Bcast(ourend,   1, MPI_INTEGER, 0, comm_shar, ierr_mpi)
       CALL MPI_BARRIER(comm_world, ierr_mpi)
@@ -900,26 +869,26 @@
       d_cluster = 0.0
 #if defined(MPI_OPT)
       IF (lcomm) THEN
-
         ALLOCATE(dom_sizes(world_size))
         dom_sizes = 0
-        dom_sizes(world_rank) = ntet_proc
+        wr_dex = world_rank+1 ! Pesky 0-based indexing
+        dom_sizes(wr_dex) = ntet_proc
         CALL MPI_ALLREDUCE(MPI_IN_PLACE, dom_sizes, world_size, MPI_INTEGER, MPI_SUM, comm_world, ierr_mpi)
         CALL mpialloc_2d_int(dom_clusters,MAXVAL(dom_sizes),world_size,shar_rank,0,comm_shar,win_dom_clusters)
         IF (shar_rank.EQ.master) THEN 
           dom_clusters = 0
         END IF
         CALL MPI_BARRIER(comm_shar, ierr_mpi)
-        dom_clusters(1:ntet_proc, world_rank) = dom_proc(1:ntet_proc)
+        dom_clusters(1:ntet_proc, wr_dex) = dom_proc(1:ntet_proc)
         IF (shar_rank.EQ.master) THEN
           CALL MPI_ALLREDUCE( MPI_IN_PLACE, dom_clusters, MAXVAL(dom_sizes)*world_size, MPI_INTEGER, MPI_SUM, comm_master, ierr_mpi )
         END IF
 
         ! Cluster position and diameter
-        r_cluster(:,world_rank) = SUM(tet_cen(:,dom_proc(1:ntet_proc)),DIM=2)/ntet_proc 
-        d_cluster(world_rank) = 2.0 * SQRT( SUM( &
+        r_cluster(:,wr_dex) = SUM(tet_cen(:,dom_proc(1:ntet_proc)),DIM=2)/ntet_proc 
+        d_cluster(wr_dex) = 2.0 * SQRT( SUM( &
                                   NORM2(tet_cen(:,dom_proc(1:ntet_proc)) - &
-                                    SPREAD(r_cluster(:,world_rank), DIM=2, NCOPIES=ntet_proc),DIM=1)**2 &
+                                    SPREAD(r_cluster(:,wr_dex), DIM=2, NCOPIES=ntet_proc),DIM=1)**2 &
                                       ) / ntet_proc)
         CALL MPI_ALLREDUCE( MPI_IN_PLACE, r_cluster, 3*world_size, MPI_DOUBLE_PRECISION, MPI_SUM, comm_shar, ierr_mpi )
         CALL MPI_ALLREDUCE( MPI_IN_PLACE, d_cluster,   world_size, MPI_DOUBLE_PRECISION, MPI_SUM, comm_shar, ierr_mpi )
@@ -928,11 +897,11 @@
           CALL MPI_ALLREDUCE( MPI_IN_PLACE, d_cluster,   world_size, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
         END IF
         ALLOCATE(lisfar(world_size))
-        lisfar = NORM2(r_cluster - SPREAD(r_cluster(:,world_rank),DIM=2, NCOPIES=world_size),DIM=1) > 10.0 * d_cluster
+        lisfar = NORM2(r_cluster - SPREAD(r_cluster(:,wr_dex),DIM=2, NCOPIES=world_size),DIM=1) > 10.0 * d_cluster
 
         ! Determine which clusters are in the "mid-field" from our cluster
         ALLOCATE(mid_mask(world_size))
-        mid_mask = (.NOT.lisfar) .AND. ([(i, i=1, world_size)] .NE. world_rank)
+        mid_mask = (.NOT.lisfar) .AND. ([(i, i=1, world_size)] .NE. wr_dex)
         ALLOCATE(mid_ids(COUNT(mid_mask)))
 
         mid_ids = PACK([(i, i=1, world_size)], MASK=mid_mask)
@@ -1856,7 +1825,7 @@
 
       ALLOCATE(M_local(3,world_size))
       M_local = 0.0
-      M_local(:,world_rank) = SUM(M(:, dom_proc(1:ntet_proc)) * &
+      M_local(:,world_rank+1) = SUM(M(:, dom_proc(1:ntet_proc)) * &
                                     SPREAD(tet_vol(dom_proc(1:ntet_proc)), DIM=1, NCOPIES=3), DIM=2)
       CALL MPI_ALLREDUCE(M_local, mom_cluster, 3*world_size, MPI_DOUBLE_PRECISION, MPI_SUM, comm_shar, ierr_mpi )
       DEALLOCATE(M_local)

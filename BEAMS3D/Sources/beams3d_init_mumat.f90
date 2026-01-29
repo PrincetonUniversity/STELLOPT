@@ -23,7 +23,7 @@
       USE mumaterial_mod, ONLY: mumaterial_load, mumaterial_init_new, &
                                 mumaterial_info, mumaterial_getbmag_scalar,&
                                 mumaterial_setverb, mumaterial_setdefs, &
-                                mumaterial_free, mumaterial_setBfld &
+                                mumaterial_free, mumaterial_setBfld, &
                                 mumaterial_readmag, mumaterial_writemag
       USE mpi_params  
       USE mpi_inc      
@@ -138,7 +138,7 @@
       ! Initialize the magnetic calculation
       IF (.NOT.(lmumat_skipiter)) THEN
             offset = 0.0
-            CALL MUMATERIAL_INIT_NEW(beams3d_BCART, offset)
+            CALL MUMATERIAL_INIT_NEW(offset)
       END IF
       ! Output magnetics file
       IF (lmumat_writemagfile) CALL mumaterial_writemag(id_string)
