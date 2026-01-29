@@ -178,7 +178,6 @@
 !
 !       MPI 
 !         mumaterial_split:            Splits input domain into two subdomains
-!         mumaterial_sync_array2d_dbl: Syncs any 2D,DBL array on shar_mem nodes
 !         mumaterial_syncM: Syncs magnetization array on shar_mem nodes
 !         mumaterial_free:  Frees MPI memory
 !       Output
@@ -189,7 +188,6 @@
 !             mumaterial_getb_vector: Multiple points in space
 !
 !       Debug
-!         mumaterial_debug:      Sets debug verbosity
 !         mumaterial_writedebug: Outputs files for debug
 !------------------------------------------------------------------------------
 !     Functions
@@ -623,7 +621,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! Apply offset
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      IF (PRESENT(offset).AND.(MAXVAL(ABS(offset)) .gt. 0.d0)) THEN
+      IF (PRESENT(offset).AND.(NORM2(offset) .GT. 0.d0)) THEN
         IF (lverb) WRITE(6,*) "  MUMAT_INIT:  Applying offset to vertices"
         mystart = 1; myend = nvertex
 #if defined(MPI_OPT)
@@ -634,9 +632,8 @@
         END DO
             
 #if defined(MPI_OPT)
-        IF (ldosync) THEN
-          IF (lverb) WRITE(6,*) "  MUMAT_DEBUG:  Synchronising offset vertices"
-          CALL mumaterial_sync_array2d_dbl(vertex,3,nvertex,mystart,myend)
+        IF (shar_rank.EQ.0) THEN
+          CALL MPI_ALLREDUCE( MPI_IN_PLACE, vertex,   3*nvertex, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
         END IF
 #endif
       END IF
@@ -671,9 +668,11 @@
       END DO
 
 #if defined(MPI_OPT)
-    CALL MPI_ALLREDUCE( MPI_IN_PLACE, tet_cen, 3*ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
-    CALL MPI_ALLREDUCE( MPI_IN_PLACE, tet_vol,   ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
-    CALL MPI_ALLREDUCE( MPI_IN_PLACE, tet_rad,   ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
+      IF (shar_rank.EQ.0) THEN
+        CALL MPI_ALLREDUCE( MPI_IN_PLACE, tet_cen, 3*ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
+        CALL MPI_ALLREDUCE( MPI_IN_PLACE, tet_vol,   ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
+        CALL MPI_ALLREDUCE( MPI_IN_PLACE, tet_rad,   ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
+      ENDIF
 #endif
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Split domain across MPI nodes
@@ -1765,29 +1764,6 @@
       DEALLOCATE(temp1, temp2)
 
       END SUBROUTINE mumaterial_split
-
-      SUBROUTINE mumaterial_sync_array2d_dbl(array, n1, n2, mystart,myend)
-
-      IMPLICIT NONE
-
-      INTEGER, INTENT(in) :: n1, n2
-      DOUBLE PRECISION, DIMENSION(n1,n2), INTENT(inout) :: array
-      INTEGER, INTENT(in) :: mystart,myend
-      INTEGER :: ourstart, ourend
-      INTEGER :: i
-
-      CALL MPI_REDUCE(mystart, ourstart, 1, MPI_INTEGER, MPI_MIN, 0, comm_shar, ierr_mpi)
-      CALL MPI_REDUCE(myend,     ourend, 1, MPI_INTEGER, MPI_MAX, 0, comm_shar, ierr_mpi)
-      IF (shar_rank.EQ.0) THEN
-        array(:,1:(ourstart-1)) = 0 ! Zero array "above" data to keep
-        array(:,(ourend+1):n2)  = 0 ! Zero array "below" data to keep
-        ! Reduce arrays onto all shared memory islands
-        CALL MPI_ALLREDUCE( MPI_IN_PLACE, array, n1*n2, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
-      END IF
-      CALL MPI_BARRIER( comm_shar, ierr_mpi)
-
-      END SUBROUTINE mumaterial_sync_array2d_dbl
-
 
       SUBROUTINE mumaterial_syncM()
 
