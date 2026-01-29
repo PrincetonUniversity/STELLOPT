@@ -1637,7 +1637,7 @@
       !-----------------------------------------------------------------------
       IMPLICIT NONE
       DOUBLE PRECISION, INTENT(IN), DIMENSION(3) :: a, b
-      DOUBLE PRECISION, DIMENSION(3) :: prod
+      DOUBLE PRECISION, DIMENSION(3) :: mumaterial_cross
 
       mumaterial_cross(1) = a(2)*b(3) - a(3)*b(2)
       mumaterial_cross(2) = a(3)*b(1) - a(1)*b(3)
