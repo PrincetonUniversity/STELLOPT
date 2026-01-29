@@ -831,13 +831,13 @@
                 ALLOCATE(dom_proc(ntet_proc))
                 CALL MPI_RECV(dom_proc, ntet_proc, MPI_INTEGER, MPI_ANY_SOURCE, 102, comm_shar, mstat, ierr_mpi)
                 CALL MPI_RECV(n_proc_targ,      1, MPI_INTEGER, MPI_ANY_SOURCE, 103, comm_shar, mstat, ierr_mpi)
-                DEALLOCATE(dom_proc)
                 IF (reci.EQ.shar_size) THEN
                   EXIT ! That's us!
                 ELSE
                   CALL MPI_SEND(ntet_proc,        1, MPI_INTEGER, reci, 101, comm_shar, ierr_mpi) 
                   CALL MPI_SEND(dom_proc, ntet_proc, MPI_INTEGER, reci, 102, comm_shar, ierr_mpi)
                   CALL MPI_SEND(n_proc_targ,      1, MPI_INTEGER, reci, 103, comm_shar, ierr_mpi)
+                  DEALLOCATE(dom_proc)
                 END IF
 
               END DO
