@@ -519,7 +519,7 @@
           ELSE
             WRITE(iunit,'(3X,A,F9.3)')  'Pad factor   : ',padFactor
             WRITE(iunit,'(3X,A,I9)')    'Max Iter.    : ',maxIter
-            WRITE(iunit,'(3X,A,EN9.3)') 'Max Error    : ',threshold
+            WRITE(iunit,'(3X,A,ES9.3)') 'Max Error    : ',threshold
             WRITE(iunit,'(3X,A,F9.3)')  'Lambda start : ',lambdaStart
             WRITE(iunit,'(3X,A,F9.3)')  'Lambda fact. : ',lambdaFactor
             WRITE(iunit,'(3X,A,I9)')    'Lambda thrsh.: ',lambdaThresh
@@ -536,15 +536,15 @@
             WRITE(iunit,'(5X,A,I0)') 'State Function ',i
             IF (state_type(i)==1) THEN
               WRITE(iunit,'(7X,A)') 'Type: Hard Magnet'
-              WRITE(iunit,'(7X,A,EN12.3)')    '  Mu   :',constant_mu(i)
-              WRITE(iunit,'(7X,A,EN12.3)')    '  Mu_o :',constant_mu_o(i)
-              WRITE(iunit,'(7X,A,3(EN12.3))') '  Mrem :',Mrem(:,i)
+              WRITE(iunit,'(7X,A,ES12.3)')    '  Mu   :',constant_mu(i)
+              WRITE(iunit,'(7X,A,ES12.3)')    '  Mu_o :',constant_mu_o(i)
+              WRITE(iunit,'(7X,A,3(ES12.3))') '  Mrem :',Mrem(:,i)
             ELSEIF (state_type(i)==2) THEN
               k = SIZE(stateFunction(i)%H)
               WRITE(iunit,'(7X,A)')           '  Type : Soft Magnet (H-M)'
               WRITE(iunit,'(7X,A,I3)')        'NKnots :',k
-              WRITE(iunit,'(7X,A,2(EN12.3))') '     H :',stateFunction(i)%H(1),stateFunction(i)%H(k)
-              WRITE(iunit,'(7X,A,2(EN12.3))') '     M :',stateFunction(i)%M(1),stateFunction(i)%M(k)
+              WRITE(iunit,'(7X,A,2(ES12.3))') '     H :',stateFunction(i)%H(1),stateFunction(i)%H(k)
+              WRITE(iunit,'(7X,A,2(ES12.3))') '     M :',stateFunction(i)%M(1),stateFunction(i)%M(k)
             ELSEIF (state_type(i)==3) THEN
               WRITE(iunit,'(7X,A)') 'Type: Soft Magnet (mu constant)'
               WRITE(iunit,'(7X,A,F12.3)')    '    Mu :',constant_mu(i)
@@ -957,7 +957,7 @@
       END IF
 #endif
       IF (lverb) THEN
-        WRITE(6,'(3X,A,EN11.2,A,EN11.2,A)') 'Happ-field range: [',H_app_norm_min,', ',H_app_norm_max,'] A/m'
+        WRITE(6,'(3X,A,ES11.2,A,ES11.2,A)') 'Happ-field range: [',H_app_norm_min,', ',H_app_norm_max,'] A/m'
         FLUSH(6)
       END IF
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1427,79 +1427,79 @@
       N = 0.d0
 
       DO i = 1, 4
-            ! Shift vertices
-            v(:,i) = v1
-            v(:,MOD(i,4)+1) = v2
-            v(:,MOD(i+1,4)+1) = v3
-            v(:,MOD(i+2,4)+1)= v4
+        ! Shift vertices
+        v(:,i) = v1
+        v(:,MOD(i,4)+1) = v2
+        v(:,MOD(i+1,4)+1) = v3
+        v(:,MOD(i+2,4)+1)= v4
 
-            ! todo: ensure vertices are not collinear and v4 is not in plane of v1-3?
+        ! todo: ensure vertices are not collinear and v4 is not in plane of v1-3?
 
-            ! Ensure largest angle is for v2
-            angles(1) = ACOS(DOT_PRODUCT(v(:,1)-v(:,2),v(:,1)-v(:,3)) / (NORM2(v(:,1)-v(:,2)) * NORM2(v(:,1)-v(:,3))))
-            angles(2) = ACOS(DOT_PRODUCT(v(:,2)-v(:,1),v(:,2)-v(:,3)) / (NORM2(v(:,2)-v(:,1)) * NORM2(v(:,2)-v(:,3))))
-            angles(3) = ACOS(DOT_PRODUCT(v(:,3)-v(:,2),v(:,3)-v(:,1)) / (NORM2(v(:,3)-v(:,2)) * NORM2(v(:,3)-v(:,1))))
+        ! Ensure largest angle is for v2
+        angles(1) = ACOS(DOT_PRODUCT(v(:,1)-v(:,2),v(:,1)-v(:,3)) / (NORM2(v(:,1)-v(:,2)) * NORM2(v(:,1)-v(:,3))))
+        angles(2) = ACOS(DOT_PRODUCT(v(:,2)-v(:,1),v(:,2)-v(:,3)) / (NORM2(v(:,2)-v(:,1)) * NORM2(v(:,2)-v(:,3))))
+        angles(3) = ACOS(DOT_PRODUCT(v(:,3)-v(:,2),v(:,3)-v(:,1)) / (NORM2(v(:,3)-v(:,2)) * NORM2(v(:,3)-v(:,1))))
 
-            IF (angles(1) > angles(2) .and. angles(1) > angles(3)) THEN ! v1 and v2 should be interchanged
-                  v_temp = v(:,2)
-                  v(:,2) = v(:,1)
-                  v(:,1) = v_temp
-            ELSE IF (angles(3) > angles(1) .and. angles(3) > angles(2)) THEN ! v2 and v3 should be interchanged
-                  v_temp = v(:,2)
-                  v(:,2) = v(:,3)
-                  v(:,3) = v_temp
-            END IF
+        IF (angles(1) > angles(2) .and. angles(1) > angles(3)) THEN ! v1 and v2 should be interchanged
+          v_temp = v(:,2)
+          v(:,2) = v(:,1)
+          v(:,1) = v_temp
+        ELSE IF (angles(3) > angles(1) .and. angles(3) > angles(2)) THEN ! v2 and v3 should be interchanged
+          v_temp = v(:,2)
+          v(:,2) = v(:,3)
+          v(:,3) = v_temp
+        END IF
 
-            ! Ensure normal vector is pointing in the right direction
-            IF (DOT_PRODUCT(mumaterial_cross(v(:,1) - v(:,3), v(:,2) - v(:,3)), v(:,4) - v(:,2)) .gt. 0) THEN 
-                ! normal vector of triangle is pointing towards v4, so v1 and v3 need to be interchanged
-                  v_temp = v(:,1)
-                  v(:,1) = v(:,3)
-                  v(:,3) = v_temp
-            END IF
+        ! Ensure normal vector is pointing in the right direction
+        IF (DOT_PRODUCT(mumaterial_cross(v(:,1) - v(:,3), v(:,2) - v(:,3)), v(:,4) - v(:,2)) .gt. 0) THEN 
+        ! normal vector of triangle is pointing towards v4, so v1 and v3 need to be interchanged
+          v_temp = v(:,1)
+          v(:,1) = v(:,3)
+          v(:,3) = v_temp
+        END IF
 
-            ! Rotation matrix
-            P(:,1) = v(:,1) - v(:,3)
-            P(:,1) = P(:,1) / NORM2(P(:,1))
+        ! Rotation matrix
+        P(:,1) = v(:,1) - v(:,3)
+        P(:,1) = P(:,1) / NORM2(P(:,1))
 
-            P(:,3) = mumaterial_cross(P(:,1), v(:,2)-v(:,3))
-            P(:,3) = P(:,3) / NORM2(P(:,3))
+        P(:,3) = mumaterial_cross(P(:,1), v(:,2)-v(:,3))
+        P(:,3) = P(:,3) / NORM2(P(:,3))
 
-            P(:,2) = mumaterial_cross(P(:,3), P(:,1))
-            P(:,2) = P(:,2) / NORM2(P(:,2))
+        P(:,2) = mumaterial_cross(P(:,3), P(:,1))
+        P(:,2) = P(:,2) / NORM2(P(:,2))
 
-            ! Inverse rotation matrix, transpose since P is orthogonal
-            Pinv = TRANSPOSE(P)
+        ! Inverse rotation matrix, transpose since P is orthogonal
+        Pinv = TRANSPOSE(P)
 
-            ! Position of triangle base
-            D = DOT_PRODUCT(v(:,3)-v(:,2),v(:,3)-v(:,1)) / (NORM2(v(:,3)-v(:,2)) * NORM2(v(:,3)-v(:,1))) * NORM2(v(:,2) - v(:,3)) * P(:,1) + v(:,3)
+        ! Position of triangle base
+        D = DOT_PRODUCT(v(:,3)-v(:,2),v(:,3)-v(:,1)) / (NORM2(v(:,3)-v(:,2)) * NORM2(v(:,3)-v(:,1))) * NORM2(v(:,2) - v(:,3)) * P(:,1) + v(:,3)
 
-            ! Transform evaluation position and vertices to local coordinate frame
-            r = MATMUL(Pinv, (pos - D))
+        ! Transform evaluation position and vertices to local coordinate frame
+        r = MATMUL(Pinv, (pos - D))
 
-            DO j = 1, 3
-                  v(:,j) = MATMUL(Pinv, (v(:,j) - D))
-                  IF (ABS(r(j)) .lt. 1.0D-6) THEN ! make sure position is not too close to x, y or z = 0
-                        r(j) = SIGN(1.0D-6, r(j))
-                  END IF
-                  IF (ABS(v(1,j)) .lt. 1.0D-6) THEN 
-                        v(1,j) = SIGN(1.0D-6, v(1,j))
-                  END IF                  
-            END DO
+        DO j = 1, 3
+          v(:,j) = MATMUL(Pinv, (v(:,j) - D))
+          IF (ABS(r(j)) .lt. 1.0D-6) THEN ! make sure position is not too close to x, y or z = 0
+            r(j) = SIGN(1.0D-6, r(j))
+          END IF
+          IF (ABS(v(1,j)) .lt. 1.0D-6) THEN 
+            v(1,j) = SIGN(1.0D-6, v(1,j))
+          END IF                  
+        END DO
 
-            N_loc = 0.d0
-            N_loc(1,3) = mumaterial_getNxz(r, v(1,1), v(2,2)) - mumaterial_getNxz(r, v(1,3), v(2,2))
-            N_loc(2,3) = mumaterial_getNyz(r, v(1,1), v(2,2)) - mumaterial_getNyz(r, v(1,3), v(2,2))
-            N_loc(3,3) = mumaterial_getNzz(r, v(1,1), v(2,2)) - mumaterial_getNzz(r, v(1,3), v(2,2))
-            IF ((ISNAN(N_loc(1,3)).or.ISNAN(N_loc(2,3))).or.ISNAN(N_loc(3,3))) THEN 
-                  WRITE(6,*) "FOUND A NAN IN N_LOC"
-                  WRITE(6,*) "POS=",pos(1),pos(2),pos(3)
-                  WRITE(6,*) "R=",r(1),r(2),r(3)
-                  WRITE(6,*) "l_1=",v(1,1), "l_2=", v(1,3)
-                  WRITE(6,*) "h=",v(2,2)
-                  WRITE(6,*)
-            END IF
-            N = N + MATMUL(MATMUL(P, N_loc), Pinv)
+        N_loc = 0.d0
+        N_loc(1,3) = mumaterial_getNxz(r, v(1,1), v(2,2)) - mumaterial_getNxz(r, v(1,3), v(2,2))
+        N_loc(2,3) = mumaterial_getNyz(r, v(1,1), v(2,2)) - mumaterial_getNyz(r, v(1,3), v(2,2))
+        N_loc(3,3) = mumaterial_getNzz(r, v(1,1), v(2,2)) - mumaterial_getNzz(r, v(1,3), v(2,2))
+        IF ((ISNAN(N_loc(1,3)).or.ISNAN(N_loc(2,3))).or.ISNAN(N_loc(3,3))) THEN 
+              WRITE(6,*) "FOUND A NAN IN N_LOC"
+              WRITE(6,*) "POS=",pos(1),pos(2),pos(3)
+              WRITE(6,*) "R=",r(1),r(2),r(3)
+              WRITE(6,*) "l_1=",v(1,1), "l_2=", v(1,3)
+              WRITE(6,*) "h=",v(2,2)
+              WRITE(6,*)
+        END IF
+        N = N + MATMUL(MATMUL(P, N_loc), Pinv)
       END DO
 
       RETURN
@@ -1522,27 +1522,27 @@
 
       CONTAINS
 
-            FUNCTION F(r, yp, l, h)
-            IMPLICIT NONE
-            DOUBLE PRECISION :: F
-            DOUBLE PRECISION, INTENT(IN) :: r(3), yp, l, h
-                  
-                  F = h / sqrt(h*h + l*l) * ATANH((l*l - l*r(1) + h*r(2) - h*yp*(1 + l*l/h/h)) / &
-                        sqrt((h*h + l*l) * (r(1)*r(1) - 2*r(1)*l + l*l + r(2)*r(2) - 2*(l*l - l*r(1) + h*r(2))*yp/h + &
-                        yp*yp*(1 + l*l/h/h) + r(3)*r(3))))
+        FUNCTION F(r, yp, l, h)
+        IMPLICIT NONE
+        DOUBLE PRECISION :: F
+        DOUBLE PRECISION, INTENT(IN) :: r(3), yp, l, h
+              
+        F = h / sqrt(h*h + l*l) * ATANH((l*l - l*r(1) + h*r(2) - h*yp*(1 + l*l/h/h)) / &
+                sqrt((h*h + l*l) * (r(1)*r(1) - 2*r(1)*l + l*l + r(2)*r(2) - 2*(l*l - l*r(1) + h*r(2))*yp/h + &
+                yp*yp*(1 + l*l/h/h) + r(3)*r(3))))
 
-            RETURN
-            END FUNCTION F
+        RETURN
+        END FUNCTION F
 
-            FUNCTION G(r, yp)
-                  IMPLICIT NONE
-                  DOUBLE PRECISION :: G
-                  DOUBLE PRECISION, INTENT(IN) :: r(3), yp
-                        
-                  G = ATANH((r(2) - yp) / sqrt(r(1)*r(1) + r(2)*r(2) - 2*r(2)*yp + yp*yp + r(3)*r(3)))
-                        
-                  RETURN
-            END FUNCTION G
+        FUNCTION G(r, yp)
+        IMPLICIT NONE
+        DOUBLE PRECISION :: G
+        DOUBLE PRECISION, INTENT(IN) :: r(3), yp
+              
+        G = ATANH((r(2) - yp) / sqrt(r(1)*r(1) + r(2)*r(2) - 2*r(2)*yp + yp*yp + r(3)*r(3)))
+              
+        RETURN
+        END FUNCTION G
       END FUNCTION mumaterial_getNxz
 
       FUNCTION mumaterial_getNyz(r, l, h)
@@ -1557,33 +1557,33 @@
       DOUBLE PRECISION :: mumaterial_getNyz
       DOUBLE PRECISION, INTENT(IN) :: r(3), l, h
 
-            mumaterial_getNyz = -1.d0/(16.d0*ATAN(1.d0)) * (K(r,l,l,h) - K(r,0.d0,l,h) - (Lfunc(r,l) - Lfunc(r,0.d0)))
-            RETURN
+      mumaterial_getNyz = -1.d0/(16.d0*ATAN(1.d0)) * (K(r,l,l,h) - K(r,0.d0,l,h) - (Lfunc(r,l) - Lfunc(r,0.d0)))
+      RETURN
 
       CONTAINS
 
-            FUNCTION K(r, xp, l, h)
-            IMPLICIT NONE
-            DOUBLE PRECISION :: K
-            DOUBLE PRECISION, INTENT(IN) :: r(3), xp, l, h
+      FUNCTION K(r, xp, l, h)
+      IMPLICIT NONE
+      DOUBLE PRECISION :: K
+      DOUBLE PRECISION, INTENT(IN) :: r(3), xp, l, h
 
-                  K = l / sqrt(h*h + l*l) * ATANH((h*h + l*r(1) - h*r(2) - l*xp*(1 + h*h/l/l)) / &
-                        sqrt((h*h + l*l) * (r(2)*r(2) - 2*r(2)*h + h*h + r(1)*r(1) - 2*(h*h + l*r(1) - h*r(2))*xp/l + &
-                        xp*xp*(1 + h*h/l/l) + r(3)*r(3))))
+      K = l / sqrt(h*h + l*l) * ATANH((h*h + l*r(1) - h*r(2) - l*xp*(1 + h*h/l/l)) / &
+            sqrt((h*h + l*l) * (r(2)*r(2) - 2*r(2)*h + h*h + r(1)*r(1) - 2*(h*h + l*r(1) - h*r(2))*xp/l + &
+            xp*xp*(1 + h*h/l/l) + r(3)*r(3))))
 
-            RETURN
-            END FUNCTION K
+      RETURN
+      END FUNCTION K
 
-            FUNCTION Lfunc(r, xp)
-                  IMPLICIT NONE
-                  DOUBLE PRECISION :: Lfunc
-                  DOUBLE PRECISION, INTENT(IN) :: r(3), xp
-                  
-                  Lfunc = ATANH((r(1) - xp) / sqrt(r(1)*r(1) - 2*r(1)*xp + xp*xp + r(2)*r(2) + r(3)*r(3)))
+      FUNCTION Lfunc(r, xp)
+      IMPLICIT NONE
+      DOUBLE PRECISION :: Lfunc
+      DOUBLE PRECISION, INTENT(IN) :: r(3), xp
+      
+      Lfunc = ATANH((r(1) - xp) / sqrt(r(1)*r(1) - 2*r(1)*xp + xp*xp + r(2)*r(2) + r(3)*r(3)))
 
-                  RETURN
-                  
-            END FUNCTION Lfunc
+      RETURN
+        
+      END FUNCTION Lfunc
 
       END FUNCTION mumaterial_getNyz
 
@@ -1599,66 +1599,74 @@
       DOUBLE PRECISION :: mumaterial_getNzz
       DOUBLE PRECiSION, INTENT(IN) :: r(3), l, h
             
-            mumaterial_getNzz = -1.d0/(16.d0*ATAN(1.d0)) * (P(r,l,l,h) - P(r,0.d0,l,h) - (Q(r,l) - Q(r,0.d0)))
-
-            RETURN
+      mumaterial_getNzz = -1.d0/(16.d0*ATAN(1.d0)) * (P(r,l,l,h) - P(r,0.d0,l,h) - (Q(r,l) - Q(r,0.d0)))
+      RETURN
       
       CONTAINS
 
-            FUNCTION P(r, xp, l, h)
-            IMPLICIT NONE
-            DOUBLE PRECISION :: P
-            DOUBLE PRECISION, INTENT(IN) :: r(3), xp, l, h
+      FUNCTION P(r, xp, l, h)
+      IMPLICIT NONE
+      DOUBLE PRECISION :: P
+      DOUBLE PRECISION, INTENT(IN) :: r(3), xp, l, h
 
-                  P = ATAN((r(1)*(h - r(2)) - xp*(h*(1 - r(1)/l) - r(2)) - h*(r(1)*r(1) + r(3)*r(3))/l) / &
-                        (r(3)*sqrt(r(2)*r(2) - 2*r(2)*h + h*h + r(1)*r(1) + xp*xp*(1 + h*h/l/l) - &
-                        2*xp*(h*h + l*r(1) - h*r(2))/l + r(3)*r(3))))
+        P = ATAN((r(1)*(h - r(2)) - xp*(h*(1 - r(1)/l) - r(2)) - h*(r(1)*r(1) + r(3)*r(3))/l) / &
+              (r(3)*sqrt(r(2)*r(2) - 2*r(2)*h + h*h + r(1)*r(1) + xp*xp*(1 + h*h/l/l) - &
+              2*xp*(h*h + l*r(1) - h*r(2))/l + r(3)*r(3))))
 
-            RETURN
-            END FUNCTION P
+      RETURN
+      END FUNCTION P
 
-            FUNCTION Q(r, xp)
-            IMPLICIT NONE
-            DOUBLE PRECISION :: Q
-            DOUBLE PRECISION, INTENT(IN) :: r(3), xp
+      FUNCTION Q(r, xp)
+      IMPLICIT NONE
+      DOUBLE PRECISION :: Q
+      DOUBLE PRECISION, INTENT(IN) :: r(3), xp
 
-                  Q = -ATAN((r(1) - xp)*r(2) / (r(3)*sqrt((r(1)*r(1) - 2*r(1)*xp + xp*xp + r(2)*r(2) + r(3)*r(3)))))
-            
-            RETURN
-            END FUNCTION Q
+            Q = -ATAN((r(1) - xp)*r(2) / (r(3)*sqrt((r(1)*r(1) - 2*r(1)*xp + xp*xp + r(2)*r(2) + r(3)*r(3)))))
+      
+      RETURN
+      END FUNCTION Q
 
       END FUNCTION mumaterial_getNzz
 
-      FUNCTION mumaterial_cross(a, b)
-            IMPLICIT NONE
-            DOUBLE PRECISION, INTENT(IN), DIMENSION(3) :: a, b
-            DOUBLE PRECISION, DIMENSION(3) :: mumaterial_cross
+      FUNCTION mumaterial_cross(a, b) 
+      !-----------------------------------------------------------------------
+      ! mumaterial_cross: calculates the cross product a * b.
+      !-----------------------------------------------------------------------
+      ! param[in]: a. 1x3 vector
+      ! param[in]: b: 1x3 vector
+      !-----------------------------------------------------------------------
+      IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(IN), DIMENSION(3) :: a, b
+      DOUBLE PRECISION, DIMENSION(3) :: prod
 
-            mumaterial_cross(1) = a(2)*b(3) - a(3)*b(2)
-            mumaterial_cross(2) = a(3)*b(1) - a(1)*b(3)
-            mumaterial_cross(3) = a(1)*b(2) - a(2)*b(1)
+      mumaterial_cross(1) = a(2)*b(3) - a(3)*b(2)
+      mumaterial_cross(2) = a(3)*b(1) - a(1)*b(3)
+      mumaterial_cross(3) = a(1)*b(2) - a(2)*b(1)
 
-            RETURN
+      RETURN
       END FUNCTION mumaterial_cross
 
       FUNCTION mumaterial_gettetvolume(v1,v2,v3,v4)
-            IMPLICIT NONE
-            DOUBLE PRECISION, DIMENSION(3), INTENT(in) :: v1, v2, v3, v4
-            DOUBLE PRECISION :: mumaterial_gettetvolume
+      !-----------------------------------------------------------------------
+      ! mumaterial_gettetvolume: Calculates the volume of an element.
+      !-----------------------------------------------------------------------
+      IMPLICIT NONE
+      DOUBLE PRECISION, DIMENSION(3), INTENT(in) :: v1, v2, v3, v4
+      DOUBLE PRECISION :: mumaterial_gettetvolume
 
-            mumaterial_gettetvolume = ABS(dot_product(v1-v4,mumaterial_cross(v2-v4,v3-v4)))/6.0
-            RETURN
+      mumaterial_gettetvolume = ABS(dot_product(v1-v4,mumaterial_cross(v2-v4,v3-v4)))/6.0
+      RETURN
 
       END FUNCTION mumaterial_gettetvolume
 
 
       SUBROUTINE mumaterial_getneighbours()
-
+      !-----------------------------------------------------------------------
+      ! mumaterial_getneighbours: Finds all UK neighbors of an element.
+      !-----------------------------------------------------------------------
       INTEGER :: i, j, k, c, i_tile
       DOUBLE PRECISION, ALLOCATABLE ::  dist(:), dx(:,:)
       LOGICAL, ALLOCATABLE :: mask(:)
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       ALLOCATE(nbrs_count(ntet_proc),mask(ntet),dist(ntet))
       nbrs_count = 0
@@ -1766,7 +1774,10 @@
       END SUBROUTINE mumaterial_split
 
       SUBROUTINE mumaterial_syncM()
-
+      !-----------------------------------------------------------------------
+      ! mumaterial_syncM: Synchronizes M across all MPI nodes and recalculates
+      ! magnetic moment of clusters. Called after each iteration.
+      !-----------------------------------------------------------------------
       IMPLICIT NONE
 
       INTEGER :: i, i_tile
@@ -1784,15 +1795,14 @@
       END IF
 
       ! Global M array
-      ALLOCATE(M_local(3,ntet))
-      M_local = 0.0
-      M_local(:, dom_proc(1:ntet_proc)) = M(:, dom_proc(1:ntet_proc))
-      CALL MPI_BARRIER(comm_shar, ierr_mpi)
+      CALL MPI_BARRIER( comm_shar, ierr_mpi)
       IF (shar_rank.EQ.master) THEN
+        ALLOCATE(M_local(3,ntet))
+        M_local = 0.0
+        M_local(:, dom_shar(1:ntet_shar)) = M(:, dom_shar(1:ntet_shar))
         CALL MPI_ALLREDUCE(M_local, M, 3*ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
+        DEALLOCATE(M_local)
       END IF
-      DEALLOCATE(M_local)
-
       CALL MPI_BARRIER( comm_shar, ierr_mpi)
 
       END SUBROUTINE mumaterial_syncM
@@ -2029,11 +2039,10 @@
 
       END SUBROUTINE mumaterial_writemag
 
-      SUBROUTINE mumaterial_output(path, x, y, z)
+      SUBROUTINE mumaterial_output(x, y, z)
       !-----------------------------------------------------------------------
       ! mumaterial_output: Outputs B-field and points to text files
       !-----------------------------------------------------------------------
-      ! param[in]: path. Path to store files in
       ! param[in]: x. x-cooridinates of points at which to determine the magnetic field
       ! param[in]: y. y-cooridinates of points at which to determine the magnetic field
       ! param[in]: z. z-cooridinates of points at which to determine the magnetic field
@@ -2041,7 +2050,6 @@
       !-----------------------------------------------------------------------
     
       IMPLICIT NONE
-      CHARACTER(LEN=*), INTENT(in) :: path
       DOUBLE PRECISION, INTENT(in) :: x(:), y(:), z(:)
       INTEGER :: i 
       INTEGER :: npoints
