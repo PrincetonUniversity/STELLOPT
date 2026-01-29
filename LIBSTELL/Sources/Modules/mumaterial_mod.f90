@@ -165,13 +165,12 @@
 !           mumaterial_getNzz: z-component
 !         mumaterial_cross:         Cross product of two vectors
 !         mumaterial_getState:      Interpolates function 
-!         mumaterial_gethdipole:    Calculates dipole field at point from tet
 !
 !       MPI 
-!         mumaterial_split:            Divides domain amongst shar_mem nodes
+!         mumaterial_split:            Splits input domain into two subdomains
 !         mumaterial_sync_array2d_dbl: Syncs any 2D,DBL array on shar_mem nodes
-!         mumaterial_syncM:       Syncs (3,ntet_shar) DBL array on shar_mem nodes
-!         mumaterial_free:             Frees MPI memory
+!         mumaterial_syncM: Syncs magnetization array on shar_mem nodes
+!         mumaterial_free:  Frees MPI memory
 !       Output
 !         mumaterial_output:  Output B-field and points to file
 !         mumaterial_getb:    Calculates magnetic field in space
@@ -728,7 +727,7 @@
             dom_in = dom_shar
             DEALLOCATE(dom_shar)
             targ = 0.5
-            CALL mumaterial_split(ntet_shar, dom_in, ntet, tet_cen, tol, delta, targ, dom_shar, dom_out_2) ! Split box
+            CALL mumaterial_split(dom_in,targ,dom_shar,dom_out_2) ! Split box
             DEALLOCATE(dom_in)
             ntet_shar  = SIZE(dom_shar)
             ydomsize = SIZE(dom_out_2)            
@@ -811,7 +810,7 @@
             targ = DBLE(a)/DBLE(n_proc_targ)
             reci = master + 1
             ! Divide box initially and send to two threads
-            CALL mumaterial_split(ntet_shar, dom_shar, ntet, tet_cen, tol, delta, targ, dom_proc, dom_out_2)
+            CALL mumaterial_split(dom_shar,targ,dom_proc,dom_out_2)
             ntet_proc = SIZE(dom_proc)
             CALL MPI_SEND(SIZE(dom_out_2),          1, MPI_INTEGER, reci, 101, comm_shar, ierr_mpi) 
             CALL MPI_SEND(dom_out_2,  SIZE(dom_out_2), MPI_INTEGER, reci, 102, comm_shar, ierr_mpi)
@@ -866,7 +865,7 @@
                 ALLOCATE(temp_dom(ntet_proc))
                 temp_dom = dom_proc
                 DEALLOCATE(dom_proc)
-                CALL mumaterial_split(ntet_proc, temp_dom, ntet, tet_cen, tol, delta, targ, dom_proc, dom_out_2)
+                CALL mumaterial_split(temp_dom,targ,dom_proc,dom_out_2)
                 ntet_proc = SIZE(dom_proc)
                 CALL MPI_SEND(SIZE(dom_out_2),          1, MPI_INTEGER, master, 101, comm_shar, ierr_mpi) 
                 CALL MPI_SEND(dom_out_2,  SIZE(dom_out_2), MPI_INTEGER, master, 102, comm_shar, ierr_mpi)
@@ -1754,7 +1753,7 @@
       size1 = NINT(targ*boxsize)
       size2 = boxsize-size1
       IF ((size1.LT.1).OR.(size2.LT.1)) THEN
-        WRITE(6,"(A,I0,A,F0.3,A,I0,A)") "  MUMAT_SPLIT: RANK ", world_rank & 
+        WRITE(6,"(A,I0,A,F0.3,A,I0,A)") "  MUMAT_SPLIT: RANK ", world_rank, & 
           " CANNOT SPLIT (targ=", targ, ", boxsize=", boxsize, ")"
         WRITE(6,"(A)") "  MUMAT_SPLIT: FORCE STOPPING CALCULATIONS"
 #if defined(MPI_OPT)
@@ -1951,26 +1950,7 @@
 
       RETURN
       END SUBROUTINE mumaterial_getState
-
-      SUBROUTINE mumaterial_gethdipole(pos1, pos2, mag, vol, H)
-            
-      IMPLICIT NONE
-      DOUBLE PRECISION, DIMENSION(3), INTENT(in) :: pos1, pos2, mag
-      DOUBLE PRECISION, DIMENSION(3), INTENT(inout) :: H
-      DOUBLE PRECISION, DIMENSION(3) :: n, mom, r, rhat
-      DOUBLE PRECISION :: rnorm, vol
-
-      r = (pos2-pos1)
-      rnorm = NORM2(r)
-      rhat = r/rnorm
-
-      mom = vol*mag
-      H = H + INV4PI*(3*dot_product(mom, rhat)*rhat-mom)/(rnorm**3)
-
-      END SUBROUTINE mumaterial_gethdipole
-      
-
-
+    
       SUBROUTINE mumaterial_getb_scalar(x, y, z, Bx, By, Bz, getBfld)
       !-----------------------------------------------------------------------
       ! mumaterial_getb: Calculates total magnetic field at a point in space
