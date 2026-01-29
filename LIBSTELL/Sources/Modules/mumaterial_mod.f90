@@ -490,7 +490,7 @@
       CLOSE(iunit)
 
       ! set default values
-      CALL mumaterial_setdefs(1.0d-5, 100, 0.7d0, 0.75d0, 10, 20, 99.d0)
+      CALL mumaterial_setdefs(1.0d-5, 100, 0.7d0, 0.75d0, 10, 20.0, 99.d0)
 
       RETURN
 
@@ -626,6 +626,7 @@
       LOGICAL, ALLOCATABLE :: mid_mask(:)
       INTEGER :: n, idx
       INTEGER :: ntet_proc_min, ntet_proc_max, ntet_shar_min, ntet_shar_max
+      INTEGER :: nbrs_proc_min, nbrs_proc_max
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! Apply offset
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -973,8 +974,8 @@
       IF (lcomm) THEN
         CALL MPI_ALLREDUCE(MINVAL(nbrs_count),nbrs_proc_min,1,MPI_INTEGER,MPI_MIN,comm_world,ierr_mpi)
         CALL MPI_ALLREDUCE(MAXVAL(nbrs_count),nbrs_proc_max,1,MPI_INTEGER,MPI_MAX,comm_world,ierr_mpi)
-        IF (lverb) THEN 
-          WRITE(6,'(3X,A,I0,A,I0,A)') 'Neighbors    : [',nbrs_proc_min,', ',nbrs_proc_max,']'
+        CALL MPI_ALLREDUCE(MINVAL(nbrs_count),nbrs_proc_min,1,MPI_INTEGER,MPI_MIN,comm_world,ierr_mpi)
+        CALL MPI_ALLREDUCE(MAXVAL(nbrs_count),nbrs_proc_max,1,MPI_INTEGER,MPI_MAX,comm_world,ierr_mpi)
           FLUSH(6)         
         END IF
       END IF
@@ -1979,9 +1980,9 @@
       CALL mumaterial_getbmag_scalar(x, y, z, Bx_mag, By_mag, Bz_mag)
       CALL getBfld(x, y, z, Bx, By, Bz)
 
-      Bx = Bx + H(1) * MU0
-      By = By + H(2) * MU0
-      Bz = Bz + H(3) * MU0
+      Bx = Bx + Bx_mag
+      By = By + By_mag
+      Bz = Bz + Bz_mag
 
       RETURN
       END SUBROUTINE mumaterial_getb_scalar
