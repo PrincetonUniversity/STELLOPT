@@ -531,7 +531,7 @@
         WRITE(iunit,'(3X,A,I7)')     'Tetrahedrons : ',ntet
         WRITE(iunit,'(3X,A,F7.3)')  'Pad factor   : ',padFactor
         WRITE(iunit,'(3X,A,I7)')    'Max Iter.    : ',maxIter
-        WRITE(iunit,'(3X,A,EN73)') 'Max Error    : ',threshold
+        WRITE(iunit,'(3X,A,EN7.3)') 'Max Error    : ',threshold
         WRITE(iunit,'(3X,A,F7.3)')  'Lambda start : ',lambdaStart
         WRITE(iunit,'(3X,A,F7.3)')  'Lambda fact. : ',lambdaFactor
         WRITE(iunit,'(3X,A,I7)')     'Lambda thrsh.: ',lambdaThresh
