@@ -529,13 +529,13 @@
         WRITE(iunit,'(3X,A,A)')      'Date         : ',TRIM(date)
         WRITE(iunit,'(3X,A,I7)')     'Vertices     : ',nvertex
         WRITE(iunit,'(3X,A,I7)')     'Tetrahedrons : ',ntet
-        WRITE(iunit,'(3X,A,F12.3)')  'Pad factor   : ',padFactor
-        WRITE(iunit,'(3X,A,I12)')    'Max Iter.    : ',maxIter
-        WRITE(iunit,'(3X,A,EN12.3)') 'Max Error    : ',threshold
-        WRITE(iunit,'(3X,A,F12.3)')  'Lambda start : ',lambdaStart
-        WRITE(iunit,'(3X,A,F12.3)')  'Lambda fact. : ',lambdaFactor
+        WRITE(iunit,'(3X,A,F7.3)')  'Pad factor   : ',padFactor
+        WRITE(iunit,'(3X,A,I7)')    'Max Iter.    : ',maxIter
+        WRITE(iunit,'(3X,A,EN73)') 'Max Error    : ',threshold
+        WRITE(iunit,'(3X,A,F7.3)')  'Lambda start : ',lambdaStart
+        WRITE(iunit,'(3X,A,F7.3)')  'Lambda fact. : ',lambdaFactor
         WRITE(iunit,'(3X,A,I7)')     'Lambda thrsh.: ',lambdaThresh
-        WRITE(iunit,'(3X,A,F10.2,A)')'Converged at : ',convCheck,' %'
+        WRITE(iunit,'(3X,A,F7.2,A)')'Converged at : ',convCheck,' %'
         WRITE(iunit,'(3X,A,I7)')     'State Funcs. : ',nstate
         DO i = 1, nstate
           WRITE(iunit,'(5X,A,I0)') 'State Function ',i
@@ -617,6 +617,7 @@
       CHARACTER(LEN=6) :: strcount, splitcount
 
       DOUBLE PRECISION :: Bx, By, Bz
+      DOUBLE PRECISION :: cutoff
       DOUBLE PRECISION :: targ
       DOUBLE PRECISION :: MAT(3,3)
       INTEGER :: splits, ydomsize, reci, src, n_proc_targ, a, b
@@ -626,6 +627,8 @@
       INTEGER :: n, idx
       INTEGER :: ntet_proc_min, ntet_proc_max, ntet_shar_min, ntet_shar_max
       INTEGER :: nbrs_proc_min, nbrs_proc_max
+      DOUBLE PRECISION :: d_cluster_min,  d_cluster_max
+      DOUBLE PRECISION :: H_app_norm_min, H_app_norm_max
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! Apply offset
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -843,32 +846,14 @@
 
 #endif
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      ! Division info print (only for MPI)
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#if defined(MPI_OPT)
-      IF (lcomm) THEN
-        CALL MPI_ALLREDUCE(ntet_proc,ntet_proc_min,1,MPI_INTEGER,MPI_MIN,comm_world,ierr_mpi)
-        CALL MPI_ALLREDUCE(ntet_proc,ntet_proc_max,1,MPI_INTEGER,MPI_MAX,comm_world,ierr_mpi)
-        CALL MPI_ALLREDUCE(ntet_shar,ntet_shar_min,1,MPI_INTEGER,MPI_MIN,comm_world,ierr_mpi)
-        CALL MPI_ALLREDUCE(ntet_shar,ntet_shar_min,1,MPI_INTEGER,MPI_MAX,comm_world,ierr_mpi)
-        IF (lverb) THEN 
-          WRITE(6,*)               ' ------- Domain Division ------'
-          WRITE(6,'(3X,A,I7)')        'MPI Nodes    : ',master_size
-          WRITE(6,'(3X,A,I0,A,I0,A)') 'Node range   : [',ntet_shar_min,', ',ntet_shar_max,']'
-          WRITE(6,'(3X,A,I7)')        'MPI Threads  : ',world_size
-          WRITE(6,'(3X,A,I0,A,I0,A)') 'Thread range : [',ntet_proc_min,', ',ntet_proc_max,']'
-          FLUSH(6)         
-        END IF
-      END IF
-#endif
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Calculate and write cluster quantities
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      cutoff = 5.0
       r_cluster = 0.0
       mom_cluster = 0.0
       d_cluster = 0.0
-#if defined(MPI_OPT)
       IF (lcomm) THEN
+#if defined(MPI_OPT)
         ALLOCATE(dom_sizes(world_size))
         dom_sizes = 0
         wr_dex = world_rank+1 ! Pesky 0-based indexing
@@ -897,7 +882,7 @@
           CALL MPI_ALLREDUCE( MPI_IN_PLACE, d_cluster,   world_size, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
         END IF
         ALLOCATE(lisfar(world_size))
-        lisfar = NORM2(r_cluster - SPREAD(r_cluster(:,wr_dex),DIM=2, NCOPIES=world_size),DIM=1) > 10.0 * d_cluster
+        lisfar = NORM2(r_cluster - SPREAD(r_cluster(:,wr_dex),DIM=2, NCOPIES=world_size),DIM=1) > cutoff * d_cluster
 
         ! Determine which clusters are in the "mid-field" from our cluster
         ALLOCATE(mid_mask(world_size))
@@ -921,32 +906,51 @@
 
         DEALLOCATE(dom_sizes)
         CALL MPI_BARRIER(comm_shar, ierr_mpi)
-      END IF
 #endif
-      ! Non-MPI
-      IF (.NOT.lcomm) THEN
+      ELSE ! Non-MPI
         ntet_mid_proc = 0
         ALLOCATE(dom_mid_proc(0))
         ALLOCATE(lisfar(1))
         lisfar(1) = .FALSE.
       END IF
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      ! Determine nearest neighbors (array includes self)
+      ! Division info print (only for MPI)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Determining nearest neighbors"
-      IF (lcomm) CALL MPI_CALC_MYRANGE(comm_shar, 1, ntet_shar, mystart, myend)
-      CALL mumaterial_getneighbours()
-  
 #if defined(MPI_OPT)
       IF (lcomm) THEN
-        CALL MPI_ALLREDUCE(MINVAL(nbrs_count),nbrs_proc_min,1,MPI_INTEGER,MPI_MIN,comm_world,ierr_mpi)
-        CALL MPI_ALLREDUCE(MAXVAL(nbrs_count),nbrs_proc_max,1,MPI_INTEGER,MPI_MAX,comm_world,ierr_mpi)
-        CALL MPI_ALLREDUCE(MINVAL(nbrs_count),nbrs_proc_min,1,MPI_INTEGER,MPI_MIN,comm_world,ierr_mpi)
-        CALL MPI_ALLREDUCE(MAXVAL(nbrs_count),nbrs_proc_max,1,MPI_INTEGER,MPI_MAX,comm_world,ierr_mpi)
-        FLUSH(6)   
-        CALL MPI_BARRIER(comm_world, ierr_mpi)      
+        CALL MPI_ALLREDUCE(ntet_proc,ntet_proc_min,1,MPI_INTEGER,MPI_MIN,comm_world,ierr_mpi)
+        CALL MPI_ALLREDUCE(ntet_proc,ntet_proc_max,1,MPI_INTEGER,MPI_MAX,comm_world,ierr_mpi)
+        CALL MPI_ALLREDUCE(ntet_shar,ntet_shar_min,1,MPI_INTEGER,MPI_MIN,comm_world,ierr_mpi)
+        CALL MPI_ALLREDUCE(ntet_shar,ntet_shar_max,1,MPI_INTEGER,MPI_MAX,comm_world,ierr_mpi)
+        d_cluster_min = MINVAL(d_cluster)
+        d_cluster_max = MAXVAL(d_cluster)
+        IF (lverb) THEN 
+          WRITE(6,*)               ' ------- Domain Division ------'
+          WRITE(6,'(3X,A,I7)')        'MPI Nodes    : ',master_size
+          WRITE(6,'(3X,A,I0,A,I0,A)') 'Node range   : [',ntet_shar_min,', ',ntet_shar_max,']'
+          WRITE(6,'(3X,A,I7)')        'MPI Threads  : ',world_size
+          WRITE(6,'(3X,A,I0,A,I0,A)') 'Thread range : [',ntet_proc_min,', ',ntet_proc_max,']'
+          WRITE(6,'(3X,A,EN0.3,A,EN0.3,A)') 'Cluster size : [',d_cluster_min,', ',d_cluster_max,'] m'
+          FLUSH(6)         
+        END IF
       END IF
 #endif
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! Determine nearest neighbors (array includes self)
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      CALL mumaterial_getneighbours()  
+      nbrs_proc_min = MINVAL(nbrs_count)
+      nbrs_proc_max = MAXVAL(nbrs_count)
+#if defined(MPI_OPT)
+      IF (lcomm) THEN
+        CALL MPI_ALLREDUCE(MPI_IN_PLACE,nbrs_proc_min,1,MPI_INTEGER,MPI_MIN,comm_world,ierr_mpi)
+        CALL MPI_ALLREDUCE(MPI_IN_PLACE,nbrs_proc_max,1,MPI_INTEGER,MPI_MAX,comm_world,ierr_mpi)
+      END IF
+#endif
+      IF (lverb) THEN
+        WRITE(6,'(3X,A,I0,A,I0,A)') 'Neighbor range  : [',nbrs_proc_min,', ',nbrs_proc_max,']'
+        FLUSH(6)
+      END IF
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Calculate H_app
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -957,15 +961,21 @@
         CALL getBfld(tet_cen(1,i_tile), tet_cen(2,i_tile), tet_cen(3,i_tile), Bx, By, Bz)
         H_app(:,i) = [Bx/MU0, By/MU0, Bz/MU0]
       END DO
-
+      H_app_norm_min = MINVAL(NORM2(H_app,DIM=1))
+      H_app_norm_max = MAXVAL(NORM2(H_app,DIM=1))
 #if defined(MPI_OPT)
-      IF (lcomm) CALL MPI_BARRIER(comm_world, ierr_mpi)
+      IF (lcomm) THEN
+        CALL MPI_ALLREDUCE(MPI_IN_PLACE,H_app_norm_min,1,MPI_DOUBLE_PRECISION,MPI_MIN,comm_world,ierr_mpi)
+        CALL MPI_ALLREDUCE(MPI_IN_PLACE,H_app_norm_max,1,MPI_DOUBLE_PRECISION,MPI_MAX,comm_world,ierr_mpi)
+      END IF
 #endif
-
+      IF (lverb) THEN
+        WRITE(6,'(3X,A,I0,A,I0,A)') 'Happ-field range: [',nbrs_proc_min,', ',nbrs_proc_max,'] A/m'
+        FLUSH(6)
+      END IF
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Calculate N_store
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Calculating N_store"
       NULLIFY(N_store)
       ALLOCATE(N_store(3,3,nbrs_maxc,ntet_proc))
       N_store(:,:,:,:) = 0.0
@@ -976,7 +986,6 @@
           CALL mumaterial_getN(vertex(:,tet(1,j_tile)), vertex(:,tet(2,j_tile)), vertex(:,tet(3,j_tile)), vertex(:,tet(4,j_tile)), tet_cen(:,i_tile), N_store(:,:,j,i)) 
         END DO 
       END DO
-
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Calculate inv_mat_local for constant-mu-cases
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -987,9 +996,9 @@
         stype = state_type(state_dex(i_tile))
         IF (stype.EQ.3) THEN
             DO j = 1, nbrs_count(i)
-              IF (nbrs(j,i).EQ.i_tile) EXIT ! i_tile is always in nbrs.
+              IF (nbrs(j,i).EQ.i_tile) EXIT ! i_tile is always in nbrs
             END DO 
-            MAT = -(constant_mu(state_dex(i_tile)) - 1) * N_store(:,:,j,i)
+            MAT = -(constant_mu(state_dex(i_tile))- 1)*N_store(:,:,j,i)
             MAT(1,1) = MAT(1,1) + 1.0
             MAT(2,2) = MAT(2,2) + 1.0
             MAT(3,3) = MAT(3,3) + 1.0
@@ -997,15 +1006,16 @@
             inv_mat_local(:,:,i) = MAT
         END IF
       END DO
-#if defined(MPI_OPT)
-      IF (lcomm) CALL MPI_BARRIER(comm_world, ierr_mpi)
-#endif
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Begin iterations
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Beginning Iterations"
+#if defined(MPI_OPT)
+      IF (lcomm) CALL MPI_BARRIER(comm_world, ierr_mpi)
+#endif
+      IF (lverb) WRITE (6,*) ' ------- MUMAT init done -------'
       CALL mumaterial_iterate_M()
-      IF (lverb) WRITE (6,*) "  MUMAT_INIT:  End Iterations"
+      IF (lverb) WRITE (6,*) ' ---- MUMAT iterations done ----'
+
       ! DEALLOCATE Helpers
       DEALLOCATE(nbrs, nbrs_count)
       DEALLOCATE(N_store,inv_mat_local)
@@ -1666,16 +1676,13 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      ALLOCATE(nbrs_count(ntet_proc),mask(ntet),dist(ntet),dx(3,ntet))
+      ALLOCATE(nbrs_count(ntet_proc),mask(ntet),dist(ntet))
       nbrs_count = 0
       
       ! Get largest neighbor count for allocation first
       DO i = 1, ntet_proc
         i_tile = dom_shar(i)
-        dx(1,:) = tet_cen(1,:) - tet_cen(1,i_tile)
-        dx(2,:) = tet_cen(2,:) - tet_cen(2,i_tile)
-        dx(3,:) = tet_cen(3,:) - tet_cen(3,i_tile)
-        dist = NORM2(dx,DIM=1)
+        dist = NORM2(tet_cen - SPREAD(SOURCE=tet_cen(:,i_tile), DIM=2, NCOPIES=ntet),DIM=1)
         nbrs_count(i) = COUNT(dist.LE.padFactor*tet_edge)
       END DO
 
@@ -1685,10 +1692,7 @@
       ! Actual neighbour loop
       DO i = 1, ntet_proc
         i_tile = dom_shar(i)
-        dx(1,:) = tet_cen(1,:) - tet_cen(1,i_tile)
-        dx(2,:) = tet_cen(2,:) - tet_cen(2,i_tile)
-        dx(3,:) = tet_cen(3,:) - tet_cen(3,i_tile)
-        dist = NORM2(dx,DIM=1)
+        dist = NORM2(tet_cen - SPREAD(SOURCE=tet_cen(:,i_tile), DIM=2, NCOPIES=ntet),DIM=1)
         mask = dist.LE.padFactor*tet_edge
         j = 0
         DO k = 1, ntet
@@ -1698,7 +1702,7 @@
           END IF
         END DO
       END DO
-      DEALLOCATE(mask,dist,dx)
+      DEALLOCATE(mask,dist)
 
       END SUBROUTINE mumaterial_getneighbours
 
