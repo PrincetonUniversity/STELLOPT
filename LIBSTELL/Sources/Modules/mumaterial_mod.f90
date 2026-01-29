@@ -28,8 +28,8 @@
       PROCEDURE(externalFieldFunc), POINTER :: getBfld
       ABSTRACT INTERFACE
         SUBROUTINE externalFieldFunc(x,y,z,Bx,By,Bz)
-          REAL, INTENT(in)  :: x,y,z
-          REAL, INTENT(out) :: Bx,By,Bz
+          DOUBLE PRECISION, INTENT(in)  :: x,y,z
+          DOUBLE PRECISION, INTENT(out) :: Bx,By,Bz
         END SUBROUTINE externalFieldFunc
       END INTERFACE
 !------------------------------------------------------------------------------
@@ -277,7 +277,7 @@
       END SUBROUTINE mumaterial_setup
 
 !------------------------------------------------------------------------------
-!       mumaterial_setd: Sets default values
+!       mumaterial_setdefs: Sets default values
 !------------------------------------------------------------------------------
 ! param[in]: mE. threshold: threshold for determining convergence
 ! param[in]: mI. maxIter: max amount of iterations
@@ -287,7 +287,7 @@
 ! param[in]: padF. padFactor: factor for sphere around tets for neighbours
 ! param[in]: cc. convCheck: Stop when this percentage of elemnts has converged
 !------------------------------------------------------------------------------
-      SUBROUTINE mumaterial_setd(mE, mI, la, laF, laT, padF, cc)
+      SUBROUTINE mumaterial_setdefs(mE, mI, la, laF, laT, padF, cc)
  
       IMPLICIT NONE
 
@@ -304,7 +304,7 @@
 
       RETURN
 
-      END SUBROUTINE mumaterial_setd
+      END SUBROUTINE mumaterial_setdefs
 
 !------------------------------------------------------------------------------
 ! mumaterial_load: Loads magnetic material file and sets MPI defaults
@@ -490,7 +490,7 @@
       CLOSE(iunit)
 
       ! set default values
-      CALL MUMATERIAL_SETD(1.0d-5, 100, 0.7d0, 0.75d0, 10, 20, 99.d0)
+      CALL mumaterial_setdefs(1.0d-5, 100, 0.7d0, 0.75d0, 10, 20, 99.d0)
 
       RETURN
 
@@ -626,8 +626,6 @@
       LOGICAL, ALLOCATABLE :: mid_mask(:)
       INTEGER :: n, idx
       INTEGER :: ntet_proc_min, ntet_proc_max, ntet_shar_min, ntet_shar_max
-      INTEGER :: nbrs_proc_min, nbrs_proc_max, nbrs_shar_min, nbrs_shar_max
-      
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! Apply offset
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -973,8 +971,8 @@
       
 #if defined(MPI_OPT)
       IF (lcomm) THEN
-        CALL MPI_ALLREDUCE(min(nbrs_count),nbrs_proc_min,1,MPI_INTEGER,MPI_MIN,comm_world,ierr_mpi)
-        CALL MPI_ALLREDUCE(max(nbrs_count),nbrs_proc_max,1,MPI_INTEGER,MPI_MAX,comm_world,ierr_mpi)
+        CALL MPI_ALLREDUCE(MINVAL(nbrs_count),nbrs_proc_min,1,MPI_INTEGER,MPI_MIN,comm_world,ierr_mpi)
+        CALL MPI_ALLREDUCE(MAXVAL(nbrs_count),nbrs_proc_max,1,MPI_INTEGER,MPI_MAX,comm_world,ierr_mpi)
         IF (lverb) THEN 
           WRITE(6,'(3X,A,I0,A,I0,A)') 'Neighbors    : [',nbrs_proc_min,', ',nbrs_proc_max,']'
           FLUSH(6)         
