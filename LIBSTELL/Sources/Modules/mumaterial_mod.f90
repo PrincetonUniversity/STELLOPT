@@ -527,16 +527,16 @@
         WRITE(iunit,'(3X,A,A)')      'File: ',TRIM(file_string)
         WRITE(iunit,'(3X,A,A)')      'Model Name   : ',TRIM(machine_string)
         WRITE(iunit,'(3X,A,A)')      'Date         : ',TRIM(date)
-        WRITE(iunit,'(3X,A,I7)')     'Vertices     : ',nvertex
-        WRITE(iunit,'(3X,A,I7)')     'Tetrahedrons : ',ntet
-        WRITE(iunit,'(3X,A,F7.3)')  'Pad factor   : ',padFactor
-        WRITE(iunit,'(3X,A,I7)')    'Max Iter.    : ',maxIter
-        WRITE(iunit,'(3X,A,EN7.3)') 'Max Error    : ',threshold
-        WRITE(iunit,'(3X,A,F7.3)')  'Lambda start : ',lambdaStart
-        WRITE(iunit,'(3X,A,F7.3)')  'Lambda fact. : ',lambdaFactor
-        WRITE(iunit,'(3X,A,I7)')     'Lambda thrsh.: ',lambdaThresh
+        WRITE(iunit,'(3X,A,I9)')     'Vertices     : ',nvertex
+        WRITE(iunit,'(3X,A,I9)')     'Tetrahedrons : ',ntet
+        WRITE(iunit,'(3X,A,F9.3)')  'Pad factor   : ',padFactor
+        WRITE(iunit,'(3X,A,I9)')    'Max Iter.    : ',maxIter
+        WRITE(iunit,'(3X,A,EN9.3)') 'Max Error    : ',threshold
+        WRITE(iunit,'(3X,A,F9.3)')  'Lambda start : ',lambdaStart
+        WRITE(iunit,'(3X,A,F9.3)')  'Lambda fact. : ',lambdaFactor
+        WRITE(iunit,'(3X,A,I9)')     'Lambda thrsh.: ',lambdaThresh
         WRITE(iunit,'(3X,A,F7.2,A)')'Converged at : ',convCheck,' %'
-        WRITE(iunit,'(3X,A,I7)')     'State Funcs. : ',nstate
+        WRITE(iunit,'(3X,A,I9)')     'State Funcs. : ',nstate
         DO i = 1, nstate
           WRITE(iunit,'(5X,A,I0)') 'State Function ',i
           IF (state_type(i)==1) THEN
@@ -675,7 +675,6 @@
 
 #if defined(MPI_OPT)
       IF (ldosync) THEN
-        IF (lverb) WRITE(6,*) "  MUMAT_INIT:  Synchronising tetrahedron quantities"; FLUSH(6)
         CALL mumaterial_sync_array2d_dbl(tet_cen, 3,ntet,mystart,myend)
         CALL mumaterial_sync_array2d_dbl(tet_vol, 1,ntet,mystart,myend)
         CALL mumaterial_sync_array2d_dbl(tet_edge,1,ntet,mystart,myend)
@@ -705,7 +704,6 @@
 
 #if defined(MPI_OPT)   
       IF (ldosync.AND.(shar_rank.EQ.0)) THEN         
-        IF (lverb) WRITE(6,*) "  MUMAT_INIT:  Dividing input domain across MPI nodes"; FLUSH(6)         
         splits = NINT(LOG(Bx)/LOG(2.0)) ! log_2(X) = ln(X)/log(2)
         targ = 0.5
         DO
@@ -762,7 +760,6 @@
 #if defined(MPI_OPT)   
       IF (lcomm) THEN
         IF (shar_size.GT.1) THEN
-          IF (lverb) WRITE(6,*) "  MUMAT_INIT:  Dividing MPI subdomain across MPI threads"; FLUSH(6)         
           IF (shar_rank.EQ.master) THEN 
             ! Set up work initially
             n_proc_targ = shar_size
@@ -871,12 +868,8 @@
 
         ! Cluster position and diameter
         r_cluster(:,wr_dex) = SUM(tet_cen(:,dom_proc(1:ntet_proc)),DIM=2)/ntet_proc 
-        d_cluster(wr_dex) = 2.0 * SQRT( SUM( &
-                                  NORM2(tet_cen(:,dom_proc(1:ntet_proc)) - &
-                                    SPREAD(r_cluster(:,wr_dex), DIM=2, NCOPIES=ntet_proc),DIM=1)**2 &
-                                      ) / ntet_proc)
-        CALL MPI_ALLREDUCE( MPI_IN_PLACE, r_cluster, 3*world_size, MPI_DOUBLE_PRECISION, MPI_SUM, comm_shar, ierr_mpi )
-        CALL MPI_ALLREDUCE( MPI_IN_PLACE, d_cluster,   world_size, MPI_DOUBLE_PRECISION, MPI_SUM, comm_shar, ierr_mpi )
+        d_cluster(wr_dex) = 2.0 * SQRT( SUM(NORM2(tet_cen(:,dom_proc(1:ntet_proc)) -SPREAD(r_cluster(:,wr_dex), DIM=2, NCOPIES=ntet_proc),DIM=1)**2) / ntet_proc)
+        CALL MPI_BARRIER(comm_shar, ierr_mpi)
         IF (shar_rank.EQ.master) THEN
           CALL MPI_ALLREDUCE( MPI_IN_PLACE, r_cluster, 3*world_size, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
           CALL MPI_ALLREDUCE( MPI_IN_PLACE, d_cluster,   world_size, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
@@ -970,7 +963,7 @@
       END IF
 #endif
       IF (lverb) THEN
-        WRITE(6,'(3X,A,I0,A,I0,A)') 'Happ-field range: [',nbrs_proc_min,', ',nbrs_proc_max,'] A/m'
+        WRITE(6,'(3X,A,EN11.2,A,EN11.2,A)') 'Happ-field range: [',H_app_norm_min,', ',H_app_norm_max,'] A/m'
         FLUSH(6)
       END IF
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
