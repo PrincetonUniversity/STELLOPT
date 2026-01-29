@@ -490,7 +490,7 @@
       CLOSE(iunit)
 
       ! set default values
-      CALL mumaterial_setdefs(1.0d-5, 100, 0.7d0, 0.75d0, 10, 20.0, 99.d0)
+      CALL mumaterial_setdefs(1.0d-5, 100, 0.7d0, 0.75d0, 10, 20.d0, 99.d0)
 
       RETURN
 
@@ -964,24 +964,19 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Determine nearest neighbors (array includes self)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
       IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Determining nearest neighbors"
       IF (lcomm) CALL MPI_CALC_MYRANGE(comm_shar, 1, ntet_shar, mystart, myend)
       CALL mumaterial_getneighbours()
-
-      
+  
 #if defined(MPI_OPT)
       IF (lcomm) THEN
         CALL MPI_ALLREDUCE(MINVAL(nbrs_count),nbrs_proc_min,1,MPI_INTEGER,MPI_MIN,comm_world,ierr_mpi)
         CALL MPI_ALLREDUCE(MAXVAL(nbrs_count),nbrs_proc_max,1,MPI_INTEGER,MPI_MAX,comm_world,ierr_mpi)
         CALL MPI_ALLREDUCE(MINVAL(nbrs_count),nbrs_proc_min,1,MPI_INTEGER,MPI_MIN,comm_world,ierr_mpi)
         CALL MPI_ALLREDUCE(MAXVAL(nbrs_count),nbrs_proc_max,1,MPI_INTEGER,MPI_MAX,comm_world,ierr_mpi)
-          FLUSH(6)         
-        END IF
+        FLUSH(6)   
+        CALL MPI_BARRIER(comm_world, ierr_mpi)      
       END IF
-#endif
-#if defined(MPI_OPT)
-      IF (lcomm) CALL MPI_BARRIER(comm_world, ierr_mpi)
 #endif
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Calculate H_app
