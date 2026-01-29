@@ -22,8 +22,8 @@
       USE beams3d_physics_mod, ONLY: beams3d_BCART
       USE mumaterial_mod, ONLY: mumaterial_load, mumaterial_init_new, &
                                 mumaterial_info, mumaterial_getbmag_scalar,&
-                                mumaterial_setverb, mumaterial_setd, &
-                                mumaterial_free, mumaterial_debug, &
+                                mumaterial_setverb, mumaterial_setdefs, &
+                                mumaterial_free, mumaterial_setBfld &
                                 mumaterial_readmag, mumaterial_writemag
       USE mpi_params  
       USE mpi_inc      
@@ -70,33 +70,25 @@
       END IF
 #endif
 
-    ! Set mumaterial verbosity
+      ! Set mumaterial verbosity
       CALL mumaterial_setverb(lismaster)
-      !CALL mumaterial_debug(lismaster,lissubmaster,.TRUE.)
-      CALL mumaterial_debug(.FALSE.,.FALSE.,.FALSE.)
+      ! Free any used memory
       CALL mumaterial_free()
       ! Read the mu materials file
       CALL mumaterial_load(TRIM(mumat_string),istat, MPI_COMM_MUSHARE, MPI_COMM_MUMASTER, MPI_COMM_BEAMS)
-
       ! Set parameters
-      CALL mumaterial_setd(mumaterial_tol, mumaterial_niter, mumaterial_lambda, &
-                           mumaterial_lamfactor, mumaterial_lamthresh, & 
-                           mumaterial_padfactor, mumaterial_convcheck) 
+      CALL mumaterial_setdefs(mumaterial_tol, mumaterial_niter, mumaterial_lambda, &
+                              mumaterial_lamfactor, mumaterial_lamthresh, & 
+                              mumaterial_padfactor, mumaterial_convcheck) 
       ! Load magnetization file
       IF (lmumat_readmag) CALL mumaterial_readmag(TRIM(mumat_magfile))
-
-      
+      ! Set external field
+      CALL mumaterial_setBfld(beams3d_BCART)
+      IF (lverb)          CALL mumaterial_info(6, lmumat_skipiter)
 
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_MUSHARE,  ierr_mpi)
 #endif
-      
-      IF (lverb) THEN
-         CALL mumaterial_info(6, lmumat_skipiter)
-         WRITE(6,'(A,A)') '   FILE: ',TRIM(mumat_string)
-         CALL FLUSH(6)
-      END IF
-
       ! Create the Splines 
       IF (lissubmaster) THEN
          bcs1=(/ 0, 0/)
@@ -242,9 +234,7 @@
       CALL mpidealloc(BR4D,win_BR4D)
       CALL mpidealloc(BPHI4D,win_BPHI4D)
       CALL mpidealloc(BZ4D,win_BZ4D)
-      CALL MUMATERIAL_FREE()
-
-
+      CALL mumaterial_free()
 
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
