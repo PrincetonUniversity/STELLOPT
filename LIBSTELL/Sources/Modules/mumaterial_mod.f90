@@ -654,6 +654,7 @@
       ! Calculate range
       IF (lcomm) THEN 
 #if defined(MPI_OPT)
+        CALL MPI_BARRIER(comm_world, ierr_mpi)
         CALL MPI_CALC_MYRANGE(comm_world, 1, ntet, mystart, myend) 
 #endif
       ELSE
@@ -662,16 +663,17 @@
       END IF
 
       DO i = mystart, myend
-          tet_cen(:,i) = SUM(vertex(:,tet(:,i)), DIM=2) / 4.d0
+          tet_cen(:,i) = (vertex(:,tet(1,i)) + vertex(:,tet(2,i)) + &
+                          vertex(:,tet(3,i)) + vertex(:,tet(4,i))) / 4.d0
           tet_vol(i) = mumaterial_gettetvolume( &
               vertex(:,tet(1,i)),vertex(:,tet(2,i)), vertex(:,tet(3,i)),vertex(:,tet(4,i)))
           tet_rad(i) = SQRT(6.0)/12.d0*(6.d0*SQRT(2.0)*tet_vol(i))**(1.0/3.0)
       END DO
 
 #if defined(MPI_OPT)
-    CALL MPI_ALLREDUCE( MPI_IN_PLACE, tet_cen, 3*ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_world, ierr_mpi )
-    CALL MPI_ALLREDUCE( MPI_IN_PLACE, tet_vol,   ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_world, ierr_mpi )
-    CALL MPI_ALLREDUCE( MPI_IN_PLACE, tet_rad,   ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_world, ierr_mpi )
+    CALL MPI_ALLREDUCE( MPI_IN_PLACE, tet_cen, 3*ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
+    CALL MPI_ALLREDUCE( MPI_IN_PLACE, tet_vol,   ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
+    CALL MPI_ALLREDUCE( MPI_IN_PLACE, tet_rad,   ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
 #endif
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Split domain across MPI nodes
