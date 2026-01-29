@@ -630,7 +630,7 @@
       DOUBLE PRECISION :: Bx, By, Bz
       DOUBLE PRECISION :: tol, delta, targ
       DOUBLE PRECISION :: MAT(3,3)
-      INTEGER :: splits, ydomsize, reci, n_proc_targ, a, b
+      INTEGER :: splits, ydomsize, reci, src, n_proc_targ, a, b
       INTEGER, ALLOCATABLE :: dom_in(:), dom_out_2(:), dom_sizes(:),  &
                               mid_ids(:), cluster(:), temp_dom(:)
       LOGICAL, ALLOCATABLE :: mid_mask(:)
@@ -829,9 +829,10 @@
                 reci = reci + 1
                 ! Receive from any source
                 CALL MPI_RECV(ntet_proc,        1, MPI_INTEGER, MPI_ANY_SOURCE, 101, comm_shar, mstat, ierr_mpi)
+                src = mstat(MPI_SOURCE)
                 ALLOCATE(dom_proc(ntet_proc))
-                CALL MPI_RECV(dom_proc, ntet_proc, MPI_INTEGER, MPI_ANY_SOURCE, 102, comm_shar, mstat, ierr_mpi)
-                CALL MPI_RECV(n_proc_targ,      1, MPI_INTEGER, MPI_ANY_SOURCE, 103, comm_shar, mstat, ierr_mpi)
+                CALL MPI_RECV(dom_proc, ntet_proc, MPI_INTEGER, src, 102, comm_shar, mstat, ierr_mpi)
+                CALL MPI_RECV(n_proc_targ,      1, MPI_INTEGER, src, 103, comm_shar, mstat, ierr_mpi)
                 IF (reci.EQ.shar_size) THEN
                   EXIT ! That's us!
                 ELSE
@@ -1816,23 +1817,15 @@
         CALL MPI_REDUCE(mystart, ourstart, 1, MPI_INTEGER, MPI_MIN, 0, comm_shar, ierr_mpi)
         CALL MPI_REDUCE(myend,     ourend, 1, MPI_INTEGER, MPI_MAX, 0, comm_shar, ierr_mpi)
         IF (shar_rank.EQ.0) THEN
-            DO i = 1, ourstart-1
-                array(:,i) = 0 ! Zero array "above" data to keep
-            END DO
-            DO i = ourend+1, n2
-                array(:,i) = 0 ! Zero array "below" data to keep
-            END DO
-        END IF
-        CALL MPI_BARRIER( comm_shar, ierr_mpi)
-        IF (shar_rank.EQ.0) THEN ! Reduce arrays onto all shared memory islands
-            CALL MPI_ALLREDUCE( MPI_IN_PLACE, array, n1*n2, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
+          array(:,1:(ourstart-1)) = 0 ! Zero array "above" data to keep
+          array(:,(ourend+1):n2)  = 0 ! Zero array "below" data to keep
+          ! Reduce arrays onto all shared memory islands
+          CALL MPI_ALLREDUCE( MPI_IN_PLACE, array, n1*n2, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
         END IF
         CALL MPI_BARRIER( comm_shar, ierr_mpi)
 
         END SUBROUTINE mumaterial_sync_array2d_dbl
 
-        
-        
         SUBROUTINE mumaterial_syncM()
 
 #if defined(MPI_OPT)
@@ -1874,18 +1867,19 @@
 
       END SUBROUTINE mumaterial_syncM
 
-      SUBROUTINE mumaterial_getState(fx, fy, x, y)
+      SUBROUTINE mumaterial_getState(fx, fy, xq, y)
       !-----------------------------------------------------------------------
-      ! mumaterial_getState: Interpolates a function f at x to get a value y using B-splines based on De Boor's algorithm
+      ! mumaterial_getState: Interpolates a function f at xq to get a value y 
+      ! using B-splines based on De Boor's algorithm
       !-----------------------------------------------------------------------
-      ! param[in]: fx. x-coordinates of function to be interpolated
-      ! param[in]: fy. y-coordinates of function to be interpolated
-      ! param[in]: x. x-coordinate of evaluation point
-      ! param[out]: y. y-coordinate of evaluation point
+      ! param[in]:  fx. x-coordinates of function to be interpolated
+      ! param[in]:  fy. y-values of function to be interpolated
+      ! param[in]:  xq. evaluation point
+      ! param[out]: yq. interpolated f(xq)
       !-----------------------------------------------------------------------
       IMPLICIT NONE
-      DOUBLE PRECISION, INTENT(IN) :: fx(:), fy(:), x
-      DOUBLE PRECISION, INTENT(OUT) :: y
+      DOUBLE PRECISION, INTENT(IN) :: fx(:), fy(:), xq
+      DOUBLE PRECISION, INTENT(OUT) :: yq
       INTEGER :: n, i, k, p, r
       DOUBLE PRECISION :: alpha
       DOUBLE PRECISION, ALLOCATABLE :: t(:), d(:)
@@ -1898,55 +1892,55 @@
 
       ! Determine left index k
       ! Assume fx is non-decreasing
-      IF (x .lt. fx(1)) THEN
-            y = fy(1)
-            RETURN
-      ELSEIF (x .gt. fx(n)) THEN
-            y = fy(n)
-            RETURN
+      IF (xq .lt. fx(1)) THEN
+        yq = fy(1)
+        RETURN
+      ELSEIF (xq .gt. fx(n)) THEN
+        yq = fy(n)
+        RETURN
       ELSE
-            DO i = 2, n 
-                  IF (x .lt. fx(i)) THEN
-                        k = i - 1
-                        EXIT
-                  END IF
-            END DO
+        DO i = 2, n 
+          IF (xq .lt. fx(i)) THEN
+            k = i - 1
+            EXIT
+          END IF
+        END DO
       END IF
 
       ! Determine array with x-values, add padding if necessary
       DO i = 1, 2+2*(p-1)
-            r = k + i - p
-            IF (r .lt. 1) THEN
-                  t(i) = fx(1)
-            ELSEIF (r .gt. n) THEN
-                  t(i) = fx(n)
-            ELSE
-                  t(i) = fx(r)
-            END IF
+        r = k + i - p
+        IF (r .lt. 1) THEN
+          t(i) = fx(1)
+        ELSEIF (r .gt. n) THEN
+          t(i) = fx(n)
+        ELSE
+          t(i) = fx(r)
+        END IF
       END DO
 
       ! Determine array with coefficients, add padding if necessary
       DO i = 1, p+1
-            r = k + i - p
-            IF (r .lt. 1) THEN
-                  d(i) = fy(1)
-            ELSEIF (r .gt. n) THEN
-                  d(i) = fy(n)
-            ELSE
-                  d(i) = fy(r)
-            END IF
+        r = k + i - p
+        IF (r .lt. 1) THEN
+          d(i) = fy(1)
+        ELSEIF (r .gt. n) THEN
+          d(i) = fy(n)
+        ELSE
+          d(i) = fy(r)
+        END IF
       END DO
 
       ! Determine spline coefficients
       DO r = 1, p
-            DO i = p, r, -1
-                  alpha = (x - t(i)) / (t(i+1+p-r) - t(i))
-                  d(i) = (1 - alpha) * d(i) + alpha * d(i+1)
-            END DO
+        DO i = p, r, -1
+          alpha = (xq - t(i)) / (t(i+1+p-r) - t(i))
+          d(i) = (1 - alpha) * d(i) + alpha * d(i+1)
+        END DO
       END DO
 
       ! Set output variable
-      y = d(3)
+      yq = d(3)
 
       RETURN
       END SUBROUTINE mumaterial_getState
@@ -1974,8 +1968,8 @@
       H = 0.d0
 
       DO i = 1, ntet
-            CALL mumaterial_getN(vertex(:,tet(1,i)), vertex(:,tet(2,i)), vertex(:,tet(3,i)), vertex(:,tet(4,i)), [x, y, z], N)
-            H = H + MATMUL(N, M(:,i))
+        CALL mumaterial_getN(vertex(:,tet(1,i)), vertex(:,tet(2,i)), vertex(:,tet(3,i)), vertex(:,tet(4,i)), [x, y, z], N)
+        H = H + MATMUL(N, M(:,i))
       END DO
 
       CALL getBfld(x, y, z, Bx, By, Bz)
@@ -2044,10 +2038,6 @@
       INTEGER :: mystart, myend
       INTEGER :: i 
       INTEGER :: npoints
-!      LOGICAL, OPTIONAL :: linclvac
-
-!      IF (.NOT.(PRESENT(linclvac))) linclvac = .TRUE.
-
 
       npoints = size(x)
       mystart = 1; myend = npoints
@@ -2059,15 +2049,9 @@
       allocate(B_local(3,npoints),B(3,npoints))
       B_local = 0; B = 0
       
-!     IF (linclvac) THEN
       DO i = mystart, myend
         CALL mumaterial_getb_scalar(   x(i), y(i), z(i), B_local(1,i), B_local(2,i), B_local(3,i), getBfld)
       END DO
-!     ELSE
-!       DO i = mystart, myend
-!          CALL mumaterial_getbmag_scalar(x(i), y(i), z(i), B_local(1,i), B_local(2,i), B_local(3,i))
-!       END DO
-!      END IF
     
 #if defined(MPI_OPT)
       IF (lcomm) THEN
@@ -2095,47 +2079,50 @@
       INTEGER :: i, istat, iunit
 
       IF (lismaster) THEN
-            WRITE(6,'(A)')           ' -------- MUMAT magfile --------'
-            WRITE(6,'(3X,A,A)')     'File         : ',filename
-            ! open file, return if fails
-            iunit = 327; istat = 0
-            CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
-            IF (istat/= 0) THEN
-                  WRITE(6,*) "ISSUE READING MAG; STOPPING"
-                  RETURN
-            END IF
-            DO i = 1, ntet
-                  READ(iunit, *) M(1,i),M(2,i),M(3,i)
-            END DO
-            CLOSE(iunit)
+        WRITE(6,'(A)')           ' -------- MUMAT magfile --------'
+        WRITE(6,'(3X,A,A)')     ' File         : ',filename
+        ! open file, return if fails
+        iunit = 327; istat = 0
+        CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
+        IF (istat/= 0) THEN
+          WRITE(6,*) "ISSUE READING MAG; STOPPING"
+          RETURN
+        END IF
+        DO i = 1, ntet
+          READ(iunit, *) M(1,i),M(2,i),M(3,i)
+        END DO
+        CLOSE(iunit)
       END IF    
 
 #if defined(MPI_OPT)
       IF ((lcomm).AND.(shar_rank.EQ.0)) THEN
-            CALL MPI_Bcast(M,3*ntet,MPI_DOUBLE_PRECISION,0,comm_master,ierr_mpi)
+        CALL MPI_Bcast(M,3*ntet,MPI_DOUBLE_PRECISION,0,comm_master,ierr_mpi)
       END IF
 #endif
-      END SUBROUTINE
+      END SUBROUTINE mumaterial_readmag
 
 
-      SUBROUTINE mumaterial_writemag()
+      SUBROUTINE mumaterial_writemag(str)
       !-----------------------------------------------------------------------
       ! mumaterial_writemag: Outputs magnetization to .dat file
       !-----------------------------------------------------------------------
       IMPLICIT NONE
 
+      CHARACTER(LEN=*), INTENT(in) :: str
+      CHARACTER(LEN=*) :: filename
       INTEGER :: i
 
       IF (lismaster) THEN
-            WRITE(6,*) "Outputting magnetization"
-            OPEN(13, file='./mumat_mag.dat')
-            DO i = 1, ntet
-                  WRITE(13, "(ES15.7,ES15.7,ES15.7)") M(1,i),M(2,i),M(3,i)
-            END DO
-            CLOSE(13)
+        filename = './mumat_mag_'//TRIM(str)//'.dat'
+        WRITE(6,"(A)") "  MUMAT: Writing magnetization to" // filename
+        OPEN(13, file=filename)
+        DO i = 1, ntet
+          WRITE(13, "(ES15.7,ES15.7,ES15.7)") M(1,i),M(2,i),M(3,i)
+        END DO
+        CLOSE(13)
       END IF
 
-      END SUBROUTINE
+      END SUBROUTINE mumaterial_writemag
 
       SUBROUTINE mumaterial_output(path, x, y, z, getBfld)!, linclvac)
       !-----------------------------------------------------------------------
