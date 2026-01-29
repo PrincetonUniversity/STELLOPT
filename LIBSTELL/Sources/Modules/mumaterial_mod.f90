@@ -714,7 +714,8 @@
       END IF
 
 #if defined(MPI_OPT)   
-      IF (ldosync.AND.(shar_rank.EQ.0)) THEN                  
+      IF (ldosync.AND.(shar_rank.EQ.0)) THEN         
+        IF (lverb) WRITE(6,*) "  MUMAT_INIT:  Dividing domain amongst MPI nodes"; FLUSH(6)         
         splits = NINT(LOG(Bx)/LOG(2.0)) ! log_2(X) = ln(X)/log(2)
         tol = 0.0001
         delta = 1.0
@@ -801,6 +802,7 @@
 #if defined(MPI_OPT)   
       IF (lcomm) THEN
         IF (shar_size.GT.1) THEN
+          IF (lverb) WRITE(6,*) "  MUMAT_INIT:  Dividing domain amongst MPI threads"; FLUSH(6)         
           IF (shar_rank.EQ.master) THEN 
             ! Set up work initially
             n_proc_targ = shar_size
@@ -1720,125 +1722,80 @@
 
       END SUBROUTINE mumaterial_getneighbours
 
-      SUBROUTINE mumaterial_split(boxsize,boxin,ncoords,coords,tol,delta_start,targ,box1,box2)
+      SUBROUTINE mumaterial_split(boxin,targ,box1,box2)
       !-----------------------------------------------------------------------
-      ! mumaterial_split: Divides a set of neighboring tetrahedrons into two
-      ! approximately equally sized groups of neighboring tetrahedrons
+      ! mumaterial_split: Binary splits a collection of elements (boxin) into
+      ! two spatially localized subdomains (box1, box2) based on the position
+      ! of the elements and the target split (targ). box1 has size
+      ! nint(targ*size(boxin)), box2 has remainder.
       !-----------------------------------------------------------------------
-      ! param[in]: coords. coordinates of tetrahedrons given in boxin
-      ! param[in]: tol. allowed deviation from target split
-      ! param[in]: delta_start. initial increment in dim
+      ! param[in]: boxin. indices of elements
       ! param[in]: targ. relative size of box1 out compared to boxin.
-      ! param[out]: box1. collection of half the input tets.
-      ! param[out]: box2. collection of other half of input tets.
+      ! param[out]: box1. first output subdomain
+      ! param[out]: box2. second output subdomain.
       !-----------------------------------------------------------------------
 #if defined(MPI_OPT)
       USE mpi
       USE mpi_params
+      USE qsort ! quicksort
 #endif     
-
       IMPLICIT NONE
 
-      INTEGER, INTENT(in) :: boxsize, ncoords
-      DOUBLE PRECISION, DIMENSION(3,ncoords), INTENT(in) :: coords
-      INTEGER, INTENT(in)  :: boxin(boxsize)
-      DOUBLE PRECISION, INTENT(in) :: tol, delta_start, targ
+      INTEGER, INTENT(in)               :: boxin(:)
+      DOUBLE PRECISION, INTENT(in)      :: targ
       INTEGER, ALLOCATABLE, INTENT(out) :: box1(:), box2(:) 
+      INTEGER, DIMENSION(:), ALLOCATABLE :: idx, temp1, temp2
+      INTEGER :: i, i_dim, size1, size2, boxsize
+      DOUBLE PRECISION :: r_com(3)
+      DOUBLE PRECISION :: d1, d2, d, d_best
 
-      INTEGER :: iter, dim, ptsinbox1, ptsinbox2
-      INTEGER :: itermax = 201
-      DOUBLE PRECISION :: r_tet(3,boxsize), r_com(3)
-      DOUBLE PRECISION, ALLOCATABLE :: dx(:,:)
-      DOUBLE PRECISION :: r_median, diff_prev, diff, dr
-      DOUBLE PRECISION :: d1, d2, d_avg, d_avg_prev
-      INTEGER, ALLOCATABLE :: box1_temp(:), box2_temp(:)
-      LOGICAL :: lnochange, lsuccess
-
-      ! Check for < 2 elements
-      IF (boxsize.LT.2) THEN
-        WRITE(6,*) "  MUMAT_INIT ERROR: MUMATERIAL_SPLIT RECEIVED BOX WITH NOT ENOUGH ELEMENTS"
-        WRITE(6,*) "  MUMAT_INIT ERROR: FORCE STOPPING CALCULATIONS"
+      ! Check if box contains enough elements; otherwise stop
+      boxsize = SIZE(boxin)
+      size1 = NINT(targ*boxsize)
+      size2 = boxsize-size1
+      IF ((size1.LT.1).OR.(size2.LT.1)) THEN
+        WRITE(6,"(A,I0,A,F0.3,A,I0,A)") "  MUMAT_SPLIT: RANK ", world_rank & 
+          " CANNOT SPLIT (targ=", targ, ", boxsize=", boxsize, ")"
+        WRITE(6,"(A)") "  MUMAT_SPLIT: FORCE STOPPING CALCULATIONS"
 #if defined(MPI_OPT)
         CALL MPI_ABORT(MPI_COMM_WORLD, 1, ierr_mpi)
 #else
         STOP
 #endif
       END IF
-
-      r_tet = coords(:,boxin)
-      d_avg_prev = 1E+12
-      lsuccess = .FALSE.
-
+      !---------------------------------------
+      ALLOCATE(idx(boxsize),temp1(size1),temp2(size2),box1(size1),box2(size2))
+      d_best = -1.0 ! Overwritten anyway
+      !---------------------------------------
       ! Loop over each direction
-      DO dim = 1, 3
-        ! Find median of direction
-        dr = delta_start
-        lnochange = .FALSE.
-        diff_prev = 100
-
-        r_median = (MINVAL(r_tet(dim,:))+MAXVAL(r_tet(dim,:)))*targ ! initial estimate of median
-        DO iter = 1, itermax
-          ptsinbox1 = COUNT(r_tet(dim,:).LT.r_median)
-          diff = ABS(DBLE(ptsinbox1)/boxsize-targ) ! deviation from target split
-          IF (diff.LE.tol) EXIT ! within tolerance
-          IF (ABS(diff-diff_prev).LE.small) THEN 
-            IF (lnochange) EXIT ! no improvement
-            lnochange = .TRUE.
-          ELSE
-            lnochange = .FALSE.
-          END IF
-          ! Estimate new median
-          IF (diff>diff_prev) dr = -0.5*dr ! reverse direction, decrease step size
-          r_median = r_median + dr
-          diff_prev = diff
+      DO i_dim = 1, 3
+        DO i = 1, boxsize
+          idx(i) = i
         END DO
-
-        ptsinbox1 = COUNT(r_tet(dim,:).LT.r_median)
-        ptsinbox2 = boxsize - ptsinbox1
-        IF (ptsinbox1.EQ.0 .OR. ptsinbox2.EQ.0) THEN
-          CYCLE
-        END IF
-
-        ! Make boxes
-        ALLOCATE(box1_temp(ptsinbox1),box2_temp(ptsinbox2))
-        box1_temp = PACK(boxin, r_tet(dim,:).LT.r_median)
-        box2_temp = PACK(boxin, r_tet(dim,:).GE.r_median)
-
+        CALL quicksort(tet_cen(i_dim,boxin),idx,1,boxsize) ! idx is sorted based on coordinates
+        temp1 = boxin(idx(1:size1))
+        temp2 = boxin(idx(size1+1:boxsize))
+      !---------------------------------------
         ! Evaluate distances from center of masses
-        IF (ALLOCATED(dx)) DEALLOCATE(dx)
-        ALLOCATE(dx(3,ptsinbox1))
-        r_com = SUM(coords(:,box1_temp),DIM=2) / ptsinbox1
-        dx = coords(:,box1_temp) - SPREAD(r_com, DIM=2, NCOPIES=ptsinbox1)
-        d1 = SUM(NORM2(dx, DIM=1))/ptsinbox1
-        DEALLOCATE(dx)
-        ALLOCATE(dx(3,ptsinbox2))
-        r_com = SUM(coords(:,box2_temp),DIM=2) / ptsinbox2
-        dx = coords(:,box2_temp) - SPREAD(r_com, DIM=2, NCOPIES=ptsinbox2)
-        d2 = SUM(NORM2(dx, DIM=1))/ptsinbox2
-        d_avg = (d1+d2)/2
-        DEALLOCATE(dx)
-
+        r_com = SUM(tet_cen(:,temp1),DIM=2) / size1
+        d1 = SUM( &
+              NORM2(tet_cen(:,temp1)-SPREAD(r_com,DIM=2,NCOPIES=size1),DIM=1) &
+                ) / size1
+        r_com = SUM(tet_cen(:,temp2),DIM=2) / size2
+        d2 = SUM( & 
+              NORM2(tet_cen(:,temp2)-SPREAD(r_com,DIM=2,NCOPIES=size2),DIM=1) & 
+                ) / size2
+        d = (d1+d2)/2
+      !---------------------------------------
         ! Update if dimension is better
-        IF (d_avg.LT.d_avg_prev) THEN
-          IF (dim.GT.1) DEALLOCATE(box1, box2)
-          ALLOCATE(box1(ptsinbox1),box2(ptsinbox2))
-          box1 = box1_temp
-          box2 = box2_temp
-          d_avg_prev = d_avg
-          lsuccess=.TRUE.
+        IF ((d.LT.d_best).OR.(i_dim.EQ.1)) THEN
+          box1 = temp1
+          box2 = temp2
+          d_best = d
         END IF
-        DEALLOCATE(box1_temp, box2_temp)
       END DO
-
-      IF (.NOT. lsuccess) THEN
-        WRITE(6,*) "  MUMAT_INIT WARNING: MUMATERIAL_SPLIT COULD NOT FIND VALID SPLIT" 
-        WRITE(6,*) "  MUMAT_INIT WARNING: FALLING BACK TO SPLITTING BY INDEX" 
-        ptsinbox1 = boxsize/2
-        ptsinbox2 = boxsize-ptsinbox1
-        ALLOCATE(box1(ptsinbox1),box2(ptsinbox2))
-        box1 = boxin(1:ptsinbox1)
-        box2 = boxin(ptsinbox1+1:boxsize)
-      END IF
+      !---------------------------------------
+      DEALLOCATE(temp1, temp2)
 
       END SUBROUTINE mumaterial_split
 
