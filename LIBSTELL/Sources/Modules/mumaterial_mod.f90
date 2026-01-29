@@ -14,6 +14,11 @@
 !     Libraries
 !------------------------------------------------------------------------------
       USE safe_open_mod
+#if defined(MPI_OPT)
+      USE mpi
+      USE mpi_params
+      USE mpi_sharmem, ONLY: mpialloc, mpidealloc
+#endif
       IMPLICIT NONE
 !------------------------------------------------------------------------------
 !     Types    
@@ -66,7 +71,7 @@
 !         tet:      Vertex indices for each tetrahedron (4, ntet)
 !         tet_cen:  Coordinates for tetrahedron centers (3, ntet)
 !         tet_vol:  Volumes of tetrahedrons (ntet)
-!         tet_edge: Equivalent length of edge of tetrahedrons (ntet)
+!         tet_rad: Equivalent length of edge of tetrahedrons (ntet)
 !   
 !       Magnetics
 !         nstate:           Number of state functions
@@ -95,7 +100,7 @@
       ! mesh variables
       INTEGER, PRIVATE  ::  ntet, nvertex
       DOUBLE PRECISION, POINTER, PRIVATE :: vertex(:,:), tet_cen(:,:), & 
-                                            tet_vol(:), tet_edge(:), &
+                                            tet_vol(:), tet_rad(:), &
                                             r_cluster(:,:), mom_cluster(:,:), d_cluster(:)
       INTEGER, POINTER, PRIVATE :: tet(:,:), dom_clusters(:,:)
 
@@ -128,7 +133,7 @@
 
       ! MPI windows
       INTEGER, PRIVATE :: win_vertex, win_tet, win_tet_cen, &
-                          win_tet_vol, win_tet_edge,  &
+                          win_tet_vol, win_tet_rad,  &
                           win_state_dex, win_state_type, &
                           win_constant_mu, win_m, win_Mrem, &
                           win_Happ, win_constant_mu_o, & 
@@ -218,22 +223,22 @@
       IMPLICIT NONE
 
       INTEGER :: ik
-      IF (ASSOCIATED(state_dex))     CALL free_mpi_array1d_int(win_state_dex,state_dex,.TRUE.)
-      IF (ASSOCIATED(state_type))    CALL free_mpi_array1d_int(win_state_type,state_type,.TRUE.)
-      IF (ASSOCIATED(constant_mu))   CALL free_mpi_array1d_dbl(win_constant_mu,constant_mu,.TRUE.)
-      IF (ASSOCIATED(constant_mu_o)) CALL free_mpi_array1d_dbl(win_constant_mu_o,constant_mu_o,.TRUE.)
-      IF (ASSOCIATED(tet))           CALL free_mpi_array2d_int(win_tet,tet,.TRUE.)
-      IF (ASSOCIATED(vertex))        CALL free_mpi_array2d_dbl(win_vertex,vertex,.TRUE.)
-      IF (ASSOCIATED(tet_cen))       CALL free_mpi_array2d_dbl(win_tet_cen,tet_cen,.TRUE.)
-      IF (ASSOCIATED(tet_vol))       CALL free_mpi_array1d_dbl(win_tet_vol,tet_vol,.TRUE.)
-      IF (ASSOCIATED(tet_edge))      CALL free_mpi_array1d_dbl(win_tet_edge,tet_edge,.TRUE.)
-      IF (ASSOCIATED(M))             CALL free_mpi_array2d_dbl(win_M,M,.TRUE.)
+      IF (ASSOCIATED(state_dex))     CALL mpidealloc(state_dex,win_state_dex)
+      IF (ASSOCIATED(state_type))    CALL mpidealloc(state_type,win_state_type)
+      IF (ASSOCIATED(constant_mu))   CALL mpidealloc(constant_mu,win_constant_mu)
+      IF (ASSOCIATED(constant_mu_o)) CALL mpidealloc(constant_mu_o,win_constant_mu_o)
+      IF (ASSOCIATED(tet))           CALL mpidealloc(tet,win_tet)
+      IF (ASSOCIATED(vertex))        CALL mpidealloc(vertex,win_vertex)
+      IF (ASSOCIATED(tet_cen))       CALL mpidealloc(tet_cen,win_tet_cen)
+      IF (ASSOCIATED(tet_vol))       CALL mpidealloc(tet_vol,win_tet_vol)
+      IF (ASSOCIATED(tet_rad))      CALL mpidealloc(tet_rad,win_tet_rad)
+      IF (ASSOCIATED(M))             CALL mpidealloc(M,win_M)
       ! TODO: Remove once allocated locally (Make sure code works beforehand)
-      IF (ASSOCIATED(Mrem))          CALL free_mpi_array2d_dbl(win_Mrem,Mrem,.TRUE.)
-      IF (ASSOCIATED(r_cluster))     CALL free_mpi_array2d_dbl(win_r_cluster,r_cluster,.TRUE.)
-      IF (ASSOCIATED(mom_cluster))   CALL free_mpi_array2d_dbl(win_mom_cluster,mom_cluster,.TRUE.)
-      IF (ASSOCIATED(d_cluster))     CALL free_mpi_array1d_dbl(win_d_cluster,d_cluster,.TRUE.)
-      IF (ASSOCIATED(dom_clusters))  CALL free_mpi_array2d_int(win_dom_clusters,dom_clusters,.TRUE.)
+      IF (ASSOCIATED(Mrem))          CALL mpidealloc(,Mrem,win_Mrem)
+      IF (ASSOCIATED(r_cluster))     CALL mpidealloc(r_cluster,win_r_cluster)
+      IF (ASSOCIATED(mom_cluster))   CALL mpidealloc(mom_cluster,win_mom_cluster)
+      IF (ASSOCIATED(d_cluster))     CALL mpidealloc(d_cluster,win_d_cluster)
+      IF (ASSOCIATED(dom_clusters))  CALL mpidealloc(dom_clusters,win_dom_clusters)
 
       DO ik = 1, nstate
          IF (ALLOCATED(stateFunction(ik)%H)) DEALLOCATE(stateFunction(ik)%H)
@@ -252,11 +257,6 @@
 ! param[out]: comm_master_out. Master communicator handles cross-node stuff
 !------------------------------------------------------------------------------
       SUBROUTINE mumaterial_setup(comm, comm_shar_out, comm_master_out)
-
-#if defined(MPI_OPT)
-      USE mpi
-      USE mpi_params
-#endif
 
       IMPLICIT NONE
 
@@ -317,9 +317,6 @@
 !------------------------------------------------------------------------------
       SUBROUTINE mumaterial_load(filename,istat,comm_shar_in,comm_master_in,comm_world_in)
 
-#if defined(MPI_OPT)
-      USE mpi
-#endif
       IMPLICIT NONE
 
       CHARACTER(LEN=*), INTENT(in) :: filename
@@ -359,7 +356,7 @@
 #endif
 
       ! Nullify pointers
-      NULLIFY(vertex, tet, tet_cen, tet_vol, tet_edge, state_dex, state_type, &
+      NULLIFY(vertex, tet, tet_cen, tet_vol, tet_rad, state_dex, state_type, &
               constant_mu, constant_mu_o, Mrem, M, N_store, &
               r_cluster, mom_cluster, d_cluster, dom_clusters)
 
@@ -388,28 +385,27 @@
         CALL MPI_Bcast(ntet,   1,MPI_INTEGER,0,comm_shar,ierr_mpi)
         CALL MPI_Bcast(nstate, 1,MPI_INTEGER,0,comm_shar,ierr_mpi)
         ! allocate on every sharmem island
-        CALL mpialloc_2d_dbl(vertex,3,nvertex,    shar_rank,0,comm_shar,win_vertex)
-        CALL mpialloc_2d_int(tet,4,ntet,          shar_rank,0,comm_shar,win_tet)
-        CALL mpialloc_2d_dbl(tet_cen,3,ntet,      shar_rank,0,comm_shar,win_tet_cen)
-        CALL mpialloc_1d_dbl(tet_vol,ntet,        shar_rank,0,comm_shar,win_tet_vol)
-        CALL mpialloc_1d_dbl(tet_edge,ntet,       shar_rank,0,comm_shar,win_tet_edge)
-        CALL mpialloc_1d_int(state_dex,ntet,      shar_rank,0,comm_shar,win_state_dex)
-        CALL mpialloc_1d_int(state_type,nstate,   shar_rank,0,comm_shar,win_state_type)
-        CALL mpialloc_1d_dbl(constant_mu,nstate,  shar_rank,0,comm_shar,win_constant_mu)
-        CALL mpialloc_1d_dbl(constant_mu_o,nstate,shar_rank,0,comm_shar,win_constant_mu_o)
-        CALL mpialloc_2d_dbl(M,            3,ntet,shar_rank,0,comm_shar,win_m)
-        CALL mpialloc_2d_dbl(Mrem,3,nstate,       shar_rank,0,comm_shar,win_Mrem)  ! TODO: Allocate locally
-        CALL mpialloc_2d_dbl(r_cluster,3,world_size,  shar_rank,0,comm_shar,win_r_cluster)
-        CALL mpialloc_2d_dbl(mom_cluster,3,world_size,shar_rank,0,comm_shar,win_mom_cluster)
-        CALL mpialloc_1d_dbl(d_cluster,world_size,    shar_rank,0,comm_shar,win_d_cluster)
-
+        CALL mpialloc(vertex,3,nvertex,    shar_rank,0,comm_shar,win_vertex)
+        CALL mpialloc(tet,4,ntet,          shar_rank,0,comm_shar,win_tet)
+        CALL mpialloc(tet_cen,3,ntet,      shar_rank,0,comm_shar,win_tet_cen)
+        CALL mpialloc(tet_vol,ntet,        shar_rank,0,comm_shar,win_tet_vol)
+        CALL mpialloc(tet_rad,ntet,       shar_rank,0,comm_shar,win_tet_rad)
+        CALL mpialloc(state_dex,ntet,      shar_rank,0,comm_shar,win_state_dex)
+        CALL mpialloc(state_type,nstate,   shar_rank,0,comm_shar,win_state_type)
+        CALL mpialloc(constant_mu,nstate,  shar_rank,0,comm_shar,win_constant_mu)
+        CALL mpialloc(constant_mu_o,nstate,shar_rank,0,comm_shar,win_constant_mu_o)
+        CALL mpialloc(M,            3,ntet,shar_rank,0,comm_shar,win_m)
+        CALL mpialloc(Mrem,3,nstate,       shar_rank,0,comm_shar,win_Mrem)  ! TODO: Allocate locally
+        CALL mpialloc(r_cluster,3,world_size,  shar_rank,0,comm_shar,win_r_cluster)
+        CALL mpialloc(mom_cluster,3,world_size,shar_rank,0,comm_shar,win_mom_cluster)
+        CALL mpialloc(d_cluster,world_size,    shar_rank,0,comm_shar,win_d_cluster)
         ALLOCATE(stateFunction(nstate))
       ELSE
 #endif
          ! if no MPI, allocate everything on one node
          ALLOCATE(vertex(3,nvertex),tet(4,ntet),state_dex(ntet), &
                   state_type(nstate),constant_mu(nstate), &
-                  tet_cen(3,ntet),tet_vol(ntet),tet_edge(ntet),M(3,ntet), &
+                  tet_cen(3,ntet),tet_vol(ntet),tet_rad(ntet),M(3,ntet), &
                   constant_mu_o(nstate),Mrem(3,nstate),stateFunction(nstate), &
                   r_cluster(3,1),mom_cluster(3,1),d_cluster(1),dom_clusters(1,1), &
                   STAT=istat)
@@ -602,11 +598,6 @@
 !------------------------------------------------------------------------------
       SUBROUTINE mumaterial_init_new(offset)
 
-#if defined(MPI_OPT)
-      USE mpi
-      USE mpi_params
-#endif
-
       IMPLICIT NONE
       
       DOUBLE PRECISION, INTENT(in), OPTIONAL :: offset(3)
@@ -654,31 +645,33 @@
       !! Calculate tet centers, edges, volumes, then synchronize
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       IF (lverb) WRITE(6,*) "  MUMAT_INIT:  Calculating tetrahedron quantities"; FLUSH(6)
-      mystart = 1; myend = ntet   
-
-#if defined(MPI_OPT)
+      ! Wipe shared array
+      IF (shar_rank.EQ.0) THEN 
+        tet_cen  = 0  
+        tet_vol  = 0  
+        tet_rad = 0     
+      END IF  
+      ! Calculate range
       IF (lcomm) THEN 
+#if defined(MPI_OPT)
         CALL MPI_CALC_MYRANGE(comm_world, 1, ntet, mystart, myend) 
-        tet_cen(:,mystart:myend) = 99999.0  ! these values will be overwritten;
-        tet_vol(mystart:myend)   = 99999.0  ! big numbers make problems obvious
-        tet_edge(mystart:myend)  = 99999.0
-      END IF
 #endif
+      ELSE
+        mystart = 1
+        myend = ntet
+      END IF
 
+      tet_cen(:,mystart:myend) = SUM(vertex(:,tet(:,mystart:myend)), DIM=2) / 4.d0
       DO i = mystart, myend
-        tet_cen(:,i) = (vertex(:,tet(1,i)) + vertex(:,tet(2,i)) + &
-                        vertex(:,tet(3,i)) + vertex(:,tet(4,i)))/4.d0
-        tet_vol(i) = mumaterial_gettetvolume(vertex(:,tet(1,i)),vertex(:,tet(2,i)), &
-                                             vertex(:,tet(3,i)),vertex(:,tet(4,i)))
-        tet_edge(i) = SQRT(6.0)/12.d0*(6.d0*SQRT(2.0)*tet_vol(i))**(1.0/3.0) 
+        tet_vol(i) = mumaterial_gettetvolume( &
+            vertex(:,tet(1,i)),vertex(:,tet(2,i)), vertex(:,tet(3,i)),vertex(:,tet(4,i)))
       END DO
+      tet_rad(mystart:myend) = SQRT(6.0)/12.d0*(6.d0*SQRT(2.0)*tet_vol(mystart:myend))**(1.0/3.0)
 
 #if defined(MPI_OPT)
-      IF (ldosync) THEN
-        CALL mumaterial_sync_array2d_dbl(tet_cen, 3,ntet,mystart,myend)
-        CALL mumaterial_sync_array2d_dbl(tet_vol, 1,ntet,mystart,myend)
-        CALL mumaterial_sync_array2d_dbl(tet_edge,1,ntet,mystart,myend)
-      END IF
+    CALL MPI_ALLREDUCE( MPI_IN_PLACE, tet_cen, 3*ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_world, ierr_mpi )
+    CALL MPI_ALLREDUCE( MPI_IN_PLACE, tet_vol,   ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_world, ierr_mpi )
+    CALL MPI_ALLREDUCE( MPI_IN_PLACE, tet_rad,   ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_world, ierr_mpi )
 #endif
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Split domain across MPI nodes
@@ -856,7 +849,7 @@
         wr_dex = world_rank+1 ! Pesky 0-based indexing
         dom_sizes(wr_dex) = ntet_proc
         CALL MPI_ALLREDUCE(MPI_IN_PLACE, dom_sizes, world_size, MPI_INTEGER, MPI_SUM, comm_world, ierr_mpi)
-        CALL mpialloc_2d_int(dom_clusters,MAXVAL(dom_sizes),world_size,shar_rank,0,comm_shar,win_dom_clusters)
+        CALL mpialloc(dom_clusters,MAXVAL(dom_sizes),world_size,shar_rank,0,comm_shar,win_dom_clusters)
         IF (shar_rank.EQ.master) THEN 
           dom_clusters = 0
         END IF
@@ -1022,10 +1015,7 @@
 ! mumaterial_iterate_M: Iteration loop
 !-----------------------------------------------------------------------
       SUBROUTINE mumaterial_iterate_M()
-#if defined(MPI_OPT)
-      USE mpi
-      USE mpi_params
-#endif
+
       IMPLICIT NONE
 
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: Mnorm
@@ -1342,7 +1332,7 @@
         H_ext =  H_app ! Static field using slice
         DO i = 1, ntet_proc
           i_tile = dom_proc(i)
-        !---------------- CONTRIBUTION FROM DISTANT CLUSTERS -----------------!
+          !---------------- CONTRIBUTION FROM DISTANT CLUSTERS -----------------!
           ALLOCATE(r_vec(3,world_size),r_norm(world_size),r_hat(3,world_size),&
                    H_dipole(3,world_size),mrdotrhat(world_size))
           r_vec = SPREAD(tet_cen(:,i_tile),DIM=2,NCOPIES=world_size)-r_cluster
@@ -1355,7 +1345,7 @@
           END WHERE
           H_ext(:,i) = H_ext(:,i) + SUM(H_dipole,DIM=2)
           DEALLOCATE(r_vec,r_norm,r_hat,H_dipole,mrdotrhat)
-        !---------------- CONTRIBUTION FROM MID-FIELD DIPOLES ----------------!
+          !---------------- CONTRIBUTION FROM MID-FIELD DIPOLES ----------------!
           ! Get all non-neighbors
           is_midfield = .FALSE.
           DO j = 1, ntet_mid_proc
@@ -1676,7 +1666,7 @@
       DO i = 1, ntet_proc
         i_tile = dom_shar(i)
         dist = NORM2(tet_cen - SPREAD(SOURCE=tet_cen(:,i_tile), DIM=2, NCOPIES=ntet),DIM=1)
-        nbrs_count(i) = COUNT(dist.LE.padFactor*tet_edge)
+        nbrs_count(i) = COUNT(dist.LE.padFactor*tet_rad)
       END DO
 
       nbrs_maxc = MAXVAL(nbrs_count)
@@ -1686,7 +1676,7 @@
       DO i = 1, ntet_proc
         i_tile = dom_shar(i)
         dist = NORM2(tet_cen - SPREAD(SOURCE=tet_cen(:,i_tile), DIM=2, NCOPIES=ntet),DIM=1)
-        mask = dist.LE.padFactor*tet_edge
+        mask = dist.LE.padFactor*tet_rad
         j = 0
         DO k = 1, ntet
           IF (mask(k)) THEN
@@ -1711,11 +1701,9 @@
       ! param[out]: box1. first output subdomain
       ! param[out]: box2. second output subdomain.
       !-----------------------------------------------------------------------
-#if defined(MPI_OPT)
-      USE mpi
-      USE mpi_params
+        
       USE qsort ! quicksort
-#endif     
+
       IMPLICIT NONE
 
       INTEGER, INTENT(in)               :: boxin(:)
@@ -1778,55 +1766,42 @@
 
       SUBROUTINE mumaterial_sync_array2d_dbl(array, n1, n2, mystart,myend)
 
-#if defined(MPI_OPT)
-        USE mpi
-        USE mpi_params
-#endif
+      IMPLICIT NONE
 
-        IMPLICIT NONE
+      INTEGER, INTENT(in) :: n1, n2
+      DOUBLE PRECISION, DIMENSION(n1,n2), INTENT(inout) :: array
+      INTEGER, INTENT(in) :: mystart,myend
+      INTEGER :: ourstart, ourend
+      INTEGER :: i
 
-        INTEGER, INTENT(in) :: n1, n2
-        DOUBLE PRECISION, DIMENSION(n1,n2), INTENT(inout) :: array
-        INTEGER, INTENT(in) :: mystart,myend
-        INTEGER :: ourstart, ourend
-        INTEGER :: i
+      CALL MPI_REDUCE(mystart, ourstart, 1, MPI_INTEGER, MPI_MIN, 0, comm_shar, ierr_mpi)
+      CALL MPI_REDUCE(myend,     ourend, 1, MPI_INTEGER, MPI_MAX, 0, comm_shar, ierr_mpi)
+      IF (shar_rank.EQ.0) THEN
+        array(:,1:(ourstart-1)) = 0 ! Zero array "above" data to keep
+        array(:,(ourend+1):n2)  = 0 ! Zero array "below" data to keep
+        ! Reduce arrays onto all shared memory islands
+        CALL MPI_ALLREDUCE( MPI_IN_PLACE, array, n1*n2, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
+      END IF
+      CALL MPI_BARRIER( comm_shar, ierr_mpi)
 
-        CALL MPI_REDUCE(mystart, ourstart, 1, MPI_INTEGER, MPI_MIN, 0, comm_shar, ierr_mpi)
-        CALL MPI_REDUCE(myend,     ourend, 1, MPI_INTEGER, MPI_MAX, 0, comm_shar, ierr_mpi)
-        IF (shar_rank.EQ.0) THEN
-          array(:,1:(ourstart-1)) = 0 ! Zero array "above" data to keep
-          array(:,(ourend+1):n2)  = 0 ! Zero array "below" data to keep
-          ! Reduce arrays onto all shared memory islands
-          CALL MPI_ALLREDUCE( MPI_IN_PLACE, array, n1*n2, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
-        END IF
-        CALL MPI_BARRIER( comm_shar, ierr_mpi)
+      END SUBROUTINE mumaterial_sync_array2d_dbl
 
-        END SUBROUTINE mumaterial_sync_array2d_dbl
 
-        SUBROUTINE mumaterial_syncM()
-
-#if defined(MPI_OPT)
-      USE mpi
-      USE mpi_params
-#endif
+      SUBROUTINE mumaterial_syncM()
 
       IMPLICIT NONE
 
       INTEGER :: i, i_tile
       DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: M_local
 
-      ! First cluster moments
-      IF (shar_rank.EQ.master) THEN
-        mom_cluster = 0.0
+      ! First recalculate cluster moments
+      IF (shar_rank.EQ.master) THEN 
+        mom_cluster = 0.0 ! master zeroes shared memory window
       END IF
-
-      ALLOCATE(M_local(3,world_size))
-      M_local = 0.0
-      M_local(:,world_rank+1) = SUM(M(:, dom_proc(1:ntet_proc)) * &
-                                    SPREAD(tet_vol(dom_proc(1:ntet_proc)), DIM=1, NCOPIES=3), DIM=2)
-      CALL MPI_ALLREDUCE(M_local, mom_cluster, 3*world_size, MPI_DOUBLE_PRECISION, MPI_SUM, comm_shar, ierr_mpi )
-      DEALLOCATE(M_local)
-      IF (shar_rank.EQ.master) THEN
+      CALL MPI_BARRIER(comm_shar, ierr_mpi) ! threads wait for zeroing
+      mom_cluster(:,world_rank+1) = SUM(M(:, dom_proc(1:ntet_proc)) * &
+                                    SPREAD(tet_vol(dom_proc(1:ntet_proc)), DIM=1, NCOPIES=3), DIM=2) ! everyone does work
+      IF (shar_rank.EQ.master) THEN ! synchronize on all mpi nodes
         CALL MPI_ALLREDUCE(MPI_IN_PLACE, mom_cluster, 3*world_size, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
       END IF
 
@@ -1834,11 +1809,11 @@
       ALLOCATE(M_local(3,ntet))
       M_local = 0.0
       M_local(:, dom_proc(1:ntet_proc)) = M(:, dom_proc(1:ntet_proc))
-      CALL MPI_ALLREDUCE(M_local, M, 3*ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_shar, ierr_mpi )
-      DEALLOCATE(M_local)
+      CALL MPI_BARRIER(comm_shar, ierr_mpi)
       IF (shar_rank.EQ.master) THEN
-        CALL MPI_ALLREDUCE(MPI_IN_PLACE, M, 3*ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
+        CALL MPI_ALLREDUCE(M_local, M, 3*ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
       END IF
+      DEALLOCATE(M_local)
 
       CALL MPI_BARRIER( comm_shar, ierr_mpi)
 
@@ -1988,10 +1963,6 @@
       ! param[in]: z. z-coordinates of points at which to determine the magnetic field
       ! param[out]: B.  B-field at required points [T]
       !-----------------------------------------------------------------------
-#if defined(MPI_OPT)
-      USE mpi
-      USE mpi_params
-#endif
       IMPLICIT NONE
       DOUBLE PRECISION, INTENT(in) :: x(:), y(:), z(:)
       DOUBLE PRECISION, INTENT(out), ALLOCATABLE :: B(:,:)
@@ -2029,12 +2000,7 @@
       SUBROUTINE mumaterial_readmag(filename)
       !-----------------------------------------------------------------------
       ! mumaterial_readmag: Reads magnetization .dat file
-      !-----------------------------------------------------------------------
-#if defined(MPI_OPT)
-      USE mpi
-      USE mpi_params
-#endif
-           
+      !-----------------------------------------------------------------------   
       IMPLICIT NONE
       CHARACTER(LEN=*), INTENT(in) :: filename
       INTEGER :: i, istat, iunit
@@ -2095,9 +2061,7 @@
       ! param[in]: z. z-cooridinates of points at which to determine the magnetic field
       ! param[in]: linclvac. Whether or not vacuum magnetic field should be included.
       !-----------------------------------------------------------------------
-#if defined(MPI_OPT)
-      USE mpi
-#endif      
+    
       IMPLICIT NONE
       CHARACTER(LEN=*), INTENT(in) :: path
       DOUBLE PRECISION, INTENT(in) :: x(:), y(:), z(:)
@@ -2128,353 +2092,6 @@
 
       RETURN
       END SUBROUTINE
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!    Memory Allocation Subroutines
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      SUBROUTINE mpialloc_1d_int(array,n1,subid,mymaster,share_comm,win)
-      ! Libraries
-      USE MPI
-      USE ISO_C_BINDING
-      IMPLICIT NONE
-      ! Arguments
-      INTEGER, POINTER, INTENT(inout) :: array(:)
-      INTEGER, INTENT(in) :: n1
-      INTEGER, INTENT(in) :: subid
-      INTEGER, INTENT(in) :: mymaster
-      INTEGER, INTENT(in) :: share_comm
-      INTEGER, INTENT(inout) :: win
-      ! Variables
-      INTEGER :: disp_unit, ier
-      INTEGER :: array_shape(1)
-      INTEGER(KIND=MPI_ADDRESS_KIND) :: window_size
-      TYPE(C_PTR) :: baseptr
-      ! Initialization
-      ier = 0
-      array_shape(1) = n1
-      disp_unit = 1
-      window_size = 0_MPI_ADDRESS_KIND
-      IF (subid == mymaster) window_size = INT(n1,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
-      CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
-      IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
-      CALL C_F_POINTER(baseptr, array, array_shape)
-      RETURN
-      END SUBROUTINE mpialloc_1d_int
-
-      SUBROUTINE mpialloc_1d_dbl(array,n1,subid,mymaster,share_comm,win)
-      !-----------------------------------------------------------------------
-      ! mpialloc_1d_int: Allocated a 1D double array to shared memory
-      ! Taken from LIBSTELL/Sources/Modules/mpi_sharemem.f90
-      ! Included here to reduce dependencies
-      !-----------------------------------------------------------------------
-      ! Libraries
-#if defined(MPI_OPT)
-      USE mpi
-#endif
-      USE ISO_C_BINDING
-      IMPLICIT NONE
-      ! Arguments
-      DOUBLE PRECISION, POINTER, INTENT(inout) :: array(:)
-      INTEGER, INTENT(in) :: n1
-      INTEGER, INTENT(in) :: subid
-      INTEGER, INTENT(in) :: mymaster
-      INTEGER, INTENT(inout) :: share_comm
-      INTEGER, INTENT(inout) :: win
-      ! Variables
-      INTEGER :: disp_unit, ier
-      INTEGER :: array_shape(1)
-#if defined(MPI_OPT)
-      INTEGER(KIND=MPI_ADDRESS_KIND) :: window_size
-#endif
-      TYPE(C_PTR) :: baseptr
-      ! Initialization
-      ier = 0
-      array_shape(1) = n1
-      disp_unit = 1
-#if defined(MPI_OPT)
-      window_size = 0_MPI_ADDRESS_KIND
-      IF (subid == mymaster) window_size = INT(n1,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
-      CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
-      IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
-      CALL C_F_POINTER(baseptr, array, array_shape)
-#endif
-      RETURN
-      END SUBROUTINE mpialloc_1d_dbl
-
-      SUBROUTINE mpialloc_2d_int(array,n1,n2,subid,mymaster,share_comm,win)
-      ! Libraries
-      USE MPI
-      USE ISO_C_BINDING
-      IMPLICIT NONE
-      ! Arguments
-      INTEGER, POINTER, INTENT(inout) :: array(:,:)
-      INTEGER, INTENT(in) :: n1
-      INTEGER, INTENT(in) :: n2
-      INTEGER, INTENT(in) :: subid
-      INTEGER, INTENT(in) :: mymaster
-      INTEGER, INTENT(in) :: share_comm
-      INTEGER, INTENT(inout) :: win
-      ! Variables
-      INTEGER :: disp_unit, ier
-      INTEGER :: array_shape(2)
-      INTEGER(KIND=MPI_ADDRESS_KIND) :: window_size
-      TYPE(C_PTR) :: baseptr
-      ! Initialization
-      ier = 0
-      array_shape(1) = n1
-      array_shape(2) = n2
-      disp_unit = 1
-      window_size = 0_MPI_ADDRESS_KIND
-      IF (subid == mymaster) window_size = INT(n1*n2,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
-      CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
-      IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
-      CALL C_F_POINTER(baseptr, array, array_shape)
-      RETURN
-      END SUBROUTINE mpialloc_2d_int
-
-      SUBROUTINE mpialloc_2d_dbl(array,n1,n2,subid,mymaster,share_comm,win)
-      !-----------------------------------------------------------------------
-      ! mpialloc_1d_int: Allocated a 2D double array to shared memory
-      ! Taken from LIBSTELL/Sources/Modules/mpi_sharemem.f90
-      ! Included here to reduce dependencies
-      !-----------------------------------------------------------------------
-      ! Libraries
-#if defined(MPI_OPT)
-      USE mpi
-#endif
-      USE ISO_C_BINDING
-      IMPLICIT NONE
-      ! Arguments
-      DOUBLE PRECISION, POINTER, INTENT(inout) :: array(:,:)
-      INTEGER, INTENT(in) :: n1
-      INTEGER, INTENT(in) :: n2
-      INTEGER, INTENT(in) :: subid
-      INTEGER, INTENT(in) :: mymaster
-      INTEGER, INTENT(inout) :: share_comm
-      INTEGER, INTENT(inout) :: win
-      ! Variables
-      INTEGER :: disp_unit, ier
-      INTEGER :: array_shape(2)
-#if defined(MPI_OPT)
-      INTEGER(KIND=MPI_ADDRESS_KIND) :: window_size
-#endif
-      TYPE(C_PTR) :: baseptr
-      ! Initialization
-      ier = 0
-      array_shape(1) = n1
-      array_shape(2) = n2
-      disp_unit = 1
-#if defined(MPI_OPT)
-      window_size = 0_MPI_ADDRESS_KIND
-      IF (subid == mymaster) window_size = INT(n1*n2,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
-      CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
-      IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
-      CALL C_F_POINTER(baseptr, array, array_shape)
-#endif
-      RETURN
-      END SUBROUTINE mpialloc_2d_dbl
-
-      SUBROUTINE mpialloc_4d_int(array,n1,n2,n3,n4,subid,mymaster,share_comm,win)
-      ! Libraries
-      USE MPI
-      USE ISO_C_BINDING
-      IMPLICIT NONE
-      ! Arguments
-      INTEGER, POINTER, INTENT(inout) :: array(:,:,:,:)
-      INTEGER, INTENT(in) :: n1
-      INTEGER, INTENT(in) :: n2
-      INTEGER, INTENT(in) :: n3
-      INTEGER, INTENT(in) :: n4
-      INTEGER, INTENT(in) :: subid
-      INTEGER, INTENT(in) :: mymaster
-      INTEGER, INTENT(in) :: share_comm
-      INTEGER, INTENT(inout) :: win
-      ! Variables
-      INTEGER :: disp_unit, ier
-      INTEGER :: array_shape(4)
-      INTEGER(KIND=MPI_ADDRESS_KIND) :: window_size
-      TYPE(C_PTR) :: baseptr
-      ! Initialization
-      ier = 0
-      array_shape(1) = n1
-      array_shape(2) = n2
-      array_shape(3) = n3
-      array_shape(4) = n4
-      disp_unit = 1
-      window_size = 0_MPI_ADDRESS_KIND
-      IF (subid == mymaster) window_size = INT(n1*n2*n3*n4,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
-      CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
-      IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
-      CALL C_F_POINTER(baseptr, array, array_shape)
-      RETURN
-      END SUBROUTINE mpialloc_4d_int
-
-      SUBROUTINE mpialloc_4d_dbl(array,n1,n2,n3,n4,subid,mymaster,share_comm,win)
-      ! Libraries
-      USE MPI
-      USE ISO_C_BINDING
-      IMPLICIT NONE
-      ! Arguments
-      DOUBLE PRECISION, POINTER, INTENT(inout) :: array(:,:,:,:)
-      INTEGER, INTENT(in) :: n1
-      INTEGER, INTENT(in) :: n2
-      INTEGER, INTENT(in) :: n3
-      INTEGER, INTENT(in) :: n4
-      INTEGER, INTENT(in) :: subid
-      INTEGER, INTENT(in) :: mymaster
-      INTEGER, INTENT(in) :: share_comm
-      INTEGER, INTENT(inout) :: win
-      ! Variables
-      INTEGER :: disp_unit, ier
-      INTEGER :: array_shape(4)
-      INTEGER(KIND=MPI_ADDRESS_KIND) :: window_size
-      TYPE(C_PTR) :: baseptr
-      ! Initialization
-      ier = 0
-      array_shape(1) = n1
-      array_shape(2) = n2
-      array_shape(3) = n3
-      array_shape(4) = n4
-      disp_unit = 1
-      window_size = 0_MPI_ADDRESS_KIND
-      IF (subid == mymaster) window_size = INT(n1*n2*n3*n4,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
-      CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
-      IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
-      CALL C_F_POINTER(baseptr, array, array_shape)
-      RETURN
-      END SUBROUTINE mpialloc_4d_dbl
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!    Memory Freeing Subroutines
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   
-         SUBROUTINE free_mpi_array1d_int(win_local,array_local,isshared)
-         IMPLICIT NONE
-         LOGICAL, INTENT(in) :: isshared
-         INTEGER, INTENT(inout) :: win_local
-         INTEGER, POINTER, INTENT(inout) :: array_local(:)
-         INTEGER :: istat
-         istat=0
-#if defined(MPI_OPT)
-         IF (isshared) THEN
-            CALL MPI_WIN_FENCE(0, win_local,istat)
-            CALL MPI_WIN_FREE(win_local,istat)
-            IF (ASSOCIATED(array_local)) NULLIFY(array_local)
-         ELSE
-#endif
-            IF (ASSOCIATED(array_local)) DEALLOCATE(array_local)
-#if defined(MPI_OPT)
-         ENDIF
-#endif
-         RETURN
-         END SUBROUTINE free_mpi_array1d_int
-   
-         SUBROUTINE free_mpi_array1d_dbl(win_local,array_local,isshared)
-         IMPLICIT NONE
-         LOGICAL, INTENT(in) :: isshared
-         INTEGER, INTENT(inout) :: win_local
-         DOUBLE PRECISION, POINTER, INTENT(inout) :: array_local(:)
-         INTEGER :: istat
-         istat=0
-#if defined(MPI_OPT)
-         IF (isshared) THEN
-            CALL MPI_WIN_FENCE(0, win_local,istat)
-            CALL MPI_WIN_FREE(win_local,istat)
-            IF (ASSOCIATED(array_local)) NULLIFY(array_local)
-         ELSE
-#endif
-            IF (ASSOCIATED(array_local)) DEALLOCATE(array_local)
-#if defined(MPI_OPT)
-         ENDIF
-#endif
-         RETURN
-         END SUBROUTINE free_mpi_array1d_dbl
-   
-         SUBROUTINE free_mpi_array2d_int(win_local,array_local,isshared)
-         IMPLICIT NONE
-         LOGICAL, INTENT(in) :: isshared
-         INTEGER, INTENT(inout) :: win_local
-         INTEGER, POINTER, INTENT(inout) :: array_local(:,:)
-         INTEGER :: istat
-         istat=0
-#if defined(MPI_OPT)
-         IF (isshared) THEN
-            CALL MPI_WIN_FENCE(0, win_local,istat)
-            CALL MPI_WIN_FREE(win_local,istat)
-            IF (ASSOCIATED(array_local)) NULLIFY(array_local)
-         ELSE
-#endif
-            IF (ASSOCIATED(array_local)) DEALLOCATE(array_local)
-#if defined(MPI_OPT)
-         ENDIF
-#endif
-         RETURN
-         END SUBROUTINE free_mpi_array2d_int
-   
-         SUBROUTINE free_mpi_array2d_dbl(win_local,array_local,isshared)
-         IMPLICIT NONE
-         LOGICAL, INTENT(in) :: isshared
-         INTEGER, INTENT(inout) :: win_local
-         DOUBLE PRECISION, POINTER, INTENT(inout) :: array_local(:,:)
-         INTEGER :: istat
-         istat=0
-#if defined(MPI_OPT)
-         IF (isshared) THEN
-            CALL MPI_WIN_FENCE(0, win_local,istat)
-            CALL MPI_WIN_FREE(win_local,istat)
-            IF (ASSOCIATED(array_local)) NULLIFY(array_local)
-         ELSE
-#endif
-            IF (ASSOCIATED(array_local)) DEALLOCATE(array_local)
-#if defined(MPI_OPT)
-         ENDIF
-#endif
-         RETURN
-         END SUBROUTINE free_mpi_array2d_dbl
-   
-         SUBROUTINE free_mpi_array4d_int(win_local,array_local,isshared)
-         IMPLICIT NONE
-         LOGICAL, INTENT(in) :: isshared
-         INTEGER, INTENT(inout) :: win_local
-         INTEGER, POINTER, INTENT(inout) :: array_local(:,:,:,:)
-         INTEGER :: istat
-         istat=0
-#if defined(MPI_OPT)
-         IF (isshared) THEN
-            CALL MPI_WIN_FENCE(0, win_local,istat)
-            CALL MPI_WIN_FREE(win_local,istat)
-            IF (ASSOCIATED(array_local)) NULLIFY(array_local)
-         ELSE
-#endif
-            IF (ASSOCIATED(array_local)) DEALLOCATE(array_local)
-#if defined(MPI_OPT)
-         ENDIF
-#endif
-         RETURN
-         END SUBROUTINE free_mpi_array4d_int
-   
-         SUBROUTINE free_mpi_array4d_dbl(win_local,array_local,isshared)
-         IMPLICIT NONE
-         LOGICAL, INTENT(in) :: isshared
-         INTEGER, INTENT(inout) :: win_local
-         DOUBLE PRECISION, POINTER, INTENT(inout) :: array_local(:,:,:,:)
-         INTEGER :: istat
-         istat=0
-#if defined(MPI_OPT)
-         IF (isshared) THEN
-            CALL MPI_WIN_FENCE(0, win_local,istat)
-            CALL MPI_WIN_FREE(win_local,istat)
-            IF (ASSOCIATED(array_local)) NULLIFY(array_local)
-         ELSE
-#endif
-            IF (ASSOCIATED(array_local)) DEALLOCATE(array_local)
-#if defined(MPI_OPT)
-         ENDIF
-#endif
-         RETURN
-         END SUBROUTINE free_mpi_array4d_dbl
-
 !-----------------------------------------------------------------------
 !     End Module
 !-----------------------------------------------------------------------
