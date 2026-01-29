@@ -68,8 +68,8 @@
     IF (dex_left.GE.dex_right) RETURN
     dex_pivot = partition(array, indices, dex_left, dex_right)
 
-    quicksort(array, indices, dex_left, dex_pivot-1)
-    quicksort(array, indices, dex_pivot+1,dex_right)
+    CALL quicksort(array, indices, dex_left, dex_pivot-1)
+    CALL quicksort(array, indices, dex_pivot+1,dex_right)
 
     END SUBROUTINE quicksort
 
