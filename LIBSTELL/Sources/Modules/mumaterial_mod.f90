@@ -615,8 +615,8 @@
       LOGICAL, ALLOCATABLE :: mid_mask(:)
       INTEGER :: n, idx
       INTEGER :: ntet_proc_min, ntet_proc_max, ntet_shar_min, ntet_shar_max
-      INTEGER :: nbrs_proc_min, nbrs_proc_max
-      DOUBLE PRECISION :: d_cluster_min,  d_cluster_max
+      INTEGER :: nbrs_proc_min, nbrs_proc_max, tile1, tile2
+      DOUBLE PRECISION :: d_cluster_min,  d_cluster_max, d, d_max, d_worst
       DOUBLE PRECISION :: H_app_norm_min, H_app_norm_max
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! Apply offset
@@ -862,7 +862,7 @@
 
         ! Cluster position and diameter
         r_cluster(:,wr_dex) = SUM(tet_cen(:,dom_proc(1:ntet_proc)),DIM=2)/ntet_proc 
-        d_cluster(wr_dex) = 2.0 * SQRT( SUM(NORM2(tet_cen(:,dom_proc(1:ntet_proc)) -SPREAD(r_cluster(:,wr_dex), DIM=2, NCOPIES=ntet_proc),DIM=1)**2) / ntet_proc)
+        d_cluster(wr_dex) = 2.0 * SQRT( SUM(NORM2(tet_cen(:,dom_proc(1:ntet_proc))-SPREAD(r_cluster(:,wr_dex), DIM=2, NCOPIES=ntet_proc),DIM=1)**2) / ntet_proc)
         CALL MPI_BARRIER(comm_shar, ierr_mpi)
         IF (shar_rank.EQ.master) THEN
           CALL MPI_ALLREDUCE( MPI_IN_PLACE, r_cluster, 3*world_size, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
@@ -908,16 +908,33 @@
         CALL MPI_ALLREDUCE(ntet_proc,ntet_proc_min,1,MPI_INTEGER,MPI_MIN,comm_world,ierr_mpi)
         CALL MPI_ALLREDUCE(ntet_proc,ntet_proc_max,1,MPI_INTEGER,MPI_MAX,comm_world,ierr_mpi)
         CALL MPI_ALLREDUCE(ntet_shar,ntet_shar_min,1,MPI_INTEGER,MPI_MIN,comm_world,ierr_mpi)
-        CALL MPI_ALLREDUCE(ntet_shar,ntet_shar_max,1,MPI_INTEGER,MPI_MAX,comm_world,ierr_mpi)
-        d_cluster_min = MINVAL(d_cluster)
-        d_cluster_max = MAXVAL(d_cluster)
+        CALL MPI_ALLREDUCE(ntet_shar,ntet_shar_max,1,MPI_INTEGER,MPI_MAX,comm_world,ierr_mpi)        
         IF (lverb) THEN 
+          d_cluster_min = MINVAL(d_cluster)
+          d_cluster_max = MAXVAL(d_cluster)
+          ! Find worst element pair
+          idx = MAXLOC(d_cluster,DIM=1)
+          n = SIZE(dom_clusters(:,idx),DIM=1)
+          tile1 = -1
+          tile2 = -1
+          d_worst = -1.0
+          DO k = 1, n
+            i_tile = dom_clusters(k,idx)
+            d = NORM2(tet_cen(:,dom_clusters(1:n,idx))-SPREAD(SOURCE=tet_cen(:,i_tile), DIM=2, NCOPIES=n),DIM=1)
+            d_max = MAXVAL(d)
+            IF (d_max.GT.d_worst) THEN
+              d_worst = d_max
+              tile1 = i_tile
+              tile2 = dom_clusters(MAXLOC(d,DIM=1),idx)
+            END IF
+          END DO
           WRITE(6,*)               ' ------- Domain Division ------'
           WRITE(6,'(3X,A,I7)')        'MPI Nodes    : ',master_size
           WRITE(6,'(3X,A,I0,A,I0,A)') 'Node range   : [',ntet_shar_min,', ',ntet_shar_max,']'
           WRITE(6,'(3X,A,I7)')        'MPI Threads  : ',world_size
           WRITE(6,'(3X,A,I0,A,I0,A)') 'Thread range : [',ntet_proc_min,', ',ntet_proc_max,']'
           WRITE(6,'(3X,A,EN0.3,A,EN0.3,A)') 'Cluster size : [',d_cluster_min,', ',d_cluster_max,'] m'
+          WRITE(6,'(3X,A,I0,A,I0,A,I0,A,EN0.3,A)') 'Worst pair in rank ', idx, ': [',tile1,', ',tile2,'] (',d_worst,' m)'
           FLUSH(6)         
         END IF
       END IF
@@ -1281,12 +1298,12 @@
           ! Communicate info to master (only proc that prints)
           IF (world_rank.EQ.rank_bad) THEN ! If this proc has the bad element:
             IF (lismaster) THEN            ! If this proc is also the master, just grab info
-              i_tile_bad = dom_shar(i_bad)
+              i_tile_bad = dom_proc(i_bad)
               lambda_bad = lambda_n(i_bad) ! I know lambda_n has already been updated at this point.
               M_targ_bad = M_targ_loc
               H_bad = H_new_loc
             ELSE                           ! If this proc is NOT the master, send info to master
-              CALL MPI_SEND(dom_shar(i_bad),    1, MPI_INTEGER,          0, 1240, comm_world, ierr_mpi)
+              CALL MPI_SEND(dom_proc(i_bad),    1, MPI_INTEGER,          0, 1240, comm_world, ierr_mpi)
               CALL MPI_SEND(lambda_n(i_bad), 1, MPI_DOUBLE_PRECISION, 0, 1241, comm_world, ierr_mpi) 
               CALL MPI_SEND(M_targ_loc,      1, MPI_DOUBLE_PRECISION, 0, 1242, comm_world, ierr_mpi) 
               CALL MPI_SEND(H_new_loc,       1, MPI_DOUBLE_PRECISION, 0, 1243, comm_world, ierr_mpi) 
@@ -1301,7 +1318,7 @@
           CALL MPI_BARRIER(comm_world, ierr_mpi)
 #endif
         ELSE
-            i_tile_bad = dom_shar(i_bad)
+            i_tile_bad = dom_proc(i_bad)
             lambda_bad = lambda_n(i_bad)
             M_targ_bad = M_targ_loc
             H_bad = H_new_loc            
