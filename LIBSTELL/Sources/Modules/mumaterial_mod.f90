@@ -332,7 +332,7 @@
       ! Default parameters for no MPI
       world_rank = 0; shar_rank = 0; master_rank = 0 
       world_size = 1; shar_size = 1; master_size = 1
-      lismaster = .TRUE.; ldosync = .FALSE. 
+      lismaster = .TRUE.
 
       ! Set up MPI parameters properly now
 #if defined(MPI_OPT)
@@ -348,7 +348,6 @@
           lismaster = (master_rank.EQ.0)
         END IF
         CALL MPI_Bcast( master_size, 1, MPI_INTEGER, 0, comm_shar, ierr_mpi)
-        ldosync = (master_size.GE.2) 
       END IF
 #endif
 
@@ -698,7 +697,7 @@
       END IF
 
 #if defined(MPI_OPT)   
-      IF (ldosync.AND.(shar_rank.EQ.0)) THEN         
+      IF ((master_size.GT.1).AND.(shar_rank.EQ.0)) THEN         
         splits = NINT(LOG(Bx)/LOG(2.0)) ! log_2(X) = ln(X)/log(2)
         targ = 0.5
         DO
@@ -892,7 +891,6 @@
         END DO
         DEALLOCATE(mid_ids,mid_mask)
 
-        DEALLOCATE(dom_sizes)
         CALL MPI_BARRIER(comm_shar, ierr_mpi)
 #endif
       ELSE ! Non-MPI
@@ -915,7 +913,7 @@
           d_cluster_max = MAXVAL(d_cluster)
           ! Find worst element pair
           idx = MAXLOC(d_cluster,DIM=1)
-          n = SIZE(dom_clusters(:,idx),DIM=1)
+          n = dom_sizes(idx)
           tile1 = -1
           tile2 = -1
           d_worst = -1.0
@@ -941,6 +939,7 @@
           FLUSH(6)         
         END IF
       END IF
+      DEALLOCATE(dom_sizes)
 #endif
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Determine nearest neighbors (array includes self)
@@ -1337,13 +1336,13 @@
         IF (lverb) THEN 
           IF (iter_n.EQ.1) THEN
             WRITE(6,*) ''
-            WRITE(6,*) '   iter  %good  res(avg) res(worst) |    Tile   H(norm)   M(targ)   M(norm)   '
+            WRITE(6,*) '  iter  %good  res(avg)  res(bad) |    tile   H(norm)   M(targ)   M(norm)   '
             WRITE(6,*) '==============================================================================='
           END IF
           M_new_bad = NORM2(M(:,i_tile_bad))
-          WRITE(6,'(1X, I6, 2X, F5.1, 1X, ES9.2, 1X, ES9.2, 3X, &
+          WRITE(6,'(1X, I6, 2X, F5.1, 1X, ES9.2, 1X, ES9.2, A, &
                     I7, 1X,ES9.2,1X, ES9.2,1X, ES9.2)') & 
-                  iter_n, converged_global*100.0/SUM(tet_vol),res_global,res_rel_bad, &
+                  iter_n, converged_global*100.0/SUM(tet_vol),res_global,res_rel_bad, ' | ',  &
                   i_tile_bad, H_bad, M_targ_bad, M_new_bad
           CALL FLUSH(6)
         END IF
