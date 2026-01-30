@@ -616,7 +616,8 @@
       INTEGER :: n, idx
       INTEGER :: ntet_proc_min, ntet_proc_max, ntet_shar_min, ntet_shar_max
       INTEGER :: nbrs_proc_min, nbrs_proc_max, tile1, tile2
-      DOUBLE PRECISION :: d_cluster_min,  d_cluster_max, d, d_max, d_worst
+      DOUBLE PRECISION, ALLOCATABLE :: d(:)
+      DOUBLE PRECISION :: d_cluster_min,  d_cluster_max, d_max, d_worst
       DOUBLE PRECISION :: H_app_norm_min, H_app_norm_max
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! Apply offset
@@ -918,6 +919,7 @@
           tile1 = -1
           tile2 = -1
           d_worst = -1.0
+          ALLOCATE(d(n))
           DO k = 1, n
             i_tile = dom_clusters(k,idx)
             d = NORM2(tet_cen(:,dom_clusters(1:n,idx))-SPREAD(SOURCE=tet_cen(:,i_tile), DIM=2, NCOPIES=n),DIM=1)
@@ -928,6 +930,7 @@
               tile2 = dom_clusters(MAXLOC(d,DIM=1),idx)
             END IF
           END DO
+          DEALLOCATE(d)
           WRITE(6,*)               ' ------- Domain Division ------'
           WRITE(6,'(3X,A,I7)')        'MPI Nodes    : ',master_size
           WRITE(6,'(3X,A,I0,A,I0,A)') 'Node range   : [',ntet_shar_min,', ',ntet_shar_max,']'
