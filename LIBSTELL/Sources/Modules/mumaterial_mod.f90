@@ -101,8 +101,9 @@
       INTEGER, PRIVATE  ::  ntet, nvertex
       DOUBLE PRECISION, POINTER, PRIVATE :: vertex(:,:), tet_cen(:,:), & 
                                             tet_vol(:), tet_rad(:), &
-                                            r_cluster(:,:), mom_cluster(:,:), d_cluster(:)
-      INTEGER, POINTER, PRIVATE :: tet(:,:), dom_clusters(:,:)
+                                            r_cluster(:,:), d_cluster(:), &
+                                            m_cluster(:,:), Q_cluster(:,:)
+      INTEGER, POINTER, PRIVATE :: tet(:,:), dom_cluster(:,:)
 
       ! magnetics variables
       INTEGER, PRIVATE :: nstate
@@ -136,8 +137,9 @@
                           win_state_dex, win_state_type, &
                           win_constant_mu, win_m, win_Mrem, &
                           win_Happ, win_constant_mu_o, & 
-                          win_r_cluster, win_mom_cluster, &
-                          win_d_cluster, win_dom_clusters
+                          win_r_cluster, win_m_cluster, &
+                          win_d_cluster, win_dom_cluster, &
+                          win_Q_cluster
       ! box division variables
       INTEGER, DIMENSION(:), ALLOCATABLE, PRIVATE :: dom_shar, outmydom, dom_proc
       INTEGER, PRIVATE                            :: ntet_shar,odomsize, ntet_proc
@@ -152,6 +154,7 @@
       DOUBLE PRECISION, PARAMETER, PRIVATE :: PI = 4.0D0*ATAN(1.0D0)
       DOUBLE PRECISION, PARAMETER, PRIVATE :: INVPI = 1.0D0/PI
       DOUBLE PRECISION, PARAMETER, PRIVATE :: INV4PI = 1.0D0/(4.0D0*PI)
+      DOUBLE PRECISION, PARAMETER, PRIVATE :: INV8PI = 1.0D0/(8.0D0*PI)
       DOUBLE PRECISION, PARAMETER, PRIVATE :: MU0 = 4.0D-7*PI
       DOUBLE PRECISION, PARAMETER, PRIVATE :: small = 1E-12
 !------------------------------------------------------------------------------
@@ -233,9 +236,10 @@
       ! TODO: Remove once allocated locally (Make sure code works beforehand)
       IF (ASSOCIATED(Mrem))          CALL mpidealloc(Mrem,win_Mrem)
       IF (ASSOCIATED(r_cluster))     CALL mpidealloc(r_cluster,win_r_cluster)
-      IF (ASSOCIATED(mom_cluster))   CALL mpidealloc(mom_cluster,win_mom_cluster)
       IF (ASSOCIATED(d_cluster))     CALL mpidealloc(d_cluster,win_d_cluster)
-      IF (ASSOCIATED(dom_clusters))  CALL mpidealloc(dom_clusters,win_dom_clusters)
+      IF (ASSOCIATED(dom_cluster))   CALL mpidealloc(dom_cluster,win_dom_cluster)
+      IF (ASSOCIATED(m_cluster))     CALL mpidealloc(m_cluster,win_m_cluster)
+      IF (ASSOCIATED(Q_cluster))     CALL mpidealloc(Q_cluster,win_Q_cluster)
 
       DO ik = 1, nstate
          IF (ALLOCATED(stateFunction(ik)%H)) DEALLOCATE(stateFunction(ik)%H)
@@ -354,7 +358,7 @@
       ! Nullify pointers
       NULLIFY(vertex, tet, tet_cen, tet_vol, tet_rad, state_dex, state_type, &
               constant_mu, constant_mu_o, Mrem, M, N_store, &
-              r_cluster, mom_cluster, d_cluster, dom_clusters)
+              r_cluster, m_cluster, d_cluster, dom_cluster)
 
       ! open file, return if fails
       iunit = 327; istat = 0
@@ -393,8 +397,10 @@
         CALL mpialloc(M,            3,ntet,shar_rank,0,comm_shar,win_m)
         CALL mpialloc(Mrem,3,nstate,       shar_rank,0,comm_shar,win_Mrem)  ! TODO: Allocate locally
         CALL mpialloc(r_cluster,3,world_size,  shar_rank,0,comm_shar,win_r_cluster)
-        CALL mpialloc(mom_cluster,3,world_size,shar_rank,0,comm_shar,win_mom_cluster)
         CALL mpialloc(d_cluster,world_size,    shar_rank,0,comm_shar,win_d_cluster)
+        CALL mpialloc(m_cluster,3,world_size,  shar_rank,0,comm_shar,win_m_cluster)
+        CALL mpialloc(Q_cluster,6,world_size,  shar_rank,0,comm_shar,win_Q_cluster)
+
         ALLOCATE(stateFunction(nstate))
       ELSE
 #endif
@@ -403,7 +409,8 @@
                   state_type(nstate),constant_mu(nstate), &
                   tet_cen(3,ntet),tet_vol(ntet),tet_rad(ntet),M(3,ntet), &
                   constant_mu_o(nstate),Mrem(3,nstate),stateFunction(nstate), &
-                  r_cluster(3,1),mom_cluster(3,1),d_cluster(1),dom_clusters(1,1), &
+                  r_cluster(3,1),d_cluster(1),dom_cluster(1,1), &
+                  m_cluster(3,1),Q_cluster(6,1), &
                   STAT=istat)
 #if defined(MPI_OPT)
       END IF
@@ -841,8 +848,9 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       cutoff = 5.0
       r_cluster = 0.0
-      mom_cluster = 0.0
       d_cluster = 0.0
+      m_cluster = 0.0
+      Q_cluster = 0.0
       IF (lcomm) THEN
 #if defined(MPI_OPT)
         ALLOCATE(dom_sizes(world_size))
@@ -850,14 +858,14 @@
         wr_dex = world_rank+1 ! Pesky 0-based indexing
         dom_sizes(wr_dex) = ntet_proc
         CALL MPI_ALLREDUCE(MPI_IN_PLACE, dom_sizes, world_size, MPI_INTEGER, MPI_SUM, comm_world, ierr_mpi)
-        CALL mpialloc(dom_clusters,MAXVAL(dom_sizes),world_size,shar_rank,0,comm_shar,win_dom_clusters)
+        CALL mpialloc(dom_cluster,MAXVAL(dom_sizes),world_size,shar_rank,0,comm_shar,win_dom_cluster)
         IF (shar_rank.EQ.master) THEN 
-          dom_clusters = 0
+          dom_cluster = 0
         END IF
         CALL MPI_BARRIER(comm_shar, ierr_mpi)
-        dom_clusters(1:ntet_proc, wr_dex) = dom_proc(1:ntet_proc)
+        dom_cluster(1:ntet_proc, wr_dex) = dom_proc(1:ntet_proc)
         IF (shar_rank.EQ.master) THEN
-          CALL MPI_ALLREDUCE( MPI_IN_PLACE, dom_clusters, MAXVAL(dom_sizes)*world_size, MPI_INTEGER, MPI_SUM, comm_master, ierr_mpi )
+          CALL MPI_ALLREDUCE( MPI_IN_PLACE, dom_cluster, MAXVAL(dom_sizes)*world_size, MPI_INTEGER, MPI_SUM, comm_master, ierr_mpi )
         END IF
 
         ! Cluster position and diameter
@@ -868,14 +876,15 @@
           CALL MPI_ALLREDUCE( MPI_IN_PLACE, r_cluster, 3*world_size, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
           CALL MPI_ALLREDUCE( MPI_IN_PLACE, d_cluster,   world_size, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
         END IF
-        ALLOCATE(lisfar(world_size))
-        lisfar = NORM2(r_cluster - SPREAD(r_cluster(:,wr_dex),DIM=2, NCOPIES=world_size),DIM=1) > cutoff * d_cluster
+
+        ! Quadrupole matrix
+        CALL mumaterial_calcquad()
 
         ! Determine which clusters are in the "mid-field" from our cluster
-        ALLOCATE(mid_mask(world_size))
+        ALLOCATE(lisfar(world_size),mid_mask(world_size))
+        lisfar = NORM2(r_cluster - SPREAD(r_cluster(:,wr_dex),DIM=2, NCOPIES=world_size),DIM=1) > cutoff * d_cluster
         mid_mask = (.NOT.lisfar) .AND. ([(i, i=1, world_size)] .NE. wr_dex)
         ALLOCATE(mid_ids(COUNT(mid_mask)))
-
         mid_ids = PACK([(i, i=1, world_size)], MASK=mid_mask)
         ntet_mid_proc = SUM(dom_sizes(mid_ids))
 
@@ -884,7 +893,7 @@
         idx = 0
         DO i = 1, SIZE(mid_ids)
           j = mid_ids(i)
-          cluster = PACK(dom_clusters(:,j),MASK=dom_clusters(:,j)>0)
+          cluster = PACK(dom_cluster(:,j),MASK=dom_cluster(:,j)>0)
           n = SIZE(cluster)
           dom_mid_proc(idx+1:idx+n) = cluster
           idx = idx + n
@@ -919,13 +928,13 @@
           d_worst = -1.0
           ALLOCATE(d(n))
           DO k = 1, n
-            i_tile = dom_clusters(k,idx)
-            d = NORM2(tet_cen(:,dom_clusters(1:n,idx))-SPREAD(SOURCE=tet_cen(:,i_tile), DIM=2, NCOPIES=n),DIM=1)
+            i_tile = dom_cluster(k,idx)
+            d = NORM2(tet_cen(:,dom_cluster(1:n,idx))-SPREAD(SOURCE=tet_cen(:,i_tile), DIM=2, NCOPIES=n),DIM=1)
             d_max = MAXVAL(d)
             IF (d_max.GT.d_worst) THEN
               d_worst = d_max
               tile1 = i_tile
-              tile2 = dom_clusters(MAXLOC(d,DIM=1),idx)
+              tile2 = dom_cluster(MAXLOC(d,DIM=1),idx)
             END IF
           END DO
           DEALLOCATE(d)
@@ -1064,7 +1073,8 @@
       INTEGER, DIMENSION(:), ALLOCATABLE             :: dom_mid_nn
       INTEGER                                        :: n_mid_nn
       DOUBLE PRECISION, DIMENSION(:, :), ALLOCATABLE :: r_vec, r_hat
-      DOUBLE PRECISION, DIMENSION(:, :), ALLOCATABLE :: H_dipole, mom_nn
+      DOUBLE PRECISION, DIMENSION(:, :), ALLOCATABLE :: H_dip, mom_nn, H_quad,t
+      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: q
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: r_norm, mrdotrhat
       DOUBLE PRECISION ::  Bx, By, Bz
       !--------------------------- CONVERGENCE  ------------------------------!
@@ -1359,17 +1369,29 @@
           i_tile = dom_proc(i)
           !---------------- CONTRIBUTION FROM DISTANT CLUSTERS -----------------!
           ALLOCATE(r_vec(3,world_size),r_norm(world_size),r_hat(3,world_size),&
-                   H_dipole(3,world_size),mrdotrhat(world_size))
+                   H_dip(3,world_size),mrdotrhat(world_size),H_quad(3,world_size))
           r_vec = SPREAD(tet_cen(:,i_tile),DIM=2,NCOPIES=world_size)-r_cluster
           r_norm = NORM2(r_vec, DIM=1)
           r_hat = r_vec / SPREAD(r_norm, DIM=1, NCOPIES=3)
-          mrdotrhat = SUM(mom_cluster*r_hat,DIM=1)
-          H_dipole = INV4PI*(3.0*SPREAD(mrdotrhat,DIM=1,NCOPIES=3)*r_hat-mom_cluster)/SPREAD(r_norm**3,DIM=1,NCOPIES=3)
+          ! Dipole contribution: 1/(4*pi*r^3) *  (3*(m.rhat)rhat - m)
+          mrdotrhat = SUM(m_cluster*r_hat,DIM=1)
+          H_dip = INV4PI*(3.0*SPREAD(mrdotrhat,DIM=1,NCOPIES=3)*r_hat-m_cluster)/SPREAD(r_norm**3,DIM=1,NCOPIES=3)
+          ! Quadrupole contribution: 1/(8*pi*r^4) * ((rhat.Q rhat)rhat - 2*Q.rhat)
+          CALL mumaterial_calcquad()
+          ALLOCATE(t(3,world_size),q(world_size)) ! Helpers for vectorization
+          t(1,:) = Q_cluster(1,:)*r_hat(1,:) + Q_cluster(4,:)*r_hat(2,:) + Q_cluster(5,:)*r_hat(3,:)
+          t(2,:) = Q_cluster(4,:)*r_hat(1,:) + Q_cluster(2,:)*r_hat(2,:) + Q_cluster(6,:)*r_hat(3,:)
+          t(3,:) = Q_cluster(5,:)*r_hat(1,:) + Q_cluster(6,:)*r_hat(2,:) + Q_cluster(3,:)*r_hat(3,:)
+          q = r_hat(1,:)*t(1,:) + r_hat(2,:)*t(2,:) + r_hat(3,:)*t(3,:)
+          H_quad = INV8PI*(5*SPREAD(q, DIM=1, NCOPIES=3)*r_hat-2*t)/SPREAD(r_norm**4,DIM=1,NCOPIES=3)
+          DEALLOCATE(t,q)
+          ! Corrections
           WHERE (.NOT. SPREAD(lisfar, DIM=1, NCOPIES=3))
-            H_dipole = 0.0
+            H_dip  = 0.0
+            H_quad = 0.0
           END WHERE
-          H_ext(:,i) = H_ext(:,i) + SUM(H_dipole,DIM=2)
-          DEALLOCATE(r_vec,r_norm,r_hat,H_dipole,mrdotrhat)
+          H_ext(:,i) = H_ext(:,i) + SUM(H_dip,DIM=2) + SUM(H_quad,DIM=2)
+          DEALLOCATE(r_vec,r_norm,r_hat,H_dip,mrdotrhat,H_quad)
           !---------------- CONTRIBUTION FROM MID-FIELD DIPOLES ----------------!
           ! Get all non-neighbors
           is_midfield = .FALSE.
@@ -1382,15 +1404,15 @@
 
           IF (n_mid_nn.GT.0) THEN
             ALLOCATE(r_vec(3,n_mid_nn),r_norm(n_mid_nn),r_hat(3,n_mid_nn),&
-                     H_dipole(3,n_mid_nn),mrdotrhat(n_mid_nn),mom_nn(3,n_mid_nn))      
+                     H_dip(3,n_mid_nn),mrdotrhat(n_mid_nn),mom_nn(3,n_mid_nn))      
             r_vec = SPREAD(tet_cen(:,i_tile),DIM=2,NCOPIES=n_mid_nn)-tet_cen(:,dom_mid_nn)
             r_norm = NORM2(r_vec, DIM=1)
             r_hat = r_vec / SPREAD(r_norm, DIM=1, NCOPIES=3)
             mom_nn = M(:,dom_mid_nn)*SPREAD(tet_vol(dom_mid_nn), DIM=1, NCOPIES=3)
             mrdotrhat = SUM(mom_nn*r_hat,DIM=1)
-            H_dipole = INV4PI*(3.0*SPREAD(mrdotrhat,DIM=1,NCOPIES=3)*r_hat-mom_nn)/SPREAD(r_norm**3,DIM=1,NCOPIES=3)
-            H_ext(:,i) = H_ext(:,i) + SUM(H_dipole,DIM=2)              
-            DEALLOCATE(r_vec,r_norm,r_hat,H_dipole,mrdotrhat,mom_nn)
+            H_dip = INV4PI*(3.0*SPREAD(mrdotrhat,DIM=1,NCOPIES=3)*r_hat-mom_nn)/SPREAD(r_norm**3,DIM=1,NCOPIES=3)
+            H_ext(:,i) = H_ext(:,i) + SUM(H_dip,DIM=2)              
+            DEALLOCATE(r_vec,r_norm,r_hat,H_dip,mrdotrhat,mom_nn)
           END IF
           DEALLOCATE(dom_mid_nn)
 
@@ -1797,6 +1819,46 @@
 
       END SUBROUTINE mumaterial_split
 
+      SUBROUTINE mumaterial_calcquad
+      !-----------------------------------------------------------------------
+      ! mumaterial_calcquad: Recalculates Q tensor for quadrupole contribution
+      !-----------------------------------------------------------------------
+      IMPLICIT NONE
+
+      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: R, m
+      INTEGER :: wr_dex
+      DOUBLE PRECISION :: A, B, C
+
+      IF (shar_rank.EQ.master) THEN
+        Q_cluster = 0.0
+      END IF
+      CALL MPI_BARRIER(comm_shar, ierr_mpi)
+      
+      wr_dex = world_rank+1
+      ALLOCATE(R(3,ntet_proc),m(3,ntet_proc))
+      R = tet_cen(:,dom_proc(1:ntet_proc))-SPREAD(r_cluster(:,wr_dex),DIM=2,NCOPIES=ntet_proc)
+      m = M(:,dom_proc(1:ntet_proc))*SPREAD(tet_vol(dom_proc(1:ntet_proc)),DIM=1,NCOPIES=3)
+
+      A = DOT_PRODUCT(R(1,:),m(1,:))
+      B = DOT_PRODUCT(R(2,:),m(2,:))
+      C = DOT_PRODUCT(R(3,:),m(3,:))
+
+      Q_cluster(1,wr_dex) = 2.0/3.0*(2*A-B-C) ! xx
+      Q_cluster(2,wr_dex) = 2.0/3.0*(2*B-A-C) ! yy
+      Q_cluster(3,wr_dex) = -(Q_cluster(1,wr_dex)+Q_cluster(2,wr_dex)) ! zz
+
+      Q_cluster(4,wr_dex) = DOT_PRODUCT(R(1,:),m(2,:))+DOT_PRODUCT(R(2,:),m(1,:)) ! xy
+      Q_cluster(5,wr_dex) = DOT_PRODUCT(R(1,:),m(3,:))+DOT_PRODUCT(R(3,:),m(1,:)) ! xz
+      Q_cluster(6,wr_dex) = DOT_PRODUCT(R(2,:),m(3,:))+DOT_PRODUCT(R(3,:),m(2,:)) ! yz
+      DEALLOCATE(R,m)
+
+      IF (shar_rank.EQ.master) THEN
+        CALL MPI_ALLREDUCE(MPI_IN_PLACE, Q_cluster, 6*world_size, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi)
+      END IF
+      CALL MPI_BARRIER(comm_shar, ierr_mpi)
+
+      END SUBROUTINE
+
       SUBROUTINE mumaterial_syncM()
       !-----------------------------------------------------------------------
       ! mumaterial_syncM: Synchronizes M across all MPI nodes and recalculates
@@ -1809,13 +1871,13 @@
 
       ! First recalculate cluster moments
       IF (shar_rank.EQ.master) THEN 
-        mom_cluster = 0.0 ! master zeroes shared memory window
+        m_cluster = 0.0 ! master zeroes shared memory window
       END IF
       CALL MPI_BARRIER(comm_shar, ierr_mpi) ! threads wait for zeroing
-      mom_cluster(:,world_rank+1) = SUM(M(:, dom_proc(1:ntet_proc)) * &
+      m_cluster(:,world_rank+1) = SUM(M(:, dom_proc(1:ntet_proc)) * &
                                     SPREAD(tet_vol(dom_proc(1:ntet_proc)), DIM=1, NCOPIES=3), DIM=2) ! everyone does work
       IF (shar_rank.EQ.master) THEN ! synchronize on all mpi nodes
-        CALL MPI_ALLREDUCE(MPI_IN_PLACE, mom_cluster, 3*world_size, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
+        CALL MPI_ALLREDUCE(MPI_IN_PLACE, m_cluster, 3*world_size, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
       END IF
 
       ! Global M array
