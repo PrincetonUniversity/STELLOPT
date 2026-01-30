@@ -358,7 +358,7 @@
       ! Nullify pointers
       NULLIFY(vertex, tet, tet_cen, tet_vol, tet_rad, state_dex, state_type, &
               constant_mu, constant_mu_o, Mrem, M, N_store, &
-              r_cluster, m_cluster, d_cluster, dom_cluster)
+              r_cluster, m_cluster, d_cluster, dom_cluster, Q_cluster)
 
       ! open file, return if fails
       iunit = 327; istat = 0
