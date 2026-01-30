@@ -936,8 +936,8 @@
           WRITE(6,'(3X,A,I0,A,I0,A)') 'Node range   : [',ntet_shar_min,', ',ntet_shar_max,']'
           WRITE(6,'(3X,A,I7)')        'MPI Threads  : ',world_size
           WRITE(6,'(3X,A,I0,A,I0,A)') 'Thread range : [',ntet_proc_min,', ',ntet_proc_max,']'
-          WRITE(6,'(3X,A,EN0.3,A,EN0.3,A)') 'Cluster size : [',d_cluster_min,', ',d_cluster_max,'] m'
-          WRITE(6,'(3X,A,I0,A,I0,A,I0,A,EN0.3,A)') 'Worst pair in rank ', idx, ': [',tile1,', ',tile2,'] (',d_worst,' m)'
+          WRITE(6,'(3X,A,ES0.3,A,ES0.3,A)') 'Cluster size : [',d_cluster_min,', ',d_cluster_max,'] m'
+          WRITE(6,'(3X,A,I0,A,I0,A,I0,A,ES0.3,A)') 'Worst pair in rank ', idx, ': [',tile1,', ',tile2,'] (',d_worst,' m)'
           FLUSH(6)         
         END IF
       END IF
@@ -1074,7 +1074,7 @@
       INTEGER ::          rank_bad, i_bad, i_tile_bad
       DOUBLE PRECISION :: pair_in(2), pair_out(2)
       DOUBLE PRECISION :: lambda_bad
-      DOUBLE PRECISION :: res_rel, res_rel_loc, res_rel_bad
+      DOUBLE PRECISION :: res_rel, res_rel_loc, res_rel_bad, res_global
       DOUBLE PRECISION :: M_targ_loc, M_targ_bad, H_new_loc, H_bad, M_new_bad
       INTEGER :: mstat(MPI_STATUS_SIZE)
       !-----------------------------------------------------------------------!
@@ -1102,10 +1102,12 @@
         iter_n = iter_n + 1        
         converged_proc = 0.0
 
+
         ! Reset residues
         res_rel_loc = -1.0 ! Always overwritten since |res|/|M| > 0
         res_M_prev = res_M
         res_M = 0.0
+        res_global = 0.0
 
         !-------------------- START OF ELEMENT LOOP ----------------------!
         DO i = 1, ntet_proc
@@ -1263,6 +1265,7 @@
 
           ! Check convergence progress
           res_rel = NORM2(res_M(:,i))/NORM2(M_targ)
+          res_global = res_global + res_rel*tet_vol(i_tile)
 	        IF ((res_rel.LT.threshold) .AND. (lgoodsec)) THEN                     
             converged_proc = converged_proc + tet_vol(i_tile)
           END IF
@@ -1318,6 +1321,7 @@
             CALL MPI_RECV(H_bad,      1, MPI_DOUBLE_PRECISION, rank_bad, 1243, comm_world, mstat, ierr_mpi)
           END IF
           CALL MPI_ALLREDUCE(converged_proc, converged_global,  1, MPI_DOUBLE_PRECISION, MPI_SUM, comm_world, ierr_mpi) 
+          CALL MPI_ALLREDUCE(MPI_IN_PLACE,         res_global,  1, MPI_DOUBLE_PRECISION, MPI_SUM, comm_world, ierr_mpi) 
           CALL MPI_BARRIER(comm_world, ierr_mpi)
 #endif
         ELSE
@@ -1327,23 +1331,24 @@
             H_bad = H_new_loc            
             converged_global = converged_proc
         END IF
-
-        converged_print = converged_global*100.0/SUM(tet_vol) 
+        res_global = res_global/SUM(tet_vol)
         IF (ldosync) CALL mumaterial_syncM()
 
         IF (lverb) THEN 
           IF (iter_n.EQ.1) THEN
             WRITE(6,*) ''
-            WRITE(6,*) '  Count   %Good     Tile      Mnorm          H      Mtarg        Res     Lambda'
+            WRITE(6,*) '   iter  %good  res(avg) res(worst) |    Tile   H(norm)   M(targ)   M(norm)   '
             WRITE(6,*) '==============================================================================='
           END IF
           M_new_bad = NORM2(M(:,i_tile_bad))
-          WRITE(6,'(2X,I6,1X,F7.1,1X,I8,1X,ES10.3,1X,ES10.3,1X,ES10.3,1X,ES10.3,1X,ES10.2)') & 
-                  iter_n, converged_print, i_tile_bad, M_new_bad, H_bad, M_targ_bad, res_rel_bad, lambda_bad
+          WRITE(6,'(1X, I6, 2X, F5.1, 1X, ES9.2, 1X, ES9.2, 3X, &
+                    I7, 1X,ES9.2,1X, ES9.2,1X, ES9.2)') & 
+                  iter_n, converged_global*100.0/SUM(tet_vol),res_global,res_rel_bad, &
+                  i_tile_bad, H_bad, M_targ_bad, M_new_bad
           CALL FLUSH(6)
         END IF
 
-        IF (((converged_print.GE.convCheck).AND.(MOD(iter_n,100).LE.20)).OR.(iter_n.GE.maxIter)) THEN
+        IF (((converged_global*100.0/SUM(tet_vol) .GE.convCheck).AND.(MOD(iter_n,100).LE.20)).OR.(iter_n.GE.maxIter)) THEN
             IF (lverb) WRITE(6,*) "  MUMAT:  Stopping"
             EXIT
         END IF
