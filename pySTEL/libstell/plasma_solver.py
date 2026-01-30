@@ -534,7 +534,7 @@ class PLASMA_SOLVER:
                 self.particle_fluxes_info[type]['cn'] = cn             
                 self.particle_fluxes_info[type]['mass_ref_species'] = mass_ref_species             
                 
-    def run(self,Nr,dt,tstart,tend,tolerance=1E-2,max_subiter=12,output_filename=None,restart_filename=None):
+    def run(self,Nr,dt,tstart,tend,tolerance=1E-2,max_subiter=12,output_filename=None,restart_filename=None,dt_save=0.1):
         """
         Run the transport solver after setting initial profiles, BCs, fluxes types and sources
         If output_filename is not None, then results will be saved in a joblib file
@@ -623,7 +623,7 @@ class PLASMA_SOLVER:
                 subiter += 1
         
         if(output_filename is not None):
-            self.call_save_output(output_filename)  
+            self.call_save_output(output_filename,dt_save)  
             
         end_time = perf_counter()   
         print(f'Plasma Solver took {(end_time-start_time)/60:.2f}min to run.')  
@@ -2121,7 +2121,7 @@ class PLASMA_SOLVER:
     #     merge_and_delete('heatTransportCoeffs_vs_roa_surface*','heatTransportCoeffs_vs_roa')
     #     merge_and_delete('plasma_profiles_check_surface*','plasma_profiles_check')
         
-    def call_save_output(self,output_filename):
+    def call_save_output(self,output_filename,dt_save):
         """Saves simulation in output joblib file"""
         from types import SimpleNamespace
         from pathlib import Path
@@ -2144,8 +2144,8 @@ class PLASMA_SOLVER:
         if hasattr(self,'iota23'):
             saved_class.iota23 = self.iota23
         
-        # only save at minimum every dt=0.1s 
-        freq = max(1, round(0.1 / self.dt))
+        # only save at minimum every dt=dt_save
+        freq = max(1, round(dt_save / self.dt))
         sl = slice(0, None, freq)  # defines the slice once
 
         saved_class.time = self.time[sl]
