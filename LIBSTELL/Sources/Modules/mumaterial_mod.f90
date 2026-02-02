@@ -621,7 +621,8 @@
       LOGICAL, ALLOCATABLE :: mid_mask(:)
       INTEGER :: n, idx
       INTEGER :: ntet_proc_min, ntet_proc_max, ntet_shar_min, ntet_shar_max
-      INTEGER :: nbrs_proc_min, nbrs_proc_max, tile1, tile2
+      INTEGER :: nbrs_proc_min, nbrs_proc_max, ntet_mid_proc_min, ntet_mid_proc_max
+      INTEGER :: tile1, tile2
       DOUBLE PRECISION, ALLOCATABLE :: d(:)
       DOUBLE PRECISION :: d_cluster_min,  d_cluster_max, d_max, d_worst
       DOUBLE PRECISION :: H_app_norm_min, H_app_norm_max
@@ -846,7 +847,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Calculate and write cluster quantities
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      cutoff = 5.0
+      cutoff = 3.0
       r_cluster = 0.0
       d_cluster = 0.0
       m_cluster = 0.0
@@ -917,6 +918,8 @@
         CALL MPI_ALLREDUCE(ntet_proc,ntet_proc_max,1,MPI_INTEGER,MPI_MAX,comm_world,ierr_mpi)
         CALL MPI_ALLREDUCE(ntet_shar,ntet_shar_min,1,MPI_INTEGER,MPI_MIN,comm_world,ierr_mpi)
         CALL MPI_ALLREDUCE(ntet_shar,ntet_shar_max,1,MPI_INTEGER,MPI_MAX,comm_world,ierr_mpi)        
+        CALL MPI_ALLREDUCE(ntet_mid_proc,ntet_mid_proc_min,1,MPI_INTEGER,MPI_MAX,comm_world,ierr_mpi)        
+        CALL MPI_ALLREDUCE(ntet_mid_proc,ntet_mid_proc_max,1,MPI_INTEGER,MPI_MAX,comm_world,ierr_mpi)        
         IF (lverb) THEN 
           d_cluster_min = MINVAL(d_cluster)
           d_cluster_max = MAXVAL(d_cluster)
@@ -943,8 +946,9 @@
           WRITE(6,'(3X,A,I0,A,I0,A)') 'Node range   : [',ntet_shar_min,', ',ntet_shar_max,']'
           WRITE(6,'(3X,A,I7)')        'MPI Threads  : ',world_size
           WRITE(6,'(3X,A,I0,A,I0,A)') 'Thread range : [',ntet_proc_min,', ',ntet_proc_max,']'
-          WRITE(6,'(3X,A,ES0.3,A,ES0.3,A)') 'Cluster size : [',d_cluster_min,', ',d_cluster_max,'] m'
+          WRITE(6,'(3X,A,ES0.3,A,ES0.3,A)') 'Cluster diam.: [',d_cluster_min,', ',d_cluster_max,'] m'
           WRITE(6,'(3X,A,I0,A,I0,A,I0,A,ES0.3,A)') 'Worst pair in rank ', idx, ': [',tile1,', ',tile2,'] (',d_worst,' m)'
+          WRITE(6,'(3X,A,I0,A,I0,A)') 'Dipole range : [',ntet_mid_proc_min,', ',ntet_mid_proc_max,']'
           FLUSH(6)         
         END IF
       END IF
@@ -1365,6 +1369,7 @@
         !--------------------- UPDATE BACKGROUND H_APP -----------------------!
         ALLOCATE(is_midfield(ntet_mid_proc))
         H_ext =  H_app ! Static field using slice
+        CALL mumaterial_calcquad()
         DO i = 1, ntet_proc
           i_tile = dom_proc(i)
           !---------------- CONTRIBUTION FROM DISTANT CLUSTERS -----------------!
@@ -1377,7 +1382,6 @@
           mrdotrhat = SUM(m_cluster*r_hat,DIM=1)
           H_dip = INV4PI*(3.0*SPREAD(mrdotrhat,DIM=1,NCOPIES=3)*r_hat-m_cluster)/SPREAD(r_norm**3,DIM=1,NCOPIES=3)
           ! Quadrupole contribution: 1/(8*pi*r^4) * ((rhat.Q rhat)rhat - 2*Q.rhat)
-          CALL mumaterial_calcquad()
           ALLOCATE(t(3,world_size),q(world_size)) ! Helpers for vectorization
           t(1,:) = Q_cluster(1,:)*r_hat(1,:) + Q_cluster(4,:)*r_hat(2,:) + Q_cluster(5,:)*r_hat(3,:)
           t(2,:) = Q_cluster(4,:)*r_hat(1,:) + Q_cluster(2,:)*r_hat(2,:) + Q_cluster(6,:)*r_hat(3,:)
