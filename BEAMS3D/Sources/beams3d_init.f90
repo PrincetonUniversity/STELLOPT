@@ -575,7 +575,7 @@
       !!              Boxsim: preallocate more memory
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       IF (lboxsim) THEN 
-         nparticles_start = nparticles
+         buffer = 3
          nparticles = nparticles*buffer
          ! Get offsets of all threads to set up 
          CALL MPI_COMM_SIZE(MPI_COMM_SHARMEM, nproc_sharmem, ierr_mpi)

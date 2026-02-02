@@ -303,6 +303,10 @@
                                    ATT='Neutral Beam Shine-through [W/m^2]',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_shine',ier)
                END IF
+               IF (lboxsim) THEN
+                  CALL write_var_hdf5(fid,'reaction_count',nparticles,ier,INTVAR=reaction_count,ATT='Reaction count',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'reaction_count',ier)
+               END IF
             CASE('DIAG')
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
                IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_'//TRIM(id_string)//'.h5',ier)

@@ -31,6 +31,7 @@
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: Energy, X_start, Y_start
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: X, Y, U, V, v_neut
       REAL(rprec), PARAMETER   :: E_error = .01 ! 1% energy spread
+      INTEGER :: buffer 
 
       ! For HDF5
       INTEGER(HID_T)           :: h5_fid, h5_did, h5_sid
@@ -165,8 +166,13 @@
             vphi_start(k1:k2) = -v_neut(1,:)*SIN(PHI_start(k1:k2)) + &
                                  v_neut(2,:)*COS(PHI_start(k1:k2))
             vz_start(k1:k2)   =  v_neut(3,:)
-            k1 = k2 + 1
-            k2 = k2 + nparticles_start
+            IF (lboxsim) THEN
+               buffer = 3
+            ELSE
+               buffer = 1
+            END IF
+            k1 = k2 + (buffer-1)*nparticles_start + 1
+            k2 = k2 + buffer*nparticles_start
          END DO
          DEALLOCATE(N_start,X_Start,Y_start,Energy, U, V, v_neut)
          DEALLOCATE(X_BEAMLET,Y_BEAMLET,Z_BEAMLET,NX_BEAMLET,NY_BEAMLET,NZ_BEAMLET)
