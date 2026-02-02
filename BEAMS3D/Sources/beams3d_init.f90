@@ -641,10 +641,10 @@
       IF (lboxsim) THEN
          ! Contiguous allocation
          ALLOCATE(is_active(nparticles))
-         i = myoffset*buffer+1
-         myfreedex = i+mynpart
+         i = myoffset+1
+         myfreedex = i+mynpart/buffer
          is_active(i:myfreedex-1) = .TRUE.
-         is_active(myfreedex:myfreedex+(buffer-1)*mynpart-1) = .FALSE.
+         is_active(myfreedex:i+mynpart-1) = .FALSE.
       END IF
 
       

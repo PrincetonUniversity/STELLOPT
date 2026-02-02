@@ -171,8 +171,8 @@
             ELSE
                buffer = 1
             END IF
-            k1 = k2 + (buffer-1)*nparticles_start + 1
-            k2 = k2 + buffer*nparticles_start
+            k1 = (i-1)*buffer*nparticles_start + 1
+            k2 = k1 + nparticles_start - 1
          END DO
          DEALLOCATE(N_start,X_Start,Y_start,Energy, U, V, v_neut)
          DEALLOCATE(X_BEAMLET,Y_BEAMLET,Z_BEAMLET,NX_BEAMLET,NY_BEAMLET,NZ_BEAMLET)
