@@ -1438,7 +1438,10 @@
       DOUBLE PRECISION, INTENT(inout) :: B(3,3)
       DOUBLE PRECISION :: det, INV(3,3)
 
-      DET = B(1,1)*(B(2,2)*B(3,3)-B(2,3)*B(3,2)) + B(1,2)*(B(2,3)*B(3,1)-B(2,1)*B(3,3)) + B(1,3)*(B(2,1)*B(3,2)-B(2,2)*B(3,1))
+      DET = B(1,1)*(B(2,2)*B(3,3)-B(2,3)*B(3,2)) + &
+            B(1,2)*(B(2,3)*B(3,1)-B(2,1)*B(3,3)) + &
+            B(1,3)*(B(2,1)*B(3,2)-B(2,2)*B(3,1))
+
       INV(1,1) = (B(2,2)*B(3,3)-B(2,3)*B(3,2))/DET
       INV(2,1) = (B(2,3)*B(3,1)-B(2,1)*B(3,3))/DET
       INV(3,1) = (B(2,1)*B(3,2)-B(2,2)*B(3,1))/DET
@@ -1563,32 +1566,32 @@
       DOUBLE PRECISION :: mumaterial_getNxz
       DOUBLE PRECISION, INTENT(IN) :: r(3), l, h     
 
-            mumaterial_getNxz = -1.d0/(16.d0*ATAN(1.d0)) * (F(r,h,l,h) - F(r,0.d0,l,h) - (G(r,h) - G(r,0.d0)))
-            RETURN
+      mumaterial_getNxz = -1.d0/(16.d0*ATAN(1.d0)) * (F(r,h,l,h) - F(r,0.d0,l,h) - (G(r,h) - G(r,0.d0)))
+      RETURN
 
-      CONTAINS
+    CONTAINS
 
-        FUNCTION F(r, yp, l, h)
-        IMPLICIT NONE
-        DOUBLE PRECISION :: F
-        DOUBLE PRECISION, INTENT(IN) :: r(3), yp, l, h
-              
-        F = h / sqrt(h*h + l*l) * ATANH((l*l - l*r(1) + h*r(2) - h*yp*(1 + l*l/h/h)) / &
-                sqrt((h*h + l*l) * (r(1)*r(1) - 2*r(1)*l + l*l + r(2)*r(2) - 2*(l*l - l*r(1) + h*r(2))*yp/h + &
-                yp*yp*(1 + l*l/h/h) + r(3)*r(3))))
+      FUNCTION F(r, yp, l, h)
+      IMPLICIT NONE
+      DOUBLE PRECISION :: F
+      DOUBLE PRECISION, INTENT(IN) :: r(3), yp, l, h
+            
+      F = h / sqrt(h*h + l*l) * ATANH((l*l - l*r(1) + h*r(2) - h*yp*(1 + l*l/h/h)) / &
+              sqrt((h*h + l*l) * (r(1)*r(1) - 2*r(1)*l + l*l + r(2)*r(2) - 2*(l*l - l*r(1) + h*r(2))*yp/h + &
+              yp*yp*(1 + l*l/h/h) + r(3)*r(3))))
 
-        RETURN
-        END FUNCTION F
+      RETURN
+      END FUNCTION F
 
-        FUNCTION G(r, yp)
-        IMPLICIT NONE
-        DOUBLE PRECISION :: G
-        DOUBLE PRECISION, INTENT(IN) :: r(3), yp
-              
-        G = ATANH((r(2) - yp) / sqrt(r(1)*r(1) + r(2)*r(2) - 2*r(2)*yp + yp*yp + r(3)*r(3)))
-              
-        RETURN
-        END FUNCTION G
+      FUNCTION G(r, yp)
+      IMPLICIT NONE
+      DOUBLE PRECISION :: G
+      DOUBLE PRECISION, INTENT(IN) :: r(3), yp
+            
+      G = ATANH((r(2) - yp) / sqrt(r(1)*r(1) + r(2)*r(2) - 2*r(2)*yp + yp*yp + r(3)*r(3)))
+            
+      RETURN
+      END FUNCTION G
       END FUNCTION mumaterial_getNxz
 
       FUNCTION mumaterial_getNyz(r, l, h)
@@ -1705,13 +1708,12 @@
 
       END FUNCTION mumaterial_gettetvolume
 
-
       SUBROUTINE mumaterial_getneighbours()
       !-----------------------------------------------------------------------
       ! mumaterial_getneighbours: Finds all UK neighbors of an element.
       !-----------------------------------------------------------------------
-      INTEGER :: i, j, k, c, i_tile
-      DOUBLE PRECISION, ALLOCATABLE ::  dist(:), dx(:,:)
+      INTEGER :: i, j, k, i_tile
+      DOUBLE PRECISION, ALLOCATABLE ::  dist(:)
       LOGICAL, ALLOCATABLE :: mask(:)
 
       ALLOCATE(nbrs_count(ntet_proc),mask(ntet),dist(ntet))
@@ -1825,7 +1827,7 @@
       !-----------------------------------------------------------------------
       IMPLICIT NONE
 
-      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: R, m
+      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: R, mom
       INTEGER :: wr_dex
       DOUBLE PRECISION :: A, B, C
 
@@ -1835,22 +1837,22 @@
       CALL MPI_BARRIER(comm_shar, ierr_mpi)
       
       wr_dex = world_rank+1
-      ALLOCATE(R(3,ntet_proc),m(3,ntet_proc))
+      ALLOCATE(R(3,ntet_proc),mom(3,ntet_proc))
       R = tet_cen(:,dom_proc(1:ntet_proc))-SPREAD(r_cluster(:,wr_dex),DIM=2,NCOPIES=ntet_proc)
-      m = M(:,dom_proc(1:ntet_proc))*SPREAD(tet_vol(dom_proc(1:ntet_proc)),DIM=1,NCOPIES=3)
+      mom = M(:,dom_proc(1:ntet_proc))*SPREAD(tet_vol(dom_proc(1:ntet_proc)),DIM=1,NCOPIES=3)
 
-      A = DOT_PRODUCT(R(1,:),m(1,:))
-      B = DOT_PRODUCT(R(2,:),m(2,:))
-      C = DOT_PRODUCT(R(3,:),m(3,:))
+      A = DOT_PRODUCT(R(1,:),mom(1,:))
+      B = DOT_PRODUCT(R(2,:),mom(2,:))
+      C = DOT_PRODUCT(R(3,:),mom(3,:))
 
       Q_cluster(1,wr_dex) = 2.0/3.0*(2*A-B-C) ! xx
       Q_cluster(2,wr_dex) = 2.0/3.0*(2*B-A-C) ! yy
       Q_cluster(3,wr_dex) = -(Q_cluster(1,wr_dex)+Q_cluster(2,wr_dex)) ! zz
 
-      Q_cluster(4,wr_dex) = DOT_PRODUCT(R(1,:),m(2,:))+DOT_PRODUCT(R(2,:),m(1,:)) ! xy
-      Q_cluster(5,wr_dex) = DOT_PRODUCT(R(1,:),m(3,:))+DOT_PRODUCT(R(3,:),m(1,:)) ! xz
-      Q_cluster(6,wr_dex) = DOT_PRODUCT(R(2,:),m(3,:))+DOT_PRODUCT(R(3,:),m(2,:)) ! yz
-      DEALLOCATE(R,m)
+      Q_cluster(4,wr_dex) = DOT_PRODUCT(R(1,:),mom(2,:))+DOT_PRODUCT(R(2,:),mom(1,:)) ! xy
+      Q_cluster(5,wr_dex) = DOT_PRODUCT(R(1,:),mom(3,:))+DOT_PRODUCT(R(3,:),mom(1,:)) ! xz
+      Q_cluster(6,wr_dex) = DOT_PRODUCT(R(2,:),mom(3,:))+DOT_PRODUCT(R(3,:),mom(2,:)) ! yz
+      DEALLOCATE(R,mom)
 
       IF (shar_rank.EQ.master) THEN
         CALL MPI_ALLREDUCE(MPI_IN_PLACE, Q_cluster, 6*world_size, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi)
