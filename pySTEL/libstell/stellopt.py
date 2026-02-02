@@ -36,6 +36,7 @@ class STELLOPT():
 			'COIL_BNORM', 'REGCOIL_CHI2_B', 'CURVATURE_P2', 'GAMMA_C', \
 			'KINK', 'QUASIISO', 'B10B11', 'TOTALBOOTSTRAP', \
 			'BNORMAL', 'COIL_CURVATURE', 'COIL_TORSION', 'COIL_LENGTH',\
+			'COIL_ENERGY', \
 			'COILCOIL_DISTANCE','BNMNS','BNMNC','BAXIS','LGRADB']
 
 	def read_stellopt_map(self,filename='map.dat'):
