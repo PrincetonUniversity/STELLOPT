@@ -14,6 +14,7 @@
       USE beams3d_runtime
       USE beams3d_grid
       USE beams3d_lines
+      USE beams3d_physics_mod, ONLY: inv_dalton
 #if defined(LHDF5)
       USE ez_hdf5
 #endif
@@ -110,6 +111,7 @@
          lgc2fo_start = .false.
          t_end        = MAXVAL(t_end_in)
          CALL read_var_hdf5(fid,'/results/'//TRIM(a5_run_name)//'/endstate/mass',nparticles,ier,DBLVAR=mass)
+         mass = mass/inv_dalton
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'mass',ier)
          CALL read_var_hdf5(fid,'/results/'//TRIM(a5_run_name)//'/endstate/charge',nparticles,ier,DBLVAR=charge)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'charge',ier)
