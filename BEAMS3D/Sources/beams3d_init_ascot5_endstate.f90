@@ -31,6 +31,7 @@
       CHARACTER(10)  :: marker_id
       INTEGER :: MPI_COMM_LOCAL
       DOUBLE PRECISION, PARAMETER :: dalton    = 1.66053906892E-27 ! AMU [kg]
+      DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 ![C]
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -111,10 +112,11 @@
          lgc2fo_start = .false.
          t_end        = MAXVAL(t_end_in)
          CALL read_var_hdf5(fid,'/results/'//TRIM(a5_run_name)//'/endstate/mass',nparticles,ier,DBLVAR=mass)
-         mass = mass*dalton
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'mass',ier)
+         mass = mass*dalton
          CALL read_var_hdf5(fid,'/results/'//TRIM(a5_run_name)//'/endstate/charge',nparticles,ier,DBLVAR=charge)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'charge',ier)
+         charge = charge * e_charge
          CALL read_var_hdf5(fid,'/results/'//TRIM(a5_run_name)//'/endstate/znum',nparticles,ier,DBLVAR=Zatom)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'Zatom',ier)
          CALL read_var_hdf5(fid,'/results/'//TRIM(a5_run_name)//'/endstate/weight',nparticles,ier,DBLVAR=weight)
