@@ -31,7 +31,7 @@
       CHARACTER(10)  :: marker_id
       INTEGER :: MPI_COMM_LOCAL
       DOUBLE PRECISION, PARAMETER :: dalton    = 1.66053906892E-27 ! AMU [kg]
-      DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 ![C]
+      DOUBLE PRECISION, PARAMETER :: e_charge  = 1.60217662E-19    ![C]
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -113,7 +113,7 @@
          t_end        = MAXVAL(t_end_in)
          CALL read_var_hdf5(fid,'/results/'//TRIM(a5_run_name)//'/endstate/mass',nparticles,ier,DBLVAR=mass)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'mass',ier)
-         mass = mass*dalton
+         mass = mass * dalton
          CALL read_var_hdf5(fid,'/results/'//TRIM(a5_run_name)//'/endstate/charge',nparticles,ier,DBLVAR=charge)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'charge',ier)
          charge = charge * e_charge
@@ -129,13 +129,13 @@
          Z_start = temp2
          CALL read_var_hdf5(fid,'/results/'//TRIM(a5_run_name)//'/endstate/phiprt',nparticles,ier,DBLVAR=temp2)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'phiprt',ier)
-         PHI_start = temp2
+         PHI_start = temp2 * pi2 / 360.0
          CALL read_var_hdf5(fid,'/results/'//TRIM(a5_run_name)//'/endstate/ppar',nparticles,ier,DBLVAR=temp2)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ppar',ier)
          vll_start = temp2/mass
          CALL read_var_hdf5(fid,'/results/'//TRIM(a5_run_name)//'/endstate/mu',nparticles,ier,DBLVAR=temp2)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'mu',ier)
-         mu_start = temp2
+         mu_start = temp2 * e_charge
          CALL read_var_hdf5(fid,'/results/'//TRIM(a5_run_name)//'/endstate/prprt',nparticles,ier,DBLVAR=temp2)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'prprt',ier)
          vr_start = temp2/mass
