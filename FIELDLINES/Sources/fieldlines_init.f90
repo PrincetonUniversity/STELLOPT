@@ -268,6 +268,7 @@
             CALL EZspline_init(MODB_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init:MODB_spl',ier)
             MODB_spl%isHermite = 1
+            MU_spl%isLinear=1
             MODB_spl%x1 = raxis
             MODB_spl%x2 = phiaxis
             MODB_spl%x3 = zaxis
