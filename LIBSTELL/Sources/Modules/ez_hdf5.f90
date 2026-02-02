@@ -1299,6 +1299,55 @@
       
       END SUBROUTINE read_arr6d_hdf5   
       !-----------------------------------------------------------------
+      
+      !-----------------------------------------------------------------
+      SUBROUTINE read_group_attscalar_hdf5(file_id,group,att,ierr,BOOVAR,INTVAR,FLTVAR,DBLVAR,STRVAR)
+      IMPLICIT NONE
+      INTEGER(HID_T), INTENT(in)                :: file_id
+      CHARACTER(LEN=*), INTENT(in)              :: group
+      CHARACTER(LEN=*), INTENT(in)              :: att
+      INTEGER, INTENT(out)                      :: ierr
+      LOGICAL, INTENT(out), OPTIONAL            :: BOOVAR
+      INTEGER, INTENT(out), OPTIONAL            :: INTVAR
+      REAL, INTENT(out), OPTIONAL               :: FLTVAR 
+      DOUBLE PRECISION, INTENT(out), OPTIONAL   :: DBLVAR  
+      CHARACTER(LEN=10), INTENT(out), OPTIONAL :: STRVAR  
+      INTEGER        :: boo_temp
+      INTEGER(HID_T) :: group_id
+      INTEGER(HID_T) :: attr_id  
+      INTEGER(HSIZE_T), DIMENSION(1) :: ddims = (/10/)
+      
+      ierr = 1
+      CALL h5gopen_f(file_id,TRIM(group), group_id,ierr)
+      CALL h5aopen_f(group_id,TRIM(att), attr_id, ierr)
+      IF (ierr /=0) RETURN
+      IF (PRESENT(INTVAR)) THEN
+         INTVAR = 0
+         CALL h5aread_f(attr_id, H5T_NATIVE_INTEGER, INTVAR, ddims, ierr)
+      ELSE IF (PRESENT(FLTVAR)) THEN
+         FLTVAR = 0
+         CALL h5aread_f(attr_id, H5T_NATIVE_REAL, FLTVAR, ddims, ierr)
+      ELSE IF (PRESENT(DBLVAR)) THEN
+         DBLVAR = 0
+         CALL h5aread_f(attr_id, H5T_NATIVE_DOUBLE, DBLVAR, ddims, ierr)
+      ELSE IF (PRESENT(BOOVAR)) THEN
+         boo_temp = 0
+         CALL h5aread_f(attr_id, H5T_NATIVE_INTEGER, boo_temp, ddims, ierr)
+         BOOVAR = .FALSE.
+         IF (boo_temp == 1) BOOVAR = .TRUE.
+      ELSE IF (PRESENT(STRVAR)) THEN
+         STRVAR = ''
+         CALL h5aread_f(attr_id, H5T_C_S1, STRVAR, ddims, ierr)
+      ELSE
+         ierr=-2
+      END IF
+      CALL h5aclose_f(attr_id, ierr)
+      CALL h5gclose_f(group_id, ierr)
+      IF (ierr /=0) RETURN
+
+      END SUBROUTINE read_group_attscalar_hdf5   
+      
+      !-----------------------------------------------------------------
          
 #endif
 !-----------------------------------------------------------------------
