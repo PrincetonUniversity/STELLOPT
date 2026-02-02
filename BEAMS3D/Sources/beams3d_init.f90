@@ -140,7 +140,7 @@
 #endif
 
       ! Handle particle restarting
-      IF (lrestart_particles .or. lcontinue_grid) THEN
+      IF (lrestart_particles .or. lcontinue_grid .or. lreadascotendstate) THEN
         ldepo = .false.
         lbbnbi = .false.
         lbeam = .false.
@@ -605,6 +605,8 @@
          IF (lrandomize) CALL beams3d_randomize_particles
       ELSEIF (lrestart_particles) THEN
          CALL beams3d_init_restart
+      ELSEIF (lreadascotendstate) THEN
+         CALL beams3d_init_ascot5_endstate
       ELSEIF (lfusion) THEN
          CALL beams3d_init_fusion
       ELSE

@@ -385,7 +385,8 @@
                          target_coil_torsion, sigma_coil_torsion, &
                          target_coilcoil_distance, sigma_coilcoil_distance, &
                          target_coil_baxis, sigma_coil_baxis, &
-                         target_coil_length, sigma_coil_length
+                         target_coil_length, sigma_coil_length, &
+                         target_coil_energy, sigma_coil_energy
        
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -968,6 +969,8 @@
       sigma_coil_baxis         = bigno
       target_coil_length       = 1.0
       sigma_coil_length        = bigno
+      target_coil_energy       = 0.0
+      sigma_coil_energy        = bigno
       END SUBROUTINE init_stellopt_input
 
       SUBROUTINE read_stellopt_input(filename, istat)
@@ -2522,6 +2525,30 @@
                WRITE(iunit,"(2(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))")&
                   'TARGET_COIL_LENGTH(',ik,')',target_coil_length(ik),&
                   'SIGMA_COIL_LENGTH(',ik,')',sigma_coil_length(ik)
+            END IF
+         END DO
+      END IF
+      IF (ANY(sigma_coil_length < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          TARGET COIL LENGTH'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         DO ik = 1, UBOUND(sigma_coil_length,DIM=1)
+            IF (sigma_coil_length(ik) < bigno) THEN
+               WRITE(iunit,"(2(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))")&
+                  'TARGET_COIL_LENGTH(',ik,')',target_coil_length(ik),&
+                  'SIGMA_COIL_LENGTH(',ik,')',sigma_coil_length(ik)
+            END IF
+         END DO
+      END IF
+      IF (ANY(sigma_coil_energy < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          TARGET COIL ENERGY'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         DO ik = 1, UBOUND(sigma_coil_energy,DIM=1)
+            IF (sigma_coil_energy(ik) < bigno) THEN
+               WRITE(iunit,"(2(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))")&
+                  'TARGET_COIL_ENERGY(',ik,')',target_coil_energy(ik),&
+                  'SIGMA_COIL_ENERGY(',ik,')',sigma_coil_energy(ik)
             END IF
          END DO
       END IF

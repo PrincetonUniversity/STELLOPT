@@ -903,7 +903,7 @@ class MyApp(QMainWindow):
 					'S11','S12','S21','S22','MAGWELL',\
 					'CURVATURE_KERT','CURVATURE_P2','TOTALBOOTSTRAP',\
 					'BNORMAL', 'BNMNS', 'BNMNC', 'COIL_CURVATURE', 'COIL_TORSION', \
-					'COIL_LENGTH','COILCOIL_DISTANCE','BAXIS','LGRADB']
+					'COIL_LENGTH','COIL_ENERGY','COILCOIL_DISTANCE','BAXIS','LGRADB']
 		self.ui.ComboBoxOPTplot_type.clear()
 		self.ui.ComboBoxOPTplot_type.addItem('Chi-Squared')
 		# Handle Chisquared plots
