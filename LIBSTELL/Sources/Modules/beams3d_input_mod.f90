@@ -92,7 +92,8 @@
                                mumaterial_tol, mumaterial_niter, &
                                mumaterial_lambda, mumaterial_lamfactor, &
                                mumaterial_lamthresh, mumaterial_padfactor, &
-                               mumaterial_convcheck
+                               mumaterial_convcheck, &
+                               a5_marker_name, a5_run_name
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -221,6 +222,10 @@
       mumaterial_niter = 100
       mumaterial_lambda = 0.7
       mumaterial_lamfactor = 0.75
+
+      ! A5 restart stuff
+      a5_marker_name = ''
+      a5_run_name = ''
 
       RETURN
       END SUBROUTINE init_beams3d_input
