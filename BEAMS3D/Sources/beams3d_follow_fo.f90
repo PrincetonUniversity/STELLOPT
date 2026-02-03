@@ -81,7 +81,6 @@ SUBROUTINE beams3d_follow_fo
     ALLOCATE(q(neqs_nag))
 
     ! Initialize tabshi cross-section database
-    IF (lboxsim) CALL tabshi_init_reactions()
     IF (lboxsim) CALL RANDOM_NUMBER(rand_prob)
     ! Screen output so we know what's happening
     IF (lverb) THEN
@@ -155,7 +154,7 @@ SUBROUTINE beams3d_follow_fo
                     mymass_int = NINT(mass(l)/p_mass)
                     myenergy_keV = (energy/(e_charge*1.0E3))
                     mylife = 1.0
-		    IF (lverb) WRITE(6,'(A,F10.4,A,I0,A,I0)') '  Energy: ', myenergy_keV, ' Charge: ', mycharge_int, ' Mass: ', mymass_int
+		              IF (lverb) WRITE(6,'(A,F10.4,A,I0,A,I0)') '  Energy: ', myenergy_keV, ' Charge: ', mycharge_int, ' Mass: ', mymass_int
                     IF (lboxsim) THEN
                      CALL beams3d_reaction_sigma(mycharge_int, mymass_int, myenergy_keV, reaction_dex, sigma_next)
                      CALL RANDOM_NUMBER(mylife_end)
@@ -214,7 +213,7 @@ SUBROUTINE beams3d_follow_fo
                     energy = 0.5*mymass*vlast**2
                     myenergy_keV = (energy/(e_charge*1.0E3))
                     mylife = 1.0
-		    IF (lverb) WRITE(6,'(A,F10.4,A,I0,A,I0)') '  Energy: ', myenergy_keV, ' Charge: ', mycharge_int, ' Mass: ', mymass_int
+		              IF (lverb) WRITE(6,'(A,F10.4,A,I0,A,I0)') '  Energy: ', myenergy_keV, ' Charge: ', mycharge_int, ' Mass: ', mymass_int
                     IF (lboxsim) THEN
                      CALL beams3d_reaction_sigma(mycharge_int, mymass_int, myenergy_keV, reaction_dex, sigma_next)
                      CALL RANDOM_NUMBER(mylife_end)
@@ -308,7 +307,7 @@ SUBROUTINE beams3d_follow_fo
                     END IF 
                     energy = 0.5*mymass*vlast**2
                     myenergy_keV = (energy/(e_charge*1.0E3))
-		    IF (lverb) WRITE(6,'(A,F10.4,A,I0,A,I0)') '  Energy: ', myenergy_keV, ' Charge: ', mycharge_int, ' Mass: ', mymass_int
+		              IF (lverb) WRITE(6,'(A,F10.4,A,I0,A,I0)') '  Energy: ', myenergy_keV, ' Charge: ', mycharge_int, ' Mass: ', mymass_int
                     IF (lboxsim) THEN
                         CALL beams3d_reaction_sigma(mycharge_int, mymass_int, myenergy_keV, reaction_dex, sigma_next)
                         CALL RANDOM_NUMBER(mylife_end)

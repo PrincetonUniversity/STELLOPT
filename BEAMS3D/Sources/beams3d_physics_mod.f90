@@ -760,6 +760,7 @@ MODULE beams3d_physics_mod
          mylife = mylife*exp(-neutdens*vol)
          IF (mylife<=mylife_end) THEN 
             ! Update particle
+            weight(myline) = weight(myline)/reaction_info%nproducts
             reaction_count(myline) = reaction_count(myline)+1
             reaction_info = reactions_db(reaction_dex)
 

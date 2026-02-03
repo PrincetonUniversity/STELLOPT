@@ -12,7 +12,7 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE beams3d_runtime
-      USE beams3d_lines, ONLY: nparticles, partvmax
+      USE beams3d_lines, ONLY: nparticles, partvmax, nbuffer
       USE beams3d_grid, ONLY: X_BEAMLET, Y_BEAMLET, Z_BEAMLET, &
                            NX_BEAMLET, NY_BEAMLET, NZ_BEAMLET
       USE mpi_params
@@ -31,7 +31,6 @@
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: Energy, X_start, Y_start
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: X, Y, U, V, v_neut
       REAL(rprec), PARAMETER   :: E_error = .01 ! 1% energy spread
-      INTEGER :: buffer 
 
       ! For HDF5
       INTEGER(HID_T)           :: h5_fid, h5_did, h5_sid
@@ -166,12 +165,10 @@
             vphi_start(k1:k2) = -v_neut(1,:)*SIN(PHI_start(k1:k2)) + &
                                  v_neut(2,:)*COS(PHI_start(k1:k2))
             vz_start(k1:k2)   =  v_neut(3,:)
-            IF (lboxsim) THEN
-               buffer = 3
-            ELSE
-               buffer = 1
+            IF (.NOT.lboxsim) THEN
+               nbuffer = 1
             END IF
-            k1 = (i-1)*buffer*nparticles_start + 1
+            k1 = (i-1)*nbuffer*nparticles_start + 1
             k2 = k1 + nparticles_start - 1
          END DO
          DEALLOCATE(N_start,X_Start,Y_start,Energy, U, V, v_neut)

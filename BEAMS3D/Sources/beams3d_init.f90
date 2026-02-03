@@ -29,7 +29,7 @@
                                win_dense, nsh_prof4, &
                                h1_prof,h2_prof, h3_prof, h4_prof, h5_prof, &
                                r_h, p_h, z_h, e_h, pi_h, win_end_state, &
-                               is_active, myfreedex
+                               is_active, myfreedex, nbuffer
       USE fidasim_input_mod, ONLY: beams3d_write_fidasim
       USE wall_mod
       USE mpi_params
@@ -38,6 +38,7 @@
       USE mpi_sharmem
       USE beams3d_physics_mod, ONLY: beams3d_suv2rzp ! remove if test below removed
       USE beams3d_neutdens, ONLY: beams3d_read_neutdens
+      USE tabshi_db
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
@@ -54,7 +55,7 @@
       REAL(rprec) :: br, bphi, bz, ti_temp, vtemp
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: R_wall_temp
       REAL(rprec) :: stemp, utemp, rtemp, ztemp, phitemp
-      INTEGER :: buffer, mynpart, nproc_sharmem, offset_sharmem, myoffset, offset_global
+      INTEGER :: mynpart, nproc_sharmem, offset_sharmem, myoffset, offset_global
       INTEGER :: master_rank, mystart, myend
       INTEGER, DIMENSION(:), ALLOCATABLE :: offset_proc, npart_sharmem
 !-----------------------------------------------------------------------
@@ -575,8 +576,12 @@
       !!              Boxsim: preallocate more memory
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       IF (lboxsim) THEN 
-         buffer = 3
-         nparticles = nparticles*buffer
+         CALL tabshi_init_reactions()
+         nbuffer = 1
+         DO i = 1, SIZE(reactions_db)
+            nbuffer = MAX(nbuffer, reactions_db(i)%nproducts)
+         END DO
+         nparticles = nparticles*nbuffer
          ! Get offsets of all threads to set up 
          CALL MPI_COMM_SIZE(MPI_COMM_SHARMEM, nproc_sharmem, ierr_mpi)
          CALL MPI_CALC_MYRANGE(MPI_COMM_BEAMS, 1, nparticles, mystart, myend)
@@ -642,7 +647,7 @@
          ! Contiguous allocation
          ALLOCATE(is_active(nparticles))
          i = myoffset+1
-         myfreedex = i+mynpart/buffer
+         myfreedex = i+mynpart/nbuffer
          is_active(i:myfreedex-1) = .TRUE.
          is_active(myfreedex:i+mynpart-1) = .FALSE.
       END IF
