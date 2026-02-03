@@ -715,6 +715,11 @@
             PRINT *,'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             PRINT *,'!!!!!  Super-luminal particle velocity detected  !!!!!'
             PRINT *,'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            DO i = 1, nparticles
+               IF (ABS(vll_start(i))> 3E8) THEN
+                  PRINT *,i,vll_start(i),mu_start(i),SQRT(vr_start(i)**2+vphi_start(i)**2+vz_start(i)**2)
+               END IF
+            END DO
             STOP
       END IF
 
