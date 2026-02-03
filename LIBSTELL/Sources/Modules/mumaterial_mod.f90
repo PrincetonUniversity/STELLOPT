@@ -1892,8 +1892,8 @@
         ALLOCATE(M_local(3,ntet))
         M_local = 0.0
         M_local(:, dom_shar(1:ntet_shar)) = M(:, dom_shar(1:ntet_shar))
-        CALL MPI_ALLREDUCE(MPI_IN_PLACE, M_local, 3*ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
         M = M_local
+        CALL MPI_ALLREDUCE(MPI_IN_PLACE, M, 3*ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
         DEALLOCATE(M_local)
       END IF
       CALL MPI_BARRIER( comm_shar, ierr_mpi)
