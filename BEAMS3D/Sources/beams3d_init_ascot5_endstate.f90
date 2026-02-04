@@ -26,10 +26,13 @@
 !          npoinc_extract Which save state to extract from file.
 !-----------------------------------------------------------------------
       IMPLICIT NONE
+      LOGICAL, PARAMETER :: lwant_gc = .FALSE.
       INTEGER :: i, k, ier
-      REAL(rprec), DIMENSION(:), ALLOCATABLE :: temp2
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: temp2,br_temp,bphi_temp,bz_temp
       CHARACTER(10)  :: marker_id
       INTEGER :: MPI_COMM_LOCAL
+      DOUBLE PRECISION, PARAMETER :: dalton    = 1.66053906892E-27 ! AMU [kg]
+      DOUBLE PRECISION, PARAMETER :: e_charge  = 1.60217662E-19    ![C]
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -108,11 +111,13 @@
          beam = 1
          end_state = 0
          lgc2fo_start = .false.
-         t_end        = MAXVAL(t_end_in)
+         t_end        = t_end_in(1) ! just use the first number
          CALL read_var_hdf5(fid,'/results/'//TRIM(a5_run_name)//'/endstate/mass',nparticles,ier,DBLVAR=mass)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'mass',ier)
+         mass = mass * dalton
          CALL read_var_hdf5(fid,'/results/'//TRIM(a5_run_name)//'/endstate/charge',nparticles,ier,DBLVAR=charge)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'charge',ier)
+         charge = charge * e_charge
          CALL read_var_hdf5(fid,'/results/'//TRIM(a5_run_name)//'/endstate/znum',nparticles,ier,DBLVAR=Zatom)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'Zatom',ier)
          CALL read_var_hdf5(fid,'/results/'//TRIM(a5_run_name)//'/endstate/weight',nparticles,ier,DBLVAR=weight)
@@ -125,13 +130,13 @@
          Z_start = temp2
          CALL read_var_hdf5(fid,'/results/'//TRIM(a5_run_name)//'/endstate/phiprt',nparticles,ier,DBLVAR=temp2)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'phiprt',ier)
-         PHI_start = temp2
+         PHI_start = temp2 * pi2 / 360.0
          CALL read_var_hdf5(fid,'/results/'//TRIM(a5_run_name)//'/endstate/ppar',nparticles,ier,DBLVAR=temp2)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ppar',ier)
          vll_start = temp2/mass
          CALL read_var_hdf5(fid,'/results/'//TRIM(a5_run_name)//'/endstate/mu',nparticles,ier,DBLVAR=temp2)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'mu',ier)
-         mu_start = temp2
+         mu_start = temp2 * e_charge
          CALL read_var_hdf5(fid,'/results/'//TRIM(a5_run_name)//'/endstate/prprt',nparticles,ier,DBLVAR=temp2)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'prprt',ier)
          vr_start = temp2/mass
@@ -141,6 +146,24 @@
          CALL read_var_hdf5(fid,'/results/'//TRIM(a5_run_name)//'/endstate/pzprt',nparticles,ier,DBLVAR=temp2)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'pzprt',ier)
          vz_start = temp2/mass
+         IF (lwant_gc) THEN
+            WRITE(6,'(A,I8)') '   MARKER TYPE: GYROCENTERS '
+         ELSE
+            ALLOCATE(br_temp(nparticles), bphi_temp(nparticles), bz_temp(nparticles))
+            WRITE(6,'(A,I8)') '   MARKER TYPE: PARTICLES '
+            CALL read_var_hdf5(fid,'/results/'//TRIM(a5_run_name)//'/endstate/br',nparticles,ier,DBLVAR=br_temp)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'br_temp',ier)
+            CALL read_var_hdf5(fid,'/results/'//TRIM(a5_run_name)//'/endstate/bphi',nparticles,ier,DBLVAR=bphi_temp)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'bphi_temp',ier)
+            CALL read_var_hdf5(fid,'/results/'//TRIM(a5_run_name)//'/endstate/bz',nparticles,ier,DBLVAR=bz_temp)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'bz_temp',ier)
+            temp2 = vr_start * br_temp + vphi_start * bphi_temp + vz_start * bz_temp
+            vll_start = temp2 / SQRT(br_temp * br_temp + bphi_temp * bphi_temp + bz_temp * bz_temp)
+            temp2 = vr_start * vr_start + vphi_start * vphi_start + vz_start * vz_start ! v_total^2
+            mu_start  = 0.5 * mass * (temp2 - vll_start * vll_start) &
+                        / SQRT(br_temp * br_temp + bphi_temp * bphi_temp + bz_temp * bz_temp)
+            DEALLOCATE(br_temp, bphi_temp, bz_temp)
+         ENDIF
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_'//TRIM(restart_string)//'.h5',ier)
          DEALLOCATE(temp2)
