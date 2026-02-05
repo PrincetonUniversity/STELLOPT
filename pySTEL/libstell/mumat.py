@@ -228,6 +228,63 @@ class MUMAT():
 		"""
 		self.state_dex[tet_dex] = state_dex
 
+	def plot_mesh(self,plot3D=None):
+		"""Plots a mumat mesh in 3D
+
+		This routine plots the mumaterial mesh in 3D
+
+		Parameters
+		----------
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		"""
+		from libstell.plot3D import PLOT3D
+		# Handle optionals
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
+		else:
+			lplotnow = True
+			plt = PLOT3D()
+		# Generate VTK objects
+		[points, tetra]=plt.tetrameshTo3DTetra(self.vertex.T,self.tet.T-1)
+		# Generate Wall colors
+		plt.add3Dwireframe(points,tetra,color='red')
+		plt.setBGcolor(1.0,1.0,1.0)
+		# Render if requested
+		if lplotnow: plt.render()
+
+	def plot_state(self,state_dex=None,ax=None):
+		"""Plots a mumat state function
+
+		This routine plots the mumaterial state functions. If given a
+		state_dex it plots that state function. Otherwise it will plot
+		all state functions.
+
+		Parameters
+		----------
+		state_dex : int
+			State to plot (default: plots all)
+		ax : axes (optional)
+			Matplotlib axes object to plot to.
+		"""
+		import matplotlib.pyplot as pyplot
+		lplotnow = False
+		# Handles axes
+		if not ax: lplotnow = True
+		if type(state_dex) == type(None):
+			states = list(range(self.nstate))
+		else:
+			states = state_dex
+		for i in states:
+			if self.state_type==2:
+				if lplotnow: ax = pyplot.axes()
+				ax.plot(self.state_function_H[i],self.state_function_M[i],color='black',linewidth=2.0)
+				ax.set_xlabel('H [A/m]')
+				ax.set_ylabel('M [T]')
+				ax.set_title(f'Mumaterial State Function ({i:02d})')
+				if lplotnow: pyplot.show()
+
 
 
 

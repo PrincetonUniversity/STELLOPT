@@ -712,6 +712,43 @@ class PLOT3D():
 		# Add actor to the scene
 		self.renderer.AddActor(actor)
 
+	def add3Dwireframe(self,points,tetra,color='black'):
+		"""Add a 3D volumetric wireframe mesh
+
+		This routine adds a wireframe using VTK where points is an object
+		as returned by vtk.vtkPoints() and tetra is an object as
+		returned by vtk.CellArray() of vtk.vtkTetra objects.
+
+		Parameters
+		----------
+		points : VTK Points object
+			Points to plot
+		tetra : VTK CellArray object of VTK Tetra objects
+			Tetrahedron list
+		color : string (optional)
+			Wire color name, see VTK (scalars overrides)
+		"""
+		from vtkmodules.vtkCommonColor import vtkNamedColors
+		from vtkmodules.vtkCommonDataModel import VTK_TETRA
+		# Create actor/mapper
+		actor = vtk.vtkActor()
+		mapper = vtk.vtkDataSetMapper()
+		# Create unstructured grid
+		unstructuredGrid = vtk.vtkUnstructuredGrid()
+		unstructuredGrid.SetPoints(points)
+		unstructuredGrid.SetCells(VTK_TETRA, tetra)
+		# Link Mapper to polydata
+		mapper.SetInputData(unstructuredGrid)
+		# Handle scalars or make red
+		self.setActorColor(actor,color)
+		# Set Mapper
+		actor.SetMapper(mapper)
+		# Turn edges on
+		self.setActorColor(actor,color)
+		actor.GetProperty().SetRepresentationToWireframe()
+		# Add actor to the scene
+		self.renderer.AddActor(actor)
+
 	def colorbar(self,show=True,title="",whitetext=False):
 		"""Add a colorbar to a render
 
