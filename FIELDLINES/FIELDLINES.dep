@@ -1,5 +1,15 @@
 # Microsoft Developer Studio Generated Dependency File, included by VMEC2000.mak
       
+      
+
+fieldlines_bcyl.o: \
+      ../../LIBSTELL/$(LOCTYPE)/fieldlines_globals.o \
+      fieldlines_grid.o
+
+
+fieldlines_bcart.o: 
+
+
 fieldlines_calc_surface_fit.o: \
       fieldlines_runtime.o \
       fieldlines_lines.o 
@@ -244,6 +254,16 @@ fieldlines_init_mgrid.o: \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
       ../../LIBSTELL/$(LOCTYPE)/mgrid_field_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/vmec_input.o \
+      fieldlines_runtime.o \
+      fieldlines_grid.o
+
+
+beams3d_init_mumat.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_sharmem.o \
+      ../../LIBSTELL/$(LOCTYPE)/mumaterial_mod.o \
       fieldlines_runtime.o \
       fieldlines_grid.o
       

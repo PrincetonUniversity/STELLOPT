@@ -1,25 +1,24 @@
 !-----------------------------------------------------------------------
-!     Module:        beams3d_init_mumat
-!     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
-!     Date:          09/26/2012
+!     Module:        fieldlines_init_mumat
+!     Authors:       S. Lazerson (samuel.lazerson@gauss-fusion.com)
+!     Date:          01/07/2026
 !     Description:   This subroutine reads a soft iron or permanent
 !                    magnet file, calculates the magnetic response
 !                    using the MUMAT library, and adds the resultant
 !                    magnetic field to our total magnetic field.
 !-----------------------------------------------------------------------
-      SUBROUTINE beams3d_init_mumat
+      SUBROUTINE fieldlines_init_mumat
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE beams3d_runtime
-      USE beams3d_grid, ONLY: raxis,phiaxis,zaxis, nr, nphi, nz, &
+      USE fieldlines_runtime
+      USE fieldlines_grid, ONLY: raxis,phiaxis,zaxis, nr, nphi, nz, &
                                  rmin, rmax, zmin, zmax, phimin, &
                                  phimax, B_R, B_Z, B_PHI, &
                                  BR4D, BPHI4D, BZ4D, &
                                  win_BR4D, win_BPHI4D, win_BZ4D, &
                                  small, eps1, eps2, eps3
-      USE beams3d_physics_mod, ONLY: beams3d_BCART
       USE mumaterial_mod, ONLY: mumaterial_load, mumaterial_init_new, &
                                 mumaterial_info, mumaterial_getbmag_scalar,&
                                 mumaterial_setverb, mumaterial_setd, &
@@ -47,6 +46,11 @@
       LOGICAL :: lismaster, lissubmaster
       TYPE(EZspline3_r8) :: BR_spl, BPHI_spl, BZ_spl
 !-----------------------------------------------------------------------
+!     External Functions
+!          fieldlines_bcart     Returns B-field vector for mumat
+!-----------------------------------------------------------------------
+      EXTERNAL fieldlines_bcart
+!-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
       istat = 0; ier = 0; iunit = 327
@@ -61,7 +65,7 @@
       IF (mylocalid.EQ.0) THEN 
         i = 0; lissubmaster = .TRUE.
       END IF
-      CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS, i, mylocalid, MPI_COMM_MUMASTER, ierr_mpi)
+      CALL MPI_COMM_SPLIT( MPI_COMM_FIELDLINES, i, mylocalid, MPI_COMM_MUMASTER, ierr_mpi)
 
       ! Locate main master
       IF (lissubmaster) THEN
@@ -76,7 +80,7 @@
       CALL mumaterial_debug(.FALSE.,.FALSE.,.FALSE.)
 
       ! Read the mu materials file
-      CALL mumaterial_load(TRIM(mumat_string),istat, MPI_COMM_MUSHARE, MPI_COMM_MUMASTER, MPI_COMM_BEAMS)
+      CALL mumaterial_load(TRIM(mumat_string),istat, MPI_COMM_MUSHARE, MPI_COMM_MUMASTER, MPI_COMM_FIELDLINES)
 
       ! Set parameters
       CALL mumaterial_setd(mumaterial_tol, mumaterial_niter, mumaterial_lambda, &
@@ -103,11 +107,11 @@
          bcs2=(/-1,-1/)
          bcs3=(/ 0, 0/)
          CALL EZspline_init(BR_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
-         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_mumat:BR_spl',ier)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init_mumag:BR_spl',ier)
          CALL EZspline_init(BPHI_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
-         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_mumat:BPHI_spl',ier)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init_mumag:BPHI_spl',ier)
          CALL EZspline_init(BZ_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
-         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_mumat:BZ_spl',ier)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init_mumag:BZ_spl',ier)
          BR_spl%isHermite   = 1
          BR_spl%x1   = raxis
          BR_spl%x2   = phiaxis
@@ -121,11 +125,11 @@
          BZ_spl%x2   = phiaxis
          BZ_spl%x3   = zaxis
          CALL EZspline_setup(BR_spl,B_R,ier,EXACT_DIM=.true.)
-         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_mumat:BR_spl',ier)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init_mumag:BR_spl',ier)
          CALL EZspline_setup(BPHI_spl,B_PHI,ier,EXACT_DIM=.true.)
-         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_mumat:BPHI_spl',ier)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init_mumag:BPHI_spl',ier)
          CALL EZspline_setup(BZ_spl,B_Z,ier,EXACT_DIM=.true.)
-         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_mumat:BZ_spl',ier)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init_mumag:BZ_spl',ier)
       END IF
       CALL MPI_BARRIER(MPI_COMM_MUSHARE, ier)
       CALL mpialloc(BR4D,   8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_MUSHARE, win_BR4D)
@@ -146,13 +150,13 @@
       ! Initialize the magnetic calculation
       IF (.NOT.(lmumat_skipiter)) THEN
             offset = 0.0
-            CALL MUMATERIAL_INIT_NEW(beams3d_BCART, offset)
+            CALL MUMATERIAL_INIT_NEW(fieldlines_bcart, offset)
       END IF
       ! Output magnetics file
       IF (lmumat_writemagfile) CALL mumaterial_writemag()
 
       ! Break up the Work
-      CALL MPI_CALC_MYRANGE(MPI_COMM_BEAMS, 1, nr*nphi*nz, mystart, myend)
+      CALL MPI_CALC_MYRANGE(MPI_COMM_FIELDLINES, 1, nr*nphi*nz, mystart, myend)
 
       ! Find largest mystart in local
       CALL MPI_ALLREDUCE(mystart, ourstart, 1, MPI_INTEGER, MPI_MIN, MPI_COMM_MUSHARE, ierr_mpi)
@@ -181,7 +185,7 @@
       END IF
 
 #if defined(MPI_OPT)
-      CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
 #endif
       IF (lverb) WRITE(6,*) 'Starting magnetic field calculation'
       CALL FLUSH(6)
@@ -235,7 +239,7 @@
          CALL MPI_COMM_FREE(MPI_COMM_MUSHARE,ierr_mpi)
          CALL MPI_COMM_FREE(MPI_COMM_MUMASTER,ierr_mpi)
       END IF
-      CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
 #endif
 
       ! Free memory
@@ -247,12 +251,12 @@
 
 
 #if defined(MPI_OPT)
-      CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_mumat',ierr_mpi)
+      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_mumat',ierr_mpi)
 #endif
       
       RETURN
 !-----------------------------------------------------------------------
 !     End Subroutine
 !-----------------------------------------------------------------------    
-      END SUBROUTINE beams3d_init_mumat
+      END SUBROUTINE fieldlines_init_mumat
