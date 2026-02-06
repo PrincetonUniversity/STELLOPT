@@ -476,6 +476,8 @@
             WRITE(iunit, out_format) 'Coil Curvature (mean)'
          CASE(jtarget_coil_torsion)
             WRITE(iunit, out_format) 'Coil Torsion (mean)'
+         CASE(jtarget_coil_twist)
+            WRITE(iunit, out_format) 'Coil Twist'
          CASE(jtarget_coil_length)
             WRITE(iunit, out_format) 'Coil Length'
          CASE(jtarget_coilcoil_distance)
