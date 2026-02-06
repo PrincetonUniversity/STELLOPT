@@ -636,7 +636,7 @@ class VMEC(FourierRep):
 			print(rf'  AUX_F = {aux_f}')
 		return aux_s,aux_f
 
-	def getCurrentPoloidal(self):
+	def getCurrentPoloidal(self,ns=-1):
 		"""Returns the poloidal total current
 
 		This routine returns the total poloidal current as used by the
@@ -646,32 +646,44 @@ class VMEC(FourierRep):
 		----------
 		curpol : float
 			Total poloidal current B_v*2*pi/nfp (m=0,n=0)
+		ns : int
+		  Surface to evaluate (default edge)
 		"""
 		import numpy as np
 		curpol = 1.0
+		if ns < 0:
+			ns_val = self.ns-1
+		else:
+			ns_val = ns
 		for mn in range(self.mnmax_nyq):
 			if (self.xm_nyq[mn]==0 and self.xn_nyq[mn]==0):
-				curpol = 2.0*self.bsubvmnc[self.ns-1,mn]*np.pi/self.nfp 
+				curpol = 2.0*self.bsubvmnc[ns_val,mn]*np.pi/self.nfp 
 		return curpol
 
-	def getCurrentToroidal(self):
-			"""Returns the toroidal total current
+	def getCurrentToroidal(self,ns=-1):
+		"""Returns the toroidal total current
 
-			This routine returns the net toroidal current enclosed by
-			the LCFS
+		This routine returns the net toroidal current enclosed by
+		the LCFS
 
-			Returns
-			----------
-			curtor : float
-				Total toroidal current -2*pi*B_u(s=1,m=0,n=0)/mu0 [A]
-			"""
-			import numpy as np
-			curtor = -1
-			mu0 = 4*np.pi*1E-7
-			for mn in range(self.mnmax_nyq):
-				if (self.xm_nyq[mn]==0 and self.xn_nyq[mn]==0):
-					curtor = -2.0*np.pi*self.bsubumnc[self.ns-1,mn]/mu0
-			return curtor
+		Returns
+		----------
+		curtor : float
+			Total toroidal current -2*pi*B_u(s=1,m=0,n=0)/mu0 [A]
+		ns : int
+		  Surface to evaluate (default edge)
+		"""
+		import numpy as np
+		curtor = -1
+		if ns < 0:
+			ns_val = self.ns-1
+		else:
+			ns_val = ns
+		mu0 = 4*np.pi*1E-7
+		for mn in range(self.mnmax_nyq):
+			if (self.xm_nyq[mn]==0 and self.xn_nyq[mn]==0):
+				curtor = -2.0*np.pi*self.bsubumnc[ns_val,mn]/mu0
+		return curtor
 
 	def getiota(self,s):
 		"""Returns the rotational transform
