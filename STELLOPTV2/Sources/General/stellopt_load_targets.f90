@@ -182,6 +182,9 @@
       !  MEAN COIL TORSION
       IF (sigma_coil_torsion < bigno) &
          CALL chisq_coil_torsion(target_coil_torsion, sigma_coil_torsion, ncnt, iflag)
+      !  TOTAL COIL TWIST
+      IF (sigma_coil_twist < bigno) &
+         CALL chisq_coil_twist(target_coil_twist, sigma_coil_twist, ncnt, iflag)
       !  COIL-COIL DISTANCE
       IF (sigma_coilcoil_distance < bigno) &
          CALL chisq_coilcoil_distance(target_coilcoil_distance, sigma_coilcoil_distance, ncnt, iflag)

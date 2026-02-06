@@ -381,6 +381,7 @@
                          target_bnmns, sigma_bnmns, target_bnmnc, sigma_bnmnc,  &
                          target_coil_curvature, sigma_coil_curvature, &
                          target_coil_torsion, sigma_coil_torsion, &
+                         target_coil_twist, sigma_coil_twist, &
                          target_coilcoil_distance, sigma_coilcoil_distance, &
                          target_coil_baxis, sigma_coil_baxis, &
                          target_coil_length, sigma_coil_length
@@ -957,6 +958,8 @@
       sigma_coil_curvature     = bigno
       target_coil_torsion      = 0.0
       sigma_coil_torsion       = bigno
+      target_coil_twist        = 0.0
+      sigma_coil_twist         = bigno
       target_coilcoil_distance = 0.0
       sigma_coilcoil_distance  = bigno
       target_coil_baxis        = 1.0
@@ -2469,6 +2472,13 @@
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,outflt) 'TARGET_COIL_TORSION',target_coil_torsion
          WRITE(iunit,outflt) 'SIGMA_COIL_TORSION',sigma_coil_torsion
+      END IF
+      IF (sigma_coil_twist < bigno) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          TARGET COIL TWIST'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,outflt) 'TARGET_COIL_TWIST',target_coil_twist
+         WRITE(iunit,outflt) 'SIGMA_COIL_TWIST',sigma_coil_twist
       END IF
       IF (sigma_coilcoil_distance < bigno) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'

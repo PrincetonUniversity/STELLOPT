@@ -178,6 +178,8 @@
                sigma_coil_curvature = sigma_coil_curvature/temp
             CASE(jtarget_coil_torsion)
                sigma_coil_torsion = sigma_coil_torsion/temp
+            CASE(jtarget_coil_twist)
+               sigma_coil_twist = sigma_coil_twist/temp
             CASE(jtarget_coilcoil_distance)
                sigma_coilcoil_distance = sigma_coilcoil_distance/temp
             CASE(jtarget_coil_baxis)

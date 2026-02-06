@@ -211,6 +211,7 @@
                       target_bnmnc, sigma_bnmnc
       REAL(rprec) ::  target_coil_curvature, sigma_coil_curvature
       REAL(rprec) ::  target_coil_torsion, sigma_coil_torsion
+      REAL(rprec) ::  target_coil_twist, sigma_coil_twist
       REAL(rprec) ::  target_coilcoil_distance, sigma_coilcoil_distance
       REAL(rprec) ::  target_coil_baxis, sigma_coil_baxis
       REAL(rprec),DIMENSION(nigroup) ::  target_coil_length, sigma_coil_length
@@ -246,9 +247,10 @@
       INTEGER, PARAMETER :: jtarget_bnmnc      = 1132
       INTEGER, PARAMETER :: jtarget_coil_curvature  = 114
       INTEGER, PARAMETER :: jtarget_coil_torsion    = 115
-      INTEGER, PARAMETER :: jtarget_coilcoil_distance = 116
-      INTEGER, PARAMETER :: jtarget_coil_baxis  = 117
-      INTEGER, PARAMETER :: jtarget_coil_length = 118
+      INTEGER, PARAMETER :: jtarget_coil_twist = 116
+      INTEGER, PARAMETER :: jtarget_coilcoil_distance = 117
+      INTEGER, PARAMETER :: jtarget_coil_baxis  = 118
+      INTEGER, PARAMETER :: jtarget_coil_length = 119
       INTEGER, PARAMETER :: jtarget_ne         = 200
       INTEGER, PARAMETER :: jtarget_line_ne    = 2001
       INTEGER, PARAMETER :: jtarget_te         = 201
