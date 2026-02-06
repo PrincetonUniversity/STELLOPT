@@ -82,8 +82,18 @@ class DKES:
         self.D31_star = self.L31 * np.sqrt(self.Bsq)
         self.D33_star = self.L33 * self.Bsq
         
-        # We need to take the negative value in order to get, at the end, the correct sign of JBS.B
-        self.D13_star = -self.D31_star
+        # We need to take D13* = +D31* in order to get the correct sign of JBS.B (this has been confirmed by comparing with experiments)
+        # It has also been confirmed by running a tokamak case, where the bootstrap must always run in the same direction as the already
+        # existing ohmic current (assuming that the density and temperature gradients are negative! See Freidberg)
+        # Note that D13_star is used in this class ONLY to create PENTA Dstar input files
+        self.D13_star = self.D31_star
+        
+        # Inside PENTA, D31_star is computed by taking the negative of D13_star, so we should make the same here otherwise when computing
+        # bootstrap with self.get_BS_current() the sign is different from that given by PENTA
+        self.D31_star = -self.D13_star
+        
+        # Compute <U2> as in PENTA: by looking at D11_star at maximum nu/v and minimum Er/v (ideally 0)
+        self.U2 = 1.5 * self.D11_star[self.ncmul-1] / self.cmul[self.ncmul-1]
         
     def check_convergence(self):
     

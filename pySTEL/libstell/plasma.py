@@ -875,8 +875,36 @@ class PLASMA:
         print(f'AM_AUX_S = {s_VMEC}')
         print(f'AM_AUX_F = {pres}')
         
-        return AM,PRES_SCALE       
+        return AM,PRES_SCALE
+    
+    def get_akima_spline_coefficients(self,num_points=32):
+        """
+        Computes the Pressure Parameters for VMEC assuming PMASS_TYPE='akima_spline'
+        """  
+        AM_AUX_S = np.linspace(0,1,num_points)
+        rho = np.sqrt(AM_AUX_S)
         
+        pressure=0
+        for species in self.list_of_species:
+            
+            n = self.get_density(species,rho)
+            T = self.get_temperature(species,rho) 
+            
+            # total pressure polynomial in Pascal units
+            pressure += n*T*EC
+        
+        def print_array(name, arr, ncol=3):
+            print(f"{name} =")
+            for i in range(0, len(arr), ncol):
+                print("  " + "  ".join(f"{x:.12E}" for x in arr[i:i+ncol]))
+            
+        print("PMASS_TYPE = 'cubic_spline' ")
+        print(f'PRES_SCALE = {1.0:.12E}')
+        print_array("AM_AUX_S", AM_AUX_S, ncol=4)
+        print_array("AM_AUX_F", pressure, ncol=4)
+        
+        return AM_AUX_S, pressure
+            
     def print_SFINCS_list_namelist(self,roa_list,folder_path,wout_file):
         # saves input.namlist inside folder_path/surface_k
         
