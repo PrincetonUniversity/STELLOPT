@@ -173,7 +173,7 @@
             CALL PENTA_SET_PPROF(ne(k),dnedrho(k)/eq_Aminor,te(k),dtedrho(k)/eq_Aminor,ni(k,:),dnidrho(k,:)/eq_Aminor,ti(k,:),dtidrho(k,:)/eq_Aminor)
             ! MAKE CORRECTIONS ON D31 AND D33 -- values coming from DKES2 miss Bsq factors (see J. Lore documentation)
             CALL PENTA_SET_DKES_STAR(ncstar,nestar,DKES_NUSTAR(1:ncstar),DKES_ERSTAR(1:nestar), &
-               DKES_D11(k,:,:), -DKES_D31(k,:,:)*SQRT(bsq(k)), DKES_D33(k,:,:)*bsq(k))
+               DKES_D11(k,:,:), DKES_D31(k,:,:)*SQRT(bsq(k)), DKES_D33(k,:,:)*bsq(k))
             CALL PENTA_SET_BEAM(0.0_rprec) ! Zero becasue we don't read
             CALL PENTA_SET_U2() ! Leave blank for default value
             CALL PENTA_READ_INPUT_FILES(.FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.)
