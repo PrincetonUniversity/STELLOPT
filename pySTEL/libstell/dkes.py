@@ -545,7 +545,7 @@ class DKES:
             plt.legend()
             plt.show()        
     
-    def get_PENTA3_energy_convolution(self,which_coeff,which_species,Er,plasma_class,K_exp=0,jval=0,log_interp_coeff=True,make_plot=True):
+    def get_PENTA3_energy_convolution(self,which_coeff,which_species,Er,plasma_class,K_exp=0,jval=0,log_interp_coeff=False,make_plot=True):
         """
         Plots the convolution integrand as in PENTA3:
         
@@ -633,7 +633,7 @@ class DKES:
             
             # First plot the coefficient
             for ie in range(0, self.nefield):
-                ax1.plot(np.unique(self.cmul), coeff_2d[:, ie], '.-')#, label=f'$E_r/v={np.unique(self.efield)[ie]:3.1E}$')
+                ax1.plot(np.unique(self.cmul), coeff_2d[:, ie], '.-', label=f'$E_r/v={np.unique(self.efield)[ie]:3.1E}$')
 
             # Create a second y-axis on the right
             ax2 = ax1.twinx()  # Create another axis that shares the same x-axis
@@ -653,6 +653,7 @@ class DKES:
             ax1.set_xlabel(r'$\nu/v$')
             ax2.legend()
             ax1.set_title(f'r/a={self.roa:.2f}')
+            ax1.legend()
             #plt.show()
             
             _, ax4 = plt.figure(figsize=(10,8)), plt.gca()
@@ -661,7 +662,7 @@ class DKES:
             ax4.set_xlabel(r'$Er/v$')
             ax4.grid()
             ax4.set_xscale('log')
-            plt.show()
+            # plt.show()
 
             #now make a plot that shows how many integration points are out of range
             fig, ax3 = plt.figure(figsize=(10,8)), plt.gca()
