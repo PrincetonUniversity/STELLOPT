@@ -116,6 +116,8 @@
                WHERE(sigma_dkes_31<bigno) sigma_dkes_31 = sigma_dkes_31/temp
             CASE(jtarget_dkes_33)
                WHERE(sigma_dkes_33<bigno) sigma_dkes_33 = sigma_dkes_33/temp
+            CASE(jtarget_dkes_boot)
+               WHERE(sigma_dkes_boot<bigno) sigma_dkes_boot = sigma_dkes_boot/temp
             CASE(jtarget_te)
                WHERE(sigma_te<bigno) sigma_te = sigma_te/temp
             CASE(jtarget_ti)
@@ -171,9 +173,9 @@
             CASE(jtarget_bnormal)
                sigma_bnormal = sigma_bnormal/temp
             CASE(jtarget_bnmns)
-               sigma_bnmns = sigma_bnmns/temp
+               WHERE(sigma_bnmns<bigno) sigma_bnmns = sigma_bnmns/temp
             CASE(jtarget_bnmnc)
-               sigma_bnmnc = sigma_bnmnc/temp
+               WHERE(sigma_bnmnc<bigno) sigma_bnmnc = sigma_bnmnc/temp
             CASE(jtarget_coil_curvature)
                sigma_coil_curvature = sigma_coil_curvature/temp
             CASE(jtarget_coil_torsion)
@@ -186,6 +188,8 @@
                sigma_coil_baxis = sigma_coil_baxis/temp
             CASE(jtarget_coil_length)
                WHERE(sigma_coil_length<bigno) sigma_coil_length = sigma_coil_length/temp
+            CASE(jtarget_coil_energy)
+               WHERE(sigma_coil_energy<bigno) sigma_coil_energy = sigma_coil_energy/temp
             CASE DEFAULT
                WRITE(6,'(A,I3.3,A)') '!!! JTARGET=',iddex(i),' not supported'
                CALL write_targets(6,iddex(i))

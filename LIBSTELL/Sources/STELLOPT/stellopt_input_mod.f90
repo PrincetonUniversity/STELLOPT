@@ -15,7 +15,7 @@
          epsfcn, factor, ftol, gtol, lcentered_differences, lkeep_mins, &
          lrefit, mode, noptimizers, npopulation, opt_type, refit_param, &
          rho_exp, xtol, bigno, lno_restart, ltriangulate, nfunc_max, &
-         lexp_scale, exp_alpha
+         lexp_scale, exp_alpha, b0_vac
       USE stellopt_vars
       USE stellopt_targets
       USE safe_open_mod, ONLY: safe_open
@@ -214,6 +214,7 @@
                          lcentered_differences, axis_init_option, &
                          cr_strategy, mode, lkeep_mins, lrefit,&
                          npopulation, noptimizers, lexp_scale, exp_alpha, &
+                         b0_vac, &
                          lphiedge_opt, lcurtor_opt, lbcrit_opt, &
                          lpscale_opt, lmix_ece_opt, lxics_v0_opt, &
                          lextcur_opt, laphi_opt, lam_opt, lac_opt, &
@@ -346,6 +347,7 @@
                          target_dkes_11, sigma_dkes_11, &
                          target_dkes_31, sigma_dkes_31, &
                          target_dkes_33, sigma_dkes_33, &
+                         target_dkes_boot, sigma_dkes_boot, &
                          target_dkes, sigma_dkes, &
                          nu_dkes, E_dkes,&
                          target_dkes_Erdiff, sigma_dkes_Erdiff, nu_dkes_Erdiff, Ep_dkes_Erdiff, Em_dkes_Erdiff, &
@@ -384,7 +386,8 @@
                          target_coil_twist, sigma_coil_twist, &
                          target_coilcoil_distance, sigma_coilcoil_distance, &
                          target_coil_baxis, sigma_coil_baxis, &
-                         target_coil_length, sigma_coil_length
+                         target_coil_length, sigma_coil_length, &
+                         target_coil_energy, sigma_coil_energy
        
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -413,6 +416,7 @@
       lcentered_differences = .FALSE.
       lexp_scale      = .FALSE.
       exp_alpha       = 0.0
+      b0_vac          = 0.0
       axis_init_option = "previous"
       lxval_opt       = .FALSE.
       lyval_opt       = .FALSE.
@@ -929,7 +933,9 @@
       sigma_dkes_Erdiff  = bigno
       target_dkes_alpha  = 0.0
       sigma_dkes_alpha   = bigno
-      target_jdotb       = 0.0
+      target_dkes_boot   = 0.0
+      sigma_dkes_boot    = bigno
+      target_jdotb      = 0.0
       sigma_jdotb       = bigno
       target_jcurv      = 0.0
       sigma_jcurv       = bigno
@@ -966,6 +972,8 @@
       sigma_coil_baxis         = bigno
       target_coil_length       = 1.0
       sigma_coil_length        = bigno
+      target_coil_energy       = 0.0
+      sigma_coil_energy        = bigno
       END SUBROUTINE init_stellopt_input
 
       SUBROUTINE read_stellopt_input(filename, istat)
@@ -1059,6 +1067,7 @@
       target_Jstar(1)     = 0.0;  sigma_Jstar(1)     = bigno
       target_dkes_Erdiff(1) = 0.0; sigma_dkes_Erdiff(1) = bigno
       target_dkes_alpha(1) = 0.0; sigma_dkes_alpha(1) = bigno
+      target_dkes_boot(1) = 0.0; sigma_dkes_boot(1) = bigno
 
       ! Backwards compatibility for old DKES deffinition
       WHERE(sigma_dkes < bigno) target_dkes_11 = target_dkes
@@ -1120,6 +1129,7 @@
          WRITE(iunit,outstr) 'BOOTCALC_TYPE',TRIM(bootcalc_type)
          WRITE(iunit,outint) 'VBOOT_MAX_ITERATIONS',vboot_max_iterations
       END IF
+      IF (ABS(B0_vac) > 0) WRITE(iunit,outflt) 'B0_VAC',b0_vac
       WRITE(iunit,outstr) 'AXIS_INIT_OPTION',TRIM(axis_init_option)
       WRITE(iunit,outboo) 'LCENTERED_DIFFERENCES',lcentered_differences
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
@@ -1163,7 +1173,7 @@
       ! Vector quantities
       CALL write_stel_lvar_vec(iunit,lextcur_opt,extcur_min,extcur_max,dextcur_opt,'EXTCUR',1,nigroup)
 
-      CALL write_stel_lvar_vec(iunit,laphi_opt,aphi_min,aphi_max,daphi_opt,'APHI',0,20)
+      CALL write_stel_lvar_vec(iunit,laphi_opt,aphi_min,aphi_max,daphi_opt,'APHI',1,20)
 
       CALL write_stel_lvar_vec(iunit,lam_opt,am_min,am_max,dam_opt,'AM',0,20)
 
@@ -1801,9 +1811,31 @@
          DO ik = 1, n
             IF (sigma_dkes_Erdiff(ik) < bigno) THEN
                WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
-                          'TARGET_DKES_ERDIFF(',ik,') = ',target_dkes(ik), &
-                          'SIGMA_DKES_ERDIFF(',ik,') = ',sigma_dkes(ik)
+                          'TARGET_DKES_ERDIFF(',ik,') = ',target_dkes_erdiff(ik), &
+                          'SIGMA_DKES_ERDIFF(',ik,') = ',sigma_dkes_erdiff(ik)
             END IF
+         END DO
+      END IF
+      IF (ANY(sigma_dkes_boot < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          DKES Bootstrap Proxy'  
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         n=0
+         DO ik = 1,UBOUND(sigma_dkes_boot,DIM=1)
+            IF(sigma_dkes_boot(ik) < bigno) n=ik
+         END DO
+         DO ik = 1, n
+            IF (sigma_dkes_boot(ik) < bigno) THEN
+               WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
+                          'TARGET_DKES_BOOT(',ik,') = ',target_dkes_boot(ik), &
+                          'SIGMA_DKES_BOOT(',ik,') = ',sigma_dkes_boot(ik)
+            END IF
+         END DO
+         DO ii = 1, nprof
+            IF (E_dkes(ii)>-bigno .and. nu_dkes(ii)>-bigno) &
+               WRITE(iunit,"(2X,2(2X,A,I3.3,A,ES22.12E3))") &
+                       'NU_DKES(',ii,') = ',NU_dkes(ii), &
+                       'E_DKES(',ii,') = ',E_dkes(ii)
          END DO
       END IF
       IF (ANY(sigma_dkes_alpha < bigno)) THEN
@@ -2503,6 +2535,30 @@
                WRITE(iunit,"(2(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))")&
                   'TARGET_COIL_LENGTH(',ik,')',target_coil_length(ik),&
                   'SIGMA_COIL_LENGTH(',ik,')',sigma_coil_length(ik)
+            END IF
+         END DO
+      END IF
+      IF (ANY(sigma_coil_length < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          TARGET COIL LENGTH'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         DO ik = 1, UBOUND(sigma_coil_length,DIM=1)
+            IF (sigma_coil_length(ik) < bigno) THEN
+               WRITE(iunit,"(2(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))")&
+                  'TARGET_COIL_LENGTH(',ik,')',target_coil_length(ik),&
+                  'SIGMA_COIL_LENGTH(',ik,')',sigma_coil_length(ik)
+            END IF
+         END DO
+      END IF
+      IF (ANY(sigma_coil_energy < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          TARGET COIL ENERGY'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         DO ik = 1, UBOUND(sigma_coil_energy,DIM=1)
+            IF (sigma_coil_energy(ik) < bigno) THEN
+               WRITE(iunit,"(2(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))")&
+                  'TARGET_COIL_ENERGY(',ik,')',target_coil_energy(ik),&
+                  'SIGMA_COIL_ENERGY(',ik,')',sigma_coil_energy(ik)
             END IF
          END DO
       END IF

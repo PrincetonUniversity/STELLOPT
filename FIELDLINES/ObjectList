@@ -1,4 +1,6 @@
 ObjectFiles = \
+fieldlines_bcart.o \
+fieldlines_bcyl.o \
 backspace_out.o \
 drkhvg.o \
 faxis_nag.o \
@@ -24,6 +26,7 @@ fieldlines_init_errorfield.o \
 fieldlines_init_fline.o \
 fieldlines_init_hint.o \
 fieldlines_init_I.o \
+fieldlines_init_mumat.o \
 fieldlines_init_mgrid.o \
 fieldlines_init_nescoil.o \
 fieldlines_init_restart.o \

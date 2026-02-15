@@ -140,7 +140,7 @@
 #endif
 
       ! Handle particle restarting
-      IF (lrestart_particles .or. lcontinue_grid) THEN
+      IF (lrestart_particles .or. lcontinue_grid .or. lreadascotendstate) THEN
         ldepo = .false.
         lbbnbi = .false.
         lbeam = .false.
@@ -185,7 +185,7 @@
          IF (lvessel) WRITE(6,'(A)')    '   VESSEL: ' // TRIM(vessel_string)
          IF (lcoil) WRITE(6,'(A)')    '   COIL: ' // TRIM(coil_string)
          IF (lmgrid) WRITE(6,'(A)')    '   MGRID: ' // TRIM(mgrid_string)
-         IF (lmgrid) WRITE(6,'(A)')    '   MUMAT: ' // TRIM(mumat_string)
+         IF (lmumat) WRITE(6,'(A)')    '   MUMAT: ' // TRIM(mumat_string)
          IF (.not.lgcsim) WRITE(6,'(A)') '   FULL ORIBT SIMULATION!'
 #if defined(B3D_COLLOP_NRL19IE)
          IF (lcollision) WRITE(6,'(A)') '   NRL2019IE COLLISION OPERATOR ON!'
@@ -605,6 +605,8 @@
          IF (lrandomize) CALL beams3d_randomize_particles
       ELSEIF (lrestart_particles) THEN
          CALL beams3d_init_restart
+      ELSEIF (lreadascotendstate) THEN
+         CALL beams3d_init_ascot5_endstate
       ELSEIF (lfusion) THEN
          CALL beams3d_init_fusion
       ELSE
@@ -713,6 +715,11 @@
             PRINT *,'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             PRINT *,'!!!!!  Super-luminal particle velocity detected  !!!!!'
             PRINT *,'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            DO i = 1, nparticles
+               IF (ABS(vll_start(i))> 3E8) THEN
+                  PRINT *,i,vll_start(i),mu_start(i),SQRT(vr_start(i)**2+vphi_start(i)**2+vz_start(i)**2)
+               END IF
+            END DO
             STOP
       END IF
 

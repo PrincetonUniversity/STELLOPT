@@ -13,7 +13,7 @@
       USE equil_utils, ONLY: get_equil_phi, nrad, shat, phi_type
       USE stellopt_targets, ONLY: nu_dkes, lbooz, nsd, &
                                   sigma_dkes_11, sigma_dkes_31, &
-                                  sigma_dkes_33, &
+                                  sigma_dkes_33, sigma_dkes_boot, &
                                   E_dkes, nprof, nruns_dkes, &
                                   sigma_dkes_erdiff, Ep_DKES_Erdiff, &
                                   Em_DKES_Erdiff, Ep_DKES_alpha, &
@@ -99,7 +99,10 @@
          ik = 0
          ! First do traditional DKES
          DO ir = 1, nsd
-            IF ((sigma_dkes_11(ir) >= bigno) .and. (sigma_dkes_31(ir) >= bigno) .and. (sigma_dkes_33(ir) >= bigno))  CYCLE
+            IF ((sigma_dkes_11(ir)   >= bigno) .and. &
+                (sigma_dkes_31(ir)   >= bigno) .and. &
+                (sigma_dkes_33(ir)   >= bigno) .and. &
+                (sigma_dkes_boot(ir) >= bigno))  CYCLE
             DO ij = 1, nprof
                IF (E_dkes(ij) <= -bigno .or. nu_dkes(ij) <= -bigno) CYCLE
                ik = ik + 1

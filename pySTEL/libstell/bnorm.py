@@ -107,7 +107,7 @@ class BNORM(FourierRep):
 		self.bcreal        = bcreal.reshape(nu,nv)
 		self.bnormal_total = bnormal_total.reshape(nu,nv)
 
-	def plotBnmnSpectrum(self,ax=None):
+	def plotBnmnSpectrum(self,ax=None,cmap='jet'):
 		"""Plots the Bnormal spectrum for a surface
 
 		This routine plots the bnormal spectrum for a given
@@ -117,6 +117,13 @@ class BNORM(FourierRep):
 		----------
 		ax : axes (optional)
 			Matplotlib axes object to plot to.
+		cmap : string (optional)
+			Matplotlib colormap.
+
+		Returns
+		-------
+		quadmesh : matplotlib.collections.Quadmesh
+			Quadmesh as produced by pcolormesh
 		"""
 		import numpy as np
 		import matplotlib.pyplot as pyplot
@@ -130,18 +137,19 @@ class BNORM(FourierRep):
 		# Sort BMN into array
 		bmn = np.zeros((mmax+1,2*nmax+1))
 		for mn in range(self.mnmax):
-			m = self.xm[mn]
+			m = int(self.xm[mn])
 			n = int(self.xn[mn]) + nmax
-			bmn[m,n] = self.bnmns[1,mn]
+			bmn[m,n] = self.bnmns[0,mn]
 		#Plot
 		x = np.linspace(0,mmax,mmax+1)
 		y = np.linspace(-nmax,nmax,2*nmax+1)
-		hmesh=ax.pcolormesh(x,y,np.log10(np.abs(bmn.T)),cmap='jet',shading='gouraud')
+		quadmesh=ax.pcolormesh(x,y,np.log10(np.abs(bmn.T)),cmap=cmap,shading='gouraud')
 		ax.set_xlabel('Poloidal Modes (m)')
 		ax.set_ylabel('Toroidal Modes (n)')
 		ax.set_title(rf'BNORM Normal Field')
-		pyplot.colorbar(hmesh,label='$log_{10}$[arb]',ax=ax)
+		pyplot.colorbar(quadmesh,label='$log_{10}$[arb]',ax=ax)
 		if lplotnow: pyplot.show()
+		return quadmesh
 
 	def plot_bnorm_real_total(self,ax=None):
 		"""Plots the Bnormal spectrum for a surface
@@ -169,7 +177,7 @@ class BNORM(FourierRep):
 		#pyplot.colorbar(hmesh,label='$log_{10}$[arb]',ax=ax)
 		if lplotnow: pyplot.show()
 
-	def plotBsurf(self,ax=None):
+	def plotBsurf(self,ax=None,cmap='jet'):
 		"""Plots the Bnormal on a surface
 
 		This routine plots the bnormal.
@@ -178,6 +186,13 @@ class BNORM(FourierRep):
 		----------
 		ax : axes (optional)
 			Matplotlib axes object to plot to.
+		cmap : string (optional)
+			Matplotlib colormap.
+
+		Returns
+		-------
+		quadmesh : matplotlib.collections.Quadmesh
+			Quadmesh as produced by pcolormesh
 		"""
 		import numpy as np
 		import matplotlib.pyplot as pyplot
@@ -188,12 +203,13 @@ class BNORM(FourierRep):
 		theta = np.deg2rad(np.linspace([0],[360],360))
 		zeta  = np.deg2rad(np.linspace([0],[360],256))
 		b = self.sfunct(theta,zeta,self.bnmns,self.xm,self.xn)
-		hmesh=ax.pcolormesh(np.squeeze(zeta),np.squeeze(theta),np.squeeze(b[0,:,:]),cmap='jet',shading='gouraud')
-		ax.set_xlabel(r'Toroidal Angle ($\phi$) [rad]')
+		quadmesh=ax.pcolormesh(np.squeeze(zeta),np.squeeze(theta),np.squeeze(b[0,:,:]),cmap=cmap,shading='gouraud')
+		ax.set_xlabel(r'Toroidal Angle ($\zeta=\phi N_{fp}$) [rad]')
 		ax.set_ylabel(r'Poloidal Angle ($\theta$) [rad]')
 		ax.set_title(rf'BNORM')
-		pyplot.colorbar(hmesh,label=r'$B_{normal}$ [arb]',ax=ax)
+		pyplot.colorbar(quadmesh,label=r'$B_{normal}$ [arb]',ax=ax)
 		if lplotnow: pyplot.show()
+		return quadmesh
 
 
 

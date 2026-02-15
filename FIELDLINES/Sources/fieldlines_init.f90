@@ -178,6 +178,7 @@
          IF (lemc3) WRITE(6,'(A)') '   EMC3-EIRENE OUTPUT WILL BE GENERATED! (NO FIELDLINES)'
          IF (lmodb) WRITE(6,'(A)') '   SAVING |B| ALONG FIELDLINE!'
          IF (lmu) WRITE(6,'(A)')   '   DIFFUSION OPERATOR TURNED ON!'
+         IF (lmumat) WRITE(6,'(A)')    '   MUMAT: ' // TRIM(mumat_string)
          CALL FLUSH(6)
       END IF
        
@@ -234,6 +235,9 @@
 
       ! Put curtor on axis and calculate the field
       IF (laxis_i)  CALL fieldlines_init_I
+
+      ! Adjust magnetic field for magnetic material
+      IF (lmumat) CALL fieldlines_init_mumat
       
       IF (ANY(B_PHI .eq. 0)) THEN
 #if defined(MPI_OPT)

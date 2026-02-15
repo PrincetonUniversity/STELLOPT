@@ -51,6 +51,7 @@
 !     v4.07 01/11/24 - Added ability to specifiy weights in the input
 !     v4.10 01/12/24 - Mu material interface added.
 !     v4.50 10/23/25 - Memory handling improved and cleanup of code.
+!     v5.00 12/01/25 - Magnetic material module implemented.
 !-----------------------------------------------------------------------
 MODULE beams3d_runtime
     !-------------------------------------------------------------------
@@ -83,7 +84,7 @@ MODULE beams3d_runtime
                               lrestart_particles, lfusion_alpha, &
                               lfusion_He3, lfusion_proton, &
                               lfusion_tritium, lkick, lgcsim, id_string, &
-                              mumaterial_niter, mumaterial_nneighbor, &
+                              mumaterial_niter, &
                               mumaterial_lamthresh, mumaterial_tol, &
                               mumaterial_lambda, mumaterial_lamfactor, &
                               mumaterial_padfactor, mumaterial_convcheck
@@ -154,6 +155,12 @@ MODULE beams3d_runtime
     INTEGER, PARAMETER :: MPI_FINE_ERR = 89
 
     DOUBLE PRECISION, PARAMETER :: one           = 1.0D0 ! 1.0
+
+! MUMAT_MODS 
+    LOGICAL :: lmumat_readmag, lmumat_skipiter, lmumat_writemagfile
+    CHARACTER(256) :: mumat_magfile
+
+! DEVELOP
     LOGICAL :: lvmec, lpies, lspec, lcoil, lmgrid, &
                lvessel, lvac, lcontinue_grid, lneut, &
                lhitonly, lread_input, lplasma_only, lraw, &
@@ -161,7 +168,7 @@ MODULE beams3d_runtime
                lascot, lascot4, lfidasim, lfidasim_cyl, lsplit, &
                lvessel_beam, lascotfl, lrandomize, leqdsk, lhint, &
                lboxsim, limas, lfieldlines, lbeamdensity, lmumat, &
-               luser_init
+               luser_init, lreadascotendstate
     INTEGER :: nextcur, nprocs_beams, ndt, ndt_max
     INTEGER :: win_beam
     INTEGER, DIMENSION(:), POINTER :: beam
@@ -180,9 +187,9 @@ MODULE beams3d_runtime
     CHARACTER(256) :: mgrid_string, coil_string, &
                       vessel_string, restart_string, &
                       continue_grid_string, bbnbi_string, &
-                      eqdsk_string, mumat_string
+                      eqdsk_string, mumat_string, ascot_endstate_file
 
-    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 4.50
+    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 5.00
 
     !-----------------------------------------------------------------------
     !     Subroutines

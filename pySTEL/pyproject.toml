@@ -13,9 +13,11 @@ authors = [
 dependencies = [
     "contourpy",
     "gmsh",
+    "joblib",
     "matplotlib",
     "numpy",
     "numpy-stl",
+    "numba",
     "pyqt5",
     "pyvtk",
     "scipy",

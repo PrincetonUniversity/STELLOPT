@@ -24,7 +24,7 @@
                  lfusion, lfusion_alpha, lfusion_He3, lfusion_proton, &
                  lfusion_tritium, lkick, lgcsim, lbeam, lbbnbi
       INTEGER :: npoinc, nbeams, nparticles_start,duplicate_factor, &
-                 mumaterial_niter, mumaterial_nneighbor, mumaterial_lamthresh
+                 mumaterial_niter, mumaterial_lamthresh
       INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
       REAL(rprec) :: follow_tol, pi2, ne_scale, te_scale, ti_scale, &
                      zeff_scale, fusion_scale, lendt_m, te_col_min, rho_max_dist, &
@@ -42,7 +42,7 @@
       REAL(rprec), DIMENSION(MAXPARTICLES) :: r_start_in, phi_start_in, z_start_in, vll_start_in, &
                                             & mu_start_in, charge_in, Zatom_in, mass_in, t_end_in, &
                                             vr_start_in, vphi_start_in, vz_start_in, weight_in
-      CHARACTER(256) :: id_string, int_type
+      CHARACTER(256) :: id_string, int_type, a5_marker_name, a5_run_name
 
       ! moved from beams3d_lines
       INTEGER  ::  ns_prof1, ns_prof2, ns_prof3, ns_prof4, ns_prof5, nsh_prof4, nparticles

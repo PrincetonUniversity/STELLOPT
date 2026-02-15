@@ -403,7 +403,7 @@
       !
       WRITE (iunit,'(1x,"mpolb = ",i2,",",2x,"ntorb = ",
      1     i2,",",2x,"ibbi = 1,")') mpolb, ntorb
-      WRITE (iunit,'(1x,"chip = ",f7.4,",","  psip = ",f7.4,",")')
+      WRITE (iunit,'(1x,"chip = ",es20.10,",","  psip = ",es20.10,",")')
      1     chip, psip
       WRITE (iunit,'(1x,"btheta = ",es20.10,","," bzeta = ",
      1                    es20.10,",")')

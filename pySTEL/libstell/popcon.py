@@ -58,7 +58,7 @@ class POPCON:
         self.find_Pext()      
 
         # Plot popcon
-        self.plot_popcon()
+        if make_plot: self.plot_popcon()
     
     def get_averaged_density(self):
         
@@ -168,7 +168,7 @@ class POPCON:
     def get_alpha_power(self):
         # P_alpha = E_alpha * integral(dV * nD * nT *sigmav )
         
-        from fusion import FUSION
+        from libstell.fusion import FUSION
         from scipy.integrate import trapezoid
         
         # Fusion Class
@@ -236,13 +236,16 @@ class POPCON:
         self.P_ext = P_ext    
         
             
-    def plot_popcon(self):
+    def plot_popcon(self,ax=None):
         
         import matplotlib.pyplot as plt
         from matplotlib.colors import LinearSegmentedColormap
         
-        plt.rc('font', size=24)
-        fig, ax = plt.subplots(figsize=(11,8))
+        lplotnow = False
+        if not ax:
+            plt.rc('font', size=24)
+            fig, ax = plt.subplots(figsize=(11,8))
+            lplotnow = True
         
         # sets negative values of P_ext to 0 and converts to MW
         P_MW = self.P_ext.clip(min=0) / 1e6
@@ -254,6 +257,9 @@ class POPCON:
         # use n0 and T0 as axis instead
         ne0_20 = self.ne0 / 1E20
         Te0_k = self.Te0 / 1E3
+
+        # Alpha Power
+        P_alpha_MW = self.P_alpha / 1E6
         
         # fusion power = P_alpha + P_neutron = P_alpha + (E_neutron/E_alpha)*P_alpha = 5*P_alpha
         P_fusion_GW = 5*self.P_alpha / 1e9
@@ -269,32 +275,18 @@ class POPCON:
         my_cmap = LinearSegmentedColormap.from_list(cmap_name, [color1, color2])
         
         ## 0-axis
-        cntrf = ax.pcolor(Te0_k.transpose(),ne0_20.transpose(),P_MW.transpose(),cmap=my_cmap,edgecolors='none')
-        cntr = ax.contour(Te0_k.transpose(),ne0_20.transpose(),P_MW.transpose(),levels=[0,10,20,30,50,70],linestyles='dashed')
-        ax.contour(Te0_k.transpose(),ne0_20.transpose(),P_fusion_GW.transpose(),levels=[3.0],linestyles='solid',colors='red')
+        cntrf = ax.pcolormesh(Te0_k.transpose(),ne0_20.transpose(),P_alpha_MW.transpose(),cmap=my_cmap,edgecolors='none',shading='gouraud',vmin=0,vmax=800)
+        cntr = ax.contour(Te0_k.transpose(),ne0_20.transpose(),P_MW.transpose(),levels=np.array([0,5,10,15,20,25,30,40]),linewidths=[4,1,1,1,1,1,1,1],linestyles=['solid','dashed','dashed','dashed','dashed','dashed','dashed','dashed'],colors='white')
+        ax.contour(Te0_k.transpose(),ne0_20.transpose(),P_fusion_GW.transpose(),levels=[3.0],linestyles='solid',colors='red',linewidths=[4])
         ax.set_xlabel(r'$T_0$ [keV]')
         ax.set_ylabel(r'$n_0$ (x10$^{20}$ m$^{-3}$)')
-        cntrf.set_rasterized(True)
-        ## averaged axis
-        # cntrf = ax.pcolor(Tk.transpose(),n20.transpose(),P_MW.transpose(),cmap=my_cmap)
-        # cntr = ax.contour(Tk.transpose(),n20.transpose(),P_MW.transpose(),levels=[0,10,20,30,50,70],linestyles='dashed')
-        # ax.contour(Tk.transpose(),n20.transpose(),P_fusion_GW.transpose(),levels=[3.0],linestyles='solid',colors='red')
-        # ax.set_xlabel(r'$\left<T_e\right>$ [keV]')
-        # ax.set_ylabel(r'$\left<n_e\right>$ (x10$^{20}$ m$^{-3}$)')
+        ax.clabel(cntr, inline=True, fontsize=10)
         
-        ax.clabel(cntr, inline=True, fontsize=17)
-        fig.colorbar(cntrf,label='ECRH [MW]')
         ax.set_title(f'{self.popcon_title}')
         ax.text(18, 2.7, r'$P_{\text{fusion}}=3$GW', color='red', fontsize=20)
+        plt.colorbar(cntrf,label='Alpha Heating [MW]',ax=ax)
         
-        # overlay Sudo limit
-        # n_max_20 = self.sudo_max(P_MW*1e6 + self.P_alpha) / 1e20
-        # #get peak values for all points in the plot
-        # n0_20 = [[plasma.get_density('electrons', 0.0)/1e20 for plasma in row] for row in self.plasma_list]
-        # ax.contour(Tk.transpose(),n20.transpose(),(n_max_20-n0_20).transpose(),levels=[0.0],linestyles='solid',colors='green')
-        # ax.text(6.5, 1.75, r'$n_0/n_{\text{Sudo}}=1.25$', color='green', fontsize=16)
-        
-        if(self.make_plot): plt.show()
+        if(lplotnow): plt.show()
         
     def get_cordey_path(self,n20_start=0,Tk_start=0):
         

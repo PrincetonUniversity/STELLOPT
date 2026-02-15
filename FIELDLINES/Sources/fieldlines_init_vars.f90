@@ -25,6 +25,10 @@
       lhint    = .false.
       lmgrid   = .false.
       lmu      = .false.
+      lmumat = .false.
+      lmumat_readmag = .false.
+      lmumat_skipiter = .false.
+      lmumat_writemagfile = .false.
       lvessel  = .false.
       lvac     = .false.
       lpres    = .false.
