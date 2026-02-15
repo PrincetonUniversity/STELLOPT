@@ -902,7 +902,8 @@ class MyApp(QMainWindow):
 					'KINK','ORBIT','JDOTB','J_STAR','NEO','TXPORT','ECEREFLECT',\
 					'S11','S12','S21','S22','MAGWELL',\
 					'CURVATURE_KERT','CURVATURE_P2','TOTALBOOTSTRAP',\
-					'BNORMAL', 'BNMNS', 'BNMNC', 'COIL_CURVATURE', 'COIL_TORSION', \
+					'BNORMAL', 'BNMNS', 'BNMNC', 'COIL_CURVATURE', 'COIL_DISTORTION', \
+					'COIL_TORSION', 'COIL_TOTAL_TORSION', \
 					'COIL_LENGTH','COIL_ENERGY','COILCOIL_DISTANCE','BAXIS','LGRADB']
 		self.ui.ComboBoxOPTplot_type.clear()
 		self.ui.ComboBoxOPTplot_type.addItem('Chi-Squared')
