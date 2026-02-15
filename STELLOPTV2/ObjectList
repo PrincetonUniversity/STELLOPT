@@ -1,4 +1,5 @@
 ObjectFiles = \
+chisq_coil_distortion.o \
 chisq_coil_total_torsion.o \
 chisq_coil_energy.o \
 stellopt_run_vmec.o \

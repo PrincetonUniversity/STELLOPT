@@ -182,6 +182,9 @@
       !  MEAN COIL CURVATURE
       IF (sigma_coil_curvature < bigno) &
          CALL chisq_coil_curvature(target_coil_curvature, sigma_coil_curvature, ncnt, iflag)
+      !  MEAN COIL DISTORTION
+      IF (sigma_coil_distortion < bigno) &
+         CALL chisq_coil_distortion(target_coil_distortion, sigma_coil_distortion, ncnt, iflag)
       !  MEAN COIL TORSION
       IF (sigma_coil_torsion < bigno) &
          CALL chisq_coil_torsion(target_coil_torsion, sigma_coil_torsion, ncnt, iflag)
