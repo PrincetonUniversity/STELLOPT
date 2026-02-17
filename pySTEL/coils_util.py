@@ -11,7 +11,6 @@ if __name__=="__main__":
 	from libstell.libstell import FourierRep
 	import matplotlib.pyplot as pyplot
 	import numpy as np
-	from datetime import datetime
 	from stl import mesh
 	parser = ArgumentParser(description= 
 		'''Provides class for accessing coils files also serves as a

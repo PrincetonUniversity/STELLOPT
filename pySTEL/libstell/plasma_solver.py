@@ -947,7 +947,7 @@ class PLASMA_SOLVER:
                     control = np.clip(control,0,power_max)
                     # If clipped, then set previous integral to zero (anti wind-up)
                     if np.isclose(control,0) or np.isclose(control,power_max):
-                        self.energy_sources[species]['PID_pfuse_gaussian']['pid_I'] = 0.0                  
+                        self.energy_sources[species]['PID_pfuse_gaussian']['pid_I'] = 0.0     
                     # Compute integrand
                     integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
                     integrand = integrand.flatten()
@@ -1114,7 +1114,7 @@ class PLASMA_SOLVER:
                     control = np.clip(control,0,N_IN_max)
                     # If clipped, then set previous integral to zero (anti wind-up)
                     if np.isclose(control,0) or np.isclose(control,N_IN_max):
-                        self.particle_sources[species]['PID_edense_gaussian']['pid_I'] = 0.0                  
+                        self.particle_sources[species]['PID_edense_gaussian']['pid_I'] = 0.0     
                     # Compute integrand
                     integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
                     integrand = integrand.flatten()
@@ -1155,7 +1155,7 @@ class PLASMA_SOLVER:
                     control = np.clip(control,0,N_IN_max)
                     # If clipped, then set previous integral to zero (anti wind-up)
                     if np.isclose(control,0) or np.isclose(control,N_IN_max):
-                        self.particle_sources[species]['PID_pfuse_gaussian']['pid_I'] = 0.0                  
+                        self.particle_sources[species]['PID_pfuse_gaussian']['pid_I'] = 0.0
                     # Compute integrand
                     integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
                     integrand = integrand.flatten()
