@@ -38,6 +38,15 @@ class BOOZER(FourierRep):
 			setattr(self, key, boozmn_dict[key])
 		self.mboz_b = int(max(np.squeeze(self.ixm_b)))
 		nmax = int(max(np.squeeze(self.ixn_b))/self.nfp_b)
+		# Get mn00
+		self.mn00 = None; self.mn01 = None; self.mn10 = None
+		for mn in range(self.mnmax):
+			if self.ixm_b[mn]==0 and self.ixn_b[mn]==0:
+				self.mn00 = mn
+			if self.ixm_b[mn]==0 and self.ixn_b[mn]==self.nfp_b:
+				self.mn01 = mn
+			if self.ixm_b[mn]==1 and self.ixn_b[mn]==0:
+				self.mn10 = mn
 
 	def plotBmnSpectrum(self,sval,ax=None):
 		"""Plots the boozer spectrum for a surface
@@ -368,6 +377,36 @@ class BOOZER(FourierRep):
 					ftemp = ftemp + J_I[m,i1] - J_C[m,i2]
 		norm = np.sum(J_C+J_I)/float(nlambda*ntheta0)
 		return ftemp/norm
+
+	def getCurrentPoloidal(self):
+		"""Returns the poloidal total current
+
+		This routine returns the total poloidal current as used by the
+		BNORM code.
+
+		Returns
+		----------
+		curpol : float
+			Total poloidal current <B_v>*2*pi/mu_0
+		"""
+		import numpy as np
+		curpol = self.bvco_b[ns-1]/2.0E-7 # Unverified
+		return curpol
+
+	def getCurrentToroidal(self):
+		"""Returns the toroidal total current
+
+		This routine returns the net toroidal current enclosed by
+		the LCFS
+
+		Returns
+		----------
+		curtor : float
+			Total toroidal current <B_u>*2*pi/mu_0
+		"""
+		import numpy as np
+		curpol = self.buco_b[ns-1]/2.0E-7 # Verified
+		return curtor
 
 
 
