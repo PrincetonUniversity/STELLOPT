@@ -148,6 +148,11 @@
 !         mumaterial_init:      Initializes everything, calls iteration subroutine
 !         mumaterial_iterate_M: Main calculation loop
 !
+!       Namelist Routines
+!         mumaterial_init_nml:  Initializes the namelist variables
+!         mumaterial_read_nml:  Reads the namelist from an iunit
+!         mumaterial_write_nml: Write the namelist to a file.
+!
 !       Helpers
 !         mumaterial_gettetvolume:  Calculates volume of a tetrahedron
 !         mumaterial_getneighbours: Determines tetrahedron neighbours
@@ -164,12 +169,23 @@
 !         mumaterial_sync_array2d_dbl: Syncs any 2D,DBL array on shar_mem nodes
 !         mumaterial_syncM:       Syncs (3,domsize) DBL array on shar_mem nodes
 !         mumaterial_free:             Frees MPI memory
+!
 !       Output
 !         mumaterial_output:  Output B-field and points to file
 !         mumaterial_getb:    Calculates magnetic field in space
-!             mumaterial_getb_scalar:      Single point in space
-!               mumaterial_getbmag_scalar: Excludes applied field
-!             mumaterial_getb_vector: Multiple points in space
+!         mumaterial_getb_scalar:      Single point in space
+!         mumaterial_getbmag_scalar: Excludes applied field
+!         mumaterial_getb_vector: Multiple points in space
+!
+!       Python Interface Routines
+!         mumaterial_load_serial:   Loads magnetic material file
+!         mumaterial_get_nvertex:   Returns the nvertex variable
+!         mumaterial_get_ntet:      Returns the ntet variable
+!         mumaterial_get_nstate:    Returns the nstate variable
+!         mumaterial_get_vertex:    Returns the vertex variable
+!         mumaterial_get_tet:       Returns the tet variable
+!         mumaterial_get_statedex:  Returns the state_dex variable
+!         mumaterial_get_statetype: Returns the state_type variable
 !
 !       Debug
 !         mumaterial_debug:      Sets debug verbosity
@@ -182,7 +198,128 @@
       END INTERFACE
       CONTAINS
       
+!------------------------------------------------------------------------------
+! mumaterial_init_nml: Initializes the mumat_input namelist variables
+!------------------------------------------------------------------------------
+!------------------------------------------------------------------------------
+      SUBROUTINE mumaterial_init_nml()
 
+      IMPLICIT NONE
+
+      maxITER = 100
+      dMmax   = 1.0D-5
+      lambdaStart = 0.7
+      lambdaFactor = 0.75
+      lambdaThresh = 10
+      padFactor = 1.0
+      convCheck = 99.0
+
+      END SUBROUTINE mumaterial_init_nml
+      
+!------------------------------------------------------------------------------
+! mumaterial_read_nml: Reads Mumaterial namelist from file
+!------------------------------------------------------------------------------
+! param[in]: filename. File containting mumat_input namelist
+! param[inout]: istat. Status Flag
+!------------------------------------------------------------------------------
+      SUBROUTINE mumaterial_read_nml(filename, istat)
+
+      IMPLICIT NONE
+
+      CHARACTER(*), INTENT(in)  :: filename
+      INTEGER,      INTENT(out) :: istat
+
+      LOGICAL :: lexist
+      INTEGER :: iunit
+      CHARACTER(LEN=1000) :: line
+
+      NAMELIST /mumat_input/ maxIter, dMmax, lambdaStart, lambdaFactor, lambdaThresh, padFactor, convCheck
+
+      istat = 0
+      iunit = 422
+      INQUIRE(FILE=TRIM(filename),EXIST=lexist)
+      IF (.not.lexist) STOP "Error: Could not find MUMATERIAL namelist file."
+      CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
+      IF (istat /= 0) THEN
+            WRITE(6,'(A)') 'MUMAT error opening file: ',TRIM(filename)
+            CALL FLUSH(6)
+            RETURN
+      END IF
+      READ(iunit,NML=mumat_input,IOSTAT=istat)
+      IF (istat /= 0) THEN
+         WRITE(6,'(A)') 'ERROR reading namelist MUMAT_INPUT from file: ',TRIM(filename)
+         backspace(iunit)
+         read(iunit,fmt='(A)') line
+         write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
+         CALL FLUSH(6)
+         STOP
+      END IF
+
+      CLOSE(iunit)
+
+      RETURN
+
+      END SUBROUTINE mumaterial_read_nml
+      
+!------------------------------------------------------------------------------
+! mumaterial_write_nml: Writes Mumaterial namelist to a file
+!------------------------------------------------------------------------------
+! param[inout]: iunit_out. Unit number to write to.
+! param[out]: istat. Status flag.
+!------------------------------------------------------------------------------
+      SUBROUTINE mumaterial_write_nml(iunit_out, istat)
+
+      IMPLICIT NONE
+
+      INTEGER,      INTENT(inout)  :: iunit_out
+      INTEGER,      INTENT(out) :: istat
+
+      CHARACTER(LEN=*), PARAMETER :: outint  = "(2X,A,1X,'=',1X,I0)"
+      CHARACTER(LEN=*), PARAMETER :: outflt  = "(2X,A,1X,'=',1X,ES22.12E3)"
+
+      WRITE(iunit_out,'(A)') '&MUMAT_INPUT'
+      WRITE(iunit_out,outint) 'MAXITER',maxIter
+      WRITE(iunit_out,outflt) 'DMMAX',dMmax
+      WRITE(iunit_out,outflt) 'LAMBDASTART',lambdaStart
+      WRITE(iunit_out,outflt) 'LAMBDAFACTOR',lambdaFactor
+      WRITE(iunit_out,outint) 'LAMBDATHRESH',lambdaThresh
+      WRITE(iunit_out,outflt) 'PADFACTOR',padFactor
+      WRITE(iunit_out,outflt) 'CONVCHECK',convCheck
+      WRITE(iunit_out,'(A)') '/'
+
+      RETURN
+
+      END SUBROUTINE mumaterial_write_nml
+      
+!------------------------------------------------------------------------------
+! mumaterial_write_nml_byfile: Writes Mumaterial namelist to a file
+!------------------------------------------------------------------------------
+! param[in]: filename. File to read from
+!------------------------------------------------------------------------------
+      SUBROUTINE mumaterial_write_nml_byfile(filename)
+
+      IMPLICIT NONE
+
+      CHARACTER(LEN=*), INTENT(in) :: filename
+      INTEGER :: iunit, istat
+      LOGICAL :: lexists
+      
+      iunit = 100
+      istat = 0
+      INQUIRE(FILE=TRIM(filename),exist=lexists)
+      IF (lexists) THEN
+         OPEN(unit=iunit, file=TRIM(filename), iostat=istat, status="old", position="append")
+      ELSE
+         OPEN(unit=iunit, file=TRIM(filename), iostat=istat, status="new")
+      END IF
+      IF (istat .ne. 0) RETURN
+      CALL mumaterial_write_nml(iunit,istat)
+      CLOSE(iunit)
+
+      RETURN
+
+      END SUBROUTINE mumaterial_write_nml_byfile
+      
 !------------------------------------------------------------------------------
 ! mumaterial_setverb: Sets Verbosity
 !------------------------------------------------------------------------------
@@ -498,6 +635,28 @@
       RETURN
 
       END SUBROUTINE mumaterial_load
+
+!------------------------------------------------------------------------------
+! mumaterial_load_serial: Loads magnetic material file (no MPI for Python)
+!------------------------------------------------------------------------------
+! param[in]: filename. The file name to load in
+! param[in, out]: istat. Integer that shows  if != 0
+!------------------------------------------------------------------------------
+      SUBROUTINE mumaterial_load_serial(filename,istat)
+
+#if defined(MPI_OPT)
+      USE mpi
+#endif
+      IMPLICIT NONE
+
+      CHARACTER(LEN=*), INTENT(in) :: filename
+      INTEGER, INTENT(inout)       :: istat
+
+      CALL mumaterial_load(filename,istat)
+
+      RETURN
+
+      END SUBROUTINE mumaterial_load_serial
 
 !------------------------------------------------------------------------------
 ! mumaterial_info: Prints info to iunit
@@ -1986,6 +2145,80 @@
 
       RETURN
       END SUBROUTINE
+
+!------------------------------------------------------------------------------
+! mumaterial_get_nvertex: Returns nvertex (for python)
+!------------------------------------------------------------------------------
+!------------------------------------------------------------------------------
+      INTEGER FUNCTION mumaterial_get_nvertex()
+      IMPLICIT NONE
+      mumaterial_get_nvertex = nvertex
+      RETURN
+      END FUNCTION mumaterial_get_nvertex
+
+!------------------------------------------------------------------------------
+! mumaterial_get_ntet: Returns ntet (for python)
+!------------------------------------------------------------------------------
+!------------------------------------------------------------------------------
+      INTEGER FUNCTION mumaterial_get_ntet()
+      IMPLICIT NONE
+      mumaterial_get_ntet = ntet
+      RETURN
+      END FUNCTION mumaterial_get_ntet
+
+!------------------------------------------------------------------------------
+! mumaterial_get_nstate: Returns ntet (for python)
+!------------------------------------------------------------------------------
+!------------------------------------------------------------------------------
+      INTEGER FUNCTION mumaterial_get_nstate()
+      IMPLICIT NONE
+      mumaterial_get_nstate = nstate
+      RETURN
+      END FUNCTION mumaterial_get_nstate
+
+!------------------------------------------------------------------------------
+! mumaterial_get_vertex: Returns vertex (for python)
+!------------------------------------------------------------------------------
+!------------------------------------------------------------------------------
+      SUBROUTINE mumaterial_get_vertex(vertex_out)
+      IMPLICIT NONE
+      DOUBLE PRECISION, DIMENSION(3,nvertex), INTENT(INOUT) :: vertex_out
+      vertex_out = vertex
+      RETURN
+      END SUBROUTINE mumaterial_get_vertex
+
+!------------------------------------------------------------------------------
+! mumaterial_get_tet: Returns tet array (for python)
+!------------------------------------------------------------------------------
+!------------------------------------------------------------------------------
+      SUBROUTINE mumaterial_get_tet(tet_out)
+      IMPLICIT NONE
+      INTEGER, DIMENSION(4,ntet), INTENT(INOUT) :: tet_out
+      tet_out = tet
+      RETURN
+      END SUBROUTINE mumaterial_get_tet
+
+!------------------------------------------------------------------------------
+! mumaterial_get_statedex: Returns state_dex array (for python)
+!------------------------------------------------------------------------------
+!------------------------------------------------------------------------------
+      SUBROUTINE mumaterial_get_statedex(state_out)
+      IMPLICIT NONE
+      INTEGER, DIMENSION(ntet), INTENT(INOUT) :: state_out
+      state_out = state_dex
+      RETURN
+      END SUBROUTINE mumaterial_get_statedex
+
+!------------------------------------------------------------------------------
+! mumaterial_get_statetype: Returns state_type array (for python)
+!------------------------------------------------------------------------------
+!------------------------------------------------------------------------------
+      SUBROUTINE mumaterial_get_statetype(state_out)
+      IMPLICIT NONE
+      INTEGER, DIMENSION(nstate), INTENT(INOUT) :: state_out
+      state_out = state_type
+      RETURN
+      END SUBROUTINE mumaterial_get_statetype
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!    Memory Allocation Subroutines

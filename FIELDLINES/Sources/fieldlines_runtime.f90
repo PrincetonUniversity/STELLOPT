@@ -50,7 +50,11 @@
       USE fieldlines_globals, ONLY: MAXLINES, lerror_field, npoinc, &
          dphi, follow_tol, num_hcp, delta_hc, mu, errorfield_amp, &
          errorfield_phase, r_start, phi_start, z_start, phi_end, r_hc, &
-         z_hc, phi_hc, int_type, lmu
+         z_hc, phi_hc, int_type, lmu, &
+         mumaterial_niter, mumaterial_nneighbor, &
+         mumaterial_lamthresh, mumaterial_tol, &
+         mumaterial_lambda, mumaterial_lamfactor, &
+         mumaterial_padfactor, mumaterial_convcheck
 !-----------------------------------------------------------------------
 !     Module Variables
 !          lverb         Logical to control screen output
@@ -130,14 +134,17 @@
                          ladvanced, lauto, lplasma_only, lbfield_only,&
                          lreverse, lhitonly, lafield_only, lraw, lemc3, &
                          lwall_trans, ledge_start, lnescoil,&
-                         lmodb, lfield_start, lhint, leqdsk, lpres
+                         lmodb, lfield_start, lhint, leqdsk, lpres, &
+                         lmumat, lmumat_readmag, lmumat_skipiter, &
+                         lmumat_writemagfile
       INTEGER         :: nextcur, nruntype, &
                          nprocs_fieldlines, line_select, ldex_default
       REAL(rprec)     :: pi, pi2, mu0, iota0
       REAL(rprec), ALLOCATABLE :: extcur(:)
       CHARACTER(256)  :: id_string, mgrid_string, coil_string, &
                          vessel_string, restart_string, &
-                         nescoil_string, eqdsk_string
+                         nescoil_string, eqdsk_string, &
+                         mumat_string, mumat_magfile
       
       REAL(rprec), PARAMETER :: FIELDLINES_VERSION = 1.80
 !-----------------------------------------------------------------------

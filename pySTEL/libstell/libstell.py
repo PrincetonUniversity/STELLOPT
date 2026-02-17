@@ -542,6 +542,141 @@ class LIBSTELL():
 		write_beams3d_namelist.restype=None
 		write_beams3d_namelist(filename.encode('UTF-8'),len(filename))
 
+	def read_mumat_file(self,filename):
+		"""Reads a MUMATERIALS Tetrahedron file
+
+		This routine wrappers mumaterial_load function in
+		mumaterial_mod.
+
+		Parameters
+		----------
+		file : str
+			Path to wout file.
+		"""
+		import ctypes as ct
+		import numpy as np
+		# We use an added routine as a helper
+		module_name = self.s1+'mumaterial_mod_'+self.s2
+		read_mumat_file = getattr(self.libstell,module_name+'_mumaterial_load_serial'+self.s3)
+		read_mumat_file.argtypes = [ct.c_char_p,ct.POINTER(ct.c_int),ct.c_long]
+		read_mumat_file.restype = None
+		istat = ct.c_int(0)
+		read_mumat_file(filename.encode('UTF-8'),ct.byref(istat),len(filename))
+		if not (istat.value == 0):
+			return None
+		# First get integer values
+		get_var = getattr(self.libstell,module_name+'_mumaterial_get_nvertex'+self.s3)
+		get_var.argtypes = None
+		get_var.restype=ct.c_int
+		nvertex = get_var()
+		get_var = getattr(self.libstell,module_name+'_mumaterial_get_ntet'+self.s3)
+		get_var.argtypes = None
+		get_var.restype=ct.c_int
+		ntet = get_var()
+		get_var = getattr(self.libstell,module_name+'_mumaterial_get_nstate'+self.s3)
+		get_var.argtypes = None
+		get_var.restype=ct.c_int
+		nstate = get_var()
+		out_data = {'nvertex' : nvertex, 'ntet' : ntet, 'nstate' : nstate}
+		# Get Vertex values
+		get_var = getattr(self.libstell,module_name+'_mumaterial_get_vertex'+self.s3)
+		get_var.argtypes = [ct.POINTER(ct.c_double),ct.c_long]
+		get_var.restype = None
+		vertex = [0]*(3*nvertex)
+		vertex_c = (ct.c_double * (3 * nvertex))(*vertex)
+		get_var(vertex_c, 3*nvertex)
+		vertex = np.reshape(vertex_c,(nvertex,3))
+		out_data['vertex'] = vertex
+		# Get Tetrahedron values
+		get_var = getattr(self.libstell,module_name+'_mumaterial_get_tet'+self.s3)
+		get_var.argtypes = [ct.POINTER(ct.c_int),ct.c_long]
+		get_var.restype = None
+		tet = [0]*(4*ntet)
+		tet_c = (ct.c_int * (4 * ntet))(*tet)
+		get_var(tet_c, 4*ntet)
+		tet = np.reshape(tet_c,(ntet,4))
+		out_data['tet'] = tet
+		# Get state_dex values
+		get_var = getattr(self.libstell,module_name+'_mumaterial_get_statedex'+self.s3)
+		get_var.argtypes = [ct.POINTER(ct.c_int),ct.c_long]
+		get_var.restype = None
+		state_dex = [0]*ntet
+		state_dex_c = (ct.c_int * ntet)(*state_dex)
+		get_var(state_dex_c, ntet)
+		state_dex = np.reshape(state_dex_c,(ntet,1))
+		out_data['state_dex'] = state_dex
+		# Get state_dex values
+		get_var = getattr(self.libstell,module_name+'_mumaterial_get_statetype'+self.s3)
+		get_var.argtypes = [ct.POINTER(ct.c_int),ct.c_long]
+		get_var.restype = None
+		state_type = [0]*nstate
+		state_type_c = (ct.c_int * nstate)(*state_type)
+		get_var(state_type_c, nstate)
+		state_type = np.reshape(state_type_c,(nstate,1))
+		out_data['state_type'] = state_type
+		return out_data
+
+	def read_mumat_input(self,filename):
+		"""Reads a MUMATERIALS MUMAT_INPUT namelist
+
+		This routine wrappers mumaterial_read_nml function in
+		mumaterial_mod.
+
+		Parameters
+		----------
+		file : str
+			Path to wout file.
+		"""
+		import ctypes as ct
+		import numpy as np
+		# Call the initialization routine
+		module_name = self.s1+'mumaterial_mod_'+self.s2
+		init_mumat_input = getattr(self.libstell,module_name+'_mumaterial_init_nml'+self.s3)
+		init_mumat_input.argtypes = None
+		init_mumat_input.restype = None
+		init_mumat_input()
+		# Only read a file if we didn't pass an empty string.
+		if filename != '':
+			# We use an added routine as a helper
+			module_name = self.s1+'mumaterial_mod_'+self.s2
+			read_mumat_input = getattr(self.libstell,module_name+'_mumaterial_read_nml'+self.s3)
+			read_mumat_input.argtypes = [ct.c_char_p,ct.POINTER(ct.c_int),ct.c_long]
+			read_mumat_input.restype = None
+			istat = ct.c_int(0)
+			read_mumat_input(filename.encode('UTF-8'),ct.byref(istat),len(filename))
+			if not (istat.value == 0):
+				return None
+		# Get vars
+		intList=['maxiter','lambdathresh']
+		intLen=[1]*len(intList)
+		realList=['dmmax', 'lambdastart', 'lambdafactor', 'padfactor', 'convcheck']
+		realLen=[1]*len(realList)
+		module_name = self.s1+'mumaterial_mod_'+self.s2
+		out_data = self.get_module_vars(module_name,intVar=intList,intLen=intLen,realVar=realList,realLen=realLen,ldefined_size_arrays=True)
+		return out_data
+
+	def write_mumat_input(self,filename,out_dict=None):
+		"""Wrappers writing of the MUMAT_INPUT namelist
+
+		This routine wrappers mumaterial_write_nml_byfile in LIBSTELL
+
+		Parameters
+		----------
+		file : str
+			Path to input file.
+		"""
+		import ctypes as ct
+		module_name = self.s1+'mumaterial_mod_'+self.s2
+		# Check if we want to update values
+		if out_dict:
+			for key in out_dict:
+				self.set_module_var(module_name,key,out_dict[key])
+		module_name = self.s1+'mumaterial_mod_'+self.s2
+		write_mumat_namelist = getattr(self.libstell,module_name+'_mumaterial_write_nml_byfile'+self.s3)
+		write_mumat_namelist.argtypes = [ct.c_char_p,ct.c_long]
+		write_mumat_namelist.restype=None
+		write_mumat_namelist(filename.encode('UTF-8'),len(filename))
+
 	def read_diagno_in(self,filename):
 		"""Reads a DIAGNO_IN namelist
 

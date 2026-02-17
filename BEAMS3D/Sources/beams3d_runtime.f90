@@ -84,7 +84,7 @@ MODULE beams3d_runtime
                               lrestart_particles, lfusion_alpha, &
                               lfusion_He3, lfusion_proton, &
                               lfusion_tritium, lkick, lgcsim, id_string, &
-                              mumaterial_niter, mumaterial_nneighbor, &
+                              mumaterial_niter, &
                               mumaterial_lamthresh, mumaterial_tol, &
                               mumaterial_lambda, mumaterial_lamfactor, &
                               mumaterial_padfactor, mumaterial_convcheck

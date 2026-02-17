@@ -285,11 +285,6 @@ class MUMAT():
 				ax.set_title(f'Mumaterial State Function ({i:02d})')
 				if lplotnow: pyplot.show()
 
-
-
-
-
-
 # Main routine
 if __name__=="__main__":
 	import sys

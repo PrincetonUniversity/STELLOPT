@@ -35,6 +35,11 @@
       REAL(rprec) :: rmin, rmax, zmin, zmax, phimin, phimax, &
                      vc_adapt_tol
 
+      ! Added for mumaterials interface
+      INTEGER :: mumaterial_niter, mumaterial_nneighbor, mumaterial_lamthresh
+      REAL(rprec) :: mumaterial_tol, mumaterial_lambda, mumaterial_lamfactor, &
+                     mumaterial_padfactor, mumaterial_convcheck
+
 
       CONTAINS
 
