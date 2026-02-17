@@ -239,6 +239,18 @@ CONTAINS
                    i = i + 1
                    CALL GETCARG(i,args(i),numargs)
                    READ(args(i),*,IOSTAT=ier) line_select
+               case ("-mumat")
+                   i = i + 1
+                   lmumat = .true.
+                   CALL GETCARG(i, mumat_string, numargs)
+               case ("-mumat_magfile")
+                   i = i + 1
+                   lmumat_readmag = .true.
+                   CALL GETCARG(i, mumat_magfile, numargs)
+               case ("-mumat_skipiter")
+                   lmumat_skipiter = .true.
+               case ("-mumat_writemagfile")
+                    lmumat_writemagfile = .true.
                case ("-help","-h") ! Output Help message
                   WRITE(6,'(a,f5.2)') 'FIELDLINES Version ',FIELDLINES_VERSION
                   write(6,*)' Fieldline Tracing Code'
@@ -253,6 +265,10 @@ CONTAINS
                   write(6,*)'     -screen file:  Vessel File (FSM diagnostic)'
                   write(6,*)'     -mgrid file:   MAKEGRID File (for vacuum)'
                   write(6,*)'     -coil file:    Coils. File (for vacuum)'
+                  write(6,*)'     -mumat file:   Magnetic Materials File'
+                  write(6,*)'     -mumat_magfile file: Magnetic Materials magnetization file.'
+                  write(6,*)'     -mumat_skipiter:     Skip iterations'
+                  write(6,*)'     -mumat_writemagfile: Write out magnetization file.'
                   write(6,*)'     -nescoil file: NESCOIL File (for vacuum)'
                   !write(6,*)'     -restart ext:  FIELDLINES HDF5 extension.'
                   write(6,*)'     -field_start file line:  Restart from a field line.'
@@ -291,6 +307,10 @@ CONTAINS
       coil_string = ADJUSTL(coil_string)
       vessel_string = TRIM(vessel_string)
       vessel_string = ADJUSTL(vessel_string)
+      mumat_string = TRIM(mumat_string)
+      mumat_string = ADJUSTL(mumat_string)
+      mumat_magfile = TRIM(mumat_magfile)
+      mumat_magfile = ADJUSTL(mumat_magfile)
       ! Broadcast variables
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
@@ -307,6 +327,10 @@ CONTAINS
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'vessel_string',ierr_mpi)
       CALL MPI_BCAST(restart_string,256,MPI_CHARACTER, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'restart_string',ierr_mpi)
+      CALL MPI_BCAST(mumat_string, 256, MPI_CHARACTER, master, MPI_COMM_FIELDLINES, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'mumat_string', ierr_mpi)
+      CALL MPI_BCAST(mumat_magfile, 256, MPI_CHARACTER, master, MPI_COMM_FIELDLINES, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'mumat_magfile', ierr_mpi)
       CALL MPI_BCAST(lvmec,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'lvmec',ierr_mpi)
       CALL MPI_BCAST(leqdsk, 1, MPI_LOGICAL, master, MPI_COMM_FIELDLINES, ierr_mpi)
@@ -365,6 +389,14 @@ CONTAINS
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'lfield_start',ierr_mpi)
       CALL MPI_BCAST(line_select,1,MPI_INTEGER, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'line_select',ierr_mpi)
+      CALL MPI_BCAST(lmumat, 1, MPI_LOGICAL, master, MPI_COMM_FIELDLINES, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'lmumat', ierr_mpi)
+      CALL MPI_BCAST(lmumat_readmag, 1, MPI_LOGICAL, master, MPI_COMM_FIELDLINES, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'lmumat_readmag', ierr_mpi)
+      CALL MPI_BCAST(lmumat_skipiter, 1, MPI_LOGICAL, master, MPI_COMM_FIELDLINES, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'lmumat_skipiter', ierr_mpi)
+      CALL MPI_BCAST(lmumat_writemagfile, 1, MPI_LOGICAL, master, MPI_COMM_FIELDLINES, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'lmumat_writemagfile', ierr_mpi)
       CALL MPI_BCAST(nruntype,1,MPI_INTEGER, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'nruntype',ierr_mpi)
 #endif

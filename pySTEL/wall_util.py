@@ -8,7 +8,6 @@ if __name__=="__main__":
 	from libstell.wall import WALL
 	from libstell.plot3D import PLOT3D
 	import numpy as np
-	from datetime import datetime
 	from stl import mesh
 	parser = ArgumentParser(description= 
 		'''Provides tool for plotting wall files and working with them.''')

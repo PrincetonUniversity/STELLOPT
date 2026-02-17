@@ -72,8 +72,7 @@ if __name__=="__main__":
 		except:
 			B = solver.Baxis
 		try:
-			ir2o3 = np.argmin(np.abs(solver.rho_grid-2/3))
-			iota = solver.iota[:,ir2o3]
+			iota = solver.iota23
 		except:
 			iota = solver.iota23
 		n_avg = {}

@@ -13,24 +13,28 @@ if __name__=="__main__":
 	parser = ArgumentParser(description= 
 		'''Utility for generating a BEAMS3D input namelist.''')
 	parser.add_argument("-v", "--vmec", dest="vmec_ext",
-		help="VMEC file extension", default = None)
+		help="VMEC file extension.", default = None)
 	parser.add_argument("--fullorbit", dest="lfullorbit", action='store_true',
 		help="Create Gyro Orbit (full orbit) run.", default = None)
+	parser.add_argument("--npitch", dest="npitch",
+		help="Number of pitch angles to consider (even, default: 8).", default = 8, type=int)
+	parser.add_argument("--maxpitch", dest="maxpitch",
+		help="Maximum pitch angle to consider (vpara/v, default: 0.5).", default = 0.5, type=float)
+	parser.add_argument("--surface", dest="sdex",
+		help="List of surfaces to initialize particles (default: [16 32 64]).", nargs='+', default=[16,32,64], type=int)
 	args = parser.parse_args()
 	beams3d_input = BEAMS3D_INPUT()
 	beams3d_input.read_input('')
 	E = 3.5E6*EC
 	M = 4.002603*DA
-	npitch = 8
-	temp = np.linspace(0.01,0.5,npitch)
-	vllov = np.append(-temp[-1::-1],temp)
+	vllov = np.linspace(-args.maxpitch,args.maxpitch,args.npitch)
 	npitch = vllov.shape[0]
 	if args.vmec_ext:
 		vmec_data = VMEC()
 		vmec_data.read_wout(args.vmec_ext)
-		beams3d_input.nr = 128
-		beams3d_input.nz = 128
-		beams3d_input.nphi = int(360/vmec_data.nfp)
+		beams3d_input.nr = 256
+		beams3d_input.nz = 256
+		beams3d_input.nphi = int(720/vmec_data.nfp)+1
 		dr = (vmec_data.rmax_surf-vmec_data.rmin_surf)*0.5
 		R0 = (vmec_data.rmax_surf+vmec_data.rmin_surf)*0.5
 		beams3d_input.rmin = R0 - dr*1.2
@@ -41,16 +45,15 @@ if __name__=="__main__":
 		beams3d_input.phimax = 2.0*np.pi/vmec_data.nfp
 		beams3d_input.int_type = 'LSODE'
 		beams3d_input.follow_tol = 1.0E-8
-		beams3d_input.npoinc = 1000
+		beams3d_input.npoinc = 3
 		beams3d_input.vc_adapt_tol = 1.0E-3
-		beams3d_input.ns_prof1 = 16
+		beams3d_input.ns_prof1 = 2
 		beams3d_input.ns_prof2 = 2
 		beams3d_input.ns_prof3 = 2
 		beams3d_input.ns_prof4 = 2
 		beams3d_input.ns_prof5 = 2
 		beams3d_input.partvmax = float(np.sqrt(E*2.0/M)*1.1)
-		# Now determine some things
-		sdex = np.linspace(0,vmec_data.ns-1,8,dtype=int)
+		sdex = np.array(args.sdex,dtype=int)
 		theta = np.linspace([0],[np.pi*2],256)
 		phi   = np.linspace([0],[np.pi*2],256)/vmec_data.nfp
 		r = vmec_data.cfunct(theta,phi,vmec_data.rmnc,vmec_data.xm,vmec_data.xn)
@@ -133,7 +136,7 @@ if __name__=="__main__":
 		beams3d_input.charge_in    = np.ones(len(r_start_in))*EC*2.0
 		beams3d_input.mass_in      = np.ones(len(r_start_in))*M
 		beams3d_input.zatom_in     = np.ones(len(r_start_in))*2.0
-		beams3d_input.t_end_in     = np.ones(len(r_start_in))*100E-3
+		beams3d_input.t_end_in     = np.ones(len(r_start_in))*500E-3
 		beams3d_input.nparticles_start = len(r_start_in)
 		if args.lfullorbit:
 			beams3d_input.rho_fullorbit = 0.0
