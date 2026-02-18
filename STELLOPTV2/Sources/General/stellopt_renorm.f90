@@ -176,18 +176,22 @@
                WHERE(sigma_bnmns<bigno) sigma_bnmns = sigma_bnmns/temp
             CASE(jtarget_bnmnc)
                WHERE(sigma_bnmnc<bigno) sigma_bnmnc = sigma_bnmnc/temp
-            CASE(jtarget_coil_curvature)
-               sigma_coil_curvature = sigma_coil_curvature/temp
-            CASE(jtarget_coil_torsion)
-               sigma_coil_torsion = sigma_coil_torsion/temp
-            CASE(jtarget_coilcoil_distance)
-               sigma_coilcoil_distance = sigma_coilcoil_distance/temp
             CASE(jtarget_coil_baxis)
                sigma_coil_baxis = sigma_coil_baxis/temp
-            CASE(jtarget_coil_length)
-               WHERE(sigma_coil_length<bigno) sigma_coil_length = sigma_coil_length/temp
+            CASE(jtarget_coil_curvature)
+               sigma_coil_curvature = sigma_coil_curvature/temp
+            CASE(jtarget_coil_distortion)
+               sigma_coil_distortion = sigma_coil_distortion/temp
             CASE(jtarget_coil_energy)
                WHERE(sigma_coil_energy<bigno) sigma_coil_energy = sigma_coil_energy/temp
+            CASE(jtarget_coil_length)
+               WHERE(sigma_coil_length<bigno) sigma_coil_length = sigma_coil_length/temp
+            CASE(jtarget_coil_torsion)
+               sigma_coil_torsion = sigma_coil_torsion/temp
+            CASE(jtarget_coil_total_torsion)
+               sigma_coil_total_torsion = sigma_coil_total_torsion/temp
+            CASE(jtarget_coilcoil_distance)
+               sigma_coilcoil_distance = sigma_coilcoil_distance/temp
             CASE DEFAULT
                WRITE(6,'(A,I3.3,A)') '!!! JTARGET=',iddex(i),' not supported'
                CALL write_targets(6,iddex(i))

@@ -272,10 +272,20 @@
   TARGET_COIL_CURVATURE =    0.000000000000E+000
   SIGMA_COIL_CURVATURE =    1.000000000000E+000
 !----------------------------------------------------------------------
+!          TARGET COIL DISTORTION (weighted curvature)
+!----------------------------------------------------------------------
+  TARGET_COIL_DISTORTION =    0.000000000000E+000
+  SIGMA_COIL_DISTORTION =    1.000000000000E+000
+!----------------------------------------------------------------------
 !          TARGET COIL TORSION
 !----------------------------------------------------------------------
   TARGET_COIL_TORSION =    0.000000000000E+000
   SIGMA_COIL_TORSION =    1.000000000000E+000
+!----------------------------------------------------------------------
+!          TARGET COIL TOTAL TORSION
+!----------------------------------------------------------------------
+  TARGET_COIL_TOTAL_TORSION =    0.000000000000E+000
+  SIGMA_COIL_TOTAL_TORSION =    1.000000000000E+000
 !----------------------------------------------------------------------
 !          TARGET COIL-COIL DISTANCE
 !----------------------------------------------------------------------
@@ -315,22 +325,33 @@
   TARGET_COIL_ENERGY(5) =    0.000000000000E+001 SIGMA_COIL_ENERGY(5) =    1.000000000000E+000
 / 
 &FIELDLINES_INPUT
- NR = 128
- NZ = 128
- NPHI = 120
- RMIN = 0.436
- RMAX = 2.436
- ZMIN = -1.0
- ZMAX = 1.0
- PHIMIN = 0.0
- PHIMAX = 2.09439510239
- MU = 0.0
- R_START   = 1.50  2.00
- Z_START   = 0.00  0.00
- PHI_START = 0.00  0.00
- PHI_END   = 2*6283.0
- NPOINC    = 6
- INT_TYPE  = 'LSODE'
- FOLLOW_TOL = 1.0E-9
- VC_ADAPT_TOL = 1.0E-7
+!---------- Background Grid Parameters ------------
+  NR = 128
+  NZ = 128
+  NPHI = 120
+  RMIN =    4.360000000000E-001
+  RMAX =    2.436000000000E+000
+  ZMIN =   -1.000000000000E+000
+  ZMAX =    1.000000000000E+000
+  PHIMIN =    0.000000000000E+000
+  PHIMAX =    2.094395102390E+000
+  VC_ADAPT_TOL =    1.000000000000E-007
+!---------- Magnetic Material Parameters ----------
+  MUMATERIAL_NITER = 100
+  MUMATERIAL_TOL =    1.000000000000E-005
+  MUMATERIAL_LAMTHRESH = 10
+  MUMATERIAL_LAMBDA =    7.000000000000E-001
+  MUMATERIAL_LAMFACTOR =    7.500000000000E-001
+  MUMATERIAL_PADFACTOR =    1.000000000000E+000
+  MUMATERIAL_CONVCHECK =    9.900000000000E+001
+!---------- Marker Tracking Parameters ------------
+  INT_TYPE = 'LSODE'
+  FOLLOW_TOL =    1.000000000000E-009
+  NPOINC = 6
+  MU =    0.000000000000E+000
+  R_START =    1.500000000000E+000    2.000000000000E+000
+  Z_START =    0.000000000000E+000    0.000000000000E+000
+  PHI_START =    0.000000000000E+000    0.000000000000E+000
+  PHI_END =    6.283000000000E+003    6.283000000000E+003
+/
 &END

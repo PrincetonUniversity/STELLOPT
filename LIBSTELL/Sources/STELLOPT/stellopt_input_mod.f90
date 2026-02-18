@@ -382,7 +382,10 @@
                          target_bnormal, sigma_bnormal, &
                          target_bnmns, sigma_bnmns, target_bnmnc, sigma_bnmnc,  &
                          target_coil_curvature, sigma_coil_curvature, &
+                         target_coil_distortion, sigma_coil_distortion, &
+                         distortion_curvature_min, distortion_curvature_max, &
                          target_coil_torsion, sigma_coil_torsion, &
+                         target_coil_total_torsion, sigma_coil_total_torsion, &
                          target_coilcoil_distance, sigma_coilcoil_distance, &
                          target_coil_baxis, sigma_coil_baxis, &
                          target_coil_length, sigma_coil_length, &
@@ -961,8 +964,12 @@
       sigma_bnmnc              = bigno
       target_coil_curvature    = 0.0
       sigma_coil_curvature     = bigno
-      target_coil_torsion      = 0.0
-      sigma_coil_torsion       = bigno
+      target_coil_distortion   = 0.0
+      sigma_coil_distortion    = bigno
+      distortion_curvature_min = 0.20D+00
+      distortion_curvature_max = 0.65D+00
+      target_coil_total_torsion      = 0.0
+      sigma_coil_total_torsion       = bigno
       target_coilcoil_distance = 0.0
       sigma_coilcoil_distance  = bigno
       target_coil_baxis        = 1.0
@@ -2495,12 +2502,28 @@
          WRITE(iunit,outflt) 'TARGET_COIL_CURVATURE',target_coil_curvature
          WRITE(iunit,outflt) 'SIGMA_COIL_CURVATURE',sigma_coil_curvature
       END IF
+      IF (sigma_coil_distortion < bigno) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          TARGET COIL DISTORTION (weighted curvature)'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,outflt) 'TARGET_COIL_DISTORTION',target_coil_distortion
+         WRITE(iunit,outflt) 'SIGMA_COIL_DISTORTION',sigma_coil_distortion
+         WRITE(iunit,outflt) 'DISTOTRION_CURVATURE_MIN',distortion_curvature_min
+         WRITE(iunit,outflt) 'DISTOTRION_CURVATURE_MAX',distortion_curvature_max
+      END IF
       IF (sigma_coil_torsion < bigno) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(A)') '!          TARGET COIL TORSION'
+         WRITE(iunit,'(A)') '!          TARGET COIL TORSION (mean)'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,outflt) 'TARGET_COIL_TORSION',target_coil_torsion
          WRITE(iunit,outflt) 'SIGMA_COIL_TORSION',sigma_coil_torsion
+      END IF
+      IF (sigma_coil_total_torsion < bigno) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          TARGET COIL TOTAL TORSION (integral)'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,outflt) 'TARGET_COIL_TOTAL_TORSION',target_coil_total_torsion
+         WRITE(iunit,outflt) 'SIGMA_COIL_TOTAL_TORSION',sigma_coil_total_torsion
       END IF
       IF (sigma_coilcoil_distance < bigno) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'

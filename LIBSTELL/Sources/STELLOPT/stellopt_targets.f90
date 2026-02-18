@@ -211,7 +211,10 @@
                       target_bnmns, sigma_bnmns, &
                       target_bnmnc, sigma_bnmnc
       REAL(rprec) ::  target_coil_curvature, sigma_coil_curvature
+      REAL(rprec) ::  target_coil_distortion, sigma_coil_distortion, &
+                      distortion_curvature_min, distortion_curvature_max
       REAL(rprec) ::  target_coil_torsion, sigma_coil_torsion
+      REAL(rprec) ::  target_coil_total_torsion, sigma_coil_total_torsion
       REAL(rprec) ::  target_coilcoil_distance, sigma_coilcoil_distance
       REAL(rprec) ::  target_coil_baxis, sigma_coil_baxis
       REAL(rprec),DIMENSION(nigroup) ::  target_coil_length, sigma_coil_length
@@ -247,7 +250,9 @@
       INTEGER, PARAMETER :: jtarget_bnmns      = 1131
       INTEGER, PARAMETER :: jtarget_bnmnc      = 1132
       INTEGER, PARAMETER :: jtarget_coil_curvature  = 114
-      INTEGER, PARAMETER :: jtarget_coil_torsion    = 115
+      INTEGER, PARAMETER :: jtarget_coil_distortion  = 1142
+      INTEGER, PARAMETER :: jtarget_coil_total_torsion    = 115
+      INTEGER, PARAMETER :: jtarget_coil_torsion    = 1151
       INTEGER, PARAMETER :: jtarget_coilcoil_distance = 116
       INTEGER, PARAMETER :: jtarget_coil_baxis  = 117
       INTEGER, PARAMETER :: jtarget_coil_length = 118
@@ -480,8 +485,12 @@
             WRITE(iunit, out_format) 'B-Normal Harmonics (cos)'
          CASE(jtarget_coil_curvature)
             WRITE(iunit, out_format) 'Coil Curvature (mean)'
+         CASE(jtarget_coil_distortion)
+            WRITE(iunit, out_format) 'Coil Distortion (weighted curvature)'
          CASE(jtarget_coil_torsion)
             WRITE(iunit, out_format) 'Coil Torsion (mean)'
+         CASE(jtarget_coil_total_torsion)
+            WRITE(iunit, out_format) 'Coil Torsion (integral)'
          CASE(jtarget_coil_length)
             WRITE(iunit, out_format) 'Coil Length'
          CASE(jtarget_coil_energy)
