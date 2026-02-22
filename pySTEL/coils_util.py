@@ -6,6 +6,7 @@ if __name__=="__main__":
 	import sys
 	from argparse import ArgumentParser
 	from libstell.coils import COILSET
+	from libstell.vmec import VMEC
 	from libstell.wall import WALL
 	from libstell.plot3D import PLOT3D
 	from libstell.libstell import FourierRep
@@ -17,6 +18,8 @@ if __name__=="__main__":
 		   simple tool for assessing coils or coils files.''')
 	parser.add_argument("-c", "--coil", dest="coils_file",
 		help="Coils file for input", default = None)
+	parser.add_argument("-v", "--vmec", dest="vmec_ext",
+		help="VMEC file extension.", default = None)
 	parser.add_argument("-p", "--plot", dest="lplot", action='store_true',
 		help="Plot the coils file.", default = False)
 	parser.add_argument("-prz", "--plotRZ", dest="lplotRZ", action='store_true',
@@ -41,6 +44,8 @@ if __name__=="__main__":
 		help="Output the coil", default = False)
 	parser.add_argument("--gourdon", dest="lgourdon", action='store_true',
 		help="Output the coils in Gourdon format.", default = False)
+	parser.add_argument("--stellopt", dest="lstellopt", action='store_true',
+		help="Output the coil in stellopt format.", default = False)
 	parser.add_argument("--stl", dest="heightwidth_stl",
 		help="Generate STL of coil of given width and height [m].", default = None)
 	parser.add_argument("--flip", dest="lflip", action='store_true',
@@ -49,6 +54,13 @@ if __name__=="__main__":
 		help="Flip the toroidal direction of the coil.", default = False)
 	args = parser.parse_args()
 	coils = COILSET()
+	if args.vmec_ext:
+		vmec_data = VMEC()
+		try:
+			vmec_data.read_wout(args.vmec_ext)
+		except:
+			print(f'Could not file input file: wout_{args.vmec_ext}.nc or wout.{args.vmec_ext}')
+			sys.exit(-1)
 	if args.coils_file: 
 		coils.read_coils_file(args.coils_file)
 		if args.new_pts: coils.rescalecoils(args.new_pts)
@@ -134,5 +146,24 @@ if __name__=="__main__":
 		if args.lreverse: coils.reverse()
 		if args.loutput: coils.write_coils_file(args.coils_file+'_new')
 		if args.lgourdon: coils.write_Gourdon_coils()
+		if args.lstellopt:
+			[s,u,zeta]=coils.stellopt_knots(vmec_data)
+			f=open(f'{args.coils_file}_stellopt.nml','w')
+			for i in range(s.shape[0]):
+				f.write(f'!-----COIL {i+1:02d} -----\n')
+				f.write(f'  RHO_COIL_KTS({i+1:02d},:) = ')
+				for j in range(s.shape[1]):
+					f.write(f' {s[i,j]:20.10E} ')
+				f.write('\n')
+				f.write(f'  THETA_COIL_KTS({i+1:02d},:) = ')
+				for j in range(u.shape[1]):
+					f.write(f' {u[i,j]:20.10E} ')
+				f.write('\n')
+				f.write(f'  ZETA_COIL_KTS({i+1:02d},:) = ')
+				for j in range(zeta.shape[1]):
+					f.write(f' {zeta[i,j]:20.10E} ')
+				f.write('\n')
+			f.close()
+
 	sys.exit(0)
 
