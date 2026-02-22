@@ -1240,6 +1240,10 @@ class LIBSTELL():
 		realLen.extend([(scalar_data['mnmax_nyq'],1)]*2)
 		realList.extend(['am','ac','ai'])
 		realLen.extend([(21,1)]*3)
+		realList.extend(['am_aux_s','ac_aux_s','ai_aux_s'])
+		realLen.extend([(101,1)]*3)
+		realList.extend(['am_aux_f','ac_aux_f','ai_aux_f'])
+		realLen.extend([(101,1)]*3)
 		# Add 2D Arrays
 		realList.extend(['rmnc','zmns','lmns'])
 		realLen.extend([(scalar_data['ns'],scalar_data['mnmax'])]*3)
