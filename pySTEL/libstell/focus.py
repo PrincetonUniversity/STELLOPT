@@ -421,7 +421,7 @@ class FOCUS():
 			xn_b = [0]
 			bmnc = [0]
 			bmns = [0]
-		if type(pmns) is not type(None):
+		if type(pmns) is type(None):
 			pmns = np.zeros((mnmax))
 		if not (rmns and zmnc and pmnc):
 			rmns = np.zeros((mnmax))
