@@ -119,15 +119,59 @@
       RETURN
       END SUBROUTINE init_boundary_spline_coils
 
+      SUBROUTINE rhothetazeta2xyz(rho_in,theta_in,zeta_in,x_out,y_out,z_out)
+      IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(in) :: rho_in, theta_in, zeta_in
+      DOUBLE PRECISION, INTENT(out) :: x_out, y_out, z_out
+      INTEGER :: mn
+      DOUBLE PRECISION :: R, Z, RN, ZN, REDGE, ZEDGE, PHI, N
+      DOUBLE PRECISION :: rho_ext, whi, wlo, wloo, whio, cop, sip
+      R = zero; Z = zero
+      RN = zero; ZN = zero
+      REDGE = zero; ZEDGE = zero
+      ! Extrapolation stuff (like VMEC)
+      PHI = zeta_in/nfp
+      rho_ext = rho_in + 1.0
+      whi   = (rho_ext*rho_ext-1.0)*2.0
+      wlo   = (2.0 - whi)/2.0
+      wloo  = wlo*rho_ext
+      whio  = whi*rho_ext/SQRT(2.0)
+      DO mn = 1, mnmax
+         cop = cos(xm(mn)*theta_in+xn(mn)*zeta_in)
+         sip = sin(xm(mn)*theta_in+xn(mn)*zeta_in)
+         REDGE = REDGE + rmnc(mn)*cop
+         ZEDGE = ZEDGE + zmns(mn)*sip
+         IF ((xm(mn) == 0) .and. (xn(mn) == 0)) THEN
+            R =  R  + rmnc(mn)*cop
+         ELSEIF (MOD(int(xm(mn)),2)==0) THEN
+            R = R + rmnc(mn)*wlo*cop
+            Z = Z + zmns(mn)*wlo*sip
+         ELSE
+            R = R + rmnc(mn)*wloo*cop
+            Z = Z + zmns(mn)*wloo*sip
+         END IF
+         IF ((xm(mn)==1) .and. (xn(mn)==0)) THEN
+            ! Note we use odd here since xm==1
+            R    =  R + 4.0*whio*cop
+            Z    =  Z + 4.0*whio*sip
+         END IF
+      END DO
+      RN    = R - REDGE
+      ZN    = Z - ZEDGE
+      N     = SQRT(RN*RN+ZN*ZN)
+      RN    = RN/N; ZN = ZN/N
+      R     = (REDGE + rho_in*RN)
+      x_out = R*COS(PHI)
+      y_out = R*SIN(PHI)
+      z_out = ZEDGE + rho_in*ZN
+      RETURN
+      END SUBROUTINE rhothetazeta2xyz
+
       SUBROUTINE spline_to_coils(normal_sign)
       IMPLICIT NONE
       INTEGER, INTENT(in) :: normal_sign
       INTEGER :: i, j, mn, ns1, ier
-      DOUBLE PRECISION :: AX, AY, AZ, BX, BY, BZ, NX, NY, NZ, N, &
-            R, Z, RU, ZU, RV, ZV, rho, theta, zeta, cop, sip, l, &
-            X, Y, phi, RAX, ZAX, slope, ycept, &
-            smax, slo, shi, rholo, rhohi, whi, wlo, wloo, whio, &
-            REDGE, ZEDGE, rho_ext
+      DOUBLE PRECISION :: rho, theta, zeta, X, Y, Z, cop, sip, L
       DOUBLE PRECISION, DIMENSION(ns) :: Rc,Zc,Pc
       DOUBLE PRECISION, DIMENSION(3,ns) :: xnod_in, xnod_ss, xnod_bb
       CHARACTER(len=100) :: s_name
@@ -157,56 +201,13 @@
             CALL EZspline_interp(RHO_spl(i),l,rho,ier)
             CALL EZspline_interp(THETA_spl(i),l,theta,ier)
             CALL EZspline_interp(ZETA_spl(i),l,zeta,ier)
-            R = zero; Z = zero; RU = zero; ZU = zero; RV = zero; ZV=zero
-            RAX = zero; ZAX= zero; REDGE = zero; ZEDGE = zero
-            phi = zeta/nfp
-            ! Extrapolation stuff (like VMEC)
-            !smax = 2.0
-            !slo  = 1.0
-            !shi  = 2.0
-            !rholo = SQRT(slo)
-            !rhohi = SQRT(shi)
-            !rholo = 1.0
-            !rhohi = SQRT(2.0)
-            !whi   = (rho*rho-slo)*smax
-            !wlo   = (smax - whi)/smax
-            rho_ext = rho + 1.0
-            whi   = (rho_ext*rho_ext-1.0)*2.0
-            wlo   = (2.0 - whi)/2.0
-            !wloo  = wlo*rho/rholo
-            !whio  = whi*rho/rhohi
-            wloo  = wlo*rho_ext
-            whio  = whi*rho_ext/SQRT(2.0)
-            DO mn = 1, mnmax
-               cop = cos(xm(mn)*theta+xn(mn)*zeta)
-               sip = sin(xm(mn)*theta+xn(mn)*zeta)
-               REDGE = REDGE + rmnc(mn)*cop
-               ZEDGE = ZEDGE + zmns(mn)*sip
-               IF ((xm(mn) == 0) .and. (xn(mn) == 0)) THEN
-                  R =  R  + rmnc(mn)*cop
-               ELSEIF (MOD(int(xm(mn)),2)==0) THEN
-                  R = R + rmnc(mn)*wlo*cop
-                  Z = Z + zmns(mn)*wlo*sip
-               ELSE
-                  R = R + rmnc(mn)*wloo*cop
-                  Z = Z + zmns(mn)*wloo*sip
-               END IF
-               IF ((xm(mn)==1) .and. (xn(mn)==0)) THEN
-                  ! Note we use odd here since xm==1
-                  R    =  R + 4.0*whio*cop
-                  Z    =  Z + 4.0*whio*sip
-               END IF
-            END DO
-            RU    = R - REDGE
-            ZU    = Z - ZEDGE
-            N     = SQRT(RU*RU+ZU*ZU)
-            RU    = RU/N; ZU = ZU/N
-            Rc(j) = REDGE + rho*RU
-            Zc(j) = ZEDGE + rho*ZU
-            Pc(j) = phi
-            xnod_in(1,j) = Rc(j)*COS(phi)
-            xnod_in(2,j) = Rc(j)*SIN(phi)
-            xnod_in(3,j) = Zc(j)
+            CALL rhothetazeta2xyz(rho,theta,zeta,X,Y,Z)
+            RC(j) = SQRT(X*X+Y*Y)
+            PC(j) = ATAN2(Y,X)
+            ZC(j) = Z
+            xnod_in(1,j) = X
+            xnod_in(2,j) = Y
+            xnod_in(3,j) = Z
          END DO
          xnod_in(:,ns) = xnod_in(:,1)
          ! Now create the first coil
@@ -240,6 +241,82 @@
       END DO
       RETURN
       END SUBROUTINE spline_to_coils
+
+      SUBROUTINE xyz2rhothetazeta(x_in,y_in,z_in,rho_out,theta_out,zeta_out)
+      IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(in) :: x_in, y_in, z_in
+      DOUBLE PRECISION, INTENT(inout) :: rho_out, theta_out, zeta_out
+      INTEGER :: nfe
+      DOUBLE PRECISION :: R_in, fnorm, fmin0, fmin, fact_local, &
+         rho_min, theta_min, X, Y, Z, R, X1, Y1, Z1, R1, delta, &
+         dRdrho, dZdrho, dRdtheta, dZdtheta, dR, dZ, tau, &
+         delrho, deltheta
+      zeta_out = ATAN2(y_in,x_in)*nfp
+      rho_out = MAX(rho_out,0.0)
+      R_in = SQRT(x_in*x_in + y_in*y_in)
+      fnorm = one / SQRT(R_in*R_in+Z_in*Z_in)
+      fmin0 = 1.0D+10
+      fmin  = 1.0D+10
+      delta = 1.0D-03
+      fact_local = one
+      rho_min = rho_out; theta_min = theta_out
+      nfe = 0
+      DO WHILE ((nfe .lt. 1000) .and. (fmin .gt. 1.0E-6))
+         nfe = nfe + 1
+         ! Compute R,Z
+         CALL rhothetazeta2xyz(rho_out,theta_out,zeta_out,X,Y,Z)
+         R = SQRT(X*X + Y*Y)
+         ! Compute dR/drho and dZ/drho
+         CALL rhothetazeta2xyz(rho_out+delta,theta_out,zeta_out,X1,Y1,Z1)
+         R1 = SQRT(X1*X1 + Y1*Y1)
+         dRdrho = (R1-R)/delta
+         dZdrho = (Z1-Z)/delta
+         ! Compute dR/dtheta and dZ/dtheta
+         CALL rhothetazeta2xyz(rho_out,theta_out+delta,zeta_out,X1,Y1,Z1)
+         R1 = SQRT(X1*X1 + Y1*Y1)
+         dRdtheta = (R1-R)/delta
+         dZdtheta = (Z1-Z)/delta
+         ! Compute Function minimization (R0,Z0)
+         dR = R - R_in
+         dZ = Z - Z_in
+         fmin = (dR*dR+dZ*dZ)*fnorm
+         !PRINT *,nfe,rho_out,theta_out,R,R1,Z,Z1
+         !PRINT *,'===',dRdrho,dZdrho,dRdtheta,dZdtheta
+         !PRINT *,'===',dR,dZ,fmin
+         ! Compute Descent Direction
+         IF (fmin .gt. fmin0) THEN
+            fact_local = (2*fact_local)/3
+            rho_out = rho_min; theta_out = theta_min
+            ! REDIRECT ALONG STEEPEST-DESCENT PATH
+            IF (6*fact_local .lt. one) THEN
+               !xu(1) = ru1; xu(3) = zu1
+               !xs(1) = rs1; xs(3) = zs1
+               !dels =-(s*rs1 + u*zs1)/(rs1**2 + zs1**2)
+               !delu =-(x0(1)*xu(1) + x0(3)*xu(3))/(xu(1)**2 + xu(3)**2)
+               delrho =-(dR*dRdrho + dZ*dZdrho)/(dRdrho*dRdrho + dZdrho*dZdrho)
+               deltheta =-(dR*dRdtheta + dZ*dZdtheta)/(dRdtheta*dRdtheta + dZdtheta*dZdtheta)
+            END IF
+         ELSE
+            fmin0 = fmin
+            fact_local = one
+            rho_min = rho_out
+            theta_min = theta_out
+            !NEWTON STEP
+            tau = dRdtheta*dZdrho - dZdtheta * dRdrho
+            !dels = ( x0(1)*xu(3) - x0(3)*xu(1))/tau
+            !delu = (-x0(1)*xs(3) + x0(3)*xs(1))/tau
+            delrho = ( dR*dZdtheta - dZ*dRdtheta)/tau
+            deltheta = (-dR*dZdrho + dZ*dRdrho)/tau
+            IF (fmin .gt. 1.0D-03) THEN
+               delrho = delrho*0.5; deltheta = deltheta*0.5
+            END IF
+         END IF
+         !PRINT *,'===',delrho,deltheta
+         rho_out = MIN(MAX(rho_out + delrho*fact_local,1.0D-3),10.0)
+         theta_out = MOD(theta_out + deltheta*fact_local,pi2)
+      END DO
+      RETURN
+      END SUBROUTINE xyz2rhothetazeta
 
       SUBROUTINE set_currents(nextcur,extcur)
       INTEGER, INTENT(IN) :: nextcur
