@@ -27,11 +27,11 @@
       DOUBLE PRECISION, PRIVATE :: torsion_mean, torsion_max, torsion_min
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE, PRIVATE :: xm, xn, &
          rmnc, zmns, rmnc0, zmns0, t_kts
-      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE, PRIVATE :: rho_kts, &
-         theta_kts, zeta_kts
+      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE, PRIVATE :: &
+         zeta_kts,  rx_kts, ry_kts
       DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE, PRIVATE :: &
          curvature, torsion, dLength
-      TYPE(EZspline1_r8), DIMENSION(20) :: RHO_spl, THETA_spl, ZETA_spl
+      TYPE(EZspline1_r8), DIMENSION(20) :: ZETA_spl, RX_spl, RY_spl
       
 !-----------------------------------------------------------------------
 !     Module SUBROUTINES/FUNCTIONS
@@ -55,37 +55,37 @@
       ncoilgroups = ncoilgroups_in
       n_kts = n_in+1
       k_kts = nk_in-n_in
-      IF (ALLOCATED(rho_kts)) DEALLOCATE(rho_kts)
-      IF (ALLOCATED(theta_kts)) DEALLOCATE(theta_kts)
       IF (ALLOCATED(zeta_kts)) DEALLOCATE(zeta_kts)
       IF (ALLOCATED(t_kts)) DEALLOCATE(t_kts)
-      ALLOCATE(rho_kts(ncoilgroups,n_kts), theta_kts(ncoilgroups,n_kts), &
-            zeta_kts(ncoilgroups,n_kts), t_kts(n_kts))
-      rho_kts(:,1:n_in) = rho_in
-      theta_kts(:,1:n_in) = theta_in
+      IF (ALLOCATED(rx_kts)) DEALLOCATE(rx_kts)
+      IF (ALLOCATED(ry_kts)) DEALLOCATE(ry_kts)
+      ALLOCATE(zeta_kts(ncoilgroups,n_kts), t_kts(n_kts),&
+            rx_kts(ncoilgroups,n_kts), ry_kts(ncoilgroups,n_kts))
       zeta_kts(:,1:n_in) = zeta_in
-      rho_kts(:,n_kts) = rho_kts(:,1)
-      theta_kts(:,n_kts) = theta_kts(:,1)+pi2
+      rx_kts(:,1:n_in) = rho_in*COS(theta_in)
+      ry_kts(:,1:n_in) = rho_in*SIN(theta_in)
       zeta_kts(:,n_kts) = zeta_kts(:,1)
+      rx_kts(:,n_kts) = rx_kts(:,1)
+      ry_kts(:,n_kts) = ry_kts(:,1)
       FORALL(i=1:n_kts) t_kts(i) = DBLE(i-1)/DBLE(n_kts-1)
       ! Spline stuff
       DO i = 1, ncoilgroups
          ier = 0
-         IF (EZspline_allocated(RHO_spl(i))) CALL EZspline_free(RHO_spl(i),ier)
-         IF (EZspline_allocated(THETA_spl(i))) CALL EZspline_free(THETA_spl(i),ier)
          IF (EZspline_allocated(ZETA_spl(i))) CALL EZspline_free(ZETA_spl(i),ier)
-         CALL EZspline_init(RHO_spl(i),n_kts,bcs0,ier)
-         CALL EZspline_init(THETA_spl(i),n_kts,bcs0,ier)
+         IF (EZspline_allocated(RX_spl(i))) CALL EZspline_free(RX_spl(i),ier)
+         IF (EZspline_allocated(RY_spl(i))) CALL EZspline_free(RY_spl(i),ier)
          CALL EZspline_init(ZETA_spl(i),n_kts,bcs0,ier)
-         RHO_spl(i)%x1          = t_kts
-         THETA_spl(i)%x1        = t_kts
+         CALL EZspline_init(RX_spl(i),n_kts,bcs0,ier)
+         CALL EZspline_init(RY_spl(i),n_kts,bcs0,ier)
          ZETA_spl(i)%x1         = t_kts
-         RHO_spl(i)%isHermite   = 1
-         THETA_spl(i)%isHermite = 1
+         RX_spl(i)%x1           = t_kts
+         RY_spl(i)%x1           = t_kts
          ZETA_spl(i)%isHermite  = 1
-         CALL EZspline_setup(RHO_spl(i),rho_kts(i,:),ier,EXACT_DIM=.true.)
-         CALL EZspline_setup(THETA_spl(i),theta_kts(i,:),ier,EXACT_DIM=.true.)
+         RX_spl(i)%isHermite    = 1
+         RY_spl(i)%isHermite    = 1
          CALL EZspline_setup(ZETA_spl(i),zeta_kts(i,:),ier,EXACT_DIM=.true.)
+         CALL EZspline_setup(RX_spl(i),rx_kts(i,:),ier,EXACT_DIM=.true.)
+         CALL EZspline_setup(RY_spl(i),ry_kts(i,:),ier,EXACT_DIM=.true.)
       END DO
       RETURN
       END SUBROUTINE init_spline_coils
@@ -119,15 +119,59 @@
       RETURN
       END SUBROUTINE init_boundary_spline_coils
 
+      SUBROUTINE rhothetazeta2xyz(rho_in,theta_in,zeta_in,x_out,y_out,z_out)
+      IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(in) :: rho_in, theta_in, zeta_in
+      DOUBLE PRECISION, INTENT(out) :: x_out, y_out, z_out
+      INTEGER :: mn
+      DOUBLE PRECISION :: R, Z, RN, ZN, REDGE, ZEDGE, PHI, N
+      DOUBLE PRECISION :: rho_ext, whi, wlo, wloo, whio, cop, sip
+      R = zero; Z = zero
+      RN = zero; ZN = zero
+      REDGE = zero; ZEDGE = zero
+      ! Extrapolation stuff (like VMEC)
+      PHI = zeta_in/nfp
+      rho_ext = rho_in + 1.0
+      whi   = (rho_ext*rho_ext-1.0)*2.0
+      wlo   = (2.0 - whi)/2.0
+      wloo  = wlo*rho_ext
+      whio  = whi*rho_ext/SQRT(2.0)
+      DO mn = 1, mnmax
+         cop = cos(xm(mn)*theta_in+xn(mn)*zeta_in)
+         sip = sin(xm(mn)*theta_in+xn(mn)*zeta_in)
+         REDGE = REDGE + rmnc(mn)*cop
+         ZEDGE = ZEDGE + zmns(mn)*sip
+         IF ((xm(mn) == 0) .and. (xn(mn) == 0)) THEN
+            R =  R  + rmnc(mn)*cop
+         ELSEIF (MOD(int(xm(mn)),2)==0) THEN
+            R = R + rmnc(mn)*wlo*cop
+            Z = Z + zmns(mn)*wlo*sip
+         ELSE
+            R = R + rmnc(mn)*wloo*cop
+            Z = Z + zmns(mn)*wloo*sip
+         END IF
+         IF ((xm(mn)==1) .and. (xn(mn)==0)) THEN
+            ! Note we use odd here since xm==1
+            R    =  R + 4.0*whio*cop
+            Z    =  Z + 4.0*whio*sip
+         END IF
+      END DO
+      RN    = R - REDGE
+      ZN    = Z - ZEDGE
+      N     = SQRT(RN*RN+ZN*ZN)
+      RN    = RN/N; ZN = ZN/N
+      R     = (REDGE + rho_in*RN)
+      x_out = R*COS(PHI)
+      y_out = R*SIN(PHI)
+      z_out = ZEDGE + rho_in*ZN
+      RETURN
+      END SUBROUTINE rhothetazeta2xyz
+
       SUBROUTINE spline_to_coils(normal_sign)
       IMPLICIT NONE
       INTEGER, INTENT(in) :: normal_sign
       INTEGER :: i, j, mn, ns1, ier
-      DOUBLE PRECISION :: AX, AY, AZ, BX, BY, BZ, NX, NY, NZ, N, &
-            R, Z, RU, ZU, RV, ZV, rho, theta, zeta, cop, sip, l, &
-            X, Y, phi, RAX, ZAX, slope, ycept, &
-            smax, slo, shi, rholo, rhohi, whi, wlo, wloo, whio, &
-            REDGE, ZEDGE, rho_ext
+      DOUBLE PRECISION :: rho, theta, zeta, X, Y, Z, cop, sip, L, rx, ry
       DOUBLE PRECISION, DIMENSION(ns) :: Rc,Zc,Pc
       DOUBLE PRECISION, DIMENSION(3,ns) :: xnod_in, xnod_ss, xnod_bb
       CHARACTER(len=100) :: s_name
@@ -154,59 +198,18 @@
          DO j = 1, ns
             l = DBLE(j-1)/DBLE(ns-1)
             ier = 0
-            CALL EZspline_interp(RHO_spl(i),l,rho,ier)
-            CALL EZspline_interp(THETA_spl(i),l,theta,ier)
             CALL EZspline_interp(ZETA_spl(i),l,zeta,ier)
-            R = zero; Z = zero; RU = zero; ZU = zero; RV = zero; ZV=zero
-            RAX = zero; ZAX= zero; REDGE = zero; ZEDGE = zero
-            phi = zeta/nfp
-            ! Extrapolation stuff (like VMEC)
-            !smax = 2.0
-            !slo  = 1.0
-            !shi  = 2.0
-            !rholo = SQRT(slo)
-            !rhohi = SQRT(shi)
-            !rholo = 1.0
-            !rhohi = SQRT(2.0)
-            !whi   = (rho*rho-slo)*smax
-            !wlo   = (smax - whi)/smax
-            rho_ext = rho + 1.0
-            whi   = (rho_ext*rho_ext-1.0)*2.0
-            wlo   = (2.0 - whi)/2.0
-            !wloo  = wlo*rho/rholo
-            !whio  = whi*rho/rhohi
-            wloo  = wlo*rho_ext
-            whio  = whi*rho_ext/SQRT(2.0)
-            DO mn = 1, mnmax
-               cop = cos(xm(mn)*theta+xn(mn)*zeta)
-               sip = sin(xm(mn)*theta+xn(mn)*zeta)
-               REDGE = REDGE + rmnc(mn)*cop
-               ZEDGE = ZEDGE + zmns(mn)*sip
-               IF ((xm(mn) == 0) .and. (xn(mn) == 0)) THEN
-                  R =  R  + rmnc(mn)*cop
-               ELSEIF (MOD(int(xm(mn)),2)==0) THEN
-                  R = R + rmnc(mn)*wlo*cop
-                  Z = Z + zmns(mn)*wlo*sip
-               ELSE
-                  R = R + rmnc(mn)*wloo*cop
-                  Z = Z + zmns(mn)*wloo*sip
-               END IF
-               IF ((xm(mn)==1) .and. (xn(mn)==0)) THEN
-                  ! Note we use odd here since xm==1
-                  R    =  R + 4.0*whio*cop
-                  Z    =  Z + 4.0*whio*sip
-               END IF
-            END DO
-            RU    = R - REDGE
-            ZU    = Z - ZEDGE
-            N     = SQRT(RU*RU+ZU*ZU)
-            RU    = RU/N; ZU = ZU/N
-            Rc(j) = REDGE + rho*RU
-            Zc(j) = ZEDGE + rho*ZU
-            Pc(j) = phi
-            xnod_in(1,j) = Rc(j)*COS(phi)
-            xnod_in(2,j) = Rc(j)*SIN(phi)
-            xnod_in(3,j) = Zc(j)
+            CALL EZspline_interp(RX_spl(i),l,rx,ier)
+            CALL EZspline_interp(RY_spl(i),l,ry,ier)
+            rho = SQRT(rx*rx+ry*ry)
+            theta = ATAN2(ry,rx)
+            CALL rhothetazeta2xyz(rho,theta,zeta,X,Y,Z)
+            RC(j) = SQRT(X*X+Y*Y)
+            PC(j) = ATAN2(Y,X)
+            ZC(j) = Z
+            xnod_in(1,j) = X
+            xnod_in(2,j) = Y
+            xnod_in(3,j) = Z
          END DO
          xnod_in(:,ns) = xnod_in(:,1)
          ! Now create the first coil
@@ -240,6 +243,82 @@
       END DO
       RETURN
       END SUBROUTINE spline_to_coils
+
+      SUBROUTINE xyz2rhothetazeta(x_in,y_in,z_in,rho_out,theta_out,zeta_out)
+      IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(in) :: x_in, y_in, z_in
+      DOUBLE PRECISION, INTENT(inout) :: rho_out, theta_out, zeta_out
+      INTEGER :: nfe
+      DOUBLE PRECISION :: R_in, fnorm, fmin0, fmin, fact_local, &
+         rho_min, theta_min, X, Y, Z, R, X1, Y1, Z1, R1, delta, &
+         dRdrho, dZdrho, dRdtheta, dZdtheta, dR, dZ, tau, &
+         delrho, deltheta
+      zeta_out = ATAN2(y_in,x_in)*nfp
+      rho_out = MAX(rho_out,0.0)
+      R_in = SQRT(x_in*x_in + y_in*y_in)
+      fnorm = one / SQRT(R_in*R_in+Z_in*Z_in)
+      fmin0 = 1.0D+10
+      fmin  = 1.0D+10
+      delta = 1.0D-03
+      fact_local = one
+      rho_min = rho_out; theta_min = theta_out
+      nfe = 0
+      DO WHILE ((nfe .lt. 1000) .and. (fmin .gt. 1.0E-6))
+         nfe = nfe + 1
+         ! Compute R,Z
+         CALL rhothetazeta2xyz(rho_out,theta_out,zeta_out,X,Y,Z)
+         R = SQRT(X*X + Y*Y)
+         ! Compute dR/drho and dZ/drho
+         CALL rhothetazeta2xyz(rho_out+delta,theta_out,zeta_out,X1,Y1,Z1)
+         R1 = SQRT(X1*X1 + Y1*Y1)
+         dRdrho = (R1-R)/delta
+         dZdrho = (Z1-Z)/delta
+         ! Compute dR/dtheta and dZ/dtheta
+         CALL rhothetazeta2xyz(rho_out,theta_out+delta,zeta_out,X1,Y1,Z1)
+         R1 = SQRT(X1*X1 + Y1*Y1)
+         dRdtheta = (R1-R)/delta
+         dZdtheta = (Z1-Z)/delta
+         ! Compute Function minimization (R0,Z0)
+         dR = R - R_in
+         dZ = Z - Z_in
+         fmin = (dR*dR+dZ*dZ)*fnorm
+         !PRINT *,nfe,rho_out,theta_out,R,R1,Z,Z1
+         !PRINT *,'===',dRdrho,dZdrho,dRdtheta,dZdtheta
+         !PRINT *,'===',dR,dZ,fmin
+         ! Compute Descent Direction
+         IF (fmin .gt. fmin0) THEN
+            fact_local = (2*fact_local)/3
+            rho_out = rho_min; theta_out = theta_min
+            ! REDIRECT ALONG STEEPEST-DESCENT PATH
+            IF (6*fact_local .lt. one) THEN
+               !xu(1) = ru1; xu(3) = zu1
+               !xs(1) = rs1; xs(3) = zs1
+               !dels =-(s*rs1 + u*zs1)/(rs1**2 + zs1**2)
+               !delu =-(x0(1)*xu(1) + x0(3)*xu(3))/(xu(1)**2 + xu(3)**2)
+               delrho =-(dR*dRdrho + dZ*dZdrho)/(dRdrho*dRdrho + dZdrho*dZdrho)
+               deltheta =-(dR*dRdtheta + dZ*dZdtheta)/(dRdtheta*dRdtheta + dZdtheta*dZdtheta)
+            END IF
+         ELSE
+            fmin0 = fmin
+            fact_local = one
+            rho_min = rho_out
+            theta_min = theta_out
+            !NEWTON STEP
+            tau = dRdtheta*dZdrho - dZdtheta * dRdrho
+            !dels = ( x0(1)*xu(3) - x0(3)*xu(1))/tau
+            !delu = (-x0(1)*xs(3) + x0(3)*xs(1))/tau
+            delrho = ( dR*dZdtheta - dZ*dRdtheta)/tau
+            deltheta = (-dR*dZdrho + dZ*dRdrho)/tau
+            IF (fmin .gt. 1.0D-03) THEN
+               delrho = delrho*0.5; deltheta = deltheta*0.5
+            END IF
+         END IF
+         !PRINT *,'===',delrho,deltheta
+         rho_out = MIN(MAX(rho_out + delrho*fact_local,1.0D-3),10.0)
+         theta_out = MOD(theta_out + deltheta*fact_local,pi2)
+      END DO
+      RETURN
+      END SUBROUTINE xyz2rhothetazeta
 
       SUBROUTINE set_currents(nextcur,extcur)
       INTEGER, INTENT(IN) :: nextcur

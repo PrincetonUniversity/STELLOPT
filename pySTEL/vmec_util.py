@@ -4,6 +4,7 @@
 # Main routine
 if __name__=="__main__":
 	import sys
+	import os.path
 	from argparse import ArgumentParser
 	import numpy as np
 	import matplotlib.pyplot as pyplot
@@ -42,16 +43,21 @@ if __name__=="__main__":
 	if args.vmec_ext:
 		linput = False
 		loutput = False
-		try:
+		if os.path.isfile('input.'+args.vmec_ext):
 			vmec_input.read_indata('input.'+args.vmec_ext)
 			linput = True
-		except:
-			print(f'Could not file input file: input.{args.vmec_ext}')
+		else:
+			print(f'Could not find input file: input.{args.vmec_ext}')
+		#try:
+		#	vmec_input.read_indata('input.'+args.vmec_ext)
+		#	linput = True
+		#except:
+		#	print(f'Could not file input file: input.{args.vmec_ext}')
 		try:
 			vmec_wout.read_wout(args.vmec_ext)
 			loutput = True
 		except:
-			vmec_wout.read_wout(args.vmec_ext)
+			#vmec_wout.read_wout(args.vmec_ext)
 			print(f'Could not file input file: wout_{args.vmec_ext}.nc or wout.{args.vmec_ext}')
 		if not (linput or loutput): sys.exit(-1)
 		# Write rescaled indata

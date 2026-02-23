@@ -998,6 +998,64 @@ class COILSET():
 		for j in range(self.ngroups):
 			self.groups[j].flip()
 
+	def stellopt_knots(self,vmec_data,nknots=18):
+		"""Compute the STELLOPT coil knots parameterization.
+
+		This routine returns the STELLOPT coils knot information.
+
+		Parameters
+		----------
+		vmec_data : VMEC Object
+			VMEC object for determining rho, theta.
+		nknots : int (optional)
+			Number of knots in spline (default: 18)
+
+		Returns
+		-------
+		rho_kts : Numpy Array
+			Rho values of coils. [ncoils,nknots]
+		u_kts : Numpy Array
+			U values of coils. [ncoils,nknots]
+		zeta_kts : Numpy Array
+			Zeta values of coils. [ncoils,nknots]
+		"""
+		import numpy as np
+		from libstell.libstell import LIBSTELL
+		from scipy.interpolate import CubicSpline
+		rho_kts = np.zeros((self.ngroups,nknots))
+		u_kts = np.zeros((self.ngroups,nknots))
+		zeta_kts = np.zeros((self.ngroups,nknots))
+		s_new = np.linspace(0.0,1.0,nknots+1)
+		theta = np.zeros((self.groups[0].coils[0].npts,))
+		# Setup spine_coils
+		libs = LIBSTELL()
+		libs.spline_coils_init_boundary(vmec_data.mnmax,\
+			np.squeeze(vmec_data.xm), np.squeeze(vmec_data.xn), \
+			np.squeeze(vmec_data.rmnc[-1,:]),np.squeeze(vmec_data.zmns[-1,:]),\
+			np.squeeze(vmec_data.rmnc[0,:]),np.squeeze(vmec_data.zmns[0,:]))
+		for i in range(self.ngroups):
+			x = self.groups[i].coils[0].x
+			y = self.groups[i].coils[0].y
+			z = self.groups[i].coils[0].z
+			s = np.linspace(0.0,1.0,self.groups[i].coils[0].npts)
+			x[-1] = x[0]
+			y[-1] = y[0]
+			z[-1] = z[0]
+			cx = CubicSpline(s,x,bc_type='periodic')
+			cy = CubicSpline(s,y,bc_type='periodic')
+			cz = CubicSpline(s,z,bc_type='periodic')
+			rhot = 1.0; ut = 0.0; zetat = 0.0
+			xt = cx(s_new)
+			yt = cy(s_new)
+			zt = cz(s_new)
+			for j in range(nknots):
+				rhot,ut,zetat=libs.spline_coils_xyz2rhothetazeta(xt[j],yt[j],zt[j],rhot,ut)
+				rho_kts[i,j] = rhot
+				u_kts[i,j] = ut
+				zeta_kts[i,j] = zetat
+		return rho_kts,u_kts,zeta_kts
+
+
 class COILGROUP():
 	"""Class which defines a coil group
 
