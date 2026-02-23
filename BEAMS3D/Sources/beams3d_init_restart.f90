@@ -88,7 +88,8 @@
          IF (lverb) THEN
             WRITE(6,'(A,I8)') '   NPARTICLES_OLD: ', nparticles
             WRITE(6,'(A,I8)') '   NPOINC_OLD: ', npoinc
-            IF (lfusion_old) WRITE(6,'(A,I8)') '   FUSION RUN DETECTED'
+            IF (lfusion_old) WRITE(6,'(A)') '   FUSION RUN DETECTED'
+            IF (continue_index >= 0) WRITE(6,'(A,I8)') '   RESTARTING FROM INDEX: ', continue_index
          END IF
       END IF      
 #if defined(MPI_OPT)
@@ -164,7 +165,14 @@
          ldepo_old = .false.
          state_flag = 0
          IF (ANY(end_state==3)) ldepo_old = .true.
-         IF (lfusion_old) THEN
+         IF (continue_index>=0) THEN
+            WRITE(6,'(A)') '   User defined starting index! '
+            state_flag = 0 ! Only orbiting particles
+            start_dex = continue_index
+            ldepo_old = .false.
+            lfusion_old = .false.
+            WHERE(S_lines(1,:) >= s_fullorbit) lgc2fo_old = .FALSE.
+         ELSEIF (lfusion_old) THEN
             WRITE(6,'(A)') '   Detected old fusion run! '
             end_state = 0
             state_flag = 0
