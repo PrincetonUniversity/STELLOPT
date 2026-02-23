@@ -27,11 +27,11 @@
       DOUBLE PRECISION, PRIVATE :: torsion_mean, torsion_max, torsion_min
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE, PRIVATE :: xm, xn, &
          rmnc, zmns, rmnc0, zmns0, t_kts
-      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE, PRIVATE :: rho_kts, &
-         theta_kts, zeta_kts
+      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE, PRIVATE :: &
+         zeta_kts,  rx_kts, ry_kts
       DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE, PRIVATE :: &
          curvature, torsion, dLength
-      TYPE(EZspline1_r8), DIMENSION(20) :: RHO_spl, THETA_spl, ZETA_spl
+      TYPE(EZspline1_r8), DIMENSION(20) :: ZETA_spl, RX_spl, RY_spl
       
 !-----------------------------------------------------------------------
 !     Module SUBROUTINES/FUNCTIONS
@@ -55,37 +55,37 @@
       ncoilgroups = ncoilgroups_in
       n_kts = n_in+1
       k_kts = nk_in-n_in
-      IF (ALLOCATED(rho_kts)) DEALLOCATE(rho_kts)
-      IF (ALLOCATED(theta_kts)) DEALLOCATE(theta_kts)
       IF (ALLOCATED(zeta_kts)) DEALLOCATE(zeta_kts)
       IF (ALLOCATED(t_kts)) DEALLOCATE(t_kts)
-      ALLOCATE(rho_kts(ncoilgroups,n_kts), theta_kts(ncoilgroups,n_kts), &
-            zeta_kts(ncoilgroups,n_kts), t_kts(n_kts))
-      rho_kts(:,1:n_in) = rho_in
-      theta_kts(:,1:n_in) = theta_in
+      IF (ALLOCATED(rx_kts)) DEALLOCATE(rx_kts)
+      IF (ALLOCATED(ry_kts)) DEALLOCATE(ry_kts)
+      ALLOCATE(zeta_kts(ncoilgroups,n_kts), t_kts(n_kts),&
+            rx_kts(ncoilgroups,n_kts), ry_kts(ncoilgroups,n_kts))
       zeta_kts(:,1:n_in) = zeta_in
-      rho_kts(:,n_kts) = rho_kts(:,1)
-      theta_kts(:,n_kts) = theta_kts(:,1)+pi2
+      rx_kts(:,1:n_in) = rho_in*COS(theta_in)
+      ry_kts(:,1:n_in) = rho_in*SIN(theta_in)
       zeta_kts(:,n_kts) = zeta_kts(:,1)
+      rx_kts(:,n_kts) = rx_kts(:,1)
+      ry_kts(:,n_kts) = ry_kts(:,1)
       FORALL(i=1:n_kts) t_kts(i) = DBLE(i-1)/DBLE(n_kts-1)
       ! Spline stuff
       DO i = 1, ncoilgroups
          ier = 0
-         IF (EZspline_allocated(RHO_spl(i))) CALL EZspline_free(RHO_spl(i),ier)
-         IF (EZspline_allocated(THETA_spl(i))) CALL EZspline_free(THETA_spl(i),ier)
          IF (EZspline_allocated(ZETA_spl(i))) CALL EZspline_free(ZETA_spl(i),ier)
-         CALL EZspline_init(RHO_spl(i),n_kts,bcs0,ier)
-         CALL EZspline_init(THETA_spl(i),n_kts,bcs0,ier)
+         IF (EZspline_allocated(RX_spl(i))) CALL EZspline_free(RX_spl(i),ier)
+         IF (EZspline_allocated(RY_spl(i))) CALL EZspline_free(RY_spl(i),ier)
          CALL EZspline_init(ZETA_spl(i),n_kts,bcs0,ier)
-         RHO_spl(i)%x1          = t_kts
-         THETA_spl(i)%x1        = t_kts
+         CALL EZspline_init(RX_spl(i),n_kts,bcs0,ier)
+         CALL EZspline_init(RY_spl(i),n_kts,bcs0,ier)
          ZETA_spl(i)%x1         = t_kts
-         RHO_spl(i)%isHermite   = 1
-         THETA_spl(i)%isHermite = 1
+         RX_spl(i)%x1           = t_kts
+         RY_spl(i)%x1           = t_kts
          ZETA_spl(i)%isHermite  = 1
-         CALL EZspline_setup(RHO_spl(i),rho_kts(i,:),ier,EXACT_DIM=.true.)
-         CALL EZspline_setup(THETA_spl(i),theta_kts(i,:),ier,EXACT_DIM=.true.)
+         RX_spl(i)%isHermite    = 1
+         RY_spl(i)%isHermite    = 1
          CALL EZspline_setup(ZETA_spl(i),zeta_kts(i,:),ier,EXACT_DIM=.true.)
+         CALL EZspline_setup(RX_spl(i),rx_kts(i,:),ier,EXACT_DIM=.true.)
+         CALL EZspline_setup(RY_spl(i),ry_kts(i,:),ier,EXACT_DIM=.true.)
       END DO
       RETURN
       END SUBROUTINE init_spline_coils
@@ -171,7 +171,7 @@
       IMPLICIT NONE
       INTEGER, INTENT(in) :: normal_sign
       INTEGER :: i, j, mn, ns1, ier
-      DOUBLE PRECISION :: rho, theta, zeta, X, Y, Z, cop, sip, L
+      DOUBLE PRECISION :: rho, theta, zeta, X, Y, Z, cop, sip, L, rx, ry
       DOUBLE PRECISION, DIMENSION(ns) :: Rc,Zc,Pc
       DOUBLE PRECISION, DIMENSION(3,ns) :: xnod_in, xnod_ss, xnod_bb
       CHARACTER(len=100) :: s_name
@@ -198,9 +198,11 @@
          DO j = 1, ns
             l = DBLE(j-1)/DBLE(ns-1)
             ier = 0
-            CALL EZspline_interp(RHO_spl(i),l,rho,ier)
-            CALL EZspline_interp(THETA_spl(i),l,theta,ier)
             CALL EZspline_interp(ZETA_spl(i),l,zeta,ier)
+            CALL EZspline_interp(RX_spl(i),l,rx,ier)
+            CALL EZspline_interp(RY_spl(i),l,ry,ier)
+            rho = SQRT(rx*rx+ry*ry)
+            theta = ATAN2(ry,rx)
             CALL rhothetazeta2xyz(rho,theta,zeta,X,Y,Z)
             RC(j) = SQRT(X*X+Y*Y)
             PC(j) = ATAN2(Y,X)
