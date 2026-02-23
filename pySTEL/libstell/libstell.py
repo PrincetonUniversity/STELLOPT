@@ -1559,6 +1559,98 @@ class LIBSTELL():
 		# Return
 		return scalar_data | array_data | string_data
 
+	def spline_coils_init_boundary(self,mnmax_in,xm_in,xn_in,rmnc_in,zmns_in,rmnc_ax,zmns_ax):
+		"""Initialize boundary data for spline coil.
+
+		This routine wrappers init_boundary_spline_coils in 
+		LIBSTELL:spline_coils_mod.
+
+		Parameters
+		----------
+		mnmax_in : int
+			Number of modes in arrays.
+		xm_in : list
+			Poloidal Mode array
+		xn_in : list
+			Toroidal Mode array
+		rmnc_in : list
+			R cosine boundary Harmonics
+		zmns_in : list
+			Z sine boundary Harmonics
+		rmnc_ax : list
+			R cosine axis Harmonics
+		zmns_ax : list
+			Z sine axis Harmonics
+		"""
+		import ctypes as ct
+		module_name = self.s1+'spline_coils_mod_'+self.s2
+		boundinit = getattr(self.libstell,module_name+'_init_boundary_spline_coils'+self.s3)
+		boundinit.argtypes=[ct.POINTER(ct.c_int), \
+			ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), 
+			ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), 
+			ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), 
+			ct.c_long, ct.c_long, ct.c_long, ct.c_long, ct.c_long, ct.c_long]
+		boundinit.restype=None
+		mnmax_c = ct.c_int(mnmax_in)
+		xm_c = (ct.c_double * len(xm_in))(*xm_in)
+		xn_c = (ct.c_double * len(xn_in))(*xn_in)
+		rmnc_c = (ct.c_double * len(rmnc_in))(*rmnc_in)
+		zmns_c = (ct.c_double * len(zmns_in))(*zmns_in)
+		rmnc_ax_c = (ct.c_double * len(rmnc_ax))(*rmnc_ax)
+		zmns_ax_c = (ct.c_double * len(zmns_ax))(*zmns_ax)
+		boundinit(ct.byref(mnmax_c), xm_c, xn_c,rmnc_c, zmns_c, rmnc_ax_c, zmns_ax_c, \
+			len(xm_in), len(xn_in), len(rmnc_in), len(zmns_in), len(rmnc_ax), len(zmns_ax))
+		return
+
+	def spline_coils_xyz2rhothetazeta(self,x,y,z,rhog,thetag):
+		"""Computes the rho,theta,zeta coil value given X,Y,Z
+
+		This routine wrappers xyz2rhothetazeta in 
+		LIBSTELL:spline_coils_mod.
+
+		Parameters
+		----------
+		x : real
+			X value [m].
+		y : real
+			Y value [m].
+		z : real
+			Z value [m].
+		rhog : real
+			Rho value guess [m].
+		thetag : real
+			Theta value guess [rad].
+
+		Returns
+		-------
+		rho : real
+			Rho value [m].
+		theta : real
+			Theta value [rad].
+		zeta : real
+			Zeta value [rad].
+		"""
+
+		import ctypes as ct
+		module_name = self.s1+'spline_coils_mod_'+self.s2
+		xyz2rtz = getattr(self.libstell,module_name+'_xyz2rhothetazeta'+self.s3)
+		xyz2rtz.argtypes = [ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),ct.POINTER(ct.c_double), \
+			ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),ct.POINTER(ct.c_double)]
+		xyz2rtz.restype=None
+		zetag = 0.0
+		x_c = ct.c_double(x)
+		y_c = ct.c_double(y)
+		z_c = ct.c_double(z)
+		rho_c = ct.c_double(rhog)
+		theta_c = ct.c_double(thetag)
+		zeta_c = ct.c_double(zetag)
+		xyz2rtz(ct.byref(x_c),ct.byref(y_c),ct.byref(z_c), \
+			ct.byref(rho_c),ct.byref(theta_c),ct.byref(zeta_c))
+		rho = rho_c.value
+		theta = theta_c.value
+		zeta = zeta_c.value
+		return rho,theta,zeta
+
 	def get_module_vars(self,modName,booVar=None,booLen=None,\
 		intVar=None,intLen=None,realVar=None,realLen=None,\
 		charVar=None,charLen=None,\

@@ -1020,11 +1020,19 @@ class COILSET():
 			Zeta values of coils. [ncoils,nknots]
 		"""
 		import numpy as np
+		from libstell.libstell import LIBSTELL
 		from scipy.interpolate import CubicSpline
 		rho_kts = np.zeros((self.ngroups,nknots))
 		u_kts = np.zeros((self.ngroups,nknots))
 		zeta_kts = np.zeros((self.ngroups,nknots))
 		s_new = np.linspace(0.0,1.0,nknots+1)
+		theta = np.zeros((self.groups[0].coils[0].npts,))
+		# Setup spine_coils
+		libs = LIBSTELL()
+		libs.spline_coils_init_boundary(vmec_data.mnmax,\
+			np.squeeze(vmec_data.xm), np.squeeze(vmec_data.xn), \
+			np.squeeze(vmec_data.rmnc[-1,:]),np.squeeze(vmec_data.zmns[-1,:]),\
+			np.squeeze(vmec_data.rmnc[0,:]),np.squeeze(vmec_data.zmns[0,:]))
 		for i in range(self.ngroups):
 			x = self.groups[i].coils[0].x
 			y = self.groups[i].coils[0].y
@@ -1036,19 +1044,15 @@ class COILSET():
 			cx = CubicSpline(s,x,bc_type='periodic')
 			cy = CubicSpline(s,y,bc_type='periodic')
 			cz = CubicSpline(s,z,bc_type='periodic')
+			rhot = 1.0; ut = 0.0; zetat = 0.0
 			xt = cx(s_new)
 			yt = cy(s_new)
 			zt = cz(s_new)
-			rt = np.sqrt(xt*xt+yt*yt)
-			pt = np.atan2(yt,xt)
 			for j in range(nknots):
-				# This does not work because it uses the VMEC deffinition
-				# not the coil one.
-				#[br,bp,bz,s,u,info]=vmec_data.getBcyl(rt[j],pt[j],zt[j])
-				print(br,bp,bz,s,u,info)
-				rho_kts[i,j] = np.sqrt(s)
-				u_kts[i,j] = u
-				zeta_kts[i,j] = pt[j]*self.nfp
+				rhot,ut,zetat=libs.spline_coils_xyz2rhothetazeta(xt[j],yt[j],zt[j],rhot,ut)
+				rho_kts[i,j] = rhot
+				u_kts[i,j] = ut
+				zeta_kts[i,j] = zetat
 		return rho_kts,u_kts,zeta_kts
 
 
