@@ -186,7 +186,7 @@
       WRITE(iunit_out,outflt) 'VC_ADAPT_TOL',vc_adapt_tol
       WRITE(iunit_out,'(A)') '!---------- Magnetic Material Parameters ----------'
       WRITE(iunit_out,outint) 'MUMATERIAL_NITER',mumaterial_niter
-      WRITE(iunit_out,outint) 'MUMATERIAL_NNEIGHBOR',mumaterial_nneighbor
+      !WRITE(iunit_out,outint) 'MUMATERIAL_NNEIGHBOR',mumaterial_nneighbor
       WRITE(iunit_out,outflt) 'MUMATERIAL_TOL',mumaterial_tol
       WRITE(iunit_out,outflt) 'MUMATERIAL_LAMBDA',mumaterial_lambda
       WRITE(iunit_out,outflt) 'MUMATERIAL_LAMFACTOR',mumaterial_lamfactor
