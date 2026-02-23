@@ -2483,12 +2483,12 @@
          DO m = 0, bnorm_mmax
             DO n = -bnorm_nmax, bnorm_nmax
                IF (sigma_bnmns(n,m) < bigno) THEN
-                  WRITE(iunit,"(2(2X,A,I3.3,',',I3.3,A,1X,'=',1X,ES22.12E3))")&
+                  WRITE(iunit,"(2(2X,A,I4.3,',',I3.3,A,1X,'=',1X,ES22.12E3))")&
                   'TARGET_BNMNS(',n,m,')',target_bnmns(n,m),&
                   'SIGMA_BNMNS(',n,m,')',sigma_bnmns(n,m)
                END IF
                IF (sigma_bnmnc(n,m) < bigno) THEN
-                  WRITE(iunit,"(2(4X,A,I3.3,',',I3.3,A,1X,'=',1X,ES22.12E3))")&
+                  WRITE(iunit,"(2(4X,A,I4.3,',',I3.3,A,1X,'=',1X,ES22.12E3))")&
                   'TARGET_BNMNC(',n,m,')',target_bnmnc(n,m),&
                   'SIGMA_BNMNC(',n,m,')',sigma_bnmnc(n,m)
                END IF
