@@ -145,6 +145,7 @@ CONTAINS
       IF (myworkid == master) THEN
          numargs = 0
          i = 0
+         continue_index = -1
          arg1 = ''
          limas = .false.
          lverb = .true.
@@ -266,6 +267,10 @@ CONTAINS
                 i = i + 1
                 lrestart_particles = .true.
                 CALL GETCARG(i, restart_string, numargs)
+            case ("-restart_index")
+                i = i + 1
+                CALL GETCARG(i,args(i),numargs)
+                READ(args(i),*,IOSTAT=ier) continue_index
              case ("-continue")
                i = i + 1
                lcontinue_grid = .true.
@@ -362,6 +367,7 @@ CONTAINS
                 write(6, *) '     -mumat_skipiter:     Magnetic Materiasl skip iterations'
                 write(6, *) '     -mumat_writemagfile: Write out magnetization file.'
                 write(6, *) '     -restart ext:    BEAMS3D HDF5 extension for starting particles'
+                write(6, *) '     -restart_index i: Index to use when starting particles from previous run.'
                 write(6, *) '     -ascot_input ext: ASCOT5 HDF5 extension for starting particles from endstate'
                 write(6, *) '     -beamlet ext:    Beamlet file for beam geometry'
                 write(6, *) '     -beam_simple:    Monoenergetic BEAMS'
@@ -493,6 +499,8 @@ CONTAINS
       CALL MPI_BCAST(luser_init,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
       CALL MPI_BCAST(lreadascotendstate,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
+      CALL MPI_BCAST(continue_index,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)
       CALL MPI_BCAST(rminor_norm,1,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_main',ierr_mpi)

@@ -169,7 +169,7 @@ MODULE beams3d_runtime
                lvessel_beam, lascotfl, lrandomize, leqdsk, lhint, &
                lboxsim, limas, lfieldlines, lbeamdensity, lmumat, &
                luser_init, lreadascotendstate
-    INTEGER :: nextcur, nprocs_beams, ndt, ndt_max
+    INTEGER :: nextcur, nprocs_beams, ndt, ndt_max, continue_index
     INTEGER :: win_beam
     INTEGER, DIMENSION(:), POINTER :: beam
     REAL(rprec) :: dt, pi, invpi2, mu0, to3, dt_save, rminor_norm
