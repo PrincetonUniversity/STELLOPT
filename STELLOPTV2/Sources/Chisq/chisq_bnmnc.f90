@@ -55,7 +55,7 @@
                   ELSE
                         vals(mtargets)    = bmnc_normal_total(mn)
                   END IF
-                  IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3,2(2X,I3.3))') &
+                  IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3,2(2X,I5))') &
                         target(n,m),sigma(n,m),vals(mtargets),n,m
                END IF
             END DO
