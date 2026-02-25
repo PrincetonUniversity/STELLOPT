@@ -37,7 +37,8 @@
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
       numcoilgroups = COUNT(ANY(rho_coil_kts>0,DIM=2))
-      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'COIL_LENGTH ',numcoilgroups,5
+      k = COUNT(sigma<bigno)
+      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'COIL_LENGTH ',k,5
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VAL  COILGROUP  LENGTH'
       IF (niter >= 0) THEN
          DO k = 1, nigroup
