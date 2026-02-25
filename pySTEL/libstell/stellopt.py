@@ -451,6 +451,80 @@ class STELLOPT():
 		# Flatten ITER
 		self.ITER = self.ITER.flatten()
 
+	def compute_shape_gradient_boundary(self,vmec_data,derivatives_ind):
+		"""Compute the shape gradient
+
+		The subroutine computes the shape gradient assuming the user has
+		read in the Jacobian and provides a corresponding VMEC object.
+
+		Parameters
+		----------
+		vmec_data : VMEC Class Object
+			A vmec class object as defined in libstell.vmec
+		deriviative_ind : int
+			Index of term in Jacobian
+
+		Returns
+		-------
+		normal_tangential_decomposition : Numpy Array
+			Array of the normal tangential decomposition
+		shape_gradient_coefficients:
+			Numpy array of the shape gradient coefficients
+		"""
+		import numpy as np
+		# Get edge data
+		rmnc = np.zeros((1,vmec_data.mnmax))
+		zmns = np.zeros((1,vmec_data.mnmax))
+		rumns = np.zeros((1,vmec_data.mnmax))
+		zumnc = np.zeros((1,vmec_data.mnmax))
+		rmnc[0,:] = vmec_data.rmnc[-1,:]
+		zmns[0,:] = vmec_data.zmns[-1,:]
+		nfp  = vmec_data.nfp
+		xm   = np.squeeze(vmec_data.xm)
+		xn   = np.squeeze(vmec_data.xn)/nfp
+		mpol = max(xm)
+		ntor = max(abs(xn))
+		for mn in range(vmec_data.mnmax): 
+			rumns[:,mn] =-rmnc[0,mn]*xm[mn]
+			zumnc[:,mn] = zmns[0,mn]*xm[mn]
+		# Fourier transform
+		theta   = np.linspace([0],[2.0*np.pi],256,endpoint=False)
+		zeta    = np.linspace([0],[2.0*np.pi],256,endpoint=False)
+		R       = np.squeeze(vmec_data.cfunct(theta,zeta,rmnc,vmec_data.xm,vmec_data.xn))
+		R_deriv = np.squeeze(vmec_data.sfunct(theta,zeta,rumns,vmec_data.xm,vmec_data.xn))
+		Z_deriv = np.squeeze(vmec_data.cfunct(theta,zeta,rumnc,vmec_data.xm,vmec_data.xn))
+		# Comput the matrix
+		shape_matrix = np.zeros(((2 * ntor + 1) * 2 * mpol - 2 * ntor, (2 * ntor + 1) * mpol - ntor))
+		shape_dim = (2 * ntor + 1) * mpol - ntor
+		j = 0
+		for mm in range(mpol):
+			for nn in range(-ntor, ntor + 1):
+				if mm == 0 and nn < 0:
+					continue
+				else:
+					q = 0
+					for m in range(mpol):
+						for n in range(-ntor, ntor + 1):
+							if m == 0 and n < 0:
+								continue
+							else:
+								shape_matrix[j, q] = np.sum(np.cos(mm * Theta - nn * nfp * Zeta) * np.cos(
+									m * Theta - n * nfp * Zeta) * R * Z_deriv) / (N ** 2) * (4 * np.pi * np.pi)
+								shape_matrix[j + shape_dim, q] = (-1) * np.sum(np.sin(mm * Theta - nn * nfp * Zeta) * np.cos(
+									m * Theta - n * nfp * Zeta) * R * R_deriv) / (N ** 2) * (4 * np.pi * np.pi)
+								q += 1
+					j += 1
+		shape_matrix = np.delete(shape_matrix, (shape_dim), axis=0)
+		# Compute the gradient
+		pseudo_dim_one = 2 * (mpol * (2 * ntor + 1)) - ntor - ntor - 1
+		pseudo_dim_two = (mpol * (2 * ntor + 1)) - ntor
+		U, singular, V = np.linalg.svd(shape_matrix)
+		normal_tangential_decomposition = np.transpose(U) @ np.array(derivatives)[derivatives_ind]
+		DDD = np.zeros((pseudo_dim_two, pseudo_dim_one))
+		DDD[:len(singular), :len(singular)] = np.diag(1 / singular)
+		shape_gradient_coefficients = np.transpose(V) @ DDD @ np.transpose(U) @ np.array(derivatives)[derivatives_ind]
+		return normal_tangential_decomposition, shape_gradient_coefficients
+
 	def plot_stellopt_jacobian(self,target='all',ax=None):
 		"""Plot the Jacobian for a given target
 
