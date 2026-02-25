@@ -39,7 +39,10 @@ if __name__=="__main__":
     data={}
     if run_name == 'NCSX_s1':
         data['iota0'] = fieldlines.iota0
-
+        [_,iota,_] = fieldlines.calc_iota()
+        data['iota'] = iota.tolist()
+    if run_name == 'NCSX_s1_mumat':
+        data['iota0'] = fieldlines.iota0
         [_,iota,_] = fieldlines.calc_iota()
         data['iota'] = iota.tolist()
     if run_name == 'NCSX_s1_coll':
