@@ -968,6 +968,8 @@
       sigma_coil_distortion    = bigno
       distortion_curvature_min = 0.20D+00
       distortion_curvature_max = 0.65D+00
+      target_coil_torsion      = 0.0
+      sigma_coil_torsion       = bigno
       target_coil_total_torsion      = 0.0
       sigma_coil_total_torsion       = bigno
       target_coilcoil_distance = 0.0
