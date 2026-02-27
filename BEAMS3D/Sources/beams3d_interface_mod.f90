@@ -193,6 +193,7 @@ CONTAINS
          continue_grid_string = ''
          bbnbi_string = ''
          eqdsk_string = ''
+         mumaterial_magfile = ''
 
          ! First Handle the input arguments
          CALL GETCARG(1, arg1, numargs)
@@ -291,7 +292,7 @@ CONTAINS
             case ("-mumat_magfile")
                 i = i + 1
                 lmumat_readmag = .true.
-                CALL GETCARG(i, mumat_magfile, numargs)
+                CALL GETCARG(i, mumaterial_magfile, numargs)
             case ("-mumat_skipiter")
                 lmumat_skipiter = .true.
             case ("-mumat_writemagfile")
@@ -400,7 +401,7 @@ CONTAINS
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(mumat_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
-      CALL MPI_BCAST(mumat_magfile, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
+      CALL MPI_BCAST(mumaterial_magfile, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
       CALL MPI_BCAST(lvmec, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)

@@ -20,11 +20,12 @@
                                  win_BR4D, win_BPHI4D, win_BZ4D, &
                                  small, eps1, eps2, eps3
       USE beams3d_physics_mod, ONLY: beams3d_BCART
-      USE mumaterial_mod, ONLY: mumaterial_load, mumaterial_init_new, &
+      USE mumaterial_mod, ONLY: mumaterial_load, mumaterial_run, &
                                 mumaterial_info, mumaterial_getbmag_scalar,&
-                                mumaterial_setverb, mumaterial_setdefs, &
-                                mumaterial_free, mumaterial_setBfld, &
-                                mumaterial_readmag, mumaterial_writemag
+                                mumaterial_set_verb, mumaterial_set_user, &
+                                mumaterial_free,     mumaterial_set_Bfld, &
+                                mumaterial_magfile_read, mumaterial_magfile_write, &
+                                mumaterial_dealloc_out, mumaterial_alloc_out
       USE mpi_params  
       USE mpi_inc      
       USE mpi_sharmem
@@ -71,19 +72,18 @@
 #endif
 
       ! Set mumaterial verbosity
-      CALL mumaterial_setverb(lismaster)
+      CALL mumaterial_set_verb(lismaster)
       ! Free any used memory
       CALL mumaterial_free()
       ! Read the mu materials file
       CALL mumaterial_load(TRIM(mumat_string),istat, MPI_COMM_MUSHARE, MPI_COMM_MUMASTER, MPI_COMM_BEAMS)
       ! Set parameters
-      CALL mumaterial_setdefs(mumaterial_tol, mumaterial_niter, mumaterial_lambda, &
+      CALL mumaterial_set_user(mumaterial_tol, mumaterial_niter, mumaterial_lambda, &
                               mumaterial_lamfactor, mumaterial_lamthresh, & 
                               mumaterial_padfactor, mumaterial_convcheck) 
-      ! Load magnetization file
-      IF (lmumat_readmag) CALL mumaterial_readmag(TRIM(mumat_magfile))
+
       ! Set external field
-      CALL mumaterial_setBfld(beams3d_BCART)
+      CALL mumaterial_set_Bfld(beams3d_BCART)
       IF (lverb)          CALL mumaterial_info(6, lmumat_skipiter)
 
 #if defined(MPI_OPT)
@@ -138,10 +138,10 @@
       ! Initialize the magnetic calculation
       IF (.NOT.(lmumat_skipiter)) THEN
             offset = 0.0
-            CALL MUMATERIAL_INIT_NEW(offset)
+            CALL MUMATERIAL_RUN( offset, TRIM(mumaterial_magfile))
       END IF
       ! Output magnetics file
-      IF (lmumat_writemagfile) CALL mumaterial_writemag(id_string)
+      IF (lmumat_writemagfile) CALL mumaterial_magfile_write(id_string)
 
       ! Break up the Work
       CALL MPI_CALC_MYRANGE(MPI_COMM_BEAMS, 1, nr*nphi*nz, mystart, myend)
@@ -182,7 +182,7 @@
          WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Magnetic Field Calculation [',0,']%'
          CALL FLUSH(6)
       END IF
-      
+      CALL mumaterial_alloc_out()
       ! Get the fields
       DO s = mystart, myend
          i = MOD(s-1,nr)+1
@@ -235,6 +235,7 @@
       CALL mpidealloc(BPHI4D,win_BPHI4D)
       CALL mpidealloc(BZ4D,win_BZ4D)
       CALL mumaterial_free()
+      CALL mumaterial_dealloc_out()
 
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)

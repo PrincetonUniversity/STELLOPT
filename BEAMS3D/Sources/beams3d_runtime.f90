@@ -158,7 +158,7 @@ MODULE beams3d_runtime
 
 ! MUMAT_MODS 
     LOGICAL :: lmumat_readmag, lmumat_skipiter, lmumat_writemagfile
-    CHARACTER(256) :: mumat_magfile
+    CHARACTER(256) :: mumaterial_magfile
 
 ! DEVELOP
     LOGICAL :: lvmec, lpies, lspec, lcoil, lmgrid, &
