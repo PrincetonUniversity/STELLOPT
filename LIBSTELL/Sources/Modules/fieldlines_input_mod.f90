@@ -64,6 +64,7 @@
                                   r_hc, phi_hc, z_hc, num_hcp, delta_hc,&
                                   errorfield_amp,errorfield_phase, &
                                   mumaterial_tol, mumaterial_niter, &
+                                  mumaterial_nneighbor, &
                                   mumaterial_lambda, mumaterial_lamfactor, &
                                   mumaterial_lamthresh, mumaterial_padfactor, &
                                   mumaterial_convcheck
