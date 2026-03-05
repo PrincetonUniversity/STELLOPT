@@ -1431,9 +1431,9 @@ MODULE PENTA_INTERFACE_MOD
 
       IMPLICIT NONE
 
-      INTEGER(iknd) :: i, j, idx_ion_root, idx_electron_root, one, zero, idx_closest_to_zero
+      INTEGER(iknd) :: i, j, idx_ion_root, idx_electron_root, one, zero, idx_closest_to_zero, selected_idx
       REAL(rknd), DIMENSION(num_Er_test) :: Jr
-      REAL(rknd) :: temp_sum, electron_root, ion_root, integral, Er_closest_to_zero
+      REAL(rknd) :: temp_sum, electron_root, ion_root, integral, Er_closest_to_zero, best_neg
       LOGICAL :: cond_A, cond_B
 
       ! DEPRECATED: Maxwell construction criterium
@@ -1444,6 +1444,10 @@ MODULE PENTA_INTERFACE_MOD
       !    End Do
       !    Jr(i) = temp_sum - Gamma_e_vs_Er(i)
       ! End Do
+
+      IF( mod(num_roots,2) == 0) THEN
+         STOP 'ERROR: an even number of roots was found. This is non-physical...'
+      END IF
 
       IF(ALLOCATED(root_type)) DEALLOCATE(root_type)
       ALLOCATE(root_type(num_roots))
@@ -1489,6 +1493,35 @@ MODULE PENTA_INTERFACE_MOD
             root_type(1) = .TRUE. !possibility_2
          END IF
 
+      ELSE IF(num_roots>5) THEN
+         ! Use criterium: 
+         ! The ion_root can only be root idx 1,3,5,...,num_roots-2
+         ! Out of these entries, we pick the one where Er<0 and that is closest to Er=0; 
+         ! if out of the candidates there are no negative Er, then pick the positive one closest to Er=0.
+
+         selected_idx = -1
+         best_neg = -huge(1.0_rknd)
+
+         ! Loop over allowed indices: 1,3,5,...,num_roots-2
+         ! Note that Er_roots is already sorted
+         DO i = 1, num_roots-2, 2
+            IF (Er_roots(i) < 0.0) THEN
+               ! Keep the negative closest to zero
+               IF (Er_roots(i) > best_neg) THEN
+                  best_neg = Er_roots(i)
+                  selected_idx = i
+               END IF
+            END IF
+         END DO
+         
+         ! If no idx was selected is because all possible ion roots are positive... then choose smallest positive
+         IF (selected_idx < 0) THEN
+            selected_idx = 1
+         END IF
+
+         root_type(selected_idx) = .TRUE.
+
+
          ! ! DEPRECATED: Maxwell construction criterium
          ! electron_root = MAXVAL(Er_roots(1:num_roots),1)
          ! ion_root = MINVAL(Er_roots(1:num_roots),1)
@@ -1505,7 +1538,7 @@ MODULE PENTA_INTERFACE_MOD
          ! ENDIF
 
       ELSE
-         STOP 'ERROR: number of roots different than 1,3 or 5... how is it possible??'
+         STOP 'ERROR: number of roots different than 1,3,5,7,etc how is it possible??'
       END IF
 
 
