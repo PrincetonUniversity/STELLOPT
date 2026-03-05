@@ -1098,8 +1098,9 @@ class THRIFT():
         B2 = self.THRIFT_BSQAV[it_select,-1]
         pp = self.THRIFT_PPRIME[it_select,-1]
         LHS[-1,:] = 0.0 
-        LHS[-1,-1] = -phia*L_inductance/(VpEtapar) - B2*dt/(phia*ds) - mu0*pp*dt/phia
-        LHS[-1,-2] = B2*dt / (phia*ds)
+        LHS[-1,-1] = -phia*L_inductance/(VpEtapar) - 1.5*B2*dt/(phia*ds) - mu0*pp*dt/phia
+        LHS[-1,-2] = 2.0*B2*dt / (phia*ds)
+        LHS[-1,-3] = -0.5*B2*dt / (phia*ds)
         LHS = LHS.tocsr()
         
         # Solve
