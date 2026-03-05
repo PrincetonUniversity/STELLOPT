@@ -1033,7 +1033,7 @@ class THRIFT():
         
         it_select = np.argmin(np.abs(self.THRIFT_T-t_select))
         
-        J_SOURCE = self.THRIFT_JSOURCE[it_select,:]
+        J_SOURCE = self.THRIFT_JSOURCE[it_select,:].copy() # copy to avoid modifying original array
         if(edge_factor is not None):
             J_SOURCE[-1] *= edge_factor 
         
