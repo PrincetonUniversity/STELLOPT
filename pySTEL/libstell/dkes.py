@@ -642,7 +642,11 @@ class DKES:
             # Now plot the integrand
             ax2.plot(cmul_species[~idx_clipped], norm*integrand[~idx_clipped],'.-',color='black')
             ax2.plot(cmul_species[idx_clipped], norm*integrand[idx_clipped],'.-',color='red')
-            ax2.fill_between(cmul_species, norm*integrand, alpha=0.3, label=f'|Er|={np.abs(Er)} V/cm')          
+            ax2.fill_between(cmul_species, norm*integrand, alpha=0.3, label=f'|Er|={np.abs(Er):.2f} V/cm')  
+            #
+            #
+            idx = [np.argmin(np.abs(cmul_species-cmul)) for cmul in np.unique(self.cmul)]
+            ax2.plot(np.unique(self.cmul),norm*integrand[idx],'x',markersize=10,markeredgewidth=5)        
 
             if(log_interp_coeff): ax1.set_yscale('log')
             ax1.set_xscale('log')
@@ -651,7 +655,7 @@ class DKES:
             ax2.set_ylabel(f'{which_species} ||{which_coeff} K^{K_exp} L_{jval}||')
             ax1.grid()
             ax1.set_xlabel(r'$\nu/v$')
-            ax2.legend()
+            ax2.legend(loc='upper left')
             ax1.set_title(f'r/a={self.roa:.2f}')
             ax1.legend()
             #plt.show()
@@ -659,9 +663,13 @@ class DKES:
             _, ax4 = plt.figure(figsize=(10,8)), plt.gca()
             ax4.plot(Erv_species[~idx_clipped], norm*integrand[~idx_clipped],'.-',color='black')
             ax4.plot(Erv_species[idx_clipped], norm*integrand[idx_clipped],'.-',color='red')
+            #
+            idx = [np.argmin(np.abs(Erv_species-er)) for er in np.unique(self.efield)]
+            ax4.plot(np.unique(self.efield),norm*integrand[idx],'x',markersize=10,markeredgewidth=5)
             ax4.set_xlabel(r'$Er/v$')
             ax4.grid()
             ax4.set_xscale('log')
+            ax4.set_xlim(np.min(Erv_species),np.max(Erv_species))
             # plt.show()
 
             #now make a plot that shows how many integration points are out of range
