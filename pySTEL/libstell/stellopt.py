@@ -528,9 +528,6 @@ class STELLOPT():
 								q += 1
 					j += 1
 		shape_matrix = np.delete(shape_matrix, (shape_dim), axis=0)
-		#print(shape_matrix.shape)
-		#print(shape_matrix[0:10,0])
-		#print(shape_matrix[0,0:10])
 		# Filter the jacobian
 		derivatives = self.jac2d[derivatives_ind,:]
 		# First filter to just RBC/ZBS variables
@@ -550,14 +547,31 @@ class STELLOPT():
 		jac_xm = jac_xm[ltotal]
 		derivatives = derivatives[ltotal]
 		var   = var[ltotal]
-		# Now reorder RBC then ZBS
+		# This last part is a mess but seems to work
+		# Now reorder RBC then ZBS (and match VMEC indexing)
 		lrbc = np.array(['RBC' in temp for temp in var])
 		lzbs = np.array(['ZBS' in temp for temp in var])
-		jac_xn = np.concatenate((jac_xn[lrbc],jac_xn[lzbs]))
-		jac_xm = np.concatenate((jac_xm[lrbc],jac_xm[lzbs]))
-		var = np.concatenate((var[lrbc],var[lzbs]))
-		derivatives = np.concatenate((derivatives[lrbc],derivatives[lzbs]))
-		#print(var)
+		jac_rbc = derivatives[lrbc]
+		jac_zbs = derivatives[lzbs]
+		jac_xn_rbc = jac_xn[lrbc]
+		jac_xn_zbs = jac_xn[lzbs]
+		jac_xm_rbc = jac_xm[lrbc]
+		jac_xm_zbs = jac_xm[lzbs]
+		jac_mnmax_rbc = len(jac_rbc)
+		jac_mnmax_zbs = len(jac_zbs)
+		new_rbc = np.zeros_like(jac_rbc)
+		new_zbs = np.zeros_like(jac_zbs)
+		kr = 0; kz = 0
+		for mn in range(vmec_data.mnmax):
+			for jmn in range(jac_mnmax_rbc):
+				if jac_xn_rbc[jmn] == -xn[mn] and jac_xm_rbc[jmn] == xm[mn]:
+					new_rbc[kr] = jac_rbc[jmn]
+					kr = kr + 1
+			for jmn in range(jac_mnmax_zbs):
+				if jac_xn_zbs[jmn] == -xn[mn] and jac_xm_zbs[jmn] == xm[mn]:
+					new_zbs[kz] = jac_zbs[jmn]
+					kz = kz + 1
+		derivatives = np.concatenate((new_rbc,new_zbs))
 		#
 		#  We should probably pad array for any missing values
 		#
@@ -565,10 +579,6 @@ class STELLOPT():
 		pseudo_dim_one = 2 * (mpol * (2 * ntor + 1)) - ntor - ntor - 1
 		pseudo_dim_two = (mpol * (2 * ntor + 1)) - ntor
 		U, singular, V = np.linalg.svd(shape_matrix)
-		#print(U)
-		#print(singular)
-		#print(V)
-		print(derivatives)
 		normal_tangential_decomposition = np.transpose(U) @ derivatives
 		DDD = np.zeros((pseudo_dim_two, pseudo_dim_one))
 		DDD[:len(singular), :len(singular)] = np.diag(1 / singular)
