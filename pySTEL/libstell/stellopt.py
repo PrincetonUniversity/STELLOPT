@@ -472,6 +472,17 @@ class STELLOPT():
 			Numpy array of the shape gradient coefficients
 		"""
 		import numpy as np
+		# Check things
+		if not hasattr(self,'jac2d'):
+			print('ERROR: Must read jacobian file first before calling compute_shape_gradient_boundary.')
+			return None,None
+		if not hasattr(self,'var'):
+			try:
+				self.read_stellopt_varlabels()
+				print('WARNING: Var_lables was not read in first using var_labels in current directory.')
+			except:
+				print('ERROR: Must read var_labels before calling compute_shape_gradient_boundary.')
+				return None, None
 		# Get edge data
 		rmnc = np.zeros((1,vmec_data.mnmax))
 		zmns = np.zeros((1,vmec_data.mnmax))
@@ -482,18 +493,20 @@ class STELLOPT():
 		nfp  = vmec_data.nfp
 		xm   = np.squeeze(vmec_data.xm)
 		xn   = np.squeeze(vmec_data.xn)/nfp
-		mpol = max(xm)
-		ntor = max(abs(xn))
+		mpol = int(max(xm))+1
+		ntor = int(max(abs(xn)))
 		for mn in range(vmec_data.mnmax): 
 			rumns[:,mn] =-rmnc[0,mn]*xm[mn]
 			zumnc[:,mn] = zmns[0,mn]*xm[mn]
 		# Fourier transform
-		theta   = np.linspace([0],[2.0*np.pi],256,endpoint=False)
-		zeta    = np.linspace([0],[2.0*np.pi],256,endpoint=False)
-		R       = np.squeeze(vmec_data.cfunct(theta,zeta,rmnc,vmec_data.xm,vmec_data.xn))
-		R_deriv = np.squeeze(vmec_data.sfunct(theta,zeta,rumns,vmec_data.xm,vmec_data.xn))
-		Z_deriv = np.squeeze(vmec_data.cfunct(theta,zeta,rumnc,vmec_data.xm,vmec_data.xn))
+		N = 256
+		theta   = np.linspace([0],[2.0*np.pi],N,endpoint=False)
+		zeta    = np.linspace([0],[2.0*np.pi],N,endpoint=False)
+		R       = np.squeeze(vmec_data.cfunct(theta,zeta,rmnc,vmec_data.xm,vmec_data.xn)).T
+		R_deriv = np.squeeze(vmec_data.sfunct(theta,zeta,rumns,vmec_data.xm,vmec_data.xn)).T
+		Z_deriv = np.squeeze(vmec_data.cfunct(theta,zeta,zumnc,vmec_data.xm,vmec_data.xn)).T
 		# Comput the matrix
+		Theta, Zeta = np.meshgrid(theta, zeta)
 		shape_matrix = np.zeros(((2 * ntor + 1) * 2 * mpol - 2 * ntor, (2 * ntor + 1) * mpol - ntor))
 		shape_dim = (2 * ntor + 1) * mpol - ntor
 		j = 0
@@ -515,14 +528,51 @@ class STELLOPT():
 								q += 1
 					j += 1
 		shape_matrix = np.delete(shape_matrix, (shape_dim), axis=0)
+		#print(shape_matrix.shape)
+		#print(shape_matrix[0:10,0])
+		#print(shape_matrix[0,0:10])
+		# Filter the jacobian
+		derivatives = self.jac2d[derivatives_ind,:]
+		# First filter to just RBC/ZBS variables
+		lrbc = np.array(['RBC' in temp for temp in self.var])
+		lzbs = np.array(['ZBS' in temp for temp in self.var])
+		ltotal = np.logical_or(lrbc,lzbs)
+		derivatives = derivatives[ltotal]
+		var = np.array(self.var)
+		var   = var[ltotal]
+		# Now filter to modes of VMEC
+		jac_xn = np.array([int(temp[4:8]) for temp in var])
+		jac_xm = np.array([int(temp[9:13]) for temp in var])
+		lfiltn = np.logical_and(jac_xn>=-ntor,jac_xn<=ntor)
+		lfiltm = np.logical_and(jac_xm>=0,jac_xm<mpol)
+		ltotal = np.logical_and(lfiltm,lfiltn)
+		jac_xn = jac_xn[ltotal]
+		jac_xm = jac_xm[ltotal]
+		derivatives = derivatives[ltotal]
+		var   = var[ltotal]
+		# Now reorder RBC then ZBS
+		lrbc = np.array(['RBC' in temp for temp in var])
+		lzbs = np.array(['ZBS' in temp for temp in var])
+		jac_xn = np.concatenate((jac_xn[lrbc],jac_xn[lzbs]))
+		jac_xm = np.concatenate((jac_xm[lrbc],jac_xm[lzbs]))
+		var = np.concatenate((var[lrbc],var[lzbs]))
+		derivatives = np.concatenate((derivatives[lrbc],derivatives[lzbs]))
+		#print(var)
+		#
+		#  We should probably pad array for any missing values
+		#
 		# Compute the gradient
 		pseudo_dim_one = 2 * (mpol * (2 * ntor + 1)) - ntor - ntor - 1
 		pseudo_dim_two = (mpol * (2 * ntor + 1)) - ntor
 		U, singular, V = np.linalg.svd(shape_matrix)
-		normal_tangential_decomposition = np.transpose(U) @ np.array(derivatives)[derivatives_ind]
+		#print(U)
+		#print(singular)
+		#print(V)
+		print(derivatives)
+		normal_tangential_decomposition = np.transpose(U) @ derivatives
 		DDD = np.zeros((pseudo_dim_two, pseudo_dim_one))
 		DDD[:len(singular), :len(singular)] = np.diag(1 / singular)
-		shape_gradient_coefficients = np.transpose(V) @ DDD @ np.transpose(U) @ np.array(derivatives)[derivatives_ind]
+		shape_gradient_coefficients = np.transpose(V) @ DDD @ np.transpose(U) @ derivatives
 		return normal_tangential_decomposition, shape_gradient_coefficients
 
 	def plot_stellopt_jacobian(self,target='all',ax=None):
