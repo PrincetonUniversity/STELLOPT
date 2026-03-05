@@ -151,8 +151,7 @@ class PLASMA:
                 if(interpolating_func is None):
                     # check rho_vals are in the range [0,1]
                     if( np.any((rho_vals<0) | (rho_vals>1))):
-                        print('ERROR: rho_vals must be in the domain [0,1]')
-                        exit(0)
+                        print('WARNING: There are rho_vals outside the domain [0,1]')
                     interpolating_func = CubicSpline(rho_vals,n_vals)
                     
             case _:
@@ -198,8 +197,7 @@ class PLASMA:
                 if(interpolating_func is None):
                     # check rho_vals are in the range [0,1]
                     if( np.any((rho_vals<0) | (rho_vals>1))):
-                        print('ERROR: rho_vals must be in the domain [0,1]')
-                        exit(0)
+                        print('WARNING: There are rho_vals outside the domain [0,1]')
                     interpolating_func = CubicSpline(rho_vals,T_vals)
                     
             case _:
