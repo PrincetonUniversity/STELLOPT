@@ -40,42 +40,45 @@ SUBROUTINE fieldlines_init_restart
       CALL read_scalar_hdf5(fid,'nr',ier,INTVAR=nr)
       CALL read_scalar_hdf5(fid,'nphi',ier,INTVAR=nphi)
       CALL read_scalar_hdf5(fid,'nz',ier,INTVAR=nz)
-      ALLOCATE(raxis(nr),phiaxis(nphi),zaxis(nz))
+      CALL close_hdf5(fid,ier)
+   end if
+#endif
+#if defined(MPI_OPT)
+   CALL MPI_BCAST(nr,   1, MPI_INTEGER, master, MPI_COMM_FIELDLINES, ierr_mpi)
+   CALL MPI_BCAST(nphi, 1, MPI_INTEGER, master, MPI_COMM_FIELDLINES, ierr_mpi)
+   CALL MPI_BCAST(nz,   1, MPI_INTEGER, master, MPI_COMM_FIELDLINES, ierr_mpi)
+   CALL mpialloc(raxis,   nr,   myid_sharmem, master, MPI_COMM_SHARMEM, win_raxis)
+   CALL mpialloc(phiaxis, nphi, myid_sharmem, master, MPI_COMM_SHARMEM, win_phiaxis)
+   CALL mpialloc(zaxis,   nz,   myid_sharmem, master, MPI_COMM_SHARMEM, win_zaxis)
+
+   CALL mpialloc(B_R,   nr, nphi, nz, myid_sharmem, master, MPI_COMM_SHARMEM, win_B_R)
+   CALL mpialloc(B_PHI, nr, nphi, nz, myid_sharmem, master, MPI_COMM_SHARMEM, win_B_PHI)
+   CALL mpialloc(B_Z,   nr, nphi, nz, myid_sharmem, master, MPI_COMM_SHARMEM, win_B_Z)
+#endif
+#if defined(LHDF5)
+   IF (myworkid == master) THEN
+      CALL open_hdf5(TRIM(restart_string),fid,ier)
       CALL read_var_hdf5(fid,'raxis',nr,ier,DBLVAR=raxis)
       CALL read_var_hdf5(fid,'phiaxis',nphi,ier,DBLVAR=phiaxis)
       CALL read_var_hdf5(fid,'zaxis',nz,ier,DBLVAR=zaxis)
-      ALLOCATE(B_R(nr,nphi,nz),B_PHI(nr,nphi,nz),B_Z(nr,nphi,nz))
       CALL read_var_hdf5(fid,'B_R',nr,nphi,nz,ier,DBLVAR=B_R)
       CALL read_var_hdf5(fid,'B_PHI',nr,nphi,nz,ier,DBLVAR=B_PHI)
       CALL read_var_hdf5(fid,'B_Z',nr,nphi,nz,ier,DBLVAR=B_Z)
       CALL close_hdf5(fid,ier)
    END IF
 #endif
+
 #if defined(MPI_OPT)
-   CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
-   CALL MPI_BCAST(nr,1,MPI_INTEGER, master, MPI_COMM_FIELDLINES,ierr_mpi)
-   IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_restart',ierr_mpi)
-   CALL MPI_BCAST(nphi,1,MPI_INTEGER, master, MPI_COMM_FIELDLINES,ierr_mpi)
-   IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_restart',ierr_mpi)
-   CALL MPI_BCAST(nz,1,MPI_INTEGER, master, MPI_COMM_FIELDLINES,ierr_mpi)
-   IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_restart',ierr_mpi)
-   IF (myworkid /= master) THEN
-      ALLOCATE(raxis(nr), phiaxis(nphi), zaxis(nz), &
-         B_R(nr,nphi,nz), B_PHI(nr,nphi,nz), B_Z(nr,nphi,nz))
-   END IF
-   CALL MPI_BCAST(raxis,nr,MPI_REAL8, master, MPI_COMM_FIELDLINES,ierr_mpi)
-   IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_restart',ierr_mpi)
-   CALL MPI_BCAST(phiaxis,nphi,MPI_REAL8, master, MPI_COMM_FIELDLINES,ierr_mpi)
-   IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_restart',ierr_mpi)
-   CALL MPI_BCAST(zaxis,nz,MPI_REAL8, master, MPI_COMM_FIELDLINES,ierr_mpi)
-   IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_restart',ierr_mpi)
-   CALL MPI_BCAST(B_R,nr*nphi*nz,MPI_REAL8, master, MPI_COMM_FIELDLINES,ierr_mpi)
-   IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_restart',ierr_mpi)
-   CALL MPI_BCAST(B_PHI,nr*nphi*nz,MPI_REAL8, master, MPI_COMM_FIELDLINES,ierr_mpi)
-   IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_restart',ierr_mpi)
-   CALL MPI_BCAST(B_Z,nr*nphi*nz,MPI_REAL8, master, MPI_COMM_FIELDLINES,ierr_mpi)
-   IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_restart',ierr_mpi)
+   CALL MPI_WIN_SYNC(win_raxis, ierr_mpi)
+   CALL MPI_WIN_SYNC(win_phiaxis, ierr_mpi)
+   CALL MPI_WIN_SYNC(win_zaxis, ierr_mpi)
+   CALL MPI_WIN_SYNC(win_B_R, ierr_mpi)
+   CALL MPI_WIN_SYNC(win_B_PHI, ierr_mpi)
+   CALL MPI_WIN_SYNC(win_B_Z, ierr_mpi)
+
+   CALL MPI_BARRIER(MPI_COMM_SHARMEM, ierr_mpi)
 #endif
+
 
    rmin = MINVAL(raxis)
    rmax = MAXVAL(raxis)
@@ -94,4 +97,4 @@ SUBROUTINE fieldlines_init_restart
 !-----------------------------------------------------------------------
 !     End Subroutine
 !-----------------------------------------------------------------------
-END SUBROUTINE fieldlines_init_restart
+end subroutine fieldlines_init_restart
