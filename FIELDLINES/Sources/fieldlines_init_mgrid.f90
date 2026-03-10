@@ -108,8 +108,8 @@
          DO s = mystart, myend
             i = MOD(s-1,nr)+1
             j = MOD(s-1,nr*nphi)
-            j = FLOOR(REAL(j) / REAL(nr))+1
-            k = CEILING(REAL(s) / REAL(nr*nphi))
+            j = FLOOR(REAL(j, rprec) / REAL(nr, rprec)) + 1
+            k = CEILING(REAL(s, rprec) / REAL(nr*nphi, rprec))
             CALL mgrid_bcyl(raxis(i), phiaxis(j), zaxis(k), &
                             br, bphi, bz, ier)
             IF (ier /= 0) stop 'mgrid_bcyl error!'
