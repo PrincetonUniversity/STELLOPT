@@ -168,6 +168,10 @@
          IF (continue_index>=0) THEN
             WRITE(6,'(A)') '   User defined starting index! '
             state_flag = 0 ! Only orbiting particles
+            IF (continue_index > npoinc) THEN
+               WRITE(6,'(A)') ' Requested index is greater than npoinc. Choosing npoinc.'
+               continue_index = npoinc
+            END IF
             start_dex = continue_index
             ldepo_old = .false.
             lfusion_old = .false.
