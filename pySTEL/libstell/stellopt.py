@@ -615,12 +615,17 @@ class STELLOPT():
 		x_var = np.arange(len(self.var))
 		y_target = np.arange(len(self.targetnames))
 		if target == 'all':
-			hmesh=ax.pcolormesh(x_var,y_target,np.squeeze(self.jac2d),cmap='jet')
+			jac2d = np.log10(abs(self.jac2d))
+			#hmesh=ax.pcolormesh(x_var,y_target,np.squeeze(self.jac2d),cmap='jet')
+			hmesh=ax.pcolormesh(x_var,y_target,np.squeeze(jac2d),cmap='jet')
 			ax.set_xticks(x_var, labels=self.var, fontsize=9)
+			ax.set_yticks(y_target, labels=self.targetnames, fontsize=9)
 			plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+			#plt.setp(ax.get_yticklabels(), rotation=0, ha="right", rotation_mode="anchor")
 			ax.set_xlabel('Targets (F)')
 			ax.set_ylabel('Variables (X)')
-			plt.colorbar(hmesh,label='DF/DX',ax=ax)
+			#plt.colorbar(hmesh,label='DF/DX',ax=ax)
+			plt.colorbar(hmesh,label='log10(DF/DX)',ax=ax)
 		else:
 			# Find indices of target names
 			dex = [n for n,s in enumerate(self.targetnames) if target.upper() in s.upper()]
