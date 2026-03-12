@@ -26,6 +26,11 @@ Installation Steps
     sudo apt-get install libhdf5-openmpi-dev
     sudo apt-get install hdf5-tools
     sudo apt-get install python3 pip
+    ######### FOR MANGO #############
+    sudo apt-get install libnlopt-dev
+    sudo apt-get install libnlopt-cxx-dev
+    sudo apt-get install libeigen3-dev
+    sudo apt-get install libgsl-dev
 
 3\. Setup your environment variables
 
@@ -36,4 +41,42 @@ Installation Steps
 General Notes
 -------------
 Some of the package names may change over time.
+
+The MANGO library is currently (12.03.2026) incompatible with the latest version of Petsc. The following `makefile.system-dependent` file modifications are suggested:
+
+    MANGO_HOST = debian
+    MANGO_PETSC_AVAILABLE = F
+    MANGO_HOPSPACK_AVAILABLE = F
+    MANGO_NLOPT_AVAILABLE = T
+    MANGO_GSL_AVAILABLE = T
+    MANGO_DAKOTA_AVAILABLE = F
+    MANGO_EIGEN_AVAILABLE = T
+    CC = mpicxx
+    FC = mpifort
+    CLINKER = $(CC)
+    FLINKER = $(FC)
+    EXTRA_C_COMPILE_FLAGS = -O2 
+    EXTRA_F_COMPILE_FLAGS = -ffree-line-length-none -O2
+    ifeq ($(MANGO_PETSC_AVAILABLE),T)
+      PETSC_DIR=/usr/lib/petscdir
+      PETSC_ARCH=petsc-real
+      include ${PETSC_DIR}/${PETSC_ARCH}/lib/petsc/conf/petscvariables
+      EXTRA_C_COMPILE_FLAGS += -I${PETSC_DIR}/${PETSC_ARCH}/include
+      CLINKER = $(CC)
+      FLINKER = $(CC)
+    else
+      CLINKER = $(CC)
+      FLINKER = $(FC)
+    endif
+    ifeq ($(MANGO_NLOPT_AVAILABLE),T)
+      EXTRA_LINK_FLAGS += -lnlopt
+    endif
+    ifeq ($(MANGO_GSL_AVAILABLE),T)
+      EXTRA_LINK_FLAGS += -lgsl -lgslcblas
+    endif
+    ifeq ($(MANGO_EIGEN_AVAILABLE),T)
+      EXTRA_C_COMPILE_FLAGS += -I/usr/include/eigen3
+    endif
+    EXTRA_C_LINK_FLAGS = $(EXTRA_LINK_FLAGS) -lgfortran
+    EXTRA_F_LINK_FLAGS = $(EXTRA_C_LINK_FLAGS) -lstdc++
 

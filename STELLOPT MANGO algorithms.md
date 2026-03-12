@@ -19,11 +19,10 @@ also in `BENCHMARKS/STELLOPT_TEST/MANGO`.
 To use the MANGO algorithms in STELLOPT, you must first build the MANGO library,
 following the [directions here](https://hiddensymmetries.github.io/mango/gettingStarted.html).
 
-Next, before compiling STELLOPT, use a text editor to
-open the `SHARE/make_*.inc` file for your system. Look for the section on MANGO,
-set `LMANGO = T`, and set `MANGO_DIR` appropriately.
-Now build STELLOPT following the [standard instructions here](STELLOPT Compilation).
-
+The STELLOPT build system will automatically detect MANGO if the environment
+variable `MANGO_PATH` is set at build time. You should check your corresponding
+`make_*.inc` file to check the the MANGO Options section is present. For details
+on building STELLOT check the [standard instructions here](STELLOPT Compilation).
 
 ## Selecting a MANGO algorithm
 ------------------------------

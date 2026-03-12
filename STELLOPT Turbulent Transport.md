@@ -36,6 +36,7 @@ table lists the available proxies
 | tem\_overlap | Trapped Electron Mode (TEM) proxy (feedback on curvature) |
 | tem\_bounce  | Trapped Electron Mode (TEM) proxy (feedback on curvature and magnetic well) |
 | tem\_bounce\_tau | Trapped Electron Mode (TEM) proxy (feedback on curv. and mag well. weighted) |
+| availenergy | Compute using available energy metric (external code). |
 | gene \|\| Runs the GENE code in linear serial mode (see next section) |
 | gene\_parallel \|\| Runs the GENE code in linear parallel mode (see next section) |
 
@@ -66,6 +67,20 @@ Note that the STELLOPT version of GIST only supports PEST coordinates.
 While the full version of the GIST input namelists can be read in,
 STELLOPT overrides many of the namelist parameters (for example S0 in
 the &SETUP namelist will be over-ridden by the values in S\_TXPORT).
+
+------------------------------------------------------------------------
+
+Compiling STELLOPT with Available Energy
+----------------------------
+
+The available energy code can be obtained [STELLOPT_AE](https://github.com/RalfMackenbach/STELLOPT_AE).
+This code implements the methods of [R.J.J. Mackenbach, J.H.E. Proll, and P. Helander Phys. Rev. Lett. 130, 239901 (2023)](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.128.175001).
+To compile with support for this metric follow the following steps.
+1.  Download the source from (https://github.com/RalfMackenbach/STELLOPT_AE).
+2.  Compile the code for your system.
+3.  Set the environment variable `AEOPT_PATH` to the path where `libtrapAE.a`
+    can be found. Check your `make_*.inc` for the Available Energy Options section.
+4.  Compile STELLOPT.
 
 ------------------------------------------------------------------------
 

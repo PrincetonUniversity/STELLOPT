@@ -74,6 +74,8 @@ to OS26.0 some warning appear.
     #sudo port install superlu +accelerate +gccXX
     sudo port install superlu_dist +accelerate +openmpi +gccXX
     sudo port install petsc +accelerate +openmpi +mumps +superlu_dist +fftw +gccXX (+hdf5 require parallel)
+    ############ MANGO ##############
+    sudo port install gsl
 
 5\. Now pull stellopt with the command 
 
