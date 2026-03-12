@@ -28,8 +28,9 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm, N_function_evaluations)
 !-----------------------------------------------------------------------
       USE mango_mod
       USE stellopt_mango_mod
-      USE stellopt_runtime, ONLY: opt_type, epsfcn, lcentered_differences, vars_min, vars_max
-      USE stellopt_vars, ONLY: nfunc_max, mango_bound_constraints
+      USE stellopt_runtime, ONLY: vars_min, vars_max
+      USE stellopt_vars, ONLY: mango_bound_constraints
+      USE stellopt_globals, ONLY: opt_type, epsfcn, lcentered_differences, nfunc_max
       USE mpi_params, ONLY: myid
 !-----------------------------------------------------------------------
 !     Local Variables
