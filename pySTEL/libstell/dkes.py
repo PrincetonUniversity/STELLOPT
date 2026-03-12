@@ -183,16 +183,25 @@ class DKES:
         if(which_coeff == 'D11_star'):
             yplot = self.D11_star
             var_name = r'$D_{11}^*~~[m^{-1}~T^{-2}]$'
+            yscale_log = True
         elif(which_coeff == 'D31_star'):
             yplot = self.D31_star
+            yscale_log = False
             var_name = r'$D_{31}^*$'
         elif(which_coeff == 'D31_over_D33_corrected'):
             D33_corrected = (2./3.)*self.Bsq/self.cmul - self.D33_star
             yplot = self.D31_star / D33_corrected
             var_name = r'$D_{31}^*\,\,/\,\,[(2/3)(\nu/v)^{-1}-D_{33}^*]$'
+            yscale_log = False
         elif(which_coeff == 'D33_star'):
             yplot = self.D33_star
             var_name = r'$D_{33}^*$'
+            yscale_log = False
+        elif(which_coeff == 'D11_plus_D31sq_over_D33_corrected'):
+            D33_corrected = (2./3.)*self.Bsq/self.cmul - self.D33_star
+            yplot = self.D11_star + self.D31_star**2 / D33_corrected
+            var_name = r'$D_{11}^*+[D_{31}^*]^2\,\,/\,\,[(2/3)(\nu/v)^{-1}-D_{33}^*]$'
+            yscale_log = True
         else:
             print('Coeff not found...')
             exit(1)
@@ -213,6 +222,7 @@ class DKES:
             ax.set_xlabel(r'$\nu/v\,\,[\text{m}^{-1}]$')
         ax.set_ylabel(var_name)
         ax.set_xscale('log')
+        if(yscale_log): ax.set_yscale('log')
         ax.set_title(f'r/a={self.roa:.2f}')
         ax.legend(fontsize=12)
         ax.grid()
