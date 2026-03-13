@@ -216,9 +216,9 @@ SUBROUTINE beams3d_read_neutdens(filename)
         pos_w = DOT_PRODUCT(pos,neut_dir_w)/neut_delta_w
 	
         ! Get indices
-        i = MAX(INT(pos_u*hri_u),1)
-        j = MAX(INT(pos_v*hri_v),1)
-        k = MAX(INT(pos_w*hri_w),1)
+        i = MIN(MAX(INT(pos_u*hri_u),1),n_u-1)
+        j = MIN(MAX(INT(pos_v*hri_v),1),n_v-1)
+        k = MIN(MAX(INT(pos_w*hri_w),1),n_w-1)
 
         ! Get position in [u,v,w]
         xparam = (pos_u - neut_grid_u(i)) * hri_u

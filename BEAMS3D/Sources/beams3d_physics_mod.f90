@@ -29,7 +29,7 @@ MODULE beams3d_physics_mod
                                ns_prof5, my_end, h1_prof, fact_crit_legacy, &
                                mycharge_int, mymass_int, mylife, mylife_end, reaction_dex, &
                                myenergy_keV, sigma_next, E_by_v, myqm, vlast, xlast, ylast, zlast, &
-                               reaction_count, myfreedex, is_active, neut_lines
+                               reaction_count, myfreedex, is_active, neut_lines, charge_lines, mass_lines
       USE beams3d_grid, ONLY: delta_t, MODB4D, OMEG4D, nomeg,&
                               phimax, TE4D, NE4D, TI4D, ZEFF4D, &
                               RHO4D, XRHO4D, YRHO4D, &
@@ -737,7 +737,7 @@ MODULE beams3d_physics_mod
          !     Local Variables
          !--------------------------------------------------------------
          INTEGER :: ier, i
-         DOUBLE PRECISION :: xav, yav, zav, vav, neutdens, vol, mtemp
+         DOUBLE PRECISION :: xav, yav, zav, vav, neutdens, vol, mtemp, vll
          TYPE(box_reaction) :: reaction_info 
 
          !--------------------------------------------------------------
@@ -760,9 +760,9 @@ MODULE beams3d_physics_mod
          mylife = mylife*exp(-neutdens*vol)
          IF (mylife<=mylife_end) THEN 
             ! Update particle
-            weight(myline) = weight(myline)/reaction_info%nproducts
             reaction_count(myline) = reaction_count(myline)+1
             reaction_info = reactions_db(reaction_dex)
+            weight(myline) = weight(myline)/reaction_info%nproducts
 
             mtemp = mass(myline)
             mymass_int = reaction_info%output_A(1)
@@ -784,10 +784,12 @@ MODULE beams3d_physics_mod
                weight(myfreedex) = weight(myline)
 
                mass(myfreedex) = reaction_info%output_A(i)*p_mass
+               mass_lines(0,myfreedex) = mass(myfreedex)
                charge(myfreedex) = reaction_info%output_Z(i)*e_charge
+               charge_lines(0,myfreedex) = charge(myfreedex)
                neut_lines(0, myfreedex)   = (charge(myfreedex)==0)
                Zatom(myfreedex) = Zatom(myline) ! Atomic Z doesn't change
-
+               beam(myfreedex) = mybeam
                ! Neglect internal energy release for now, which simplifies things
                R_lines(0,myfreedex)    = q(1)
                phi_lines(0,myfreedex)  = q(2)
@@ -795,12 +797,18 @@ MODULE beams3d_physics_mod
                vr_lines(0,myfreedex)   = q(4)
                vphi_lines(0,myfreedex) = q(5)
                vz_lines(0,myfreedex)   = q(6)
-               vll_lines(0,myfreedex) = vll_lines(mytdex,myline)
+               vll = vll_lines(mytdex, myline)
+               vll_lines(0,myfreedex) = vll
+               vll_start(myfreedex) = vll
+               t_end(myfreedex) = t_end(myline)
                moment_lines(0,myfreedex) = mass(myfreedex)/mtemp*moment_lines(mytdex,myline)
 
                ! Next free slot
                myfreedex = myfreedex + 1
             END DO
+            mass_lines(mytdex,myline) = mymass
+            charge_lines(mytdex,myline) = mycharge
+
             ! Reset for next reaction
             mylife = 1.0
             CALL RANDOM_NUMBER(mylife_end)
@@ -2454,7 +2462,6 @@ MODULE beams3d_physics_mod
          !     Begin Subroutine
          !--------------------------------------------------------------
 
-
          IF (TYPE==1) THEN
             vll = ABS(vll_start(myline))
             dt_temp = lendt_m/vll
@@ -2465,7 +2472,7 @@ MODULE beams3d_physics_mod
             ! Calc Velocity
             dt_temp = (pi2*mymass)/(mycharge*B*NSUB)
          END IF
-        
+
          ! Place bounds on dt
          dt_temp = MAX(dt_temp,1D-10)
          dt_temp = MIN(dt_temp,10D-8)
@@ -2475,7 +2482,7 @@ MODULE beams3d_physics_mod
 
          ! Calculate number of integration timesteps per output timestep
          ndt_max = CEILING(my_end/(dt_temp*NPOINC))
-          
+
          ! Adjust dt to match ndt_max
          dt_out = my_end/(ndt_max*NPOINC)
 
@@ -2516,9 +2523,9 @@ SUBROUTINE beams3d_reaction_sigma(q_int, m_int, E_kev, react_dex, sigma)
    !         react_dices   indices of allowed reactions       
    !         react_sigmas  cross-sections of allowed reactions
    !-----------------------------------------------------------------------
-   INTEGER :: i, j
+   INTEGER :: i, j, k
    TYPE(box_reaction) :: reaction_info
-   DOUBLE PRECISION :: sigma_total, prob
+   DOUBLE PRECISION :: sigma_total, prob, prob_num, prob_denom
    DOUBLE PRECISION, ALLOCATABLE :: react_sigmas(:)
    INTEGER, ALLOCATABLE :: react_dices(:)
    !-----------------------------------------------------------------------
@@ -2530,6 +2537,7 @@ SUBROUTINE beams3d_reaction_sigma(q_int, m_int, E_kev, react_dex, sigma)
    sigma_total = 0
    DO i = 1, n_reactions
      reaction_info = reactions_db(i)
+    ! IF (lverb) WRITE(6,'(4I0)') reaction_info%input_A, m_int, reaction_info%input_Z, q_int
      IF ((reaction_info%input_A==m_int) .AND.(reaction_info%input_Z==q_int)) THEN
         j = j + 1
         react_sigmas(j) = reaction_info%calc_sigma(E_kev)
@@ -2538,17 +2546,22 @@ SUBROUTINE beams3d_reaction_sigma(q_int, m_int, E_kev, react_dex, sigma)
      END IF
    END DO
 
-   ! Choose next reaction
+   ! Choose next reaction; default to k = j.
    CALL RANDOM_NUMBER(rand_prob)
-   react_dex = 0 ! Should be overwritten
+   k = j 
+   prob_denom = SUM(react_sigmas(1:j))
+   prob_num = 0.0d0
    DO i = 1, j
-     prob = SUM(react_sigmas(1:i))/SUM(react_sigmas(1:j))
+     prob_num = prob_num + react_sigmas(i)
+     prob = prob_num/prob_denom
+   !  IF (lverb) WRITE(6,'(I0,3ES10.3)') i,react_sigmas(i), prob, rand_prob
      IF (rand_prob <= prob) THEN
-        sigma = react_sigmas(i)
-        react_dex = react_dices(i)
-        EXIT
+      k = i
+      EXIT
      END IF
    END DO
+   sigma = react_sigmas(k)
+   react_dex = react_dices(k)
 
    DEALLOCATE(react_sigmas,react_dices)
    !-----------------------------------------------------------------------

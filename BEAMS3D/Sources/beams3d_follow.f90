@@ -149,7 +149,12 @@ SUBROUTINE beams3d_follow
     END IF
 
     ! Initialize the particles
+    j = 0
     DO i = mystart, myend
+      j = j+1
+      IF (lboxsim) THEN
+         IF (.NOT.is_active(i)) EXIT
+      END IF
        lneut = lbeam
        ltherm = .FALSE.
        q(1) = R_start(i)
@@ -163,6 +168,9 @@ SUBROUTINE beams3d_follow
        mycharge = charge(i)
        myZ = Zatom(i)
        mymass = mass(i)
+       IF (mymass.EQ.0.0d0) THEN
+         WRITE(6,'(I0,A,I0,A,I0,A,L)') myworkid, " MASS IS ZERO! i=", i, " j=", j, " is_active(i)=",is_active(i)
+       END IF
        E_by_v=mymass*0.5d-3/e_charge
        mybeam = Beam(i)
        moment = mu_start(i)
@@ -241,8 +249,11 @@ SUBROUTINE beams3d_follow
 
     ! Follow Trajectories
     IF (.not.ldepo) THEN
-      CALL beams3d_follow_gc
-      IF (rho_fullorbit < 100) CALL beams3d_follow_fo
+      IF (rho_fullorbit < 100) THEN 
+         CALL beams3d_follow_fo
+      ELSE
+         CALL beams3d_follow_gc
+      END IF
     END IF
 
     ! Fix U_lines
@@ -295,50 +306,50 @@ SUBROUTINE beams3d_follow
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!              Boxsim: remove unused particle slots
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    IF (lboxsim) THEN
-      ! Get starting write position
-      mynpart_active = COUNT(is_active(mystart:myend))
-      CALL MPI_COMM_SIZE(MPI_COMM_SHARMEM, nproc_sharmem, ierr_mpi)
-      ALLOCATE(npart_counts(nproc_sharmem))
-      CALL MPI_GATHER(mynpart_active, 1, MPI_INTEGER, npart_counts, 1, MPI_INTEGER, master, MPI_COMM_BEAMS, ierr_mpi)
-      IF (myworkid == master) THEN
-         ALLOCATE(mystart_proc(nprocs_beams))
-         mystart_proc(1) = 1
-         DO i = 2, nprocs_beams
-            mystart_proc(i) = mystart_proc(i-1) + npart_counts(i-1)
-         END DO
-         npart_global = SUM(npart_counts)
-      END IF
-      CALL MPI_SCATTER(mystart_proc, 1, MPI_INTEGER, mystart_save, 1, MPI_INTEGER, master, MPI_COMM_BEAMS, ierr_mpi)
-      IF (myworkid==master) DEALLOCATE(mystart_proc)
-      DEALLOCATE(npart_counts)
-      ! Now start squishing
-      i = mystart_save
-      myend_save = mystart_save+mynpart_active-1
-      DO j = mystart, myend
-         IF (is_active(j)) THEN
-            R_lines(:,i) = R_lines(:,j)
-            PHI_lines(:,i) = PHI_lines(:,j)
-            Z_lines(:,i) = Z_lines(:,j)
-            vll_lines(:,i) = vll_lines(:,j)
-            moment_lines(:,i) = moment_lines(:,j)
-            vr_lines(:,i) = vr_lines(:,j)
-            vphi_lines(:,i) = vphi_lines(:,j)
-            vz_lines(:,i) = vz_lines(:,j)
-            S_lines(:,i) = S_lines(:,j)
-            U_lines(:,i) = U_lines(:,j)
-            B_lines(:,i) = B_lines(:,j)
-            t_end(i) = t_end(j)
-            neut_lines(:,i) = neut_lines(:,j)
-            charge_lines(:,i) = charge_lines(:,j)
-            mass_lines(:,i) = mass_lines(:,j)
-            i = i + 1
-         ELSE 
-            EXIT
-         END IF
-      END DO
+   !  IF (lboxsim) THEN
+   !    ! Get starting write position
+   !    mynpart_active = COUNT(is_active(mystart:myend))
+   !    CALL MPI_COMM_SIZE(MPI_COMM_SHARMEM, nproc_sharmem, ierr_mpi)
+   !    ALLOCATE(npart_counts(nproc_sharmem))
+   !    CALL MPI_GATHER(mynpart_active, 1, MPI_INTEGER, npart_counts, 1, MPI_INTEGER, master, MPI_COMM_BEAMS, ierr_mpi)
+   !    ALLOCATE(mystart_proc(nprocs_beams))
+   !    IF (myworkid == master) THEN
+   !       mystart_proc(1) = 1
+   !       DO i = 2, nprocs_beams
+   !          mystart_proc(i) = mystart_proc(i-1) + npart_counts(i-1)
+   !       END DO
+   !       npart_global = SUM(npart_counts)
+   !    END IF
+   !    CALL MPI_SCATTER(mystart_proc, 1, MPI_INTEGER, mystart_save, 1, MPI_INTEGER, master, MPI_COMM_BEAMS, ierr_mpi)
+   !    IF (myworkid==master) DEALLOCATE(mystart_proc)
+   !    DEALLOCATE(npart_counts)
+   !    ! Now start squishing
+   !    i = mystart_save
+   !    myend_save = mystart_save+mynpart_active-1
+   !    DO j = mystart, myend
+   !       IF (is_active(j)) THEN
+   !          R_lines(:,i) = R_lines(:,j)
+   !          PHI_lines(:,i) = PHI_lines(:,j)
+   !          Z_lines(:,i) = Z_lines(:,j)
+   !          vll_lines(:,i) = vll_lines(:,j)
+   !          moment_lines(:,i) = moment_lines(:,j)
+   !          vr_lines(:,i) = vr_lines(:,j)
+   !          vphi_lines(:,i) = vphi_lines(:,j)
+   !          vz_lines(:,i) = vz_lines(:,j)
+   !          S_lines(:,i) = S_lines(:,j)
+   !          U_lines(:,i) = U_lines(:,j)
+   !          B_lines(:,i) = B_lines(:,j)
+   !          t_end(i) = t_end(j)
+   !          neut_lines(:,i) = neut_lines(:,j)
+   !          charge_lines(:,i) = charge_lines(:,j)
+   !          mass_lines(:,i) = mass_lines(:,j)
+   !          i = i + 1
+   !       ELSE 
+   !          EXIT
+   !       END IF
+   !    END DO
 
-    END IF
+   !  END IF
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,      'R_lines', DBLVAR=R_lines)
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,    'PHI_lines', DBLVAR=PHI_lines)

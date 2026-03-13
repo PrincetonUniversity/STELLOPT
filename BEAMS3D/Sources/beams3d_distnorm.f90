@@ -115,7 +115,7 @@
                    abs( (rt(3) - rt(2)) *(zt(4) - zt(2)) - (rt(4) - rt(2)) *(zt(3) - zt(2)))
 
          dvol = area*sum(rt)
-         dist5d_prof(:,i,j,k,:,:) = dist5d_prof(:,i,j,k,:,:)/dvol
+         IF (dvol.GT.0) dist5d_prof(:,i,j,k,:,:) = dist5d_prof(:,i,j,k,:,:)/dvol
       END DO
 
       IF (myworkid == master) THEN

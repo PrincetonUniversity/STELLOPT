@@ -168,7 +168,7 @@ MODULE beams3d_runtime
                lascot, lascot4, lfidasim, lfidasim_cyl, lsplit, &
                lvessel_beam, lascotfl, lrandomize, leqdsk, lhint, &
                lboxsim, limas, lfieldlines, lbeamdensity, lmumat, &
-               luser_init, lreadboxdens
+               luser_init, lread_boxdens, lread_mag
     INTEGER :: nextcur, nprocs_beams, ndt, ndt_max
     INTEGER :: win_beam
     INTEGER, DIMENSION(:), POINTER :: beam
@@ -187,7 +187,8 @@ MODULE beams3d_runtime
     CHARACTER(256) :: mgrid_string, coil_string, &
                       vessel_string, restart_string, &
                       continue_grid_string, bbnbi_string, &
-                      eqdsk_string, mumat_string, boxdens_string
+                      eqdsk_string, mumat_string, boxdens_string, &
+                      read_mag_string
 
     REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 5.00
 

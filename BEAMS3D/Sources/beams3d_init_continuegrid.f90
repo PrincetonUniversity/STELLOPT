@@ -44,7 +44,7 @@ SUBROUTINE beams3d_init_continuegrid
       tetemp,netemp,titemp,zetemp,pottemp, omegtemp, rminor
    INTEGER :: nrh,nzh,nph
    REAL(rprec) :: rmin_hint, rmax_hint, zmin_hint, zmax_hint, &
-      pmax_hint, pres_max
+      pmax_hint, pres_max, pmin_hint
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -65,7 +65,7 @@ SUBROUTINE beams3d_init_continuegrid
    ! Write info to screen
    IF (lverb) THEN
       betatot = 0
-      CALL get_beams3d_grid(nrh,nzh,nph,rmin_hint,rmax_hint,zmin_hint,zmax_hint,pmax_hint)
+      CALL get_beams3d_grid(nrh,nzh,nph,rmin_hint,rmax_hint,zmin_hint,zmax_hint,pmax_hint,pmin_hint)
       WRITE(6,'(A)')               '----- beams3d Information -----'
       WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R   = [',rmin_hint,',',rmax_hint,'];  NR:   ',nrh
       WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',0.0,',',pmax_hint,'];  NPHI: ',nph
@@ -101,6 +101,7 @@ SUBROUTINE beams3d_init_continuegrid
 
       ! Bfield
       CALL get_beams3d_gridB(i,j,k,brtemp,bptemp,bztemp,sflx,uflx)
+      !CALL get_beams3d_B(raxis_g(i),phiaxis(j),zaxis(k),brtemp,bptemp,bztemp)
       B_R(i,j,k) = brtemp
       B_PHI(i,j,k) = bptemp
       B_Z(i,j,k) = bztemp

@@ -645,12 +645,11 @@ CONTAINS
 !---------------------------------------------------------------------------
 !       ACTUAL TRIPLE-PROTON REACTIONS (H3+)
 !           1. H3+ + H2 -> H2+ + H       + (H2) 
-!           2. H3+ + H2 -> H+  + H2      + (H2)
+!           2. H3+ + H2 -> H+  + H2      + (H2) (unused)
 !           3. H3+ + H2 -> H   + H2      + (H2+)
-!           4. H3+ + H2 -> H+  + H  + H  + (H2)
-!           5. H3+ + H2 -> H+  + H+ + H  + (H2)
-!           6. H3+ + H2 -> H+  + H+ + H+ + (H2)
-!       System underdetermined: Assume sigma_5~0 and sigma_6~0 
+!           4. H3+ + H2 -> H+  + H  + H  + (H2) 
+!           5. H3+ + H2 -> H+  + H+ + H  + (H2) (unused)
+!           6. H3+ + H2 -> H+  + H+ + H+ + (H2) (unused)
 !---------------------------------------------------------------------------
 !---------------------------------------------------------------------------
     FUNCTION get_sigma_diss_H3plus_H2plus(E) result(sigma)
@@ -670,28 +669,9 @@ CONTAINS
         RETURN
     END FUNCTION get_sigma_diss_H3plus_H2plus
 
-
-
-    FUNCTION get_sigma_diss_H3plus_Hplus(E) result(sigma)
-        !-------------------------------------------------------------------
-        !    H3+ + H2 -> H+ + H2       + (H2) 
-        !       Input parameters
-        !           E       energy in keV
-        !       Output parameters
-        !           sigma   cross-section in m^-2
-        !-------------------------------------------------------------------
-        IMPLICIT NONE
-        DOUBLE PRECISION :: sigma
-        DOUBLE PRECISION, INTENT(in) :: E
-
-        sigma = get_sigma_18(E)-get_sigma_diss_H3plus_triple(E)
-
-        RETURN
-    END FUNCTION get_sigma_diss_H3plus_Hplus
-
     FUNCTION get_sigma_diss_H3plus_neut(E) result(sigma)
         !-------------------------------------------------------------------
-        !    H3+ + H2 -> H  + H2       + (H2+)
+        !    H3+ + H2 -> H2 + H       + (H2+) 
         !       Input parameters
         !           E       energy in keV
         !       Output parameters
@@ -701,11 +681,29 @@ CONTAINS
         DOUBLE PRECISION :: sigma
         DOUBLE PRECISION, INTENT(in) :: E
 
-        sigma = get_sigma_21(E)-get_sigma_18(E)+get_sigma_diss_H3plus_triple(E)
+        sigma = get_sigma_21(E)
 
         RETURN
     END FUNCTION get_sigma_diss_H3plus_neut
 
+
+
+    ! FUNCTION get_sigma_diss_H3plus_Hplus(E) result(sigma)
+    !     !-------------------------------------------------------------------
+    !     !    H3+ + H2 -> H+ + H2       + (H2) 
+    !     !       Input parameters
+    !     !           E       energy in keV
+    !     !       Output parameters
+    !     !           sigma   cross-section in m^-2
+    !     !-------------------------------------------------------------------
+    !     IMPLICIT NONE
+    !     DOUBLE PRECISION :: sigma
+    !     DOUBLE PRECISION, INTENT(in) :: E
+
+    !     sigma = get_sigma_18(E) - (get_sigma_20(E) - get_sigma_19(E))/2.0d0
+
+    !     RETURN
+    ! END FUNCTION get_sigma_diss_H3plus_Hplus
 
 
     FUNCTION get_sigma_diss_H3plus_triple(E) result(sigma)
@@ -720,7 +718,7 @@ CONTAINS
         DOUBLE PRECISION :: sigma
         DOUBLE PRECISION, INTENT(in) :: E
 
-        sigma = (get_sigma_18(E)+get_sigma_20(E)-get_sigma_19(E)-get_sigma_21(E))/3.0
+        sigma = (get_sigma_20(E)-get_sigma_19(E)-get_sigma_21(E))/2.0d0
 
         RETURN
     END FUNCTION get_sigma_diss_H3plus_triple

@@ -48,7 +48,7 @@ CONTAINS
         INTEGER :: unused = -10
 
         ! Initialize database
-        ALLOCATE(reactions_db(12))
+        ALLOCATE(reactions_db(11))
 
     !-------------------------------------------------------------------
     !   SINGLE PROTON
@@ -140,15 +140,15 @@ CONTAINS
     !-------------------------------------------------------------------
     !   TRIPLE PROTON
     !-------------------------------------------------------------------
-        ! Dissociation of H3+ forming H+ and H2
-        n_reactions = n_reactions + 1
-        reactions_db(n_reactions) = box_reaction( & 
-            name = "H3+ + H2 -> H+ + H2 + H2", &
-            nproducts = 2, &
-            input_Z = 1, input_A = 3, &
-            output_Z = [1, 2, unused], output_A = [1, 0, unused], &
-            enabled = .TRUE.)
-        reactions_db(n_reactions)%calc_sigma => get_sigma_diss_H3plus_Hplus
+        ! ! Dissociation of H3+ forming H+ and H2
+        ! n_reactions = n_reactions + 1
+        ! reactions_db(n_reactions) = box_reaction( & 
+        !     name = "H3+ + H2 -> H+ + H2 + H2", &
+        !     nproducts = 2, &
+        !     input_Z = 1, input_A = 3, &
+        !     output_Z = [1, 2, unused], output_A = [1, 0, unused], &
+        !     enabled = .TRUE.)
+        ! reactions_db(n_reactions)%calc_sigma => get_sigma_diss_H3plus_Hplus
 
         ! Dissociation of H3+ forming H2+ and H
         n_reactions = n_reactions + 1
@@ -156,7 +156,7 @@ CONTAINS
             name = "H3+ + H2 -> H2+ + H + H2", &
             nproducts = 2, &
             input_Z = 1, input_A = 3, &
-            output_Z = [2, 1, unused], output_A = [1, 0, unused], &
+            output_Z = [1, 0, unused], output_A = [2, 1, unused], &
             enabled = .TRUE.)
         reactions_db(n_reactions)%calc_sigma => get_sigma_diss_H3plus_H2plus
 
@@ -166,7 +166,7 @@ CONTAINS
             name = "H3+ + H2 -> H + H2 + H2+", &
             nproducts = 2, &
             input_Z = 1, input_A = 3, &
-            output_Z = [1, 2, unused], output_A = [0, 0, unused], &
+            output_Z = [0, 0, unused], output_A = [1, 2, unused], &
             enabled = .TRUE.)
         reactions_db(n_reactions)%calc_sigma => get_sigma_diss_H3plus_neut
 
@@ -176,7 +176,7 @@ CONTAINS
             name = "H3+ + (H2) -> H+ + H + H + H2", &
             nproducts = 3, &
             input_Z = 1, input_A = 3, &
-            output_Z = [1, 1, 1], output_A = [1, 0, 0], &
+            output_Z = [1, 0, 0], output_A = [1, 1, 1], &
             enabled = .TRUE.)
         reactions_db(n_reactions)%calc_sigma => get_sigma_diss_H3plus_triple
 

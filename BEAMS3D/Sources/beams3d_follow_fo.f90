@@ -46,7 +46,7 @@ SUBROUTINE beams3d_follow_fo
     !-----------------------------------------------------------------------
     IMPLICIT NONE
     INTEGER :: i, j
-    INTEGER :: ier, l, neqs_nag, itol, itask, &
+    INTEGER :: ier, l, neqs_nag, itol, itask, type, &
                istate, iopt, lrw, liw, mf, out, iunit
     INTEGER, ALLOCATABLE :: iwork(:), itemp(:,:)
     DOUBLE PRECISION, ALLOCATABLE :: w(:), q(:)
@@ -87,13 +87,21 @@ SUBROUTINE beams3d_follow_fo
        ! IC of every particle is recorded
        mytdex = 0
        IF (lbeam) mytdex = 2
-       myline = MAXLOC(B_lines(mytdex,mystart_save:myend_save),1)
+       IF (lboxsim) THEN
+         myline = MAXLOC(B_lines(mytdex,mystart_save:myfreedex-1),1)
+       ELSE
+         myline = MAXLOC(B_lines(mytdex,mystart_save:myend_save),1)
+       END IF
        q(1) = R_lines(mytdex,myline)
        q(2) = PHI_lines(mytdex,myline)
        q(3) = Z_lines(mytdex,myline)
        my_end = t_end(myline)
        CALL beams3d_calc_dt(2,q(1),q(2),q(3),dtmin)
-       myline = MINLOC(B_lines(mytdex,mystart_save:myend_save),1)
+       IF (lboxsim) THEN
+         myline = MINLOC(B_lines(mytdex,mystart_save:myfreedex-1),1)
+       ELSE
+         myline = MINLOC(B_lines(mytdex,mystart_save:myend_save),1)
+       END IF       
        q(1) = R_lines(mytdex,myline)
        q(2) = PHI_lines(mytdex,myline)
        q(3) = Z_lines(mytdex,myline)
@@ -154,8 +162,8 @@ SUBROUTINE beams3d_follow_fo
                     mymass_int = NINT(mass(l)/p_mass)
                     myenergy_keV = (energy/(e_charge*1.0E3))
                     mylife = 1.0
-		              IF (lverb) WRITE(6,'(A,F10.4,A,I0,A,I0)') '  Energy: ', myenergy_keV, ' Charge: ', mycharge_int, ' Mass: ', mymass_int
                     IF (lboxsim) THEN
+                     IF (lverb) WRITE(6,*) mass(l), mymass_int
                      CALL beams3d_reaction_sigma(mycharge_int, mymass_int, myenergy_keV, reaction_dex, sigma_next)
                      CALL RANDOM_NUMBER(mylife_end)
                     END IF
@@ -213,7 +221,6 @@ SUBROUTINE beams3d_follow_fo
                     energy = 0.5*mymass*vlast**2
                     myenergy_keV = (energy/(e_charge*1.0E3))
                     mylife = 1.0
-		              IF (lverb) WRITE(6,'(A,F10.4,A,I0,A,I0)') '  Energy: ', myenergy_keV, ' Charge: ', mycharge_int, ' Mass: ', mymass_int
                     IF (lboxsim) THEN
                      CALL beams3d_reaction_sigma(mycharge_int, mymass_int, myenergy_keV, reaction_dex, sigma_next)
                      CALL RANDOM_NUMBER(mylife_end)
@@ -307,7 +314,6 @@ SUBROUTINE beams3d_follow_fo
                     END IF 
                     energy = 0.5*mymass*vlast**2
                     myenergy_keV = (energy/(e_charge*1.0E3))
-		              IF (lverb) WRITE(6,'(A,F10.4,A,I0,A,I0)') '  Energy: ', myenergy_keV, ' Charge: ', mycharge_int, ' Mass: ', mymass_int
                     IF (lboxsim) THEN
                         CALL beams3d_reaction_sigma(mycharge_int, mymass_int, myenergy_keV, reaction_dex, sigma_next)
                         CALL RANDOM_NUMBER(mylife_end)
@@ -316,7 +322,12 @@ SUBROUTINE beams3d_follow_fo
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)
                     ! Now calc dt
-                    CALL beams3d_calc_dt(2,q(1),q(2),q(3),dt)
+                    IF (mycharge_int.EQ.0) THEN
+                     type = 1
+                    ELSE 
+                     type = 2
+                    END IF
+                    CALL beams3d_calc_dt(type,q(1),q(2),q(3),dt)
                     tf_nag = t_nag+dt
                     ndt = 1
                     ! Setup LSODE parameters

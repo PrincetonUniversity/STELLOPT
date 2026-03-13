@@ -29,7 +29,7 @@
                                win_dense, nsh_prof4, &
                                h1_prof,h2_prof, h3_prof, h4_prof, h5_prof, &
                                r_h, p_h, z_h, e_h, pi_h, win_end_state, &
-                               is_active, myfreedex, nbuffer
+                               is_active, myfreedex, nbuffer, mystart_save, myend_save
       USE fidasim_input_mod, ONLY: beams3d_write_fidasim
       USE wall_mod
       USE mpi_params
@@ -127,8 +127,14 @@
          IF (lverb) WRITE(6,'(A)') '   FILE:     input.' // TRIM(id_string)
          IF (lverb) WRITE(6,'(A)') '   RESTART GRID FILE: ' // TRIM(continue_grid_string)
          CALL read_beams3d_mag(TRIM(continue_grid_string),MPI_COMM_SHARMEM,ier)
+         CALL get_beams3d_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax,phimin)   
          phimin = 0
-         CALL get_beams3d_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)    
+      ELSE IF (lread_mag .and. lread_input) THEN
+         CALL read_beams3d_input('input.'//TRIM(id_string),ier)
+         IF (lverb) WRITE(6,'(A)') '   FILE:     input.' // TRIM(id_string)
+         IF (lverb) WRITE(6,'(A)') '   MAGNETIC FIELD FROM: ' // TRIM(read_mag_string)
+         CALL read_beams3d_mag(TRIM(read_mag_string),MPI_COMM_SHARMEM,ier)
+         CALL get_beams3d_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax,phimin)  
       ELSE IF (luser_init) THEN
          CALL read_beams3d_input('input.' // TRIM(id_string),ier)
          IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
@@ -440,12 +446,14 @@
       CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
 
       ! Put the vacuum field on the background grid
-      IF (lmgrid) THEN
-         CALL beams3d_init_mgrid
-      ELSE IF (lcoil) THEN
-         CALL beams3d_init_coil
-      ELSE IF (luser_init) THEN
-         CALL beams3d_init_user
+      IF (.not.lread_mag) THEN
+         IF (lmgrid) THEN
+            CALL beams3d_init_mgrid
+         ELSE IF (lcoil) THEN
+            CALL beams3d_init_coil
+         ELSE IF (luser_init) THEN
+            CALL beams3d_init_user
+         END IF
       END IF
 
       ! Put the plasma field on the background grid
@@ -469,20 +477,19 @@
          CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
          CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
          CALL beams3d_init_eqdsk
-      ELSE IF (lcontinue_grid) THEN
+      ELSE IF (lcontinue_grid.or.lread_mag) THEN
          CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
          CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
          CALL beams3d_init_continuegrid         
       END IF
 
       ! Adjust magnetic field for magnetic material
-      IF (lmumat) CALL beams3d_init_mumat
-
+      IF (lmumat.and.(.not.lread_mag)) CALL beams3d_init_mumat
       ! Adjust the torodial distribution function grid
       IF (.not.ldepo) ns_prof3 = MAX(ns_prof3,8*NINT(pi2/phimax)) ! Min 8 per field period
 
       ! Load and initialize the neutralizer neutral density grid
-      IF (lreadboxdens) CALL beams3d_read_neutdens(TRIM(boxdens_string))
+      IF (lread_boxdens) CALL beams3d_read_neutdens(TRIM(boxdens_string))
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!              Initialize Vessel (we need nbeams here)
@@ -509,7 +516,6 @@
       IF (lascot) THEN
          CALL beams3d_write_ascoth5('INIT')
       END IF
-
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!              GRID output
@@ -597,8 +603,9 @@
             offset_sharmem = offset_proc(nproc_sharmem)+npart_sharmem(nproc_sharmem)
          END IF
          ! myoffset current has offset in shared memory communicator
+         IF (.NOT.ALLOCATED(offset_proc)) ALLOCATE(offset_proc(1))
          CALL MPI_SCATTER(offset_proc, 1, MPI_INTEGER, myoffset, 1, MPI_INTEGER, master, MPI_COMM_SHARMEM, ierr_mpi)
-         IF (myid_sharmem == master) DEALLOCATE(offset_proc)
+         DEALLOCATE(offset_proc)
          DEALLOCATE(npart_sharmem)
          ! get offset of each shared memory communicator
          i = MPI_UNDEFINED
@@ -646,14 +653,11 @@
       IF (lboxsim) THEN
          ! Contiguous allocation
          ALLOCATE(is_active(nparticles))
-         i = myoffset+1
-         myfreedex = i+mynpart/nbuffer
-         is_active(i:myfreedex-1) = .TRUE.
-         is_active(myfreedex:i+mynpart-1) = .FALSE.
+         is_active = .FALSE.
       END IF
 
-      
       ! Initialize beams (define a distribution of directions and weights)
+      CALL MPI_CALC_MYRANGE(MPI_COMM_BEAMS, 1, nparticles, mystart_save, myend_save)
       IF (lbeam) THEN
          IF (.not. lsuzuki) CALL adas_load_tables(myid_sharmem, MPI_COMM_SHARMEM)
          IF (lbbnbi) THEN
@@ -723,7 +727,7 @@
       END IF
 
       IF ((lboxsim) .AND. (myid_sharmem == master)) lgc2fo_start(:)=.FALSE.
-      
+      IF (lboxsim) myfreedex = mystart + COUNT(is_active(mystart:myend))
       ! Duplicate particles if requested
       IF (duplicate_factor > 1) CALL beams3d_duplicate_part
 

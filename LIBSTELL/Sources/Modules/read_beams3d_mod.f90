@@ -66,7 +66,6 @@ CONTAINS
       LOGICAL :: lexist
       istat = 0
 
-
       ! MPI Stuff
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(comm_read,istat)
@@ -81,7 +80,6 @@ CONTAINS
          IF (mylocalid == 0) WRITE(6,*) " ERROR: Could not find file: "//TRIM(filename)
          RETURN
       END IF
-
       ! Read HDF5 File
 #if defined(LHDF5)
       IF (mylocalid == master) THEN
@@ -131,6 +129,7 @@ CONTAINS
 #endif
       ! Helpers
       CALL setup_beams3d_helpers
+      IF (mylocalid == master) WRITE(6,*) " Done"
 
       RETURN
 
@@ -146,10 +145,10 @@ CONTAINS
       RETURN
    END SUBROUTINE setup_beams3d_helpers
 
-   SUBROUTINE get_beams3d_grid(nr_out,nz_out,nphi_out,rmin_out,rmax_out,zmin_out,zmax_out,phimax_out)
+   SUBROUTINE get_beams3d_grid(nr_out,nz_out,nphi_out,rmin_out,rmax_out,zmin_out,zmax_out,phimax_out,phimin_out)
       IMPLICIT NONE
       INTEGER, INTENT(out) :: nr_out, nz_out, nphi_out
-      REAL(rprec), INTENT(out) :: rmin_out, rmax_out, zmin_out, zmax_out, phimax_out
+      REAL(rprec), INTENT(out) :: rmin_out, rmax_out, zmin_out, zmax_out, phimax_out, phimin_out
       nr_out = nr; nz_out= nz; nphi_out = nphi
       rmin_out = raxis(1); zmin_out = zaxis(1)
       rmax_out = raxis(nr); zmax_out = zaxis(nz)
