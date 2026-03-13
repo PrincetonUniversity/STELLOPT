@@ -262,6 +262,12 @@ test_fieldlines_full:
 	@cd $(FIELDLINES_TEST_DIR); ./compare.py --file NCSX_s1
 	@echo ""
 
+test_fieldlines_mumat:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xfieldlines -vmec NCSX_s1_mumat -coil coils.NCSX -vac -full -mumat ball_shifted.dat
+	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xfieldlines -vmec NCSX_s1_mumat -vac -coil coils.NCSX -vac -full  -mumat ball_shifted.dat
+	@cd $(FIELDLINES_TEST_DIR); ./compare.py --file NCSX_s1_mumat
+	@echo ""
+
 test_fieldlines_backflow: FIELDLINES_TEST/fieldlines_NCSX_s1.h5
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll -coil coils.NCSX -vac -vessel NCSX_wall_trimesh.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114 -backflow
 	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll -vac -coil coils.NCSX -vac -vessel NCSX_wall_trimesh.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114 -backflow
