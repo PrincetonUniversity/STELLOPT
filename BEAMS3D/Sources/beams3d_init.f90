@@ -592,21 +592,18 @@
          CALL MPI_COMM_SIZE(MPI_COMM_SHARMEM, nproc_sharmem, ierr_mpi)
          CALL MPI_CALC_MYRANGE(MPI_COMM_BEAMS, 1, nparticles, mystart, myend)
          mynpart = myend-mystart+1
-         ALLOCATE(npart_sharmem(nproc_sharmem))
+         ALLOCATE(npart_sharmem(nproc_sharmem),offset_proc(nproc_sharmem))
          CALL MPI_GATHER(mynpart, 1, MPI_INTEGER, npart_sharmem, 1, MPI_INTEGER, master, MPI_COMM_SHARMEM, ierr_mpi)
          if (myid_sharmem == master) THEN
-            ALLOCATE(offset_proc(nproc_sharmem))
             offset_proc(1) = 0
             DO i = 2, nproc_sharmem
                offset_proc(i) = offset_proc(i-1) + npart_sharmem(i-1)
             END DO
             offset_sharmem = offset_proc(nproc_sharmem)+npart_sharmem(nproc_sharmem)
          END IF
-         ! myoffset current has offset in shared memory communicator
-         IF (.NOT.ALLOCATED(offset_proc)) ALLOCATE(offset_proc(1))
+         ! myoffset currently has offset in shared memory communicator
          CALL MPI_SCATTER(offset_proc, 1, MPI_INTEGER, myoffset, 1, MPI_INTEGER, master, MPI_COMM_SHARMEM, ierr_mpi)
-         DEALLOCATE(offset_proc)
-         DEALLOCATE(npart_sharmem)
+         DEALLOCATE(offset_proc,npart_sharmem)
          ! get offset of each shared memory communicator
          i = MPI_UNDEFINED
          IF (myid_sharmem == master) i = 0
