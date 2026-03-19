@@ -29,7 +29,7 @@ MODULE beams3d_physics_mod
                                ns_prof5, my_end, h1_prof, fact_crit_legacy, &
                                mycharge_int, mymass_int, mylife, mylife_end, reaction_dex, &
                                myenergy_keV, sigma_next, E_by_v, myqm, vlast, xlast, ylast, zlast, &
-                               reaction_count, myfreedex, is_active, neut_lines, charge_lines, mass_lines
+                               reaction_count, myfreedex, is_active, neut_lines
       USE beams3d_grid, ONLY: delta_t, MODB4D, OMEG4D, nomeg,&
                               phimax, TE4D, NE4D, TI4D, ZEFF4D, &
                               RHO4D, XRHO4D, YRHO4D, &
@@ -782,12 +782,8 @@ MODULE beams3d_physics_mod
                is_active(myfreedex) = .TRUE.
                reaction_count(myfreedex) = 0
                weight(myfreedex) = weight(myline)
-
                mass(myfreedex) = reaction_info%output_A(i)*p_mass
-               mass_lines(0,myfreedex) = mass(myfreedex)
                charge(myfreedex) = reaction_info%output_Z(i)*e_charge
-               charge_lines(0,myfreedex) = charge(myfreedex)
-               neut_lines(0, myfreedex)   = (charge(myfreedex)==0)
                Zatom(myfreedex) = Zatom(myline) ! Atomic Z doesn't change
                beam(myfreedex) = mybeam
                ! Neglect internal energy release for now, which simplifies things
@@ -806,15 +802,12 @@ MODULE beams3d_physics_mod
                ! Next free slot
                myfreedex = myfreedex + 1
             END DO
-            mass_lines(mytdex,myline) = mymass
-            charge_lines(mytdex,myline) = mycharge
 
             ! Reset for next reaction
             mylife = 1.0
             CALL RANDOM_NUMBER(mylife_end)
             CALL beams3d_reaction_sigma(mycharge_int, mymass_int, myenergy_kev, reaction_dex, sigma_next)
          END IF 
-         
          RETURN ! Go back to out_beams3d_part
 
          !--------------------------------------------------------------

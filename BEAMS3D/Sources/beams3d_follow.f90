@@ -120,6 +120,10 @@ SUBROUTINE beams3d_follow
     vll_lines = 0.0; moment_lines = 0.0
     S_lines = 1.5; U_lines = 0.0; B_lines = -1.0
     t_last = 0.0
+    neut_lines = .TRUE.; 
+    IF (lboxsim) THEN
+      charge_lines = 0; mass_lines = 0; reaction_count = 0;
+    END IF
     R_lines(0, mystart:myend)      = R_start(mystart:myend)
     Z_lines(0, mystart:myend)      = Z_start(mystart:myend)
     PHI_lines(0, mystart:myend)    = phi_start(mystart:myend)

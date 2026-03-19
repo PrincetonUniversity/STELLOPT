@@ -68,7 +68,7 @@ SUBROUTINE beams3d_init_continuegrid
       CALL get_beams3d_grid(nrh,nzh,nph,rmin_hint,rmax_hint,zmin_hint,zmax_hint,pmax_hint,pmin_hint)
       WRITE(6,'(A)')               '----- beams3d Information -----'
       WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R   = [',rmin_hint,',',rmax_hint,'];  NR:   ',nrh
-      WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',0.0,',',pmax_hint,'];  NPHI: ',nph
+      WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',pmin_hint,',',pmax_hint,'];  NPHI: ',nph
       WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',zmin_hint,',',zmax_hint,'];  NZ:   ',nzh
    END IF
 

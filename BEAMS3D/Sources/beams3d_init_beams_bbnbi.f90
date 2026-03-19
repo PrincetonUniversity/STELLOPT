@@ -141,13 +141,6 @@
                ! Particles that can be taken
                n_from_beam = MIN(npart_beam_left, npart_proc - n_filled)
 
-               !k_beam_start = (ibeam-1)*nparticles_start+1
-               !k_beam_end = k_beam_start + nparticles_start - 1
-
-               !k1 = MAX(k_rank_start, k_beam_start)
-               !k2 = MIN(k_rank_end, k_beam_end)
-               !npart_proc = k2 - k1 + 1
-
                k1 = k_rank_start + n_filled ! if nfilled=0, start from obvious start
                k2 = k_rank_start + n_filled + n_from_beam - 1 ! 
                
