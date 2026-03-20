@@ -63,7 +63,7 @@ C-----------------------------------------------
       end if
 
       CALL init_nescoil_input
-      CALL read_nescoil_input_mod('input.'//TRIM(extension),
+      CALL read_nescoil_input_mod(TRIM(extension),
      1                             istat,.TRUE.)
       ! Try the old way
       IF (istat .ne. 0) THEN

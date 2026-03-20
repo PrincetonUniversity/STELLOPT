@@ -163,13 +163,15 @@
       INTEGER :: iunit, m, n, ntotal
       CHARACTER(LEN=1000) :: line
 
-
       ! Read namelist
       IF (filename /= 'IMAS') THEN
          istat=0
          iunit=12
          INQUIRE(FILE=TRIM(filename),EXIST=lexist)
-         IF (.not.lexist) stop 'Could not find input file'
+         IF (.not.lexist) THEN
+            istat = -1
+            RETURN
+         END IF
          CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
          IF (istat /= 0) THEN
             WRITE(6,'(A)') 'ERROR opening file: ',TRIM(filename)
@@ -208,21 +210,27 @@
       END IF
 
       ! Fix mf and nf
-      md = 0; nd = 0
+      !md = 0; nd = 0
       DO n = -NMAX_IN, NMAX_IN
          DO m = 0, MMAX_IN
             IF ((RBC_SURF(n,m) /= 0) .or. &
                 (ZBS_SURF(n,m) /= 0) .or. &
                 (RBC_PLASMA(n,m) /= 0) .or. &
-                (ZBS_PLASMA(n,m) /= 0)) THEN
+                (ZBS_PLASMA(n,m) /= 0) .or. &
+                (LBS_PLASMA(n,m) /= 0)) THEN
                md = MAX(m,md)
                nd = MAX(ABS(n),nd)
             END IF
          END DO
       END DO
+      md = MAX(md,2) ! Not sure why this is needed but it is
+      nd = MAX(nd,2) ! Not sure why this is needed but it is
       mnd   = (md + 1)*(2*nd + 1)
 
       IF (loutput) THEN
+         write (inesc, '(A)') '----- Fourier Dimensions -----'
+         write (inesc, '(A)') 'mf, nf, md, nd'
+         write (inesc,"(4i6)")  mf, nf, md, nd
          write (inesc, '(A)') '----- Plasma information from VMEC -----'
          write (inesc, '(A)') 'np, iota_edge, phip_edge, curpol'
          write (inesc,"(i6,3g25.16)")  np, iota_edge, phip_edge, curpol
@@ -253,6 +261,7 @@
       ALLOCATE(cr1(0:md,-nd:nd),cz1(0:md,-nd:nd),cl1(0:md,-nd:nd))
       ALLOCATE(cr2(0:md,-nd:nd),cz2(0:md,-nd:nd))
       ALLOCATE(cr3(0:md,-nd:nd),cz3(0:md,-nd:nd))
+      ALLOCATE(cf(0:md,-nd:nd),sf(0:md,-nd:nd))
 
       ! Setup boundary array
       cr = 0.0; cz = 0.0
@@ -304,14 +313,13 @@
          write (inesc, '(A)') '----- Coil Surface -----'
          write (inesc, '(A)') 'Number of fourier modes in table'
          write (inesc, *)  ntotal
-         write (inesc, '(A)') '----- Coil boundary fourier coefficients  -----'
+         write (inesc, '(A)') '----- Coil surface fourier coefficients -----'
          write (inesc, '(A)') '    m    n         R(m,n)         Z(m,n)'
          DO n = -NMAX_IN, NMAX_IN
             DO m = 0, MMAX_IN
-               IF ((RBC_PLASMA(n,m) /= 0) .or. &
-                   (ZBS_PLASMA(n,m) /= 0) .or. &
-                   (LBS_PLASMA(n,m) /= 0)) THEN
-                  write (inesc,"(2i4,4g20.10)") m, n, RBC_SURF, ZBS_SURF, 0.0, 0.0
+               IF ((RBC_SURF(n,m) /= 0) .or. &
+                   (ZBS_SURF(n,m) /= 0)) THEN
+                  write (inesc,"(2i4,4g20.10)") m, n, RBC_SURF(n,m), ZBS_SURF(n,m), 0.0, 0.0
                END IF
             END DO
          END DO
@@ -351,8 +359,8 @@
       WRITE(iunit_out,'(A)') '!---------- Plasma Surface Parameters ------------'
       WRITE(iunit_out,outint) 'NU1',nu1
       WRITE(iunit_out,outint) 'NV1',nv1
-      !WRITE(iunit_out,outint) 'MD',md
-      !WRITE(iunit_out,outint) 'ND',nd
+      WRITE(iunit_out,outint) 'MD',md
+      WRITE(iunit_out,outint) 'ND',nd
       WRITE(iunit_out,outint) 'NP',np
       WRITE(iunit_out,outflt) 'IOTA_EDGE',iota_edge
       WRITE(iunit_out,outflt) 'PHIP_EDGE',phip_edge
@@ -360,10 +368,10 @@
       WRITE(iunit_out,'(A)') '!---------- Potential Surface Parameters ------------'
       WRITE(iunit_out,outint) 'NU',nu
       WRITE(iunit_out,outint) 'NV',nv
-      !WRITE(iunit_out,outint) 'MF',mf
-      !WRITE(iunit_out,outint) 'NF',nf
-      WRITE(iunit_out,outint) 'CUT',cut
-      WRITE(iunit_out,outint) 'CUP',cup
+      WRITE(iunit_out,outint) 'MF',mf
+      WRITE(iunit_out,outint) 'NF',nf
+      WRITE(iunit_out,outflt) 'CUT',cut
+      WRITE(iunit_out,outflt) 'CUP',cup
       WRITE(iunit_out,outint) 'IBEX',ibex
       WRITE(iunit_out,'(A)') '!---------- Solver Parameters ------------'
       WRITE(iunit_out,outint) 'MSTRT',mstrt
@@ -380,23 +388,23 @@
       WRITE(iunit_out,outint) 'W_XERR',w_xerr
       WRITE(iunit_out,outint) 'W_SVD',w_svd
       WRITE(iunit_out,'(A)') '!---------- Equilibrium Surface Harmonics ------------'
-      DO m = 0, MMAX_IN
-         DO n = -NMAX_IN, NMAX_IN
-            IF ((rbc_plasma(n,m).ne.0) .or. (zbs_plasma(n,m).ne.0) .or. (lbs_plasma(n,m).ne.0)) THEN
+      DO m = 0, md
+         DO n = -nd, nd
+            IF ((cr1(m,n).ne.0) .or. (cz1(m,n).ne.0) .or. (cl1(m,n).ne.0)) THEN
                WRITE(iunit_out,'(3(A,I4.3,A,I3.3,A,ES22.12E3))') &
-                  '  RBC_PLASMA(',n,',',m,') = ',rbc_plasma(n,m), &
-                  '    ZBS_PLASMA(',n,',',m,') = ',zbs_plasma(n,m), &
-                  '    LBS_PLASMA(',n,',',m,') = ',lbs_plasma(n,m)
+                  '  RBC_PLASMA(',n,',',m,') = ',cr1(m,n), &
+                  '    ZBS_PLASMA(',n,',',m,') = ',cz1(m,n), &
+                  '    LBS_PLASMA(',n,',',m,') = ',cl1(m,n)
             END IF
          END DO
       END DO
       WRITE(iunit_out,'(A)') '!---------- Potential Surface Harmonics ------------'
-      DO m = 0, MMAX_IN
-         DO n = -NMAX_IN, NMAX_IN
-            IF ((rbc_surf(n,m).ne.0) .or. (zbs_surf(n,m).ne.0)) THEN
+      DO m = 0, md
+         DO n = -nd, nd
+            IF ((cr(m,n).ne.0) .or. (cz(m,n).ne.0)) THEN
                WRITE(iunit_out,'(2(A,I4.3,A,I3.3,A,ES22.12E3))') &
-                  '  RBC_SURF(',n,',',m,') = ',rbc_surf(n,m), &
-                  '    ZBS_SURF(',n,',',m,') = ',zbs_surf(n,m)
+                  '  RBC_SURF(',n,',',m,') = ',cr(m,n), &
+                  '    ZBS_SURF(',n,',',m,') = ',cz(m,n)
             END IF
          END DO
       END DO
