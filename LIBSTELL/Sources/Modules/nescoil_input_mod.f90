@@ -20,7 +20,7 @@
          ms1, ns1, cr1, cz1, cl1, iota_edge, &
          phip_edge, curpol, &
          cut, cup, ibex, &
-         cr2, cz2, cr3, cz3, cf, sf
+         cr2, cz2, cr3, cz3, cf, sf, inesc
       !USE outctrl, ONLY: w_psurf, w_csurf, w_bnuv, w_jsurf, w_xerr, w_svd
       !use SvdCtrl, ONLY: mstrt, mstep, mkeep, mdspw, curwt, trgwt
       !USE vmeshes, ONLY: nu, nv, nu1, nv1, npol, ntor, mf, nf, md, nd, &
@@ -154,12 +154,13 @@
       RETURN
       END SUBROUTINE init_nescoil_input
       
-      SUBROUTINE read_nescoil_input(filename, istat)
+      SUBROUTINE read_nescoil_input(filename, istat,loutput)
       IMPLICIT NONE
       CHARACTER(*), INTENT(in) :: filename
       INTEGER, INTENT(out) :: istat
+      LOGICAL, INTENT(in) :: loutput ! turns output on
       LOGICAL :: lexist
-      INTEGER :: iunit, m,n
+      INTEGER :: iunit, m, n, ntotal
       CHARACTER(LEN=1000) :: line
 
 
@@ -188,12 +189,23 @@
          CLOSE(iunit)
       END IF
 
+      IF (loutput) THEN
+         CALL safe_open(inesc, istat, 'nescout.'//TRIM(filename(7:)), 'unknown', 'formatted')
+         IF (istat .ne. 0) stop 'Error opening nescout file'
+      END IF
+
       ! Now handle NESCOIL variables
       nmax  = 3*nv*(nu+2)+1
       nuv   = nu*nv
       nuv1  = nu1*nv1
       nuvh  = nuv/2 + nu
       nuvh1 = nuv1/2 + nu1
+
+      IF (loutput) THEN
+         write(inesc, '(A)') '----- Grid Spatial Dimensions -----'
+         write(inesc, '(A)') 'nu, nv, nu1, nv1, npol, ntor'
+         write(inesc,"(6i6,l)")  nu, nv, nu1, nv1, npol, ntor, .FALSE.
+      END IF
 
       ! Fix mf and nf
       md = 0; nd = 0
@@ -209,6 +221,21 @@
          END DO
       END DO
       mnd   = (md + 1)*(2*nd + 1)
+
+      IF (loutput) THEN
+         write (inesc, '(A)') '----- Plasma information from VMEC -----'
+         write (inesc, '(A)') 'np, iota_edge, phip_edge, curpol'
+         write (inesc,"(i6,3g25.16)")  np, iota_edge, phip_edge, curpol
+         write (inesc, '(A)') '----- Current Controls -----'
+         write (inesc, '(A)') 'cut, cup, ibex'
+         write (inesc,"(2g25.16,i6)")  cut, cup, ibex
+         write (inesc, '(A)') '----- SVD controls -----'
+         write (inesc, '(A)') 'mstrt, mstep, mkeep, mdspw, curwt, trgwt'
+         write (inesc,"(4i6,2g25.16)")  mstrt,mstep,mkeep,mdspw,curwt,trgwt
+         write (inesc, '(A)') '----- Output controls -----'
+         write (inesc, '(A)') 'w_psurf, w_csurf, w_bnuv, w_jsurf, w_xerr, w_svd'
+         write (inesc,"(6i6)") w_psurf,w_csurf,w_bnuv,w_jsurf,w_xerr,w_svd
+      END IF
 
       ! Allocate fourier arrays
       IF (ALLOCATED(cr)) DEALLOCATE(cr)
@@ -255,6 +282,52 @@
       END DO
       cr1(0:ms1,0) = .5_rprec*cr1(0:ms1,0)
       cz1(0:ms1,0) = .5_rprec*cz1(0:ms1,0)
+
+      IF (loutput) THEN
+         ntotal = COUNT((RBC_PLASMA /= 0) .or. (ZBS_PLASMA /=0) .or. (LBS_PLASMA /=0))
+         write (inesc, '(A)') '----- Plasma Surface -----'
+         write (inesc, '(A)') 'Number of fourier modes in table'
+         write (inesc, *)  ntotal
+         write (inesc, '(A)') '----- Plasma boundary fourier coefficients  -----'
+         write (inesc, '(A)') '   m    n        R(m,n)     Z(m,n)    Lamda(m,n)'
+         DO n = -NMAX_IN, NMAX_IN
+            DO m = 0, MMAX_IN
+               IF ((RBC_PLASMA(n,m) /= 0) .or. &
+                   (ZBS_PLASMA(n,m) /= 0) .or. &
+                   (LBS_PLASMA(n,m) /= 0)) THEN
+                  write (inesc,"(2i4,6g20.10)") &
+                     m, n, RBC_PLASMA(n,m), ZBS_PLASMA(n,m), LBS_PLASMA(n,m),0.0,0.0,0.0
+               END IF
+            END DO
+         END DO
+         ntotal = COUNT((RBC_SURF /= 0) .or. (ZBS_SURF/=0))
+         write (inesc, '(A)') '----- Coil Surface -----'
+         write (inesc, '(A)') 'Number of fourier modes in table'
+         write (inesc, *)  ntotal
+         write (inesc, '(A)') '----- Coil boundary fourier coefficients  -----'
+         write (inesc, '(A)') '    m    n         R(m,n)         Z(m,n)'
+         DO n = -NMAX_IN, NMAX_IN
+            DO m = 0, MMAX_IN
+               IF ((RBC_PLASMA(n,m) /= 0) .or. &
+                   (ZBS_PLASMA(n,m) /= 0) .or. &
+                   (LBS_PLASMA(n,m) /= 0)) THEN
+                  write (inesc,"(2i4,4g20.10)") m, n, RBC_SURF, ZBS_SURF, 0.0, 0.0
+               END IF
+            END DO
+         END DO
+         write (inesc, '(A)') '----- end inputs, begin outputs. Nescoil Version 1.0 -----'
+         if( (ABS(cup) == 0) .and. (ABS(cut) == 0) ) then
+            write (inesc, '(A)') '----- Solving for Saddle coils -----'
+         else
+            write (inesc, '(A)') '----- Solving for Modular coils -----'
+         endif
+
+         if( ibex .eq. 0 ) then
+            write (inesc, '(A)') '----- No background coils used -----'
+         else
+            write (inesc, '(A)') '----- Background coils used -----'
+         endif
+      END IF
 
       RETURN
 

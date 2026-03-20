@@ -167,7 +167,8 @@ nesopt.o : \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
 
 NumParams.o : \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/nescoil_globals.o
 
 OutCtrl.o : \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
