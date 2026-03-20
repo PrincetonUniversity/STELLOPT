@@ -32,11 +32,11 @@
       INTEGER :: i, k, ier, npoinc_extract, npoinc_save, state_flag
       LOGICAL, DIMENSION(:), ALLOCATABLE :: lgc2fo_old
       INTEGER, DIMENSION(:), ALLOCATABLE :: beam2, start_dex
-      REAL(rprec) :: vpartmax, B_help, version_old, s_fullorbit
+      REAL(rprec) :: vpartmax, B_help, version_old, s_fullorbit, t_end_val
       REAL(rprec), DIMENSION(3) :: q
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: mass2, charge2, Zatom2, &
                                                 weight2
-      INTEGER :: MPI_COMM_LOCAL
+      INTEGER :: MPI_COMM_LOCAL, mystart_local, myend_local
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -168,6 +168,10 @@
          IF (continue_index>=0) THEN
             WRITE(6,'(A)') '   User defined starting index! '
             state_flag = 0 ! Only orbiting particles
+            IF (continue_index > npoinc) THEN
+               WRITE(6,'(A)') ' Requested index is greater than npoinc. Choosing npoinc.'
+               continue_index = npoinc
+            END IF
             start_dex = continue_index
             ldepo_old = .false.
             lfusion_old = .false.
@@ -241,6 +245,8 @@
       IF (myworkid == master) THEN
          ! Now fill the arrays downselecting for non-shinethrough particles
          k = 1
+         t_end_val = MAXVAL(t_end_in)
+         t_end = t_end_val
          DO i = 1, nparticles
             IF (end_state(i) /= state_flag) CYCLE
             npoinc_extract = start_dex(i)
@@ -258,10 +264,6 @@
             beam(k)     = beam2(i)
             weight(k)   = weight2(i)
             lgc2fo_start(k) = lgc2fo_old(i)
-            t_end(k)    = MAXVAL(t_end_in)
-            q = (/R_start(k), phi_start(k), Z_start(k)/)
-            CALL beams3d_MODB(q,B_help)
-            mu_start(k) = mu_start(k)/B_help
             k = k + 1
          END DO
          DEALLOCATE(R_lines, Z_lines, PHI_lines, vll_lines, moment_lines, &
@@ -275,9 +277,10 @@
          IF (lverb) THEN
             WRITE(6,'(A,I6)') '   # of Beams: ', nbeams
          END IF
-         end_state = 0
       END IF
       CALL MPI_BCAST(nparticles, 1, MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(nbeams,     1, MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(npoinc,     1, MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL mpidealloc(end_state, win_end_state)
       CALL mpialloc(end_state, nparticles, myid_sharmem, 0, MPI_COMM_SHARMEM, win_end_state)
       IF (myworkid == master) end_state = 0
@@ -305,6 +308,17 @@
          CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
       END IF
 #endif
+
+      CALL MPI_COMM_DUP( MPI_COMM_SHARMEM, MPI_COMM_LOCAL, ierr_mpi)
+      CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL, 1, nparticles, mystart_local, myend_local)
+      IF (lverb) WRITE(6,'(A)') '   Recomputing magnetic moment'
+      CALL FLUSH(6)
+      DO i = mystart_local, myend_local
+         q = (/R_start(i), phi_start(i), Z_start(i)/)
+         CALL beams3d_MODB(q,B_help)
+         mu_start(i) = mu_start(i)/B_help
+      END DO
+      CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
 
       RETURN
 
