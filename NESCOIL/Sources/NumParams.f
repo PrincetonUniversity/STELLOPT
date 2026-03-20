@@ -1,7 +1,8 @@
       module NumParams
       use stel_kinds
+      use nescoil_globals, ONLY: inesc
       integer, parameter :: inescoil = 6
-      integer :: inesc = inescoil
+      !integer :: inesc = inescoil
       real(rprec), parameter :: zero = 0,
      1    one = 1, two = 2, three = 3,
      2    pi = 3.14159265358979312_dp, pi2 = two*pi, mu0 = 4.0e-7_dp*pi

@@ -16,6 +16,9 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
 
+      ! Moved from num
+      INTEGER :: inesc = 6
+
       ! Moved from Outctrl
       INTEGER :: w_psurf, w_csurf, w_bnuv, w_jsurf, w_xerr, w_svd
 
