@@ -207,6 +207,21 @@ read_nescoil_input.o : \
       Vbnorm.o \
       NumParams.o
 
+nescoil_input_mod.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
+      OutCtrl.o \
+      SvdCtrl.o \
+      Vmeshes.o \
+      Vprecal1.o \
+      Vvacuum1.o \
+      Vvacuum2.o \
+      Vvacuum3.o \
+      Vprecal1.o \
+      Vvacuum4.o \
+      Vvacuum5.o \
+      Vvacuum6.o 
+
 solver_nescoil.o : \
       Vmeshes.o \
       NumParams.o \
