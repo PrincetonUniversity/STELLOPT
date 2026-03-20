@@ -1,5 +1,4 @@
 ObjectFiles = \
-nescoil_input_mod.o \
 nescoil_stellopt_mod.o \
 Voptim1.o \
 Vsurface7.o \

@@ -1,4 +1,6 @@
 ObjectFiles = \
+nescoil_input_mod.o \
+nescoil_globals.o \
 conrec.o \
 spline_coils_mod.o \
 fusion_mod.o \

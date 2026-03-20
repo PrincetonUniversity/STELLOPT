@@ -170,7 +170,8 @@ NumParams.o : \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
 
 OutCtrl.o : \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/nescoil_globals.o
 
 precal.o : \
       ../../LIBSTELL/$(LOCTYPE)/fftfax.o \
@@ -206,21 +207,6 @@ read_nescoil_input.o : \
       Vvacuum6.o \
       Vbnorm.o \
       NumParams.o
-
-nescoil_input_mod.o : \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
-      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
-      OutCtrl.o \
-      SvdCtrl.o \
-      Vmeshes.o \
-      Vprecal1.o \
-      Vvacuum1.o \
-      Vvacuum2.o \
-      Vvacuum3.o \
-      Vprecal1.o \
-      Vvacuum4.o \
-      Vvacuum5.o \
-      Vvacuum6.o 
 
 solver_nescoil.o : \
       Vmeshes.o \
@@ -308,7 +294,8 @@ surfcur_diag.o : \
       Vsurfcurdiag.o
 
 SvdCtrl.o : \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/nescoil_globals.o
 
 Vbiopre.o : \
       Vmeshes.o
@@ -332,7 +319,8 @@ Vfourier2.o : \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
 
 Vmeshes.o : \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/nescoil_globals.o
 
 Voptim1.o : \
       Vmeshes.o 
@@ -341,7 +329,8 @@ Vprecal10.o : \
       Vmeshes.o
 
 Vprecal1.o : \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/nescoil_globals.o
 
 Vprecal2.o : \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
@@ -416,20 +405,26 @@ Vsurfcurdiag.o : \
       Vmeshes.o
 
 Vvacuum1.o : \
-      Vmeshes.o
+      Vmeshes.o \
+      ../../LIBSTELL/$(LOCTYPE)/nescoil_globals.o
 
 Vvacuum2.o : \
-      Vmeshes.o
+      Vmeshes.o \
+      ../../LIBSTELL/$(LOCTYPE)/nescoil_globals.o
 
 Vvacuum3.o : \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/nescoil_globals.o
 
 Vvacuum4.o : \
-      Vmeshes.o
+      Vmeshes.o \
+      ../../LIBSTELL/$(LOCTYPE)/nescoil_globals.o
 
 Vvacuum5.o : \
-      Vmeshes.o
+      Vmeshes.o \
+      ../../LIBSTELL/$(LOCTYPE)/nescoil_globals.o
 
 Vvacuum6.o : \
-      Vmeshes.o
+      Vmeshes.o \
+      ../../LIBSTELL/$(LOCTYPE)/nescoil_globals.o
 
