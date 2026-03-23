@@ -463,7 +463,7 @@
 !DEC$ ENDIF
 !DEC$ IF DEFINED (DKES_OPT)
          ctemp_str = 'dkes'
-         IF ( lneed_dkes .and. (iflag>=0)) THEN
+         IF ( ANY(lneed_dkes) .and. (iflag>=0)) THEN
             CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
             iflag = ier_paraexe
          END IF

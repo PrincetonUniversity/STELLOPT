@@ -19,7 +19,7 @@
                                   Em_DKES_Erdiff, Ep_DKES_alpha, &
                                   Em_DKES_alpha, sigma_dkes_alpha, &
                                   nu_dkes_Erdiff, num_dkes_alpha, &
-                                  nup_dkes_alpha
+                                  nup_dkes_alpha, lneed_dkes
       ! NEO LIBRARIES
 !DEC$ IF DEFINED (DKES_OPT)
       USE Vimatrix
@@ -67,9 +67,16 @@
       lscreen_dkes = lscreen
       lfirst_pass = .TRUE.
       IF (lscreen) WRITE(6,'(a)') ' ---------------------------    DKES CALCULATION     -------------------------'
+      ! First count E and nu pairs
+      DO ij = 1, nprof
+         IF (E_dkes(ij) <= -bigno .or. nu_dkes(ij) <= -bigno) CYCLE
+         nruns_dkes = nruns_dkes + 1
+      END DO
+      ! Now multiply by the number of surfaces
+      nruns_dkes = nruns_dkes * COUNT(lneed_dkes)
 !DEC$ IF DEFINED (MPI_OPT)
-      ierr_mpi = 0
-      CALL MPI_BCAST(nruns_dkes,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+!      ierr_mpi = 0
+!      CALL MPI_BCAST(nruns_dkes,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
 !DEC$ ENDIF
       ! Enter the main loop
       IF (ALLOCATED(DKES_rundex)) DEALLOCATE(DKES_rundex)
@@ -113,49 +120,37 @@
             END DO
          END DO
          ! Now ErDiff
-         DO ir = 1, nsd
-            IF (sigma_dkes_erdiff(ir) >= bigno) CYCLE
-            ik = ik + 1
-            ik_dkes(ik) = ir
-            nuarr_dkes(ik) = nu_dkes_Erdiff
-            Earr_dkes(ik) = Ep_DKES_Erdiff
-            DKES_rundex(ik) = 2
-            ik = ik + 1
-            ik_dkes(ik) = ir
-            nuarr_dkes(ik) = nu_dkes_Erdiff
-            Earr_dkes(ik) = Em_DKES_Erdiff
-            DKES_rundex(ik) = 2
-         END DO
-         ! Now Alpha
-         DO ir = 1, nsd
-            IF (sigma_dkes_alpha(ir) >= bigno) CYCLE
-            DO ij = 1, nprof
-               IF (Ep_DKES_alpha(ij) <= -bigno .or. nup_dkes_alpha(ij) <= -bigno .or. &
-                   Em_DKES_alpha(ij) <= -bigno .or. num_dkes_alpha(ij) <= -bigno) CYCLE
-               ik = ik + 1
-               ik_dkes(ik) = ir
-               nuarr_dkes(ik) = nup_dkes_alpha(ij)
-               Earr_dkes(ik) = Ep_DKES_alpha(ij)
-               DKES_rundex(ik) = 3
-               ik = ik + 1
-               ik_dkes(ik) = ir
-               nuarr_dkes(ik) = num_dkes_alpha(ij)
-               Earr_dkes(ik) = Em_DKES_alpha(ij)
-               DKES_rundex(ik) = 3
-            END DO
-         END DO
-
-            
-         !DO ir = 1, nsd
-         !   IF (sigma_dkes(ir) >= bigno .and. sigma_dkes_erdiff(ir) >= bigno) CYCLE
-         !   DO ij = 1, nprof
-         !      IF (E_dkes(ij) <= -bigno .or. nu_dkes(ij) <= -bigno) CYCLE
-         !      ik = ik + 1
-         !      ik_dkes(ik)    = ir
-         !      nuarr_dkes(ik) = nu_dkes(ij)
-         !      Earr_dkes(ik)  = E_dkes(ij)
-         !   END DO
-         !ENDDO
+         ! DO ir = 1, nsd
+         !    IF (sigma_dkes_erdiff(ir) >= bigno) CYCLE
+         !    ik = ik + 1
+         !    ik_dkes(ik) = ir
+         !    nuarr_dkes(ik) = nu_dkes_Erdiff
+         !    Earr_dkes(ik) = Ep_DKES_Erdiff
+         !    DKES_rundex(ik) = 2
+         !    ik = ik + 1
+         !    ik_dkes(ik) = ir
+         !    nuarr_dkes(ik) = nu_dkes_Erdiff
+         !    Earr_dkes(ik) = Em_DKES_Erdiff
+         !    DKES_rundex(ik) = 2
+         ! END DO
+         ! ! Now Alpha
+         ! DO ir = 1, nsd
+         !    IF (sigma_dkes_alpha(ir) >= bigno) CYCLE
+         !    DO ij = 1, nprof
+         !       IF (Ep_DKES_alpha(ij) <= -bigno .or. nup_dkes_alpha(ij) <= -bigno .or. &
+         !           Em_DKES_alpha(ij) <= -bigno .or. num_dkes_alpha(ij) <= -bigno) CYCLE
+         !       ik = ik + 1
+         !       ik_dkes(ik) = ir
+         !       nuarr_dkes(ik) = nup_dkes_alpha(ij)
+         !       Earr_dkes(ik) = Ep_DKES_alpha(ij)
+         !       DKES_rundex(ik) = 3
+         !       ik = ik + 1
+         !       ik_dkes(ik) = ir
+         !       nuarr_dkes(ik) = num_dkes_alpha(ij)
+         !       Earr_dkes(ik) = Em_DKES_alpha(ij)
+         !       DKES_rundex(ik) = 3
+         !    END DO
+         ! END DO
       END IF
       ! Now read the wout file
       CALL read_wout_file(proc_string, ier)

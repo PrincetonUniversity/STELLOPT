@@ -302,10 +302,11 @@
          CALL chisq_dkes_33(target_dkes_33, sigma_dkes_33, ncnt,iflag)
       IF (ANY(sigma_dkes_boot < bigno)) &
          CALL chisq_dkes_boot(target_dkes_boot, sigma_dkes_boot, ncnt,iflag)
-      IF (ANY(sigma_dkes_erdiff < bigno)) &
-         CALL chisq_dkes_erdiff(target_dkes_erdiff, sigma_dkes_erdiff, ncnt,iflag)
-      IF (ANY(sigma_dkes_alpha < bigno)) &
-         CALL chisq_dkes_alpha(target_dkes_alpha, sigma_dkes_alpha, ncnt,iflag)
+      ! For now not supported
+      !IF (ANY(sigma_dkes_erdiff < bigno)) &
+      !   CALL chisq_dkes_erdiff(target_dkes_erdiff, sigma_dkes_erdiff, ncnt,iflag)
+      !IF (ANY(sigma_dkes_alpha < bigno)) &
+      !   CALL chisq_dkes_alpha(target_dkes_alpha, sigma_dkes_alpha, ncnt,iflag)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Orbit
       IF (ANY(sigma_orbit < bigno)) &
