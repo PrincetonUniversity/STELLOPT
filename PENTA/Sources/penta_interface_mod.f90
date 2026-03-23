@@ -1020,9 +1020,11 @@ MODULE PENTA_INTERFACE_MOD
          Gamma_i_vs_Er(ie,:) = Gammas(2:num_species)
 
          ! Write fluxes vs Er
-         Write(str_num,*) num_ion_species + 2  ! Convert num to string
-         Write(iu_fvEr_out,'(f7.4,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
-            roa_surf,Er_test/100._rknd,Gamma_e_vs_Er(ie),Gamma_i_vs_Er(ie,:)
+         IF(save_fluxes_vs_Er) THEN
+            Write(str_num,*) num_ion_species + 2  ! Convert num to string
+            Write(iu_fvEr_out,'(f7.4,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
+               roa_surf,Er_test/100._rknd,Gamma_e_vs_Er(ie),Gamma_i_vs_Er(ie,:)
+         END IF
 
          ! If ( output_QoT_vs_Er .EQV. .true. ) Then
          !    QoT_e_vs_Er(ie)   = QoTs(1)

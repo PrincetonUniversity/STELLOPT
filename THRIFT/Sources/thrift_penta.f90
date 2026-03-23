@@ -19,7 +19,7 @@
       USE mpi_inc
       USE thrift_plasma_solver_mod, ONLY: Dn_NEO,cn_NEO,Dp_NEO,cp_NEO,&
       rho_plasma_grid,Nr_plasma_solver,mytimestep_plasma_solver,&
-      G_NEO_complet,Q_NEO_complet,Nt_total_plasma_solver
+      G_NEO_complet,Q_NEO_complet,Nt_total_plasma_solver,look_for_ambipolar
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
 !        lscreen       Screen output
@@ -32,7 +32,7 @@
 !     Local Variables
 !-----------------------------------------------------------------------
       INTEGER :: ns_dkes, k, ier, j, i, ncstar, nestar, mystart, myend, &
-                 mysurf, root_max_Er, jspecies
+                 mysurf, root_max_Er, jspecies, irho
       REAL(rprec) :: s, rho, mytime
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_k, iota, phip, chip, btheta, bzeta, bsq, vp, &
                         te, ne, dtedrho, dnedrho, EparB, JBS_PENTA, etapar_PENTA, Er_PENTA, rho_temp, J_temp, eta_temp, Er_temp
@@ -76,7 +76,6 @@
          Dp_PENTA = 0.0; cp_PENTA = 0.0
 
          IF (myworkid == master) THEN
-
             mytime = THRIFT_T(mytimestep)
             
             ! EparB Spline
@@ -132,7 +131,8 @@
                   CALL EZSpline_interp(EparB_spl, rho, EparB(k), ier)
             END DO
             CALL EZspline_free(EparB_spl,ier)
-         END IF
+            
+      END IF
          
 #if defined(MPI_OPT)
          CALL MPI_BCAST(rho_k,ns_dkes,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
@@ -157,6 +157,9 @@
          ! THRIFT quantities
          CALL MPI_BCAST(mytime,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
          CALL MPI_BCAST(mytimestep,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+         ! Plasma solver quantities
+         CALL MPI_BCAST(look_for_ambipolar,1,MPI_LOGICAL,master,MPI_COMM_MYWORLD,ierr_mpi)
+         CALL MPI_BCAST(mytimestep_plasma_solver,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
          
 #endif
       
@@ -180,20 +183,35 @@
             CALL PENTA_SCREEN_INFO
             CALL PENTA_ALLOCATE_DKESCOEFF
             CALL PENTA_FIT_DXX_COEF
+            CALL PENTA_FIT_RAD_TRANS
 
             WRITE(temp_str,'(i4.4)') k
             WRITE(temp1_str,'(i3.3)') mytimestep
             CALL PENTA_OPEN_OUTPUT(TRIM(temp1_str) // '_k' // TRIM(temp_str))
-            CALL PENTA_FIT_RAD_TRANS
+            CALL second0(et)
             ! Now the basic steps
-            CALL PENTA_RUN_2_EFIELD
-            CALL PENTA_RUN_3_FIND_ROOTS
+            
+            
+            
+            IF(solve_plasma_equations .AND. .NOT. look_for_ambipolar) THEN
+                  ! Get Er value from THRIFT
+                  irho =  MINLOC(ABS(SQRT(THRIFT_S) - rho_k(k)), dim=1)
+                  ! Need to define num_roots and set Er_roots
+                  num_roots = 1
+                  Er_roots(1) = THRIFT_ER(irho,mytimestep)
+                  fix_Er_time = fix_Er_time + (et-st)
+            ELSE
+                  ! Now the basic steps
+                  CALL PENTA_RUN_2_EFIELD
+                  CALL PENTA_RUN_3_FIND_ROOTS
+            END IF
             CALL PENTA_RUN_4_AMBIPOLAR
           
             ! The call to ROOT_ANALYSIS sets the array 'root_type' which decides which root to pick
-            ! The criterium is to pick the 'ion_root' whenever there are 3 or 5 roots
-            ! If num_roots = even or num_roots > 5, the code gives an error
+            ! The criterium is to pick the 'ion_root'
+            CALL second0(st)
             CALL ROOT_ANALYSIS
+
             ! Using root_type, pick the ambipolar root that will be saved by THRIFT
             DO i=1,num_roots
                   IF(root_type(i)) THEN
@@ -253,167 +271,195 @@
          
          IF (myworkid == master) THEN
 
-            IF(save_all_ambipolar_roots) CALL PENTA_MERGE_AMBIPOLAR_FILES(ns_dkes,temp1_str,mytime)
-            IF(save_fluxes_vs_Er) CALL PENTA_MERGE_FLUXES_VS_ER_FILES(ns_dkes,temp1_str,mytime)
+            IF(look_for_ambipolar) THEN
+                  IF(save_all_ambipolar_roots) CALL PENTA_MERGE_AMBIPOLAR_FILES(ns_dkes,temp1_str,mytime)
+                  IF(save_fluxes_vs_Er) CALL PENTA_MERGE_FLUXES_VS_ER_FILES(ns_dkes,temp1_str,mytime)
 
-            ! Interpolate JBS_PENTA, etapar_PENTA and Er_PENTA at rho=0 and rho=1
-            ALLOCATE(J_temp(ns_dkes+2),eta_temp(ns_dkes+2),Er_temp(ns_dkes+2),rho_temp(ns_dkes+2))
-            ALLOCATE(GNEO_temp(nion_prof+1,ns_dkes+2),QNEO_temp(nion_prof+1,ns_dkes+2))
-            rho_temp(1)        = 0.0
-            rho_temp(2:ns_dkes+1) = rho_k
-            rho_temp(ns_dkes+2)   = 1.0
-            !
-            J_temp(2:ns_dkes+1)   = JBS_PENTA
-            J_temp(1)             = J_temp(2) - (J_temp(3)-J_temp(2)) * rho_temp(2) / (rho_temp(3)-rho_temp(2))
-            J_temp(ns_dkes+2)     = JBS_PENTA(ns_dkes-1) + (JBS_PENTA(ns_dkes)-JBS_PENTA(ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
-            !
-            eta_temp(2:ns_dkes+1)   = etapar_PENTA
-            eta_temp(1)             = eta_temp(2) - (eta_temp(3)-eta_temp(2)) * rho_temp(2) / (rho_temp(3)-rho_temp(2))
-            eta_temp(ns_dkes+2)     = etapar_PENTA(ns_dkes-1) + (etapar_PENTA(ns_dkes)-etapar_PENTA(ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
-            !
-            Er_temp(2:ns_dkes+1)   = Er_PENTA
-            Er_temp(1)             = Er_temp(2) - (Er_temp(3)-Er_temp(2)) * rho_temp(2) / (rho_temp(3)-rho_temp(2))
-            Er_temp(ns_dkes+2)     = Er_PENTA(ns_dkes-1) + (Er_PENTA(ns_dkes)-Er_PENTA(ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
-            !
-            GNEO_temp(:,2:ns_dkes+1) = GNEO_PENTA
-            GNEO_temp(:,1)           = GNEO_temp(:,2) - (GNEO_temp(:,3)-GNEO_temp(:,2)) * rho_temp(2) / (rho_temp(3)-rho_temp(2))
-            GNEO_temp(:,ns_dkes+2)   = GNEO_PENTA(:,ns_dkes-1) + (GNEO_PENTA(:,ns_dkes)-GNEO_PENTA(:,ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
-            !
-            QNEO_temp(:,2:ns_dkes+1) = QNEO_PENTA
-            QNEO_temp(:,1)           = QNEO_temp(:,2) - (QNEO_temp(:,3)-QNEO_temp(:,2)) * rho_temp(2) / (rho_temp(3)-rho_temp(2))
-            QNEO_temp(:,ns_dkes+2)   = QNEO_PENTA(:,ns_dkes-1) + (QNEO_PENTA(:,ns_dkes)-QNEO_PENTA(:,ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
+                  ! Interpolate JBS_PENTA, etapar_PENTA and Er_PENTA at rho=0 and rho=1
+                  ALLOCATE(J_temp(ns_dkes+2),eta_temp(ns_dkes+2),Er_temp(ns_dkes+2),rho_temp(ns_dkes+2))
+                  ALLOCATE(GNEO_temp(nion_prof+1,ns_dkes+2),QNEO_temp(nion_prof+1,ns_dkes+2))
+                  rho_temp(1)        = 0.0
+                  rho_temp(2:ns_dkes+1) = rho_k
+                  rho_temp(ns_dkes+2)   = 1.0
+                  !
+                  J_temp(2:ns_dkes+1)   = JBS_PENTA
+                  J_temp(1)             = J_temp(2) - (J_temp(3)-J_temp(2)) * rho_temp(2) / (rho_temp(3)-rho_temp(2))
+                  J_temp(ns_dkes+2)     = JBS_PENTA(ns_dkes-1) + (JBS_PENTA(ns_dkes)-JBS_PENTA(ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
+                  !
+                  eta_temp(2:ns_dkes+1)   = etapar_PENTA
+                  eta_temp(1)             = eta_temp(2) - (eta_temp(3)-eta_temp(2)) * rho_temp(2) / (rho_temp(3)-rho_temp(2))
+                  eta_temp(ns_dkes+2)     = etapar_PENTA(ns_dkes-1) + (etapar_PENTA(ns_dkes)-etapar_PENTA(ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
+                  !
+                  Er_temp(2:ns_dkes+1)   = Er_PENTA
+                  Er_temp(1)             = Er_temp(2) - (Er_temp(3)-Er_temp(2)) * rho_temp(2) / (rho_temp(3)-rho_temp(2))
+                  Er_temp(ns_dkes+2)     = Er_PENTA(ns_dkes-1) + (Er_PENTA(ns_dkes)-Er_PENTA(ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
+                  !
+                  GNEO_temp(:,2:ns_dkes+1) = GNEO_PENTA
+                  GNEO_temp(:,1)           = GNEO_temp(:,2) - (GNEO_temp(:,3)-GNEO_temp(:,2)) * rho_temp(2) / (rho_temp(3)-rho_temp(2))
+                  GNEO_temp(:,ns_dkes+2)   = GNEO_PENTA(:,ns_dkes-1) + (GNEO_PENTA(:,ns_dkes)-GNEO_PENTA(:,ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
+                  !
+                  QNEO_temp(:,2:ns_dkes+1) = QNEO_PENTA
+                  QNEO_temp(:,1)           = QNEO_temp(:,2) - (QNEO_temp(:,3)-QNEO_temp(:,2)) * rho_temp(2) / (rho_temp(3)-rho_temp(2))
+                  QNEO_temp(:,ns_dkes+2)   = QNEO_PENTA(:,ns_dkes-1) + (QNEO_PENTA(:,ns_dkes)-QNEO_PENTA(:,ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
 
-            ! Splines
-            bcs0=(/ 0, 0/)
-            !JBS
-            CALL EZspline_init(J_spl,ns_dkes+2,bcs0,ier)
-            J_spl%x1        = rho_temp
-            J_spl%isHermite = 1
-            CALL EZspline_setup(J_spl,J_temp,ier,EXACT_DIM=.true.)
-            !etapar (make spline of log since etapar usually spans over orders of magnitude)
-            CALL EZspline_init(eta_spl,ns_dkes+2,bcs0,ier)
-            eta_spl%x1        = rho_temp
-            eta_spl%isHermite = 0
-            ! set eta_temp to very small number if negative
-            WHERE (eta_temp .LE. 0.0_rprec) eta_temp = 1.0E-20_rprec
-            !
-            CALL EZspline_setup(eta_spl,LOG(eta_temp),ier,EXACT_DIM=.true.)
-            !Er
-            CALL EZspline_init(Er_spl,ns_dkes+2,bcs0,ier)
-            Er_spl%x1        = rho_temp
-            Er_spl%isHermite = 1
-            CALL EZspline_setup(Er_spl,Er_temp,ier,EXACT_DIM=.true.)
-            !
-            DEALLOCATE(J_temp,eta_temp,Er_temp)
+                  ! Splines
+                  bcs0=(/ 0, 0/)
+                  !JBS
+                  CALL EZspline_init(J_spl,ns_dkes+2,bcs0,ier)
+                  J_spl%x1        = rho_temp
+                  J_spl%isHermite = 1
+                  CALL EZspline_setup(J_spl,J_temp,ier,EXACT_DIM=.true.)
+                  !etapar (make spline of log since etapar usually spans over orders of magnitude)
+                  CALL EZspline_init(eta_spl,ns_dkes+2,bcs0,ier)
+                  eta_spl%x1        = rho_temp
+                  eta_spl%isHermite = 0
+                  ! set eta_temp to very small number if negative
+                  WHERE (eta_temp .LE. 0.0_rprec) eta_temp = 1.0E-20_rprec
+                  !
+                  CALL EZspline_setup(eta_spl,LOG(eta_temp),ier,EXACT_DIM=.true.)
+                  !Er
+                  CALL EZspline_init(Er_spl,ns_dkes+2,bcs0,ier)
+                  Er_spl%x1        = rho_temp
+                  Er_spl%isHermite = 1
+                  CALL EZspline_setup(Er_spl,Er_temp,ier,EXACT_DIM=.true.)
+                  !
+                  DEALLOCATE(J_temp,eta_temp,Er_temp)
 
-            ! Calculate J_BS, etapara and Er in THRFIT GRID
-            CALL EZspline_interp(J_spl,nsj,SQRT(THRIFT_S),THRIFT_JBOOT(:,mytimestep),ier)
-            CALL EZspline_interp(Er_spl,nsj,SQRT(THRIFT_S),THRIFT_ER(:,mytimestep),ier)
-            IF( etapar_type == 'dkespenta') THEN
-                  CALL EZspline_interp(eta_spl,nsj,SQRT(THRIFT_S),THRIFT_ETAPARA(:,mytimestep),ier)
-                  ! Need to take the exponential, since spline of log was done
-                  THRIFT_ETAPARA(:,mytimestep) = EXP(THRIFT_ETAPARA(:,mytimestep))
-            END IF
-
-            CALL EZspline_free(J_spl,ier)
-            CALL EZspline_free(eta_spl,ier)
-            CALL EZspline_free(Er_spl,ier)
-
-            ! Spline of GNEO and QNEO; computation at THRIFT GRID
-            DO jspecies=1,(nion_prof+1)
-                  !GNEO
-                  CALL EZspline_init(GNEO_spl,ns_dkes+2,bcs0,ier)
-                  GNEO_spl%x1        = rho_temp
-                  GNEO_spl%isHermite = 1
-                  CALL EZspline_setup(GNEO_spl,GNEO_temp(jspecies,:),ier,EXACT_DIM=.true.)
-                  !QNEO
-                  CALL EZspline_init(QNEO_spl,ns_dkes+2,bcs0,ier)
-                  QNEO_spl%x1        = rho_temp
-                  QNEO_spl%isHermite = 1
-                  CALL EZspline_setup(QNEO_spl,QNEO_temp(jspecies,:),ier,EXACT_DIM=.true.)
-                  
-                  ! Compute at THRIFT GRID
-                  CALL EZspline_interp(GNEO_spl,nsj,SQRT(THRIFT_S),THRIFT_GNEO(jspecies,:,mytimestep),ier)
-                  CALL EZspline_interp(QNEO_spl,nsj,SQRT(THRIFT_S),THRIFT_QNEO(jspecies,:,mytimestep),ier)
-
-                  ! Save GNE0_complet and QNEO_complet at plasma solver grid
-                  IF(solve_plasma_equations) THEN
-                        CALL EZspline_interp(GNEO_spl,Nr_plasma_solver,rho_plasma_grid,G_NEO_complet(jspecies,mytimestep_plasma_solver,:),ier)
-                        CALL EZspline_interp(QNEO_spl,Nr_plasma_solver,rho_plasma_grid,Q_NEO_complet(jspecies,mytimestep_plasma_solver,:),ier)
+                  ! Calculate J_BS, etapara and Er in THRFIT GRID
+                  CALL EZspline_interp(J_spl,nsj,SQRT(THRIFT_S),THRIFT_JBOOT(:,mytimestep),ier)
+                  CALL EZspline_interp(Er_spl,nsj,SQRT(THRIFT_S),THRIFT_ER(:,mytimestep),ier)
+                  IF( etapar_type == 'dkespenta') THEN
+                        CALL EZspline_interp(eta_spl,nsj,SQRT(THRIFT_S),THRIFT_ETAPARA(:,mytimestep),ier)
+                        ! Need to take the exponential, since spline of log was done
+                        THRIFT_ETAPARA(:,mytimestep) = EXP(THRIFT_ETAPARA(:,mytimestep))
                   END IF
 
-                  ! Deallocate splines
-                  CALL EZspline_free(GNEO_spl,ier)
-                  CALL EZspline_free(QNEO_spl,ier)
-            END DO
+                  CALL EZspline_free(J_spl,ier)
+                  CALL EZspline_free(eta_spl,ier)
+                  CALL EZspline_free(Er_spl,ier)
 
-            ! Compute NEO coefficients in plasma grid if transport equations being solved
-            IF(solve_plasma_equations) THEN
-                  ! Interpolate JBS_PENTA, etapar_PENTA and Er_PENTA at rho=0 and rho=1
-                  ALLOCATE(Dn_temp(nion_prof+1,ns_dkes+2),cn_temp(nion_prof+1,ns_dkes+2))
-                  ALLOCATE(Dp_temp(nion_prof+1,ns_dkes+2),cp_temp(nion_prof+1,ns_dkes+2))
-                  !
-                  Dn_temp(:,2:ns_dkes+1)   = Dn_PENTA
-                  Dn_temp(:,1)             = 0.0_rprec
-                  Dn_temp(:,ns_dkes+2)     = Dn_PENTA(:,ns_dkes-1) + (Dn_PENTA(:,ns_dkes)-Dn_PENTA(:,ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
-                  !
-                  cn_temp(:,2:ns_dkes+1)   = cn_PENTA
-                  cn_temp(:,1)             = 0.0_rprec
-                  cn_temp(:,ns_dkes+2)     = cn_PENTA(:,ns_dkes-1) + (cn_PENTA(:,ns_dkes)-cn_PENTA(:,ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
-                  !
-                  Dp_temp(:,2:ns_dkes+1)   = Dp_PENTA
-                  Dp_temp(:,1)             = 0.0_rprec
-                  Dp_temp(:,ns_dkes+2)     = Dp_PENTA(:,ns_dkes-1) + (Dp_PENTA(:,ns_dkes)-Dp_PENTA(:,ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
-                  !
-                  cp_temp(:,2:ns_dkes+1)   = cp_PENTA
-                  cp_temp(:,1)             = 0.0_rprec
-                  cp_temp(:,ns_dkes+2)     = cp_PENTA(:,ns_dkes-1) + (cp_PENTA(:,ns_dkes)-cp_PENTA(:,ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
-                  !
-                  ! Spline of Dn,cn,Dp,cp; computation at plasma grid
+                  ! Spline of GNEO and QNEO; computation at THRIFT GRID
                   DO jspecies=1,(nion_prof+1)
-                        !Dn
-                        CALL EZspline_init(Dn_spl,ns_dkes+2,bcs0,ier)
-                        Dn_spl%x1        = rho_temp
-                        Dn_spl%isHermite = 1
-                        CALL EZspline_setup(Dn_spl,Dn_temp(jspecies,:),ier,EXACT_DIM=.true.)
-                        !cn
-                        CALL EZspline_init(cn_spl,ns_dkes+2,bcs0,ier)
-                        cn_spl%x1        = rho_temp
-                        cn_spl%isHermite = 1
-                        CALL EZspline_setup(cn_spl,cn_temp(jspecies,:),ier,EXACT_DIM=.true.)
-                        !Dp
-                        CALL EZspline_init(Dp_spl,ns_dkes+2,bcs0,ier)
-                        Dp_spl%x1        = rho_temp
-                        Dp_spl%isHermite = 1
-                        CALL EZspline_setup(Dp_spl,Dp_temp(jspecies,:),ier,EXACT_DIM=.true.)
-                        !cp
-                        CALL EZspline_init(cp_spl,ns_dkes+2,bcs0,ier)
-                        cp_spl%x1        = rho_temp
-                        cp_spl%isHermite = 1
-                        CALL EZspline_setup(cp_spl,cp_temp(jspecies,:),ier,EXACT_DIM=.true.)
+                        !GNEO
+                        CALL EZspline_init(GNEO_spl,ns_dkes+2,bcs0,ier)
+                        GNEO_spl%x1        = rho_temp
+                        GNEO_spl%isHermite = 1
+                        CALL EZspline_setup(GNEO_spl,GNEO_temp(jspecies,:),ier,EXACT_DIM=.true.)
+                        !QNEO
+                        CALL EZspline_init(QNEO_spl,ns_dkes+2,bcs0,ier)
+                        QNEO_spl%x1        = rho_temp
+                        QNEO_spl%isHermite = 1
+                        CALL EZspline_setup(QNEO_spl,QNEO_temp(jspecies,:),ier,EXACT_DIM=.true.)
                         
-                        ! Compute at plasma solver grid
-                        CALL EZspline_interp(Dn_spl,Nr_plasma_solver,rho_plasma_grid,Dn_NEO(jspecies,mytimestep_plasma_solver,:),ier)
-                        CALL EZspline_interp(cn_spl,Nr_plasma_solver,rho_plasma_grid,cn_NEO(jspecies,mytimestep_plasma_solver,:),ier)
-                        CALL EZspline_interp(Dp_spl,Nr_plasma_solver,rho_plasma_grid,Dp_NEO(jspecies,mytimestep_plasma_solver,:),ier)
-                        CALL EZspline_interp(cp_spl,Nr_plasma_solver,rho_plasma_grid,cp_NEO(jspecies,mytimestep_plasma_solver,:),ier)
+                        ! Compute at THRIFT GRID
+                        CALL EZspline_interp(GNEO_spl,nsj,SQRT(THRIFT_S),THRIFT_GNEO(jspecies,:,mytimestep),ier)
+                        CALL EZspline_interp(QNEO_spl,nsj,SQRT(THRIFT_S),THRIFT_QNEO(jspecies,:,mytimestep),ier)
 
                         ! Deallocate splines
-                        CALL EZspline_free(Dn_spl,ier)
-                        CALL EZspline_free(cn_spl,ier)
-                        CALL EZspline_free(Dp_spl,ier)
-                        CALL EZspline_free(cp_spl,ier)
+                        CALL EZspline_free(GNEO_spl,ier)
+                        CALL EZspline_free(QNEO_spl,ier)
                   END DO
-                  !
-                  DEALLOCATE(Dn_temp,cn_temp,Dp_temp,cp_temp)
+                  DEALLOCATE(rho_temp,GNEO_temp,QNEO_temp)
             END IF
 
-            DEALLOCATE(GNEO_temp,QNEO_temp,rho_temp)
-            DEALLOCATE(rho_k,iota,phip,chip,btheta,bzeta,bsq,vp,EparB)
-            DEALLOCATE(te,ne,dtedrho,dnedrho)
-            DEALLOCATE(ni,ti,dtidrho,dnidrho)
-            DEALLOCATE(JBS_PENTA,etapar_PENTA,Er_PENTA,GNEO_PENTA,QNEO_PENTA)
-            DEALLOCATE(Dn_PENTA,cn_PENTA,Dp_PENTA,cp_PENTA)
+            CALL second0(st)
+            IF( .NOT. look_for_ambipolar) THEN
+                  ! Compute NEO coefficients in plasma grid if transport equations being solved
+                  IF(solve_plasma_equations) THEN
+                        ! Interpolate JBS_PENTA, etapar_PENTA and Er_PENTA at rho=0 and rho=1
+                        ALLOCATE(rho_temp(ns_dkes+2))
+                        ALLOCATE(Dn_temp(nion_prof+1,ns_dkes+2),cn_temp(nion_prof+1,ns_dkes+2))
+                        ALLOCATE(Dp_temp(nion_prof+1,ns_dkes+2),cp_temp(nion_prof+1,ns_dkes+2))
+                        ALLOCATE(GNEO_temp(nion_prof+1,ns_dkes+2),QNEO_temp(nion_prof+1,ns_dkes+2))
+                        !
+                        rho_temp(1)        = 0.0
+                        rho_temp(2:ns_dkes+1) = rho_k
+                        rho_temp(ns_dkes+2)   = 1.0
+                        !
+                        Dn_temp(:,2:ns_dkes+1)   = Dn_PENTA
+                        Dn_temp(:,1)             = 0.0_rprec
+                        Dn_temp(:,ns_dkes+2)     = Dn_PENTA(:,ns_dkes-1) + (Dn_PENTA(:,ns_dkes)-Dn_PENTA(:,ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
+                        !
+                        cn_temp(:,2:ns_dkes+1)   = cn_PENTA
+                        cn_temp(:,1)             = 0.0_rprec
+                        cn_temp(:,ns_dkes+2)     = cn_PENTA(:,ns_dkes-1) + (cn_PENTA(:,ns_dkes)-cn_PENTA(:,ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
+                        !
+                        Dp_temp(:,2:ns_dkes+1)   = Dp_PENTA
+                        Dp_temp(:,1)             = 0.0_rprec
+                        Dp_temp(:,ns_dkes+2)     = Dp_PENTA(:,ns_dkes-1) + (Dp_PENTA(:,ns_dkes)-Dp_PENTA(:,ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
+                        !
+                        cp_temp(:,2:ns_dkes+1)   = cp_PENTA
+                        cp_temp(:,1)             = 0.0_rprec
+                        cp_temp(:,ns_dkes+2)     = cp_PENTA(:,ns_dkes-1) + (cp_PENTA(:,ns_dkes)-cp_PENTA(:,ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
+                        !
+                        GNEO_temp(:,2:ns_dkes+1) = GNEO_PENTA
+                        GNEO_temp(:,1)           = GNEO_temp(:,2) - (GNEO_temp(:,3)-GNEO_temp(:,2)) * rho_temp(2) / (rho_temp(3)-rho_temp(2))
+                        GNEO_temp(:,ns_dkes+2)   = GNEO_PENTA(:,ns_dkes-1) + (GNEO_PENTA(:,ns_dkes)-GNEO_PENTA(:,ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
+                        !
+                        QNEO_temp(:,2:ns_dkes+1) = QNEO_PENTA
+                        QNEO_temp(:,1)           = QNEO_temp(:,2) - (QNEO_temp(:,3)-QNEO_temp(:,2)) * rho_temp(2) / (rho_temp(3)-rho_temp(2))
+                        QNEO_temp(:,ns_dkes+2)   = QNEO_PENTA(:,ns_dkes-1) + (QNEO_PENTA(:,ns_dkes)-QNEO_PENTA(:,ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
+
+                        ! Spline of Dn,cn,Dp,cp; computation at plasma grid
+                        DO jspecies=1,(nion_prof+1)
+                              !Dn
+                              CALL EZspline_init(Dn_spl,ns_dkes+2,bcs0,ier)
+                              Dn_spl%x1        = rho_temp
+                              Dn_spl%isHermite = 1
+                              CALL EZspline_setup(Dn_spl,Dn_temp(jspecies,:),ier,EXACT_DIM=.true.)
+                              !cn
+                              CALL EZspline_init(cn_spl,ns_dkes+2,bcs0,ier)
+                              cn_spl%x1        = rho_temp
+                              cn_spl%isHermite = 1
+                              CALL EZspline_setup(cn_spl,cn_temp(jspecies,:),ier,EXACT_DIM=.true.)
+                              !Dp
+                              CALL EZspline_init(Dp_spl,ns_dkes+2,bcs0,ier)
+                              Dp_spl%x1        = rho_temp
+                              Dp_spl%isHermite = 1
+                              CALL EZspline_setup(Dp_spl,Dp_temp(jspecies,:),ier,EXACT_DIM=.true.)
+                              !cp
+                              CALL EZspline_init(cp_spl,ns_dkes+2,bcs0,ier)
+                              cp_spl%x1        = rho_temp
+                              cp_spl%isHermite = 1
+                              CALL EZspline_setup(cp_spl,cp_temp(jspecies,:),ier,EXACT_DIM=.true.)
+                              !GNEO
+                              CALL EZspline_init(GNEO_spl,ns_dkes+2,bcs0,ier)
+                              GNEO_spl%x1        = rho_temp
+                              GNEO_spl%isHermite = 1
+                              CALL EZspline_setup(GNEO_spl,GNEO_temp(jspecies,:),ier,EXACT_DIM=.true.)
+                              !QNEO
+                              CALL EZspline_init(QNEO_spl,ns_dkes+2,bcs0,ier)
+                              QNEO_spl%x1        = rho_temp
+                              QNEO_spl%isHermite = 1
+                              CALL EZspline_setup(QNEO_spl,QNEO_temp(jspecies,:),ier,EXACT_DIM=.true.)
+                              
+                              ! Compute at plasma solver grid
+                              CALL EZspline_interp(Dn_spl,Nr_plasma_solver,rho_plasma_grid,Dn_NEO(jspecies,mytimestep_plasma_solver,:),ier)
+                              CALL EZspline_interp(cn_spl,Nr_plasma_solver,rho_plasma_grid,cn_NEO(jspecies,mytimestep_plasma_solver,:),ier)
+                              CALL EZspline_interp(Dp_spl,Nr_plasma_solver,rho_plasma_grid,Dp_NEO(jspecies,mytimestep_plasma_solver,:),ier)
+                              CALL EZspline_interp(cp_spl,Nr_plasma_solver,rho_plasma_grid,cp_NEO(jspecies,mytimestep_plasma_solver,:),ier)
+                              CALL EZspline_interp(GNEO_spl,Nr_plasma_solver,rho_plasma_grid,G_NEO_complet(jspecies,mytimestep_plasma_solver,:),ier)
+                              CALL EZspline_interp(QNEO_spl,Nr_plasma_solver,rho_plasma_grid,Q_NEO_complet(jspecies,mytimestep_plasma_solver,:),ier)
+
+                              ! Deallocate splines
+                              CALL EZspline_free(Dn_spl,ier)
+                              CALL EZspline_free(cn_spl,ier)
+                              CALL EZspline_free(Dp_spl,ier)
+                              CALL EZspline_free(cp_spl,ier)
+                              CALL EZspline_free(GNEO_spl,ier)
+                              CALL EZspline_free(QNEO_spl,ier)
+                        END DO
+                        !
+                        DEALLOCATE(rho_temp,Dn_temp,cn_temp,Dp_temp,cp_temp,GNEO_temp,QNEO_temp)
+                  END IF
+
+                  DEALLOCATE(rho_k,iota,phip,chip,btheta,bzeta,bsq,vp,EparB)
+                  DEALLOCATE(te,ne,dtedrho,dnedrho)
+                  DEALLOCATE(ni,ti,dtidrho,dnidrho)
+                  DEALLOCATE(JBS_PENTA,etapar_PENTA,Er_PENTA,GNEO_PENTA,QNEO_PENTA)
+                  DEALLOCATE(Dn_PENTA,cn_PENTA,Dp_PENTA,cp_PENTA)
+            END IF
+            
                         
          END IF
 
