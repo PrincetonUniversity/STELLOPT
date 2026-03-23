@@ -183,16 +183,25 @@ class DKES:
         if(which_coeff == 'D11_star'):
             yplot = self.D11_star
             var_name = r'$D_{11}^*~~[m^{-1}~T^{-2}]$'
+            yscale_log = True
         elif(which_coeff == 'D31_star'):
             yplot = self.D31_star
+            yscale_log = False
             var_name = r'$D_{31}^*$'
         elif(which_coeff == 'D31_over_D33_corrected'):
             D33_corrected = (2./3.)*self.Bsq/self.cmul - self.D33_star
             yplot = self.D31_star / D33_corrected
             var_name = r'$D_{31}^*\,\,/\,\,[(2/3)(\nu/v)^{-1}-D_{33}^*]$'
+            yscale_log = False
         elif(which_coeff == 'D33_star'):
             yplot = self.D33_star
             var_name = r'$D_{33}^*$'
+            yscale_log = False
+        elif(which_coeff == 'D11_plus_D31sq_over_D33_corrected'):
+            D33_corrected = (2./3.)*self.Bsq/self.cmul - self.D33_star
+            yplot = self.D11_star + self.D31_star**2 / D33_corrected
+            var_name = r'$D_{11}^*+[D_{31}^*]^2\,\,/\,\,[(2/3)(\nu/v)^{-1}-D_{33}^*]$'
+            yscale_log = True
         else:
             print('Coeff not found...')
             exit(1)
@@ -213,6 +222,7 @@ class DKES:
             ax.set_xlabel(r'$\nu/v\,\,[\text{m}^{-1}]$')
         ax.set_ylabel(var_name)
         ax.set_xscale('log')
+        if(yscale_log): ax.set_yscale('log')
         ax.set_title(f'r/a={self.roa:.2f}')
         ax.legend(fontsize=12)
         ax.grid()
@@ -435,7 +445,6 @@ class DKES:
         
         # Get the unique values and counts of efield
         unique_efields, counts = np.unique(efield, return_counts=True)
-        print(counts)
         
         if not np.all(counts == counts[0]):
             print('ERROR: Each cmul does not have the same number of efields. Cannot proceed...')
@@ -546,7 +555,7 @@ class DKES:
             plt.legend()
             plt.show()        
     
-    def get_PENTA3_energy_convolution(self,which_coeff,which_species,Er,plasma_class,K_exp=0,jval=0,log_interp_coeff=True,make_plot=True):
+    def get_PENTA3_energy_convolution(self,which_coeff,which_species,Er,plasma_class,K_exp=0,jval=0,log_interp_coeff=False,make_plot=True):
         """
         Plots the convolution integrand as in PENTA3:
         
@@ -634,7 +643,7 @@ class DKES:
             
             # First plot the coefficient
             for ie in range(0, self.nefield):
-                ax1.plot(np.unique(self.cmul), coeff_2d[:, ie], '.-')#, label=f'$E_r/v={np.unique(self.efield)[ie]:3.1E}$')
+                ax1.plot(np.unique(self.cmul), coeff_2d[:, ie], '.-', label=f'$E_r/v={np.unique(self.efield)[ie]:3.1E}$')
 
             # Create a second y-axis on the right
             ax2 = ax1.twinx()  # Create another axis that shares the same x-axis
@@ -643,7 +652,11 @@ class DKES:
             # Now plot the integrand
             ax2.plot(cmul_species[~idx_clipped], norm*integrand[~idx_clipped],'.-',color='black')
             ax2.plot(cmul_species[idx_clipped], norm*integrand[idx_clipped],'.-',color='red')
-            ax2.fill_between(cmul_species, norm*integrand, alpha=0.3, label=f'|Er|={np.abs(Er)} V/cm')          
+            ax2.fill_between(cmul_species, norm*integrand, alpha=0.3, label=f'|Er|={np.abs(Er):.2f} V/cm')  
+            #
+            #
+            idx = [np.argmin(np.abs(cmul_species-cmul)) for cmul in np.unique(self.cmul)]
+            ax2.plot(np.unique(self.cmul),norm*integrand[idx],'x',markersize=10,markeredgewidth=5)        
 
             if(log_interp_coeff): ax1.set_yscale('log')
             ax1.set_xscale('log')
@@ -652,17 +665,22 @@ class DKES:
             ax2.set_ylabel(f'{which_species} ||{which_coeff} K^{K_exp} L_{jval}||')
             ax1.grid()
             ax1.set_xlabel(r'$\nu/v$')
-            ax2.legend()
+            ax2.legend(loc='upper left')
             ax1.set_title(f'r/a={self.roa:.2f}')
+            ax1.legend()
             #plt.show()
             
             _, ax4 = plt.figure(figsize=(10,8)), plt.gca()
             ax4.plot(Erv_species[~idx_clipped], norm*integrand[~idx_clipped],'.-',color='black')
             ax4.plot(Erv_species[idx_clipped], norm*integrand[idx_clipped],'.-',color='red')
+            #
+            idx = [np.argmin(np.abs(Erv_species-er)) for er in np.unique(self.efield)]
+            ax4.plot(np.unique(self.efield),norm*integrand[idx],'x',markersize=10,markeredgewidth=5)
             ax4.set_xlabel(r'$Er/v$')
             ax4.grid()
             ax4.set_xscale('log')
-            plt.show()
+            ax4.set_xlim(np.min(Erv_species),np.max(Erv_species))
+            # plt.show()
 
             #now make a plot that shows how many integration points are out of range
             fig, ax3 = plt.figure(figsize=(10,8)), plt.gca()
@@ -708,7 +726,8 @@ class DKES:
             cmul and efield can be floats or arrays with same size.
             
             which_coeff can be:
-            D11_star, D31_star, D33_star, D31_over_D33_corrected, D31sq_over_D33_corrected, LHS_SN_flow_eq
+            D11_star, D31_star, D33_star, D31_over_D33_corrected, D31sq_over_D33_corrected, LHS_SN_flow_eq,
+            capped_fluxes_coefficient
             
             If log_interp_coeff is True, then the log of the coefficient is used when producing the spline
             (this is particularly helpful for coeffs that vary by many orders of magnitude such as D11_star)
@@ -731,6 +750,10 @@ class DKES:
         elif(which_coeff == 'LHS_SN_flow_eq'):
             D33_corrected = (2./3.)*self.Bsq/self.cmul - self.D33_star
             coeff = (2/3)*self.Bsq/D33_corrected - self.cmul
+        elif(which_coeff == 'capped_fluxes_coefficient'):
+            D33_corrected = (2./3.)*self.Bsq/self.cmul - self.D33_star
+            coeff = self.D11_star - (2/3)*self.U2*self.cmul + self.D31_star**2 / D33_corrected
+            coeff = np.clip(coeff,a_min=0.0,a_max=None)
         else:
             print('Coeff not found...')
             exit(1)
@@ -828,7 +851,7 @@ class DKES:
         else:
             return cmul_species,Erv_species,auxiliary_integrand
         
-    def get_BS_current(self,Er_Vcm,plasma_class,Smax,inspect=False):
+    def get_BS_current(self,Er_Vcm,plasma_class,Smax,inspect=False,output=None):
         """ This function computes the SN Bootstrap Current <JBS.b> as PENTA3 does using the Sugama-Nishimura method. This amounts to 
         solve Eq. (3.2.1.1) in PENTA documentation by Jeremy Lore. The equation has one typo though: they are missing the elementary 
         charge multiplying Ta (since it was defined to be in eV)
@@ -841,10 +864,11 @@ class DKES:
         
         !! Er is given in V/cm !!
         
-        This function returns an array with <JBS.b>_species of each species
-        
         If inspect is True, then will plot inv(flow_mat)*A1 and inv(flow_mat)*A2 point-wise, to check which terms
         are contributing the most to the BS current
+        
+        By default, this function returns an array with <JBS.b>_species of each species
+        BUT, if output=='flows', then this function returns <u_parallel x B>/<B^2> for each species and j=0,...,Smax
         """
         from scipy.special import assoc_laguerre
         
@@ -942,9 +966,9 @@ class DKES:
                     flow_mat[ind1_LHS1+jval,ind1_LHS1+kval] = fact1*LHS_conv[species1][jval,kval]
                     
                     for ispec2,species2 in enumerate(plasma_class.list_of_species):
-                        # ind1_LHS2 = ( ispec1 - 1 ) * ( Smax + 1 ) + jval
+                        # ind1_LHS2 = ( ispec1 - 1 ) * ( Smax + 1 ) + jval +1
                         ind1_LHS2 = ( ispec1 ) * ( Smax + 1 ) + jval
-                        # ind2_LHS2 = ( ispec2 - 1 ) * ( Smax + 1 ) + kval
+                        # ind2_LHS2 = ( ispec2 - 1 ) * ( Smax + 1 ) + kval +1 
                         ind2_LHS2 = ( ispec2 ) * ( Smax + 1 ) + kval
                         flow_mat[ind1_LHS2,ind2_LHS2] += -fact2*lmat[ind1_LHS2,ind2_LHS2]
         
@@ -978,12 +1002,14 @@ class DKES:
         ############################################################################################################################
         
         uB_over_B2 = np.linalg.solve(flow_mat,RHS)
+        if output=='flows':
+            return uB_over_B2
+        
         uB_over_B2_0 = uB_over_B2[0::Smax+1]
         
-        JBS_species = []
+        JBS_species = np.zeros(Nspecies)
         for ispecies,species in enumerate(plasma_class.list_of_species):
-            jbs = n[species]*q[species]*np.sqrt(self.Bsq)*uB_over_B2_0[ispecies]
-            JBS_species.append( jbs )
+            JBS_species[ispecies] = n[species]*q[species]*np.sqrt(self.Bsq)*uB_over_B2_0[ispecies]
             
         JBS_tot = np.sum(JBS_species)
         print(f'JBS = {JBS_tot/1E3:.1f} kA/m2')
@@ -1033,6 +1059,172 @@ class DKES:
             #     print('sanity =',n[species]*q[species]*np.sqrt(self.Bsq)*summation[ispecies] )
         
         return JBS_species
+    
+    def get_fluxes(self,Er_Vcm,plasma_class,Smax):
+        """ This function computes the neoclassical particle and heat fluxes as PENTA3 does using the Sugama-Nishimura method. This amounts to 
+        solve Eq. (3.2.3.1) in PENTA documentation by Jeremy Lore.
+        
+        !! Er is given in V/cm !!
+        
+        This function returns: Gamma, QoverT
+        where Gammma and QoverT are arrays with the fluxes for each species
+        """
+        from scipy.special import assoc_laguerre
+        
+        Er = Er_Vcm
+        # Check Er!=0
+        if(np.abs(Er) < 1E-6):
+            raise ValueError('Please Choose Er != 0, cause this brings problems when taking the log of Er')
+        
+        ############################################################################################################################
+        ####################### Setup Convolutions in the SN Flow Equation (Eq. 3.2.3.1 in PENTA's notes)  #########################
+        ############################################################################################################################
+        vth = {}
+        n = {}
+        T = {}
+        q = {}
+        m = {}
+        #
+        A1_conv_Gamma = {}
+        A1_conv_QoT = {}
+        A2_conv_Gamma = {}
+        A2_conv_QoT = {}
+        flow_conv_Gamma = {species: np.zeros((Smax+1)) for species in plasma_class.list_of_species}
+        flow_conv_QoT = {species: np.zeros((Smax+1)) for species in plasma_class.list_of_species}
+        #
+        for species in plasma_class.list_of_species:
+            vth[species] = plasma_class.get_thermal_speed(species,self.roa)
+            n[species] = plasma_class.get_density(species,self.roa)
+            T[species] = plasma_class.get_temperature(species,self.roa)
+            q[species] = plasma_class.charge[species]
+            m[species] = plasma_class.mass[species]
+            
+            #get cmul for self.K
+            cmul_K = []
+            for k in self.K:
+                vparticle = vth[species] * np.sqrt(k)
+                nu = plasma_class.get_collisionality(species,self.roa,vparticle)
+                cmul_K.append( nu / vparticle )
+                            
+            cmul_K = np.array(cmul_K)
+            efield_K = np.abs(Er)*100/(vth[species]*np.sqrt(self.K))
+            
+            D31_over_D33_corrected = self.get_interpolated_coeff('D31_over_D33_corrected',cmul_K,efield_K,log_interp_coeff=False)
+            capped_fluxes_coefficient = self.get_interpolated_coeff('capped_fluxes_coefficient',cmul_K,efield_K,log_interp_coeff=False)
+            
+            # Convolutions
+            integrand = capped_fluxes_coefficient * self.K**1.5 * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, 0, k=1.5)
+            A1_conv_Gamma[species] = np.trapezoid(integrand,x=self.K) * n[species] * 2 / np.sqrt(np.pi)
+            
+            integrand = capped_fluxes_coefficient * self.K**2.5 * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, 0, k=1.5)
+            A2_conv_Gamma[species] = np.trapezoid(integrand,x=self.K) * n[species] * 2 / np.sqrt(np.pi)
+            A1_conv_QoT[species]   = np.trapezoid(integrand,x=self.K) * n[species] * 2 / np.sqrt(np.pi)
+            
+            integrand = capped_fluxes_coefficient * self.K**3.5 * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, 0, k=1.5)
+            A2_conv_QoT[species] = np.trapezoid(integrand,x=self.K) * n[species] * 2 / np.sqrt(np.pi)
+            
+            #### Convolutions that multiply flows ####
+            for jval in range(Smax+1):
+
+                integrand = D31_over_D33_corrected * self.K**1.5 * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, jval, k=1.5)
+                flow_conv_Gamma[species][jval] =  np.trapz(integrand,x=self.K) * n[species] * 2 / np.sqrt(np.pi)
+                
+                integrand = D31_over_D33_corrected * self.K**2.5 * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, jval, k=1.5)
+                flow_conv_QoT[species][jval] =  np.trapz(integrand,x=self.K) * n[species] * 2 / np.sqrt(np.pi)
+                
+        
+        ############################################################################################################################
+        ##########################################  Compute A1 and A2 for each species #############################################
+        ############################################################################################################################
+        A1 = {}
+        A2 = {}
+        for species in plasma_class.list_of_species:
+            na_prime_r = plasma_class.get_density_der(species,self.roa) / self.aminor
+            Ta_prime_r = plasma_class.get_temperature_der(species,self.roa) / self.aminor
+            #
+            A1[species] = na_prime_r/n[species] - 1.5*Ta_prime_r/(T[species]) - q[species]*Er*100/(EC*T[species])
+            A2[species] = Ta_prime_r/(T[species])
+            
+        ############################################################################################################################
+        ###############################################  Compute lmat ##############################################################
+        ############################################################################################################################
+        # Calculate Coulomb logarithm as in PENTA
+        if ( T['electrons'] > 50 ):
+            loglambda = 25.3 - 1.15*np.log10(n['electrons']/1.E6) + 2.3*np.log10(T['electrons'])
+        else:
+            loglambda = 23.4 - 1.15*np.log10(n['electrons']/1.E6) + 3.45*np.log10(T['electrons'])
+        #
+        lmat = define_friction_coeffs(masses=np.fromiter(m.values(), dtype=float), 
+                                     charges=np.fromiter(q.values(), dtype=float), 
+                                     v_ths = np.fromiter(vth.values(), dtype=float), 
+                                     Temps = np.fromiter(T.values(), dtype=float), 
+                                     dens  = np.fromiter(n.values(), dtype=float),
+                                     loglambda = loglambda, 
+                                     num_species=len(plasma_class.list_of_species), 
+                                     Smax=Smax)
+            
+        ############################################################################################################################
+        ######################################################  Compute PS term ####################################################
+        ############################################################################################################################
+        
+        PS_term_Gamma = {}
+        PS_term_QoT = {}
+        
+        for ispec1,speciesa in enumerate(plasma_class.list_of_species):
+            
+            PS_term_Gamma[speciesa] = 0.0
+            PS_term_QoT[speciesa] = 0.0
+            
+            for ispec2,speciesb in enumerate(plasma_class.list_of_species):
+                nb_prime_r = plasma_class.get_density_der(speciesb,self.roa) / self.aminor
+                Tb_prime_r = plasma_class.get_temperature_der(speciesb,self.roa) / self.aminor
+                
+                # lmat_ind1 = ( ispec1 - 1 ) * ( Smax + 1 ) + 1
+                lmat_ind1 = ( ispec1 ) * ( Smax + 1 )
+                # lmat_ind2 = ( ispec2 - 1 ) * ( Smax + 1 ) + 1
+                lmat_ind2 = ( ispec2 ) * ( Smax + 1 )
+                
+                l_ab_11 = lmat[lmat_ind1    , lmat_ind2]
+                l_ab_21 = lmat[lmat_ind1+1  , lmat_ind2]
+                l_ab_12 = lmat[lmat_ind1    , lmat_ind2+1]
+                l_ab_22 = lmat[lmat_ind1+1  , lmat_ind2+1]
+                
+                PS_term_Gamma[speciesa] += (nb_prime_r*T[speciesb]*EC + n[speciesb]*Tb_prime_r*EC) / (q[speciesb]*n[speciesb]) * l_ab_11 \
+                                            - Tb_prime_r*EC/q[speciesb] * l_ab_12
+                
+                PS_term_QoT[speciesa] += (nb_prime_r*T[speciesb]*EC + n[speciesb]*Tb_prime_r*EC) / (q[speciesb]*n[speciesb]) * \
+                                            ( (5/2)*l_ab_11 - l_ab_21 ) \
+                                        - Tb_prime_r*EC/q[speciesb] * ( (5/2)*l_ab_12 - l_ab_22 )
+                
+            PS_term_Gamma[speciesa] *= self.U2/q[speciesa]
+            PS_term_QoT[speciesa] *= self.U2/q[speciesa]
+            
+        ############################################################################################################################
+        ###################################################  Compute fluxes ########################################################
+        ############################################################################################################################         
+            
+        uB_over_B2 = self.get_BS_current(Er,plasma_class,Smax,output='flows')
+        
+        num_species = len(plasma_class.list_of_species)
+        
+        Gamma = np.zeros(num_species)
+        QoverT = np.zeros(num_species
+                         )
+        for ispecies,species in enumerate(plasma_class.list_of_species):
+            
+            mono_flux_1 = - (m[species]**2 * vth[species]**3) / (2*q[species]**2)*A1_conv_Gamma[species]*A1[species]
+            mono_flux_2 = - (m[species]**2 * vth[species]**3) / (2*q[species]**2)*A2_conv_Gamma[species]*A2[species]
+            flux_Ua = -(2/3)*self.Bsq*m[species]*vth[species]/q[species] * np.dot(flow_conv_Gamma[species][:],uB_over_B2[ispecies*(Smax+1):ispecies*(Smax+1)+(Smax+1)])
+            
+            Gamma[ispecies]  = mono_flux_1 + mono_flux_2 + flux_Ua + PS_term_Gamma[species]
+            
+            part1 = - (m[species]**2 * vth[species]**3) / (2*q[species]**2)*A1_conv_QoT[species]*A1[species]
+            part2 = - (m[species]**2 * vth[species]**3) / (2*q[species]**2)*A2_conv_QoT[species]*A2[species]
+            part3 = -(2/3)*self.Bsq*m[species]*vth[species]/q[species] * np.dot(flow_conv_QoT[species][:],uB_over_B2[ispecies*(Smax+1):ispecies*(Smax+1)+(Smax+1)])
+            
+            QoverT[ispecies] = part1 + part2 + part3 + PS_term_QoT[species]
+            
+        return Gamma,QoverT
                        
     def plot_U2_estimate(self):
         

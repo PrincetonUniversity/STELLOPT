@@ -276,21 +276,6 @@ CONTAINS
             WRITE(6, *) '  ierr:   ', ierr
         END IF
         CALL FLUSH(6)
-#if defined(MPI_OPT)
-!        CALL MPI_BARRIER(MPI_COMM_THRIFT,ierr_mpi)
-!        ALLOCATE(error_array(1:nprocs_beams))
-!        ierr_mpi = 0
-!        CALL MPI_ALLGATHER(error_num,1,MPI_INTEGER,error_array,1,MPI_INTEGER,MPI_COMM_THRIFT,ierr_mpi)
-!        ierr_mpi = 0
-!        CALL MPI_BARRIER(MPI_COMM_THRIFT,ierr_mpi)
-!        IF (ANY(error_array .ne. 0)) CALL MPI_FINALIZE(ierr_mpi)
-!        DEALLOCATE(error_array)
-        RETURN
-#else
-        IF (error_num .eq. MPI_CHECK) RETURN
-#endif
-        PRINT *,myworkid,' calling STOP'
-        CALL FLUSH(6)
         STOP
     END SUBROUTINE handle_err
 

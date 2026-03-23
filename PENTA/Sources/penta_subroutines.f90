@@ -101,15 +101,19 @@ EndDo
 If ( num_roots == 0_iknd ) Then
   Write(*,*) 'No roots found in search range'
   If (Present(flag_roots)) Then
-    flag_roots=1
-    !Stop 'Error from find_Er_roots: Please modify the Er search range'
+    flag_roots=1 ! Need to increase Er-search range
     Return
   Else
     Stop 'Error from find_Er_roots: Please modify the Er search range'
   EndIf
 ElseIf ( Mod(num_roots,2_iknd) == 0_iknd) Then
-  Write(*,*) 'Even number of roots found, choosing first root only.'
-  num_roots = 1_iknd
+  If (Present(flag_roots)) Then
+    flag_roots=1 ! Need to increase Er-search range
+    Return
+  Else
+    Write(*,*) 'Even number of roots found, choosing first root only.'
+    num_roots = 1_iknd
+  EndIf
 Endif
 
 ! Allocate variables by number of roots

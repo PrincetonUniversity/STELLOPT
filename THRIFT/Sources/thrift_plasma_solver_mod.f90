@@ -43,6 +43,7 @@ MODULE thrift_plasma_solver_mod
     TYPE(EZspline2_r8), DIMENSION(:), ALLOCATABLE, PRIVATE :: chi_normalized_splines
     INTEGER, PRIVATE :: subiter
     CHARACTER(len=20), DIMENSION(:), ALLOCATABLE :: list_of_species
+    LOGICAL :: look_for_ambipolar = .TRUE.
 
 !-----------------------------------------------------------------------
 !     Input Namelists
@@ -185,8 +186,10 @@ MODULE thrift_plasma_solver_mod
 
                 ! Run PENTA if NEO fluxes are to be added
                 IF(add_NEO) THEN
+                    look_for_ambipolar = .false.
                     CALL thrift_paraexe('penta',proc_string,lscreen_subcodes)
                     IF (ier /= 0) STOP 'Error running PENTA inside plasma solver'
+                    look_for_ambipolar = .true.
                 END IF
   
                 DO i=1,nion_prof
