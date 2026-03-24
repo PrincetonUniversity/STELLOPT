@@ -75,8 +75,8 @@
       ! Now multiply by the number of surfaces
       nruns_dkes = nruns_dkes * COUNT(lneed_dkes)
 !DEC$ IF DEFINED (MPI_OPT)
-!      ierr_mpi = 0
-!      CALL MPI_BCAST(nruns_dkes,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+      ierr_mpi = 0
+      CALL MPI_BCAST(nruns_dkes,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
 !DEC$ ENDIF
       ! Enter the main loop
       IF (ALLOCATED(DKES_rundex)) DEALLOCATE(DKES_rundex)
@@ -106,10 +106,11 @@
          ik = 0
          ! First do traditional DKES
          DO ir = 1, nsd
-            IF ((sigma_dkes_11(ir)   >= bigno) .and. &
-                (sigma_dkes_31(ir)   >= bigno) .and. &
-                (sigma_dkes_33(ir)   >= bigno) .and. &
-                (sigma_dkes_boot(ir) >= bigno))  CYCLE
+            IF (.not.lneed_dkes(ir)) CYCLE
+            !IF ((sigma_dkes_11(ir)   >= bigno) .and. &
+            !    (sigma_dkes_31(ir)   >= bigno) .and. &
+            !    (sigma_dkes_33(ir)   >= bigno) .and. &
+            !    (sigma_dkes_boot(ir) >= bigno))  CYCLE
             DO ij = 1, nprof
                IF (E_dkes(ij) <= -bigno .or. nu_dkes(ij) <= -bigno) CYCLE
                ik = ik + 1
