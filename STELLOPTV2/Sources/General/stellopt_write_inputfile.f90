@@ -22,6 +22,8 @@
 !DEC$ IF DEFINED (AEOPT)
       USE trapped_avail_energy_mod, ONLY: write_avail_energy_nml
 !DEC$ ENDIF
+      USE penta_interface_mod, ONLY: write_ion_params_nml ,&
+                                     write_run_params_nml
       
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
@@ -70,6 +72,11 @@
 !DEC$ ENDIF
 !DEC$ IF DEFINED (AEOPT)
       IF (ANY(sigma_txport < bigno)) CALL write_avail_energy_nml(iunit_out,ier)
+!DEC$ ENDIF
+!DEC$ IF DEFINED (AEOPT)
+      IF (ANY(lneed_penta)) THEN
+         CALL write_ion_params_nml(iunit_out)
+         CALL write_run_params_nml(iunit_out)
 !DEC$ ENDIF
       WRITE(iunit_out,'(A)') '&END'
       CLOSE(iunit_out)
