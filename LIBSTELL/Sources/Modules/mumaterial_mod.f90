@@ -45,6 +45,10 @@
         tet_cen(:,:), & ! Coordinates of tetrahedron centroids
         tet_vol(:),   & ! Volumes of tetrahedrons
         tet_rad(:)      ! Inradii of tetrahedrons
+      DOUBLE PRECISION, POINTER, PRIVATE :: &
+        tet_P(:,:,:,:), & ! Rotation matrix of all tetrahedron faces
+        tet_D(:,:,:),   & ! Base vectors of all tetrahedron faces
+        tet_v(:,:,:,:)! Rotated vertices of all tetrahedron faces
       INTEGER, POINTER, PRIVATE :: &
         tet(:,:)        ! Vertices of tetrahedrons
       DOUBLE PRECISION, POINTER, PRIVATE :: &
@@ -56,6 +60,7 @@
         state_type(:)   ! Type of state type (see below)
       INTEGER, PRIVATE :: &
         win_vertex, win_tet, win_tet_cen, win_tet_vol, &
+        win_tet_P, win_tet_D, win_tet_v, &
         win_tet_rad, win_state_dex, win_state_type,    &
         win_constant_mu, win_constant_mu_o, win_M_rem   ! MPI windows
     !-------------------------------------------------------------------
@@ -66,7 +71,8 @@
         ntet, & ! Number of tetrahedrons
         nvertex ! Number of vertices
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE, PRIVATE :: &
-        max_tet_rad ! Largest tetrahedron inradius in a cluster
+        max_tet_rad, & ! Largest tetrahedron inradius in a cluster
+        vol_proc
     !-------------------------------------------------------------------
     ! Mesh division
       INTEGER, DIMENSION(:), ALLOCATABLE, PRIVATE :: &
@@ -93,7 +99,20 @@
         TYPE_SOFT   = 2, &  ! Soft magnet with state function
         TYPE_LINEAR = 3     ! Linear material with constant mu
       INTEGER, PRIVATE :: &
-        nstate ! Number of unique state functions
+        nstate, & ! Number of unique state functions
+        nlinear, ntet_linear_max, &
+        nsoft,   ntet_soft_max, &
+        nhard,   ntet_hard_max
+      INTEGER, ALLOCATABLE, PRIVATE :: &
+        dom_linear(:,:), &
+        dom_soft(:,:), &
+        dom_hard(:,:), &
+        ntet_linear(:), &
+        ntet_soft(:), &
+        ntet_hard(:), &
+        sdex_linear(:), &
+        sdex_soft(:), &
+        sdex_hard(:)
     !-------------------------------------------------------------------
     ! Magnetizations
       DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE, PRIVATE :: &
@@ -107,7 +126,8 @@
       DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE, PRIVATE  :: &
         H_ext, & ! Field from non-neighbors
         H_mid, & ! Field from dipoles
-        H_app    ! Field from currents
+        H_app, & ! Field from currents
+        H_prev
     !-------------------------------------------------------------------
     ! Neighbors
       INTEGER, ALLOCATABLE, PRIVATE :: &
@@ -127,6 +147,19 @@
         R_quad, mom_quad ! Helpers 
       LOGICAL, DIMENSION(:), ALLOCATABLE, PRIVATE :: iscluster_proc
     !-------------------------------------------------------------------
+    ! Block solver
+      DOUBLE PRECISION, ALLOCATABLE, PRIVATE :: &
+        M_block(:), &
+        H_block(:), &
+        J_block(:,:), &
+        N_block(:,:,:,:), &
+        R_block(:), &
+        M_spline(:,:), &
+        dMdH_spline(:), &
+        M_norm_proc(:), &
+        H_norm_proc(:), &
+        dMdH_mat(:,:,:)
+    !-------------------------------------------------------------------
     ! Dipoles
       LOGICAL, DIMENSION(:), ALLOCATABLE, PRIVATE :: &
         is_stale      ! Helper mask to determine which dipoles to recompute
@@ -143,7 +176,7 @@
     ! User settings
       DOUBLE PRECISION, PRIVATE :: &
         threshold   =1.0D-3, & ! Convergence threshold of dW/W_cl
-        padFactor   =20.0D0, & ! Neighbor cutoff
+        pF   =20.0D0, & ! Neighbor cutoff
         lambdaStart =0.10D0, & ! Starting lambda value
         lambdaFactor=0.75D0, & ! Multiplicative lambda value
         convCheck=99.9D0      ! Converged at %. No longer used
@@ -267,10 +300,12 @@
       M_partial = 0.0d0
       M_snapshot = 0.0d0
       M_all = 0.0d0
-
+      ALLOCATE(M_norm_proc(ntet_proc),H_norm_proc(ntet_proc),dMdH_mat(3,3,ntet_proc))
+      ! Solver
+      ALLOCATE(M_block(3*ntet_proc),H_block(3*ntet_proc),R_block(3*ntet_proc),J_block(3*ntet_proc,3*ntet_proc),M_spline(3,ntet_proc),dMdH_spline(ntet_proc))
       ! Allocate helpers
       ALLOCATE(R_quad(3,MAXVAL(dom_sizes)),mom_quad(3,MAXVAL(dom_sizes)))
-      ALLOCATE(H_ext(3,ntet_proc),H_mid(3,ntet_partial_proc))
+      ALLOCATE(H_ext(3,ntet_proc),H_mid(3,ntet_proc),H_prev(3,ntet_proc))
       ! Intermediate field dipoles
       ALLOCATE(stale_dex(ntet_partial_proc))
       ALLOCATE(is_stale(ntet_partial_proc))
@@ -285,8 +320,11 @@
       IMPLICIT NONE
       INTEGER :: ik
 
+      ! Solver
+      DEALLOCATE(M_block,H_block,R_block,J_block,M_spline,dMdH_spline)
+      DEALLOCATE(M_norm_proc,H_norm_proc,dMdH_mat)
       ! Fields
-      DEALLOCATE(H_app,H_mid,H_ext)
+      DEALLOCATE(H_app,H_mid,H_ext,H_prev)
       ! Domains
       DEALLOCATE(dom_proc,dom_partial_proc,tet_cen_proc)
       ! Neighbors
@@ -307,6 +345,7 @@
         END IF
       END DO
       DEALLOCATE(statefunc)
+      DEALLOCATE(dom_linear,dom_soft,dom_hard)
 
       RETURN
       END SUBROUTINE mumaterial_dealloc_init
@@ -365,6 +404,9 @@
       IF (ASSOCIATED(tet_vol))       CALL mpidealloc(tet_vol,win_tet_vol)
       IF (ASSOCIATED(tet_rad))       CALL mpidealloc(tet_rad,win_tet_rad)
       IF (ASSOCIATED(M_rem))         CALL mpidealloc(M_rem,win_M_rem)
+      IF (ASSOCIATED(tet_P))         CALL mpidealloc(tet_P,win_tet_P)
+      IF (ASSOCIATED(tet_D))         CALL mpidealloc(tet_D,win_tet_D)
+      IF (ASSOCIATED(tet_v))         CALL mpidealloc(tet_v,win_tet_v)
 
       RETURN
       END SUBROUTINE mumaterial_free
@@ -404,7 +446,7 @@
 ! param[in]: la. lambdaStart: initial value of lambda_n
 ! param[in]: laF. lambdaFactor: multiplicative factor for lambda_n
 ! param[in]: laT. lambdaThresh: amount of dM>0 before lambda_n is multiplied
-! param[in]: padF. padFactor: factor for sphere around tets for neighbors
+! param[in]: padF. pF: factor for sphere around tets for neighbors
 ! param[in]: cc. convCheck: Stop when this percentage of elemnts has converged
 !------------------------------------------------------------------------------
       SUBROUTINE mumaterial_set_user(mE, mI, la, laF, laT, padF, cc)
@@ -418,7 +460,7 @@
       lambdaStart = la
       lambdaFactor = laF
       lambdaThresh = laT
-      padFactor = padF
+      pF = padF
       convCheck = cc
 
       RETURN
@@ -465,7 +507,7 @@
       CHARACTER(LEN=*), INTENT(in) :: filename
       INTEGER, INTENT(inout)       :: istat
       INTEGER, INTENT(inout), OPTIONAL :: comm_shar_in, comm_master_in, comm_world_in
-      INTEGER :: iunit ,ik, i, j, nMH
+      INTEGER :: iunit ,ik, i, j, nMH, stype, n, ilinear, ihard, isoft
 
       ! Set lcomm
       lcomm = ((PRESENT(comm_shar_in).and.PRESENT(comm_master_in)).AND.PRESENT(comm_world_in))
@@ -534,6 +576,10 @@
         CALL mpialloc(constant_mu,nstate,  shar_rank,0,comm_shar,win_constant_mu)
         CALL mpialloc(constant_mu_o,nstate,shar_rank,0,comm_shar,win_constant_mu_o)
         CALL mpialloc(M_rem,3,nstate,      shar_rank,0,comm_shar,win_M_rem)
+        CALL mpialloc(tet_P,3,3,4,ntet,    shar_rank,0,comm_shar,win_tet_P)
+        CALL mpialloc(tet_D,3,3,ntet,      shar_rank,0,comm_shar,win_tet_D)
+        CALL mpialloc(tet_v,3,3,4,ntet,    shar_rank,0,comm_shar,win_tet_v)
+
 #endif
       ELSE! if no MPI, allocate everything on one node
           ALLOCATE(vertex(3,nvertex))
@@ -546,10 +592,14 @@
           ALLOCATE(constant_mu(nstate))
           ALLOCATE(constant_mu_o(nstate))
           ALLOCATE(M_rem(3,nstate))
+          ALLOCATE(tet_P(3,3,4,ntet))
+          ALLOCATE(tet_D(3,4,ntet))
+          ALLOCATE(tet_v(3,3,4,ntet))
       END IF
       ALLOCATE(statefunc(nstate))
 
       IF (lismaster) THEN
+        ! Get mesh
         DO ik = 1, nvertex
           READ(iunit,*) vertex(1,ik),vertex(2,ik),vertex(3,ik)
         END DO
@@ -557,30 +607,64 @@
           READ(iunit,*) tet(1,ik),tet(2,ik),tet(3,ik),tet(4,ik),state_dex(ik)
         END DO
 
+        ! Get state functions
+        nlinear = 0
+        nsoft = 0
+        nhard = 0
         DO ik = 1, nstate
           READ(iunit,*) state_type(ik)
-          ! hard magnet with remanent magnetization
+          !------------------------------------ 
+          ! Hard magnet with remanent magnetization
           IF     (state_type(ik) .EQ. TYPE_HARD) THEN
             READ(iunit,*) constant_mu(ik), constant_mu_o(ik)
             READ(iunit,*) M_rem(1,ik), M_rem(2,ik), M_rem(3,ik)
+            nhard = nhard + 1
+          !------------------------------------ 
           ! Soft magnet
           ELSEIF (state_type(ik) .EQ. TYPE_SOFT) THEN
             READ(iunit,*) nMH
-            ALLOCATE(statefunc(ik)%H(nMH), &
-                      statefunc(ik)%M(nMH), &
-                      statefunc(ik)%dMdH(nMH))
+            ALLOCATE(statefunc(ik)%H(nMH),statefunc(ik)%M(nMH),statefunc(ik)%dMdH(nMH))
             READ(iunit,*) statefunc(ik)%H(:)
             READ(iunit,*) statefunc(ik)%M(:)
-            CALL mumaterial_getstate_slopes(statefunc(ik)%H, &
-                                            statefunc(ik)%M, &
-                                            statefunc(ik)%dMdH)
+            CALL mumaterial_getstate_slopes(statefunc(ik)%H,statefunc(ik)%M,statefunc(ik)%dMdH)
+            nsoft = nsoft + 1
+          !------------------------------------ 
           ! Linear
           ELSEIF (state_type(ik) .EQ. TYPE_LINEAR) THEN 
             READ(iunit,*) constant_mu(ik)
+            nlinear = nlinear + 1
           ELSE
             PRINT *, '!!! UNKNOWN STATE_TYPE == ',state_type(ik)
           END IF
         END DO
+        ! Get number of everything
+        ALLOCATE(sdex_linear(nlinear), sdex_soft(nsoft), sdex_hard(nhard))
+        sdex_linear = 0
+        sdex_soft = 0
+        sdex_hard = 0
+
+        ilinear = 0
+        isoft = 0
+        ihard = 0
+        DO ik = 1, nstate
+          n = COUNT(state_dex==ik)
+          stype = state_type(ik)
+          SELECT CASE (stype)
+            CASE (TYPE_LINEAR)
+              ilinear = ilinear + 1
+              sdex_linear(ilinear) = n
+            CASE (TYPE_SOFT)
+              isoft = isoft + 1
+              sdex_soft(isoft) = n
+            CASE (TYPE_HARD) 
+              ihard = ihard  + 1
+              sdex_hard(ihard) = n
+          END SELECT
+        END DO
+        ntet_linear_max = MAXVAL(sdex_linear)
+        ntet_soft_max = MAXVAL(sdex_soft)
+        ntet_hard_max = MAXVAL(sdex_hard)
+        DEALLOCATE(sdex_linear,sdex_soft,sdex_hard)
       END IF
       ! Close file
       CLOSE(iunit)
@@ -609,6 +693,12 @@
           CALL MPI_Bcast(statefunc(ik)%dMdH,nMH,MPI_DOUBLE_PRECISION,0,comm_world,ierr_mpi)
         END IF
       END DO
+      CALL MPI_BCAST(nlinear, 1, MPI_INTEGER, 0, comm_world, ierr_mpi)
+      CALL MPI_BCAST(nsoft,   1, MPI_INTEGER, 0, comm_world, ierr_mpi)
+      CALL MPI_BCAST(nhard,   1, MPI_INTEGER, 0, comm_world, ierr_mpi)
+      CALL MPI_BCAST(ntet_linear_max, 1, MPI_INTEGER, 0, comm_world, ierr_mpi)
+      CALL MPI_BCAST(ntet_soft_max,   1, MPI_INTEGER, 0, comm_world, ierr_mpi)
+      CALL MPI_BCAST(ntet_hard_max,   1, MPI_INTEGER, 0, comm_world, ierr_mpi)
 #endif
       END IF
       ! set default values
@@ -685,9 +775,94 @@
       tet_vol_tot = SUM(tet_vol)
 
       END SUBROUTINE mumaterial_init_mesh
-  !-----------------------------------------------------------------------
-  ! mumaterial_init_happ: Calculates H_app for every local element
-  !-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+! mumaterial_init_states: Constructs dom_linear, dom_soft, dom_hard, which
+! groups mesh elements by their state function. For every dom(i,j) array,
+! j corresponds to the state function, and i are elements.
+!-----------------------------------------------------------------------
+      SUBROUTINE mumaterial_init_states()
+
+      IMPLICIT NONE
+      INTEGER, DIMENSION(:,:), ALLOCATABLE :: dom_linear_temp, dom_soft_temp, dom_hard_temp
+      INTEGER :: itet, j, dex, sdex, stype, free_sdex_lin, free_sdex_soft, free_sdex_hard
+
+      ALLOCATE(dom_linear_temp(ntet_linear_max,nlinear), dom_soft_temp(ntet_soft_max,nsoft), dom_hard_temp(ntet_hard_max,nhard))
+      ALLOCATE(sdex_linear(nlinear), sdex_soft(nsoft), sdex_hard(nhard))
+      ALLOCATE(ntet_linear(nlinear), ntet_soft(nsoft), ntet_hard(nhard))
+      dom_linear_temp = 0;   dom_soft_temp = 0;  dom_hard_temp = 0 ! Element indices
+      ntet_linear = 0; ntet_soft = 0; ntet_hard = 0             ! Number of elements per state function
+      sdex_linear = 0; sdex_soft = 0; sdex_hard = 0             ! State function index
+      free_sdex_lin = 1; free_sdex_soft = 1; free_sdex_hard = 1 ! Next free state function index
+      
+      DO itet = 1, ntet_proc
+        dex = 0
+        sdex = state_dex(itet)
+        stype = state_type(sdex)
+        SELECT CASE (stype)
+          ! Linear
+          CASE (TYPE_LINEAR)
+            DO j = 1, free_sdex_lin-1
+              IF (sdex_linear(j) == sdex) THEN
+                dex = j
+                EXIT
+              END IF
+            END DO
+            IF (dex == 0) THEN
+              sdex_linear(free_sdex_lin) = sdex
+              dex = free_sdex_lin
+              free_sdex_lin = free_sdex_lin + 1
+            END IF
+            ntet_linear(dex) = ntet_linear(dex) + 1
+            dom_linear_temp(ntet_linear(dex),dex) = itet
+          ! Soft
+          CASE (TYPE_SOFT)
+            DO j = 1, free_sdex_soft-1
+              IF (sdex_soft(j) == sdex) THEN
+                dex = j
+                EXIT
+              END IF
+            END DO
+            IF (dex == 0) THEN
+              sdex_soft(free_sdex_soft) = sdex
+              dex = free_sdex_soft
+              free_sdex_soft = free_sdex_soft + 1
+            END IF
+            ntet_soft(dex) = ntet_soft(dex)+1
+            dom_soft_temp(ntet_soft(dex),dex) = itet
+          ! Hard
+          CASE (TYPE_HARD)
+            DO j = 1, free_sdex_hard-1
+              IF (sdex_hard(j) == sdex) THEN
+                dex = j
+                EXIT
+              END IF
+            END DO
+            IF (dex == 0) THEN
+              sdex_hard(free_sdex_hard) = sdex
+              dex = free_sdex_hard
+              free_sdex_hard = free_sdex_hard + 1
+            END IF
+            ntet_hard(dex) = ntet_hard(dex)+1
+            dom_hard_temp(ntet_hard(dex),dex) = itet
+
+        END SELECT
+      END DO
+      ntet_linear_max  = MAXVAL(ntet_linear)
+      ntet_soft_max = MAXVAL(ntet_soft)
+      ntet_hard_max = MAXVAL(ntet_hard) 
+
+      ALLOCATE(dom_linear(ntet_linear_max,nlinear), &
+               dom_soft(ntet_soft_max,nsoft), &
+               dom_hard(ntet_hard_max,nhard))
+      dom_linear = dom_linear_temp(1:ntet_linear_max, :)
+      dom_soft   = dom_soft_temp(1:ntet_soft_max, :)
+      dom_hard   = dom_hard_temp(1:ntet_hard_max, :)
+      DEALLOCATE(dom_linear_temp,dom_hard_temp,dom_soft_temp)
+
+      END SUBROUTINE mumaterial_init_states
+!-----------------------------------------------------------------------
+! mumaterial_init_happ: Calculates H_app for every local element
+!-----------------------------------------------------------------------
       SUBROUTINE mumaterial_init_happ()
 
       IMPLICIT NONE
@@ -723,68 +898,124 @@
       END IF
       END SUBROUTINE mumaterial_init_happ
       
-  !-----------------------------------------------------------------------
-  ! mumaterial_init_neighbors: Finds all neighbors of an element and calculates N_store
-  !-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+! mumaterial_init_demag: Calculates and synchronizes helpers for demagnetization tensor calculation
+!-----------------------------------------------------------------------
+      SUBROUTINE mumaterial_init_demag()
+
+      IMPLICIT NONE
+            
+      INTEGER :: i, i_tile
+
+#if defined(MPI_OPT)
+      IF (shar_rank.EQ.master) THEN
+        tet_P = 0.0d0
+        tet_D = 0.0d0
+        tet_v = 0.0d0
+      END IF
+      CALL MPI_BARRIER(comm_world, ierr_mpi)
+#endif
+      DO i = 1, ntet_proc
+        i_tile = dom_proc(i)
+        CALL GET_DEMAG_HELPERS(vertex(:,tet(1,i)), vertex(:,tet(2,i)), vertex(:,tet(3,i)), vertex(:,tet(4,i)), &
+                               tet_P(:,:,:,i_tile), tet_D(:,:,i_tile), tet_v(:,:,:,i_tile))
+      END DO
+
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(comm_world, ierr_mpi)
+      IF (shar_rank.EQ.master) THEN
+        CALL MPI_ALLREDUCE( MPI_IN_PLACE, tet_P,    3*3*4*ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
+        CALL MPI_ALLREDUCE( MPI_IN_PLACE, tet_D,    3*4*ntet,   MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
+        CALL MPI_ALLREDUCE( MPI_IN_PLACE, tet_v,  3*3*4*ntet,   MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
+      END IF
+      CALL MPI_BARRIER(comm_world, ierr_mpi)
+#endif
+      
+      END SUBROUTINE mumaterial_init_demag
+
+!-----------------------------------------------------------------------
+! mumaterial_init_neighbors: Finds all neighbors of an element and calculates N_store
+!-----------------------------------------------------------------------
       SUBROUTINE mumaterial_init_neighbors()
 
       INTEGER :: i, j, k, i_tile, j_tile
-      INTEGER :: nbrs_proc_min, nbrs_proc_max
-      DOUBLE PRECISION, ALLOCATABLE ::  x ,y, z, dx, dy, dz
-      ! LAPACK
-      DOUBLE PRECISION :: eig(3,3), evals(3), evec(3), WORK(9)
-      INTEGER          :: INFO, LWORK
+      INTEGER :: nbrs_proc_min, nbrs_proc_max, nc
+      DOUBLE PRECISION ::  x ,y, z, dx, dy, dz, cen_i(3)
+      LOGICAL, ALLOCATABLE, DIMENSION(:) :: is_local
 
-      ALLOCATE(nbrs_count(ntet_proc))
-      nbrs_count = 0
-      
+      ALLOCATE(is_local(ntet))
+      is_local = .FALSE.
+      DO i = 1, ntet_proc
+        is_local(dom_proc(i)) = .TRUE.
+      END DO
+
       !-----------------------------------------
       ! Get largest neighbor count for allocation first
+      ! (ignore local elements)
       !-----------------------------------------
+      ALLOCATE(nbrs_count(ntet_proc))
+      nbrs_count = 0
+      nbrs_proc_max = 0
       DO i = 1, ntet_proc
-        x = tet_cen_proc(1,i); y = tet_cen_proc(2,i); z = tet_cen_proc(3,i)
+        nc = 0
+        x = tet_cen_proc(1,i)
+        y = tet_cen_proc(2,i)
+        z = tet_cen_proc(3,i)
         DO j = 1, ntet
-          dx = x - tet_cen(1,j); dy = y - tet_cen(2,j); dz = z - tet_cen(3,j)
-          IF (dx*dx+dy*dy+dz*dz .LE. (padFactor*tet_rad(j))**2) nbrs_count(i) = nbrs_count(i)+1
+          IF (is_local(j)) CYCLE
+          dx = x - tet_cen(1,j)
+          dy = y - tet_cen(2,j)
+          dz = z - tet_cen(3,j)
+          IF (dx*dx+dy*dy+dz*dz .LE. (pF*tet_rad(j))**2) nc = nc + 1
         END DO
+        nbrs_proc_max = MAX(nbrs_proc_max, nc)
+        nbrs_count(i) = nc
       END DO
-      nbrs_proc_max = MAXVAL(nbrs_count)
       ALLOCATE(nbrs_proc(nbrs_proc_max,ntet_proc))
       !-----------------------------------------
       ! Actual neighbor construction
       !-----------------------------------------
       DO i = 1, ntet_proc
-        x = tet_cen_proc(1,i); y = tet_cen_proc(2,i); z = tet_cen_proc(3,i)
+        x = tet_cen_proc(1,i)
+        y = tet_cen_proc(2,i)
+        z = tet_cen_proc(3,i)
         j = 0
         DO k = 1, ntet
-          dx = x - tet_cen(1,k);  dy = y - tet_cen(2,k); dz = z - tet_cen(3,k)
-          IF (dx*dx+dy*dy+dz*dz .LE. (padFactor*tet_rad(k))**2) THEN
+          IF (is_local(k)) CYCLE
+          dx = x - tet_cen(1,k)
+          dy = y - tet_cen(2,k)
+          dz = z - tet_cen(3,k)
+          IF (dx*dx+dy*dy+dz*dz .LE. (pF*tet_rad(k))**2) THEN
             j = j + 1
             nbrs_proc(j,i) = k
           END IF
         END DO
       END DO
+      DEALLOCATE(is_local)
+
       !-----------------------------------------
-      ! Calculate demagnetization tensor, evs
+      ! Calculate demagnetization tensor
       !-----------------------------------------
-      ALLOCATE(N_store(3,3,nbrs_proc_max,ntet_proc),eig_proc(ntet_proc))
-      LWORK = 9
-      N_store(:,:,:,:) = 0.0
+      ALLOCATE(N_store(3,3,nbrs_proc_max,ntet_proc),N_block(3,3,ntet_proc,ntet_proc))
+      N_store= 0.0d0
+      N_block = 0.0d0
       DO i = 1, ntet_proc
         i_tile = dom_proc(i)
+        cen_i = tet_cen(:,i_tile)
         DO j = 1, nbrs_count(i)
           j_tile = nbrs_proc(j,i)
-          N_store(:,:,j,i) = GET_DEMAG(vertex(:,tet(1,j_tile)), vertex(:,tet(2,j_tile)), vertex(:,tet(3,j_tile)), vertex(:,tet(4,j_tile)), tet_cen(:,i_tile)) 
-          ! Eigenvalue
-          IF (j_tile.EQ.i_tile) THEN
-            eig = N_store(:,:,j,i)
-            CALL DSYEV('N','U',3,eig,3,evals,WORK,LWORK,INFO)
-            IF (INFO.NE.0) THEN
-              WRITE(6,"(2X,A,I0,A,I0)") "ERROR: Rank ", world_rank, " / DSYEV failed, INFO = ", INFO 
-              CALL mumaterial_abort()
-            END IF
-            eig_proc(i) = MAXVAL(ABS(evals))
-          END IF
+          N_store(:,:,j,i) = GET_DEMAG(tet_P(:,:,:,j_tile), &
+                                       tet_D(:,:,j_tile), &
+                                       tet_v(:,:,:,j_tile), &
+                                       cen_i) 
+        END DO 
+        ! Full cluster
+        DO j = 1, ntet_proc
+          j_tile = dom_proc(j)
+          N_block(:,:,j,i) =  GET_DEMAG(tet_P(:,:,:,j_tile), &
+                                        tet_D(:,:,j_tile), &
+                                        tet_v(:,:,:,j_tile), &
+                                        cen_i) 
         END DO 
       END DO
       !-----------------------------------------
@@ -1176,7 +1407,10 @@
         FLUSH(6)
       END IF
   #endif
-
+      ALLOCATE(vol_proc(ntet_proc))
+      DO i = 1, ntet_proc
+        vol_proc(i) = tet_vol(dom_proc(i))
+      END DO
       RETURN
       END SUBROUTINE mumaterial_split_share
 
@@ -1355,7 +1589,7 @@
       IF (lnoiter) THEN
         WRITE(iunit,'(3X,A)') '!!! SKIPPING ITERATIONS !!!'
       ELSE
-        WRITE(iunit,'(3X,A,F9.3)')  'Pad factor   : ',padFactor
+        WRITE(iunit,'(3X,A,F9.3)')  'Pad factor   : ',pF
         WRITE(iunit,'(3X,A,I9)')    'Max Iter.    : ',maxIter
         WRITE(iunit,'(3X,A,ES9.2)') 'Max Error    : ',threshold
         WRITE(iunit,'(3X,A,F9.3)')  'Lambda start : ',lambdaStart
@@ -1413,8 +1647,12 @@
       CALL mumaterial_split_world()   
       ! Split MPI subdomains across MPI ranks
       CALL mumaterial_split_share() 
+      ! Sort elements by material type
+      CALL mumaterial_init_states()
       ! Calculate background field for rank-local elements
-      CALL mumaterial_init_happ() 
+      CALL mumaterial_init_happ()
+      ! Setup for demagnetization tensors
+      CALL mumaterial_init_demag()
       ! Get nearest neighbors
       CALL mumaterial_init_neighbors()
       ! Build clusters
@@ -1448,132 +1686,113 @@
       SUBROUTINE mumaterial_iterate()
       IMPLICIT NONE
 
-      !------------------------ PRIMARY PICARD LOOP --------------------------!
+      ! Picard loop
       INTEGER :: iter, i, j, i_tile
+      INTEGER :: stype, sdex
       DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: res_M, res_M_prev
-      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: lambda_n, lambda_max
-      DOUBLE PRECISION :: chi_loc, Hnorm, x, lambda_min
-      DOUBLE PRECISION, PARAMETER :: alpha = 0.95d0
-      INTEGER, PARAMETER :: iter_recalc = 1, iter_warm = 1000
-      !----------------------- SECONDARY PICARD LOOP -------------------------!
-      INTEGER :: stype
-      DOUBLE PRECISION :: H_noself(3), M_targ(3), mu, M_targ_norm, M_max
-      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: H_prev
-      LOGICAL :: lnocap, lfulldipole
-      !--------------------------- DISPLAY ONLY ------------------------------!
-      INTEGER ::          i_tile_bad
+      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: lambda_n
+      DOUBLE PRECISION :: M_targ(3), chi, M_targ_norm
+      LOGICAL :: lfulldipole
+      DOUBLE PRECISION, PARAMETER :: lambda_min = 0.1d0
+      INTEGER, PARAMETER :: iter_recalc = 1
+      ! Convergence, residuals
+      DOUBLE PRECISION :: conv_loc, conv_glob
+      DOUBLE PRECISION, ALLOCATABLE :: dW(:), W(:), f(:)
+      LOGICAL, ALLOCATABLE :: is_conv(:)
+      DOUBLE PRECISION :: r_M_loc, r_M_max
+      DOUBLE PRECISION :: dW_cl,  W_cl,  r_W_cl 
+      DOUBLE PRECISION :: dW_all, W_all, r_W_all
+      DOUBLE PRECISION :: M2, c1, c2
+      ! Verbose
+      INTEGER ::          i_bad
       DOUBLE PRECISION :: pair_in(2), pair_out(2)
       DOUBLE PRECISION :: M_targ_bad, H_norm_bad, M_norm_bad, lambda_bad
-      DOUBLE PRECISION :: r_M_loc, r_M_glob, dW, W, dW_cl, W_cl, dW_all, W_all, r_W, r_W_max, r_W_all, r_W_cl
-      DOUBLE PRECISION ::  info_max(6)
+      DOUBLE PRECISION :: info_max(6)
       INTEGER, PARAMETER :: TAG_WORST = 4547
       !-----------------------------------------------------------------------!
       ALLOCATE(res_M(3,ntet_proc),res_M_prev(3,ntet_proc))
-      ALLOCATE(H_prev(3,ntet_proc))
-      ALLOCATE(lambda_n(ntet_proc),lambda_max(ntet_proc))
+      ALLOCATE(lambda_n(ntet_proc))
+      ALLOCATE(is_conv(ntet_proc))
+      ALLOCATE(f(ntet_proc),W(ntet_proc),dW(ntet_proc))
       H_prev = 0.0d0
       lambda_n = lambdaStart
       res_M = 0.0d0
+      is_conv = .FALSE.
+      f = 0.5d0*MU0*vol_proc
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !------------------------------ PRIMARY LOOP ---------------------------------!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       DO iter = 1, maxiter
-        ! Reset residues        
-        r_W_max = -1.0d0; r_W_cl = 0.0d0; r_W_all = 0.0d0
-        dW_cl = 0.0d0; W_cl = 0.0d0;
-        res_M_prev = res_M
         !-----------------------------
         ! Update background field
         !-----------------------------   
         lfulldipole = (MOD(iter,iter_recalc).EQ.0)
         CALL mumaterial_applied_field() ! Sets H_ext = H_app
         CALL mumaterial_cluster_field() ! Sets H_ext = H_ext + H_cluster
-        CALL mumaterial_dipole_field(lfulldipole) ! Sets H_ext = H_ext + H_dipoles
+        CALL mumaterial_dipole_field(lfulldipole) ! Calculates H_mid
+        H_ext = H_ext + H_mid
+        
+        !-----------------------------------
+        ! Block solve for local cluster
+        !-----------------------------------  
+        CALL mumaterial_block_solve() 
+        ! Reset residues        
+        dW_cl = 0.0d0; W_cl = 0.0d0;
+        res_M_prev = res_M
+        r_M_max = -1.0d0
         DO i = 1, ntet_proc
-          !-----------------------------
-          ! Get all fields except self
-          !-----------------------------    
-          i_tile = dom_proc(i)      ! Tile index in global array
-          H_noself = H_ext(:,i)+H_mid(:,i)          ! Non-neighbors and external sources
-          DO j = 2, nbrs_count(i)   ! Get full N.M field from neighbors
-            H_noself = H_noself + MATMUL(N_store(:,:,j,i), M_partial(:, nbrs_proc(j,i)))
-          END DO
-          !-----------------------------
-          ! Picard H-solver
-          !-----------------------------    
-          ! Select type (hard magnet, soft magnet, linear medium)
-          stype = state_type(state_dex(i_tile))
-          SELECT CASE (stype)
-            CASE (TYPE_HARD) ! Hard magnet
-              CALL mumaterial_picard_rem( H_noself, H_prev(:,i), i, M_targ, lnocap)
-            CASE (TYPE_SOFT) ! Soft magnet using state function
-              CALL mumaterial_NR_soft(H_noself, H_prev(:,i), i, M_targ, lnocap)
-            CASE (TYPE_LINEAR) ! Constant permeability solved directly
-              CALL mumaterial_linear_solve(H_noself, H_prev(:,i), i, M_targ)
-            CASE DEFAULT ! Something went wrong.
-              WRITE(6,"(2X,A,I0,A,I0,A,I0)") "  ERROR: Rank ", world_rank, &
-                                    " encountered unknown magnet type ", stype,&
-                                    " on tile ", i_tile
-              CALL mumaterial_abort()
-            END SELECT
-          !-----------------------------------
-          ! Step magnetization towards target
-          !-----------------------------------  
-          res_M(:,i)   = M_targ - M_local(:,i) ! target - old
+          res_M(:,i)   = M_spline(:,i) - M_local(:,i) ! target - old
           M_local(:,i) = M_local(:,i) + lambda_n(i)*res_M(:,i)
-          !-----------------------------------
-          ! Check convergence
-          !-----------------------------------  
-          M_targ_norm = NORM2(M_targ)
-          IF (M_targ_norm .GT. small) THEN
-            r_M_loc = NORM2(res_M(:,i))/M_targ_norm
-            dW = ABS(0.5d0*MU0*tet_vol(i_tile)*DOT_PRODUCT(H_prev(:,i),res_M(:,i)))
-            W =  ABS(0.5d0*MU0*tet_vol(i_tile)*DOT_PRODUCT(H_prev(:,i),H_prev(:,i)+M_local(:,i)))
-            r_W = dW/MAX(W,small)
-            dW_cl = dW_cl + dW
-            W_cl  =  W_cl + W
-          ELSE
-            r_M_loc = 0.0d0
-            r_W = 0.0d0
+        END DO
+
+        ! Magnetization residual
+        r_M_loc = 0.0d0
+        DO i = 1, ntet_proc
+          M2 = DOT_PRODUCT(M_spline(:,i), M_spline(:,i))+small
+          r_M_loc = SQRT(DOT_PRODUCT(res_M(:,i),res_M(:,i))/M2)
+          is_conv(i) = (r_M_loc.LT.threshold)  
+          IF (r_M_loc.GT.r_M_max) THEN
+            r_M_max = r_M_loc
+            i_bad = i
           END IF
-          !-----------------------------------
-          ! Find worst residual for printing
-          !-----------------------------------  
-          IF (r_W.GT.r_W_max) THEN
-            r_W_max = r_W
-            info_max = (/r_W_max, DBLE(i_tile), NORM2(H_prev(:,i)),  NORM2(M_local(:,i)), NORM2(res_M(:,i)), lambda_n(i)/)
-          END IF
-          !-----------------------------------
-          ! Handle lambda
-          !-----------------------------------  
-          IF (stype.EQ.TYPE_SOFT) THEN
-            Hnorm = NORM2(H_prev(:,i))
-            CALL mumaterial_getstate_scalar_new(statefunc(state_dex(i_tile))%H, &
-                                                statefunc(state_dex(i_tile))%M, &
-                                                statefunc(state_dex(i_tile))%dMdH, &
-                                                Hnorm, x, chi_loc)
-            lambda_min = MIN(ABS(2.0d0/(1-chi_loc*eig_proc(i))), 0.5d0) ! Lambda from linear stability
-          ELSE
-            lambda_min = 1.0D-3
-          END IF
-          IF (r_M_loc.LT.threshold) THEN
+        END DO
+        info_max = (/r_M_max, DBLE(dom_proc(i_bad)), NORM2(H_prev(:,i_bad)),  NORM2(M_local(:,i_bad)), NORM2(res_M(:,i_bad)), lambda_n(i_bad)/)
+        conv_loc = 0.0
+        DO i = 1, ntet_proc
+          conv_loc = conv_loc + vol_proc(i)*is_conv(i) ! Track converged volume
+        END DO
+
+        ! Energy residual
+        dW = f * (H_prev(:,1)*res_M(:,1) + H_prev(:,2)*res_M(:,2) + H_prev(:,3)*res_M(:,3))
+        W  = f * (H_prev(:,1)*(H_prev(:,1)+M_local(:,1)) + &
+                  H_prev(:,2)*(H_prev(:,2)+M_local(:,2)) + &
+                  H_prev(:,3)*(H_prev(:,3)+M_local(:,3)))
+        W_cl = SUM(ABS(W))
+        dW_cl = SUM(ABS(dW))
+
+        !-----------------------------------
+        ! Handle lambda
+        !-----------------------------------  
+        DO i = 1, ntet_proc
+          IF (is_conv(i)) THEN
             ! Change nothing
           ELSE IF ((DOT_PRODUCT(res_M(:,i),res_M_prev(:,i))<0.0) .AND. (NORM2(res_M(:,i))>NORM2(res_M_prev(:,i)))) THEN 
-            lambda_n(i) = lambda_min
+            lambda_n(i) = lambda_n(i)*lambdaFactor
           ELSE IF (NORM2(res_M(:,i)).LT.NORM2(res_M_prev(:,i))) THEN
             lambda_n(i) = lambda_n(i) * 1.05
           END IF
           lambda_n(i) = MAX(MIN(lambda_n(i),1.0d0), lambda_min) ! Clamp
-
         END DO
+
         !-----------------------------------
         ! Master prints to screen each iteration
         !----------------------------------- 
+        r_W_cl = 0.0d0; r_W_all = 0.0d0
         IF (W_cl.GT.small) r_W_cl = dW_cl/W_cl
         IF (lcomm) THEN
 #if defined(MPI_OPT)
           ! Worst element
-          pair_in(1) = r_W_max; pair_in(2) = DBLE(world_rank)
+          pair_in(1) = r_M_max; pair_in(2) = DBLE(world_rank)
           CALL MPI_ALLREDUCE(pair_in,pair_out,1, MPI_2DOUBLE_PRECISION, MPI_MAXLOC, comm_world, ierr_mpi)
           CALL MPI_BCAST(info_max, 6, MPI_DOUBLE_PRECISION, INT(pair_out(2)), comm_world, ierr_mpi)
           ! Cluster
@@ -1582,19 +1801,23 @@
           CALL MPI_ALLREDUCE(dW_cl, dW_all, 1, MPI_DOUBLE_PRECISION, MPI_SUM, comm_world, ierr_mpi) 
           CALL MPI_ALLREDUCE( W_cl,  W_all, 1, MPI_DOUBLE_PRECISION, MPI_SUM, comm_world, ierr_mpi) 
           IF (W_all.GT.small) r_W_all = dW_all/W_all
+          ! Convergence
+          CALL MPI_ALLREDUCE(conv_loc, conv_glob, 1, MPI_DOUBLE_PRECISION, MPI_SUM, comm_world, ierr_mpi) 
 #endif
         ELSE
           r_W_all = r_W_cl
+          conv_glob = conv_loc
         END IF
         IF (lverb) THEN 
           IF (iter.EQ.1) THEN
-            WRITE(6,'(/,A)') '  iter  dW/W_all   dW/W_cl  dW/W_max |    tile     Hnorm     Mnorm    dMnorm'
+            WRITE(6,'(/,A)') '  iter  dW/W_all   dW/W_cl  dM/M_max |    tile     Hnorm     Mnorm    dMnorm'
             WRITE(6,*)       '==============================================================================='
           END IF
-          WRITE(6,'(1X,I5,3ES10.3,A,I7,3ES10.3,F7.4)') iter, r_W_all, r_W_cl,info_max(1), ' | ', & 
+          WRITE(6,'(1X,I5,3ES10.3,A,I7,3ES10.3,F7.4)') iter, r_W_all, r_W_cl, info_max(1), ' | ', & 
                       INT(info_max(2)),info_max(3),info_max(4),info_max(5), info_max(6)
           CALL FLUSH(6)
         END IF
+
         !-----------------------------
         ! Synchronize
         !-----------------------------    
@@ -1618,7 +1841,8 @@
       END IF
       CALL mumaterial_cluster_update(R_quad,mom_quad) ! One last update
 
-      DEALLOCATE(res_M,res_M_prev,H_prev,lambda_n,lambda_max)
+      DEALLOCATE(res_M,res_M_prev,lambda_n)
+      DEALLOCATE(f,dW,W)
 
       RETURN
       END SUBROUTINE mumaterial_iterate
@@ -1695,214 +1919,188 @@
 
       END SUBROUTINE mumaterial_syncmag
 
+! !-----------------------------------------------------------------------
+! ! mumaterial_picard_rem: Determines M_targ for given H_back. Limits relative
+! ! change in H.
+! !-----------------------------------------------------------------------
+! ! param[in]: H_back. Input magnetic field
+! ! param[inout]: H_prev. Last iteration's magnetic field. overwritten.
+! ! param[in]: i. local index
+! ! param[out]: M_targ. Target magnetization
+! ! param[out]: lgood. True if change in H was not limited.
+! !-----------------------------------------------------------------------
+!       SUBROUTINE mumaterial_picard_rem(H_back, i, M_targ,  lgood)
 
-      SUBROUTINE mumaterial_linear_solve(H_back, H_prev, i, M_targ)
+!       IMPLICIT NONE
 
-      IMPLICIT NONE
+!       DOUBLE PRECISION, INTENT(in)  :: H_back(3)
+!       INTEGER, INTENT(in)           :: i ! LOCAL index!
+!       DOUBLE PRECISION, INTENT(out) :: M_targ(3)
+!       LOGICAL, INTENT(out)          :: lgood
 
-      DOUBLE PRECISION, INTENT(in)  :: H_back(3)
-      DOUBLE PRECISION, INTENT(inout) :: H_prev(3)
-      INTEGER, INTENT(in)           :: i ! LOCAL index!
-      DOUBLE PRECISION, INTENT(out) :: M_targ(3)
+!       INTEGER :: iter, i_tile
+!       DOUBLE PRECISION :: lambda_k
 
-      DOUBLE PRECISION :: chi, MAT(3,3)
-      INTEGER :: i_tile
+!       DOUBLE PRECISION :: M_rem_norm, u_ea(3), u_oa_1(3), u_oa_2(3), mu_ea, mu_oa 
+!       DOUBLE PRECISION :: H_next(3), H_new(3), H_targ(3), M_targ_old(3), H_norm
+!       DOUBLE PRECISION :: res_M_loc(3), res_rel_M, res_H(3), res_rel_H
+!       DOUBLE PRECISION :: H_norm_prev, dH_norm, dH(3)
 
-      i_tile = dom_proc(i)
+!       DOUBLE PRECISION, PARAMETER :: r0 = 1.0D-3
+!       INTEGER, PARAMETER          :: maxi = 1000
+!       DOUBLE PRECISION, PARAMETER :: dH_rel_max = 0.1
 
-      chi = constant_mu(state_dex(i_tile)) - 1.0d0
-      MAT = (I3 - chi*N_store(:,:,1,i))
-      H_prev = SOLVE_3x3(MAT, H_back, "LINSOLVE")
-      M_targ = chi*H_prev
-
-      RETURN
-
-      END SUBROUTINE mumaterial_linear_solve
-
-!-----------------------------------------------------------------------
-! mumaterial_picard_rem: Determines M_targ for given H_back. Limits relative
-! change in H.
-!-----------------------------------------------------------------------
-! param[in]: H_back. Input magnetic field
-! param[inout]: H_prev. Last iteration's magnetic field. overwritten.
-! param[in]: i. local index
-! param[out]: M_targ. Target magnetization
-! param[out]: lgood. True if change in H was not limited.
-!-----------------------------------------------------------------------
-      SUBROUTINE mumaterial_picard_rem(H_back, H_prev, i, M_targ,  lgood)
-
-      IMPLICIT NONE
-
-      DOUBLE PRECISION, INTENT(in)  :: H_back(3)
-      DOUBLE PRECISION, INTENT(inout) :: H_prev(3)
-      INTEGER, INTENT(in)           :: i ! LOCAL index!
-      DOUBLE PRECISION, INTENT(out) :: M_targ(3)
-      LOGICAL, INTENT(out)          :: lgood
-
-      INTEGER :: iter, i_tile
-      DOUBLE PRECISION :: lambda_k
-
-      DOUBLE PRECISION :: M_rem_norm, u_ea(3), u_oa_1(3), u_oa_2(3), mu_ea, mu_oa 
-      DOUBLE PRECISION :: H_next(3), H_new(3), H_targ(3), M_targ_old(3), H_norm
-      DOUBLE PRECISION :: res_M_loc(3), res_rel_M, res_H(3), res_rel_H
-      DOUBLE PRECISION :: H_norm_prev, dH_norm, dH(3)
-
-      DOUBLE PRECISION, PARAMETER :: r0 = 1.0D-3
-      INTEGER, PARAMETER          :: maxi = 1000
-      DOUBLE PRECISION, PARAMETER :: dH_rel_max = 0.1
-
-      ! Get easy axis (ea) and off axis (oa); ea assumed parallel to remanent magnetization
-      i_tile = dom_proc(i)
-      M_rem_norm = NORM2(M_rem(:,state_dex(i_tile)))
-      mu_ea = constant_mu(  state_dex(i_tile))
-      mu_oa = constant_mu_o(state_dex(i_tile))
-      u_ea = M_rem(:,state_dex(i_tile))/M_rem_norm 
-      IF (u_ea(2).NE.0 .OR. u_ea(3).NE.0) THEN      ! x-product of u_ea with [1, 0, 0]; x-product of u_ea with u_oa_1
-          u_oa_1 = [0.d0, u_ea(3), -u_ea(2)]
-          u_oa_2 = [-u_ea(2)*u_ea(2) - u_ea(3)*u_ea(3), u_ea(1)*u_ea(2), u_ea(1)*u_ea(3)]
-      ELSE                                          ! x-product of u_ea with [0, 1, 0]; x-product of u_ea with u_oa_1
-          u_oa_1 = [-u_ea(3), 0.d0, u_ea(1)]
-          u_oa_2 = [u_ea(1)*u_ea(2), -u_ea(1)*u_ea(1) - u_ea(3)*u_ea(3), u_ea(2)*u_ea(3)]
-      END IF
-      u_oa_1 = u_oa_1/NORM2(u_oa_1)
-      u_oa_2 = u_oa_2/NORM2(u_oa_2)
+!       ! Get easy axis (ea) and off axis (oa); ea assumed parallel to remanent magnetization
+!       i_tile = dom_proc(i)
+!       M_rem_norm = NORM2(M_rem(:,state_dex(i_tile)))
+!       mu_ea = constant_mu(  state_dex(i_tile))
+!       mu_oa = constant_mu_o(state_dex(i_tile))
+!       u_ea = M_rem(:,state_dex(i_tile))/M_rem_norm 
+!       IF (u_ea(2).NE.0 .OR. u_ea(3).NE.0) THEN      ! x-product of u_ea with [1, 0, 0]; x-product of u_ea with u_oa_1
+!           u_oa_1 = [0.d0, u_ea(3), -u_ea(2)]
+!           u_oa_2 = [-u_ea(2)*u_ea(2) - u_ea(3)*u_ea(3), u_ea(1)*u_ea(2), u_ea(1)*u_ea(3)]
+!       ELSE                                          ! x-product of u_ea with [0, 1, 0]; x-product of u_ea with u_oa_1
+!           u_oa_1 = [-u_ea(3), 0.d0, u_ea(1)]
+!           u_oa_2 = [u_ea(1)*u_ea(2), -u_ea(1)*u_ea(1) - u_ea(3)*u_ea(3), u_ea(2)*u_ea(3)]
+!       END IF
+!       u_oa_1 = u_oa_1/NORM2(u_oa_1)
+!       u_oa_2 = u_oa_2/NORM2(u_oa_2)
       
-      ! Initialize picard
-      lambda_k = MIN(1/mu_ea, 1/mu_oa, 0.5)
-      H_next = H_back
-      H_new = H_next
-      M_targ_old = 0.0d0
-      DO iter = 1, maxi
-        ! Determine magnetization taking into account easy axis
-        M_targ = (M_rem_norm + (mu_ea-1)*DOT_PRODUCT(H_next,u_ea))*u_ea &
-                             + (mu_oa-1)*DOT_PRODUCT(H_next,u_oa_1)*u_oa_1 &
-                             + (mu_oa-1)*DOT_PRODUCT(H_next,u_oa_2)*u_oa_2
-        ! Update H-field
-        H_targ = H_back + MATMUL(N_store(:,:,1,i), M_targ)
-        res_H = H_targ - H_new
-        H_next = H_new + lambda_k * res_H
-        ! Residues
-        res_M_loc = M_targ - M_targ_old
-        res_rel_M = NORM2(res_M_loc)/MAX(NORM2(M_targ), small)
-        res_rel_H = NORM2(res_H    )/MAX(NORM2(H_targ), small)
-        ! Converged?
-        IF ((res_rel_H.LE.r0).AND.(res_rel_M.LE.r0)) EXIT
-        ! Update "old"
-        H_new = H_next
-        M_targ_old = M_targ
-      END DO
-      ! Cap change in H
-      lgood = .TRUE.
-      H_norm_prev = NORM2(H_prev)
-      dH = H_next-H_prev
-      dH_norm = NORM2(dH)
-      IF (H_norm_prev.GE.small) THEN
-        IF (dH_norm/H_norm_prev.GT.dH_rel_max) THEN
-          H_next = H_prev + (dH_rel_max*H_norm_prev)*(dH/dH_norm)
-          lgood = .FALSE.
-        END IF
-      END IF
-      ! Recalculate M
-      M_targ = (M_rem_norm + (mu_ea-1)*DOT_PRODUCT(H_next,u_ea))*u_ea &
-                           + (mu_oa-1)*DOT_PRODUCT(H_next,u_oa_1)*u_oa_1 &
-                           + (mu_oa-1)*DOT_PRODUCT(H_next,u_oa_2)*u_oa_2
-      H_prev = H_next
-      RETURN
+!       ! Initialize picard
+!       lambda_k = MIN(1/mu_ea, 1/mu_oa, 0.5)
+!       H_next = H_back
+!       H_new = H_next
+!       M_targ_old = 0.0d0
+!       DO iter = 1, maxi
+!         ! Determine magnetization taking into account easy axis
+!         M_targ = (M_rem_norm + (mu_ea-1)*DOT_PRODUCT(H_next,u_ea))*u_ea &
+!                              + (mu_oa-1)*DOT_PRODUCT(H_next,u_oa_1)*u_oa_1 &
+!                              + (mu_oa-1)*DOT_PRODUCT(H_next,u_oa_2)*u_oa_2
+!         ! Update H-field
+!         H_targ = H_back + MATMUL(N_store(:,:,1,i), M_targ)
+!         res_H = H_targ - H_new
+!         H_next = H_new + lambda_k * res_H
+!         ! Residues
+!         res_M_loc = M_targ - M_targ_old
+!         res_rel_M = NORM2(res_M_loc)/MAX(NORM2(M_targ), small)
+!         res_rel_H = NORM2(res_H    )/MAX(NORM2(H_targ), small)
+!         ! Converged?
+!         IF ((res_rel_H.LE.r0).AND.(res_rel_M.LE.r0)) EXIT
+!         ! Update "old"
+!         H_new = H_next
+!         M_targ_old = M_targ
+!       END DO
+!       ! Cap change in H
+!       lgood = .TRUE.
+!       H_norm_prev = NORM2(H_prev)
+!       dH = H_next-H_prev
+!       dH_norm = NORM2(dH)
+!       IF (H_norm_prev.GE.small) THEN
+!         IF (dH_norm/H_norm_prev.GT.dH_rel_max) THEN
+!           H_next = H_prev + (dH_rel_max*H_norm_prev)*(dH/dH_norm)
+!           lgood = .FALSE.
+!         END IF
+!       END IF
+!       ! Recalculate M
+!       M_targ = (M_rem_norm + (mu_ea-1)*DOT_PRODUCT(H_next,u_ea))*u_ea &
+!                            + (mu_oa-1)*DOT_PRODUCT(H_next,u_oa_1)*u_oa_1 &
+!                            + (mu_oa-1)*DOT_PRODUCT(H_next,u_oa_2)*u_oa_2
+!       H_prev = H_next
+!       RETURN
 
-      END SUBROUTINE mumaterial_picard_rem
+!       END SUBROUTINE mumaterial_picard_rem
 
-!-----------------------------------------------------------------------
-! mumaterial_picard_soft: Determines M_targ for given H_back. Limits relative
-! change in H.
-!-----------------------------------------------------------------------
-! param[in]: H_back. Input magnetic field
-! param[inout]: H_prev. Last iteration's magnetic field. overwritten.
-! param[in]: i. local index
-! param[out]: M_targ. Target magnetization
-! param[out]: lgood. True if change in H was not limited.
-!-----------------------------------------------------------------------
-      SUBROUTINE mumaterial_picard_soft(H_back, H_prev, i, M_targ, lgood)
+! !-----------------------------------------------------------------------
+! ! mumaterial_picard_soft: Determines M_targ for given H_back. Limits relative
+! ! change in H.
+! !-----------------------------------------------------------------------
+! ! param[in]: H_back. Input magnetic field
+! ! param[inout]: H_prev. Last iteration's magnetic field. overwritten.
+! ! param[in]: i. local index
+! ! param[out]: M_targ. Target magnetization
+! ! param[out]: lgood. True if change in H was not limited.
+! !-----------------------------------------------------------------------
+!       SUBROUTINE mumaterial_picard_soft(H_back, i, M_targ, lgood)
       
-      DOUBLE PRECISION, INTENT(in)  :: H_back(3)
-      DOUBLE PRECISION, INTENT(inout) :: H_prev(3)
-      INTEGER, INTENT(in)           :: i ! LOCAL index!
-      DOUBLE PRECISION, INTENT(out) :: M_targ(3)
-      LOGICAL, INTENT(out)          :: lgood
+!       DOUBLE PRECISION, INTENT(in)  :: H_back(3)
+!       INTEGER, INTENT(in)           :: i ! LOCAL index!
+!       DOUBLE PRECISION, INTENT(out) :: M_targ(3)
+!       LOGICAL, INTENT(out)          :: lgood
 
-      INTEGER :: iter, i_tile
-      DOUBLE PRECISION :: lambda_k
+!       INTEGER :: iter, i_tile
+!       DOUBLE PRECISION :: lambda_k
 
-      DOUBLE PRECISION :: H_next(3), H_new(3), H_targ(3), H_norm, M_targ_norm
-      DOUBLE PRECISION :: dH(3), dH_rel
-      DOUBLE PRECISION :: H_norm_prev, dH_norm
-      DOUBLE PRECISION :: mu, MAT(3,3)
+!       DOUBLE PRECISION :: H_next(3), H_new(3), H_targ(3), H_norm, M_targ_norm
+!       DOUBLE PRECISION :: dH(3), dH_rel
+!       DOUBLE PRECISION :: H_norm_prev, dH_norm
+!       DOUBLE PRECISION :: mu, MAT(3,3)
 
-      INTEGER, PARAMETER          :: maxi = 1000
-      DOUBLE PRECISION, PARAMETER :: dH_rel_max = 0.1
+!       INTEGER, PARAMETER          :: maxi = 1000
+!       DOUBLE PRECISION, PARAMETER :: dH_rel_max = 0.1
 
-      lgood = .TRUE.
-      i_tile = dom_proc(i)
-      ASSOCIATE( sH => statefunc(state_dex(i_tile))%H, &
-                 sM => statefunc(state_dex(i_tile))%M, &
-                 m  => statefunc(state_dex(i_tile))%dMdH, &
-                 N_self => N_store(:,:,1,i))
+!       lgood = .TRUE.
+!       i_tile = dom_proc(i)
+!       ASSOCIATE( sH => statefunc(state_dex(i_tile))%H, &
+!                  sM => statefunc(state_dex(i_tile))%M, &
+!                  m  => statefunc(state_dex(i_tile))%dMdH, &
+!                  N_self => N_store(:,:,1,i))
 
-      ! Inital guess
-      CALL mumaterial_getstate_scalar_new(sH, sM, m, NORM2(H_back), M_targ_norm, mu) ! mu = chi
-      H_new = MATMUL(INVERT_3x3(I3 - mu*N_self),H_back)
-      !----------------------------------------
-      ! Iterative solver
-      !----------------------------------------
-      DO iter = 1, maxi
-        H_norm = NORM2(H_new)
-        CALL mumaterial_getstate_scalar_new(sH, sM, m, H_norm, M_targ_norm)
-        IF (H_norm .GT. 0.0d0) THEN
-          M_targ = M_targ_norm * H_new / H_norm
-          lambda_k = MIN(H_norm/M_targ_norm, 0.5d0)
-        ELSE
-          M_targ = 0.0d0
-          lambda_k = 0.5d0
-        END IF
-        ! Update H-field
-        H_targ = H_back + MATMUL(N_self, M_targ)
-        dH = H_targ - H_new
-        H_next = H_new + lambda_k * dH
-        ! Residues
-        dH_rel = NORM2(dH)/MAX(NORM2(H_targ), small)
-        ! Converged?
-        IF ((dH_rel.LE.threshold).OR.(NORM2(H_new).LT.small)) EXIT
-        ! Update "old"
-        H_new = H_next
-      END DO
-      !----------------------------------------
-      ! Solver done; cap H
-      !----------------------------------------
-      H_norm_prev = NORM2(H_prev)
-      dH = H_next-H_prev
-      dH_norm = NORM2(dH)
-      IF (H_norm_prev.GE.small) THEN
-        IF (dH_norm/H_norm_prev.GT.dH_rel_max) THEN
-          H_next = H_prev + (dH_rel_max*H_norm_prev)*(dH/dH_norm)
-          lgood = .FALSE.
-        END IF
-      END IF
-      !----------------------------------------
-      ! Recalculate M
-      !----------------------------------------
-      H_norm = NORM2(H_next)
-      CALL mumaterial_getstate_scalar_new(sH, sM, m, H_norm, M_targ_norm)
-      END ASSOCIATE
-      IF (H_norm .GT. small) THEN
-            M_targ = M_targ_norm * H_next / H_norm
-      ELSE
-            M_targ = 0
-      END IF
+!       ! Inital guess
+!       CALL mumaterial_getstate_scalar_new(sH, sM, m, NORM2(H_back), M_targ_norm, mu) ! mu = chi
+!       H_new = MATMUL(INVERT_3x3(I3 - mu*N_self),H_back)
+!       !----------------------------------------
+!       ! Iterative solver
+!       !----------------------------------------
+!       DO iter = 1, maxi
+!         H_norm = NORM2(H_new)
+!         CALL mumaterial_getstate_scalar_new(sH, sM, m, H_norm, M_targ_norm)
+!         IF (H_norm .GT. 0.0d0) THEN
+!           M_targ = M_targ_norm * H_new / H_norm
+!           lambda_k = MIN(H_norm/M_targ_norm, 0.5d0)
+!         ELSE
+!           M_targ = 0.0d0
+!           lambda_k = 0.5d0
+!         END IF
+!         ! Update H-field
+!         H_targ = H_back + MATMUL(N_self, M_targ)
+!         dH = H_targ - H_new
+!         H_next = H_new + lambda_k * dH
+!         ! Residues
+!         dH_rel = NORM2(dH)/MAX(NORM2(H_targ), small)
+!         ! Converged?
+!         IF ((dH_rel.LE.threshold).OR.(NORM2(H_new).LT.small)) EXIT
+!         ! Update "old"
+!         H_new = H_next
+!       END DO
+!       !----------------------------------------
+!       ! Solver done; cap H
+!       !----------------------------------------
+!       H_norm_prev = NORM2(H_prev)
+!       dH = H_next-H_prev
+!       dH_norm = NORM2(dH)
+!       IF (H_norm_prev.GE.small) THEN
+!         IF (dH_norm/H_norm_prev.GT.dH_rel_max) THEN
+!           H_next = H_prev + (dH_rel_max*H_norm_prev)*(dH/dH_norm)
+!           lgood = .FALSE.
+!         END IF
+!       END IF
+!       !----------------------------------------
+!       ! Recalculate M
+!       !----------------------------------------
+!       H_norm = NORM2(H_next)
+!       CALL mumaterial_getstate_scalar_new(sH, sM, m, H_norm, M_targ_norm)
+!       END ASSOCIATE
+!       IF (H_norm .GT. small) THEN
+!             M_targ = M_targ_norm * H_next / H_norm
+!       ELSE
+!             M_targ = 0
+!       END IF
       
-      IF (iter.GE.maxi)  WRITE(6,'(A,I0,A,ES12.4,A,ES12.4,A)') "[",i_tile,"] H-solve exceed maxi (H=",H_norm, " res=",dH_rel,")"
-      H_prev = H_next
-      RETURN
+!       IF (iter.GE.maxi)  WRITE(6,'(A,I0,A,ES12.4,A,ES12.4,A)') "[",i_tile,"] H-solve exceed maxi (H=",H_norm, " res=",dH_rel,")"
+!       H_prev = H_next
+!       RETURN
 
-      END SUBROUTINE mumaterial_picard_soft
+!       END SUBROUTINE mumaterial_picard_soft
 
 !-----------------------------------------------------------------------
 ! mumaterial_NR_soft: Newton Rhapson solver for finding self-consistent
@@ -1914,139 +2112,322 @@
 ! param[out]: M_targ. Target magnetization
 ! param[out]: lgood. True if change in H was not limited.
 !-----------------------------------------------------------------------
-      SUBROUTINE mumaterial_NR_soft(H_back, H_prev, i, M_targ, lgood)
+      ! SUBROUTINE mumaterial_NR_soft(H_back, i, M_targ, lgood)
+
+      ! IMPLICIT NONE
+
+      ! DOUBLE PRECISION, INTENT(in)    :: H_back(3)
+      ! INTEGER, INTENT(in)             :: i 
+      ! DOUBLE PRECISION, INTENT(out)   :: M_targ(3)
+      ! LOGICAL, INTENT(out)            :: lgood
+
+      ! INTEGER :: iter, i_tile
+      ! DOUBLE PRECISION :: H_new(3), H_norm
+      ! DOUBLE PRECISION :: F(3), r, dMdH_mat(3,3), J(3,3), dN(3), J_reg(3,3)
+      ! DOUBLE PRECISION :: alpha,phi,gTd,grad_phi(3)
+      ! DOUBLE PRECISION :: deltaH(3), H_norm_prev, dH_norm, dH(3)
+      ! DOUBLE PRECISION :: dMdH, M_norm,r0,H_trial(3),F_trial(3)
+      ! DOUBLE PRECISION :: phi_trial, M_trial(3)
+      ! DOUBLE PRECISION :: phi_best, lambda, MAT(3,3)
+
+      ! DOUBLE PRECISION, PARAMETER :: c = 1.0D-4, rho = 0.50d0, invrho = 2.0d0, alpha_min=1.0D-2, alpha_max = 0.5d0
+      ! DOUBLE PRECISION, PARAMETER :: F0 = 1.0D-3
+      ! INTEGER, PARAMETER          :: maxi = 1000
+      ! DOUBLE PRECISION, PARAMETER :: dH_rel_max = 0.1, lambda_max = 10.0d0, lambda_min = 1.0d-12
+
+      ! i_tile = dom_proc(i)
+      ! ASSOCIATE( sH => statefunc(state_dex(i_tile))%H, &
+      !            sM => statefunc(state_dex(i_tile))%M, &
+      !            m  => statefunc(state_dex(i_tile))%dMdH, &
+      !            N  => N_store(:,:,1,i))
+      ! H_new = H_back
+      ! r0 = threshold
+      ! alpha = alpha_max
+      ! lambda = 1.0d-3
+      ! lgood = .TRUE.
+      ! !----------------------------------------
+      ! ! Linear step initially
+      ! !----------------------------------------
+      ! CALL mumaterial_getstate_vector(sH, sM, m, H_new, M_targ, dMdH) ! Get dMdH    
+      ! MAT = I3-dMdH*N
+      ! H_new = SOLVE_3x3(MAT, H_back, "LINSTEP")
+
+      ! !--------------------------------------
+      ! ! Begin iterations
+      ! !-------------------------------------- 
+      ! DO iter = 1, maxi
+      !   !--------------------------------------
+      !   ! Compute Jacobian
+      !   !-------------------------------------- 
+      !   H_norm = NORM2(H_new)
+      !   CALL mumaterial_getstate_vector(sH, sM, m, H_new, M_targ, dMdH) ! Get dMdH    
+      !   M_norm = NORM2(M_targ)
+      !   IF (H_norm.GT.small) THEN
+      !     dMdH_mat = (dMdH-M_norm/H_norm)*OUTER_PRODUCT(H_new,H_new)/(H_norm*H_norm)+M_norm/H_norm*I3
+      !   ELSE
+      !     dMdH_mat = dMdH*I3
+      !   END IF
+      !   F = H_new - H_back - MATMUL(N,M_targ)
+      !   J = (I3 - MATMUL(N,dMdH_mat)) ! Jacobian
+      !   !--------------------------------------
+      !   ! Calculate with regularized Jacobian
+      !   !--------------------------------------
+      !   alpha = alpha_max
+      !   DO
+      !     J_reg = J + MAX(lambda*SQRT(SUM(J**2)),lambda_min)*I3
+      !     phi_best = 0.5d0*DOT_PRODUCT(F,F)
+      !     !--------------------------------------
+      !     ! Newton descent or gradient descent
+      !     !--------------------------------------
+      !     grad_phi = MATMUL(TRANSPOSE(J_reg),F)
+      !     deltaH = -SOLVE_3x3(J_reg, F, "NEWTON")   ! invJ*F
+      !     !--------------------------------------
+      !     ! Line search
+      !     !--------------------------------------
+      !     gTd = DOT_PRODUCT(grad_phi, deltaH)
+      !     DO  ! Reduce alpha until phi is good
+      !       H_trial = H_new+alpha*deltaH
+      !       CALL mumaterial_getstate_vector(sH, sM, m, H_trial, M_trial)
+      !       F_trial = H_trial - H_back - MATMUL(N, M_trial)
+      !       phi = 0.5d0*DOT_PRODUCT(F_trial,F_trial)
+      !       IF (phi.LE.phi_best+c*alpha*gTd .OR. alpha.EQ.alpha_min) EXIT
+      !       alpha = MAX(rho*alpha,alpha_min)        
+      !     END DO
+
+      !     IF (alpha.EQ.alpha_min) THEN
+      !       IF (lambda.EQ.lambda_max) THEN
+      !         H_new = H_new - 0.01d0*F
+      !         EXIT
+      !       END IF
+      !       lambda = MIN(lambda * 10.d0,lambda_max)
+      !       alpha = alpha_max
+      !       CYCLE
+      !     END IF
+
+      !     IF (alpha.EQ.alpha_max) lambda = lambda*0.5d0
+      !     H_new = H_trial
+      !     F = F_trial
+      !     EXIT
+          
+      !   END DO
+
+      !   !--------------------------------------
+      !   ! Convergence check
+      !   !-------------------------------------- 
+      !   H_norm = NORM2(H_new)
+      !   r = NORM2(F)/max(H_norm,small)
+      !   IF (r.LT.r0.OR.NORM2(F).LT.F0) EXIT   
+      ! END DO
+      ! IF (iter.GE.maxi) WRITE(6,'(A,I0,A,ES10.2,A,ES10.2,A)') "[",i_tile,"] H-solve exceed maxi (H=",H_norm, " res=",r,")"
+
+      ! !----------------------------------------
+      ! ! Solver done; cap H
+      ! !----------------------------------------
+      ! H_norm_prev = NORM2(H_prev)
+      ! dH = H_new-H_prev
+      ! dH_norm = NORM2(dH)
+      ! IF (H_norm_prev.GE.small) THEN
+      !   IF (dH_norm/H_norm_prev.GT.dH_rel_max) THEN
+      !     H_new = H_prev + (dH_rel_max*H_norm_prev)*(dH/dH_norm)
+      !     lgood = .FALSE.
+      !   END IF
+      ! END IF
+      ! !----------------------------------------
+      ! ! Recalculate M
+      ! !----------------------------------------
+      ! CALL mumaterial_getstate_vector(sH, sM, m, H_new, M_targ)
+      ! H_prev = H_new
+      ! END ASSOCIATE
+
+      ! RETURN
+
+      ! END SUBROUTINE mumaterial_NR_soft
+
+
+
+
+!-----------------------------------------------------------------------
+! mumaterial_block_solve: Block NR solver for the H-field of a single cluster.
+! Minimizes the residual given by:
+! 
+!     R = H_ext + N.M - H
+!   H_ext: (3,ntet_proc) H-field due to currents (Happ), clusters, dipoles,
+!   and neighbors IN OTHER CLUSTERS
+!   N: (3,3,ntet_proc,ntet_proc) demagnetization tensor
+!   M: (3,ntet_proc) magnetizations
+!   H: (3,ntet_proc) total H-field at every element
+!
+!   
+!-----------------------------------------------------------------------
+      SUBROUTINE mumaterial_block_solve
 
       IMPLICIT NONE
+      INTEGER :: i, i_tile, i1, i2, j, j1, i_nr, j_tile, ik, itet, n
+      DOUBLE PRECISION :: dMdH, M_norm, H_norm, res_rel, chi
+      DOUBLE PRECISION ::  M_soft(3,ntet_soft_max), dMdH_soft(ntet_soft_max)
+      INTEGER :: INFO, IPIV(3*ntet_proc)
+      INTEGER, PARAMETER :: maxi_nr = 10
+      DOUBLE PRECISION, PARAMETER :: tol_nr2 = 1.0d-8
+      INTEGER :: stype, sdex
+      LOGICAL :: is_soft(ntet_proc)
+      DOUBLE PRECISION :: N11, N12, N13, N21, N22, N23, N31, N32, N33
+      DOUBLE PRECISION :: M1, M2, M3, R1, R2, R3, H1, H2, H3
+      DOUBLE PRECISION :: dMdH11, dMdH12, dMdH13, dMdH21, dMdH22, dMdH23, dMdH31, dMdH32, dMdH33
 
-      DOUBLE PRECISION, INTENT(in)    :: H_back(3)
-      DOUBLE PRECISION, INTENT(inout) :: H_prev(3)
-      INTEGER, INTENT(in)             :: i 
-      DOUBLE PRECISION, INTENT(out)   :: M_targ(3)
-      LOGICAL, INTENT(out)            :: lgood
+      
+      ! NR iterations until converged
+      DO i_nr = 1, maxi_nr
 
-      INTEGER :: iter, i_tile
-      DOUBLE PRECISION :: H_new(3), H_norm
-      DOUBLE PRECISION :: F(3), r, dMdH_mat(3,3), J(3,3), dN(3), J_reg(3,3)
-      DOUBLE PRECISION :: alpha,phi,gTd,grad_phi(3)
-      DOUBLE PRECISION :: deltaH(3), H_norm_prev, dH_norm, dH(3)
-      DOUBLE PRECISION :: dMdH, M_norm,r0,H_trial(3),F_trial(3)
-      DOUBLE PRECISION :: phi_trial, M_trial(3)
-      DOUBLE PRECISION :: phi_best, lambda, MAT(3,3)
-
-      DOUBLE PRECISION, PARAMETER :: c = 1.0D-4, rho = 0.50d0, invrho = 2.0d0, alpha_min=1.0D-2, alpha_max = 0.5d0
-      DOUBLE PRECISION, PARAMETER :: F0 = 1.0D-3
-      INTEGER, PARAMETER          :: maxi = 1000
-      DOUBLE PRECISION, PARAMETER :: dH_rel_max = 0.1, lambda_max = 10.0d0, lambda_min = 1.0d-12
-
-      i_tile = dom_proc(i)
-      ASSOCIATE( sH => statefunc(state_dex(i_tile))%H, &
-                 sM => statefunc(state_dex(i_tile))%M, &
-                 m  => statefunc(state_dex(i_tile))%dMdH, &
-                 N  => N_store(:,:,1,i))
-      H_new = H_back
-      r0 = threshold
-      alpha = alpha_max
-      lambda = 1.0d-3
-      lgood = .TRUE.
-      !----------------------------------------
-      ! Linear step initially
-      !----------------------------------------
-      CALL mumaterial_getstate_vector(sH, sM, m, H_new, M_targ, dMdH) ! Get dMdH    
-      MAT = I3-dMdH*N
-      H_new = SOLVE_3x3(MAT, H_back, "LINSTEP")
-
-      !--------------------------------------
-      ! Begin iterations
-      !-------------------------------------- 
-      DO iter = 1, maxi
-        !--------------------------------------
-        ! Compute Jacobian
-        !-------------------------------------- 
-        H_norm = NORM2(H_new)
-        CALL mumaterial_getstate_vector(sH, sM, m, H_new, M_targ, dMdH) ! Get dMdH    
-        M_norm = NORM2(M_targ)
-        IF (H_norm.GT.small) THEN
-          dMdH_mat = (dMdH-M_norm/H_norm)*OUTER_PRODUCT(H_new,H_new)/(H_norm*H_norm)+M_norm/H_norm*I3
-        ELSE
-          dMdH_mat = dMdH*I3
-        END IF
-        F = H_new - H_back - MATMUL(N,M_targ)
-        J = (I3 - MATMUL(N,dMdH_mat)) ! Jacobian
-        !--------------------------------------
-        ! Calculate with regularized Jacobian
-        !--------------------------------------
-        alpha = alpha_max
-        DO
-          J_reg = J + MAX(lambda*SQRT(SUM(J**2)),lambda_min)*I3
-          phi_best = 0.5d0*DOT_PRODUCT(F,F)
-          !--------------------------------------
-          ! Newton descent or gradient descent
-          !--------------------------------------
-          grad_phi = MATMUL(TRANSPOSE(J_reg),F)
-          deltaH = -SOLVE_3x3(J_reg, F, "NEWTON")   ! invJ*F
-          !--------------------------------------
-          ! Line search
-          !--------------------------------------
-          gTd = DOT_PRODUCT(grad_phi, deltaH)
-          DO  ! Reduce alpha until phi is good
-            H_trial = H_new+alpha*deltaH
-            CALL mumaterial_getstate_vector(sH, sM, m, H_trial, M_trial)
-            F_trial = H_trial - H_back - MATMUL(N, M_trial)
-            phi = 0.5d0*DOT_PRODUCT(F_trial,F_trial)
-            IF (phi.LE.phi_best+c*alpha*gTd .OR. alpha.EQ.alpha_min) EXIT
-            alpha = MAX(rho*alpha,alpha_min)        
+        !---------------------------
+        ! First determine H, M, dMdH
+        !---------------------------
+        ! Linear materials
+        DO ik = 1, nlinear
+          sdex = sdex_linear(ik)
+          chi = constant_mu(sdex)-1.0d0
+          DO i = 1, ntet_linear(ik)
+            itet = dom_linear(i,ik)
+            M_spline(:,itet) = chi*H_prev(:,itet)
+            dMdH_spline(itet) = chi
           END DO
+        END DO
+        ! Soft materials
+        DO ik = 1, nsoft
+          sdex = sdex_soft(ik)
+          n = ntet_soft(ik)
+          CALL mumaterial_getstate_vector_batch(&
+            statefunc(sdex)%H, &
+            statefunc(sdex)%M, &
+            statefunc(sdex)%dMdH, &
+            H_prev(:,dom_soft(1:n,ik)), &
+            M_soft(:,1:n), n,  &
+            dMdH_soft(1:n))
 
-          IF (alpha.EQ.alpha_min) THEN
-            IF (lambda.EQ.lambda_max) THEN
-              H_new = H_new - 0.01d0*F
-              EXIT
-            END IF
-            lambda = MIN(lambda * 10.d0,lambda_max)
-            alpha = alpha_max
-            CYCLE
-          END IF
-
-          IF (alpha.EQ.alpha_max) lambda = lambda*0.5d0
-          H_new = H_trial
-          F = F_trial
-          EXIT
-          
+          DO itet = 1, n
+            i = dom_soft(itet,ik)
+            M_spline(:,i) = M_soft(:,itet)
+            dMdH_spline(i) = dMdH_soft(itet)
+          END DO
+        END DO
+        ! Hard materials (TODO)
+        DO ik = 1, nhard
         END DO
 
-        !--------------------------------------
-        ! Convergence check
-        !-------------------------------------- 
-        H_norm = NORM2(H_new)
-        r = NORM2(F)/max(H_norm,small)
-        IF (r.LT.r0.OR.NORM2(F).LT.F0) EXIT   
-      END DO
-      IF (iter.GE.maxi) WRITE(6,'(A,I0,A,ES10.2,A,ES10.2,A)') "[",i_tile,"] H-solve exceed maxi (H=",H_norm, " res=",r,")"
+        !---------------------------
+        ! Get norms
+        !---------------------------
+        DO i = 1, ntet_proc
+          H_norm_proc(i) = NORM2(H_prev(:,i))
+          M_norm_proc(i) = NORM2(M_spline(:,i))
+        END DO
+        !---------------------------
+        ! Get dMdH_mat
+        !---------------------------
+        ! Linear
+        DO ik = 1, nlinear
+          sdex = sdex_linear(ik)
+          DO i = 1, ntet_linear(ik)
+            itet = dom_linear(i,ik)
+            dMdH_mat(:,:,itet) = dMdH_spline(itet)*I3
+          END DO
+        END DO
+        ! Soft
+        DO ik = 1, nsoft
+          sdex = sdex_soft(ik)
+          DO i = 1, ntet_soft(ik)
+            itet = dom_soft(i,ik)
+            M_norm = M_norm_proc(itet)
+            H_norm = H_norm_proc(itet)
+            dMdH = dMdH_spline(itet)
+            IF (H_norm.GT.small) THEN
+              dMdH_mat(:,:,itet) = (dMdH-M_norm/H_norm)*OUTER_PRODUCT(H_prev(:,itet),H_prev(:,itet))/(H_norm*H_norm)+M_norm/H_norm*I3
+            ELSE
+              dMdH_mat(:,:,itet) = dMdH*I3
+            END IF
+          END DO
+        END DO
+        ! Hard (TODO)
+        DO ik = 1, nhard
+        END DO
+        
+        !---------------------------
+        ! Build system of equations
+        !---------------------------
+        DO i = 1, ntet_proc
+          i1 = 3*(i-1)+1
+          H_block(i1)   = H_prev(1,i)
+          H_block(i1+1) = H_prev(2,i)
+          H_block(i1+2) = H_prev(3,i)
+          R1 = H_ext(1,i) - H_prev(1,i)
+          R2 = H_ext(2,i) - H_prev(2,i)
+          R3 = H_ext(3,i) - H_prev(3,i)
+          DO j = 1, ntet_proc
+            ! Load stuff into cache first
+            N11 = N_block(1,1,j,i); N12 = N_block(1,2,j,i); N13 = N_block(1,3,j,i)
+            N21 = N_block(2,1,j,i); N22 = N_block(2,2,j,i); N23 = N_block(2,3,j,i)
+            N31 = N_block(3,1,j,i); N32 = N_block(3,2,j,i); N33 = N_block(3,3,j,i)
+            M1 = M_spline(1,j); M2 = M_spline(2,j); M3 = M_spline(3,j)
+            dMdH11 = dMdH_mat(1,1,j); dMdH12 = dMdH_mat(1,2,j); dMdH13 = dMdH_mat(1,3,j)
+            dMdH21 = dMdH_mat(2,1,j); dMdH22 = dMdH_mat(2,2,j); dMdH23 = dMdH_mat(2,3,j)
+            dMdH31 = dMdH_mat(3,1,j); dMdH32 = dMdH_mat(3,2,j); dMdH33 = dMdH_mat(3,3,j)
+            ! Residual
+            R1 = R1 + N11*M1 + N12*M2 + N13*M3
+            R2 = R2 + N21*M1 + N22*M2 + N23*M3
+            R3 = R3 + N31*M1 + N32*M2 + N33*M3
+            ! Jacobian
+            j1 = 3*(j-1)+1
+            J_block(i1  ,j1  ) =  N11*dMdH11 + N12*dMdH21 + N13*dMdH31
+            J_block(i1  ,j1+1) =  N11*dMdH12 + N12*dMdH22 + N13*dMdH32
+            J_block(i1  ,j1+2) =  N11*dMdH13 + N12*dMdH23 + N13*dMdH33
 
-      !----------------------------------------
-      ! Solver done; cap H
-      !----------------------------------------
-      H_norm_prev = NORM2(H_prev)
-      dH = H_new-H_prev
-      dH_norm = NORM2(dH)
-      IF (H_norm_prev.GE.small) THEN
-        IF (dH_norm/H_norm_prev.GT.dH_rel_max) THEN
-          H_new = H_prev + (dH_rel_max*H_norm_prev)*(dH/dH_norm)
-          lgood = .FALSE.
+            J_block(i1+1,j1  ) =  N21*dMdH11 + N22*dMdH21 + N23*dMdH31
+            J_block(i1+1,j1+1) =  N21*dMdH12 + N22*dMdH22 + N23*dMdH32
+            J_block(i1+1,j1+2) =  N21*dMdH13 + N22*dMdH23 + N23*dMdH33
+
+            J_block(i1+2,j1  ) =  N31*dMdH11 + N32*dMdH21 + N33*dMdH31
+            J_block(i1+2,j1+1) =  N31*dMdH12 + N32*dMdH22 + N33*dMdH32
+            J_block(i1+2,j1+2) =  N31*dMdH13 + N32*dMdH23 + N33*dMdH33
+          END DO
+          R_block(i1)   = -R1
+          R_block(i1+1) = -R2
+          R_block(i1+2) = -R3
+        END DO
+        ! Diagonal terms
+        DO i = 1, ntet_proc
+          i1 = 3*(i-1)+1; i2 = 3*i
+          J_block(i1:i2,i1:i2) = J_block(i1:i2,i1:i2) - I3
+        END DO
+
+        ! LAPACK solve
+        CALL DGESV(3*ntet_proc, 1, J_block, 3*ntet_proc, IPIV, R_block, 3*ntet_proc, INFO)
+        IF (INFO /= 0) THEN
+          WRITE(6,*) "DGESV failed, INFO=", INFO
+          CALL mumaterial_abort()
         END IF
-      END IF
-      !----------------------------------------
-      ! Recalculate M
-      !----------------------------------------
-      CALL mumaterial_getstate_vector(sH, sM, m, H_new, M_targ)
-      H_prev = H_new
-      END ASSOCIATE
+
+        ! Update H
+        res_rel = 0.0d0 
+        DO i = 1, ntet_proc
+          i1 = 3*(i-1)+1
+          R1 = R_block(i1)
+          R2 = R_block(i1+1)
+          R3 = R_block(i1+2)
+          H1 = H_block(i1)
+          H2 = H_block(i1+1)
+          H3 = H_block(i1+2)
+          H_prev(1,i) = H1 + R1
+          H_prev(2,i) = H2 + R2
+          H_prev(3,i) = H3 + R3
+          res_rel = MAX(res_rel, (R1*R1+R2*R2+R3*R3)/MAX(H1*H1+H2*H2+H3*H3,small))
+        END DO
+
+        ! Convergence check
+        IF (res_rel.LT.tol_nr2) EXIT
+      END DO
 
       RETURN
 
-      END SUBROUTINE mumaterial_NR_soft
-
-
+      END SUBROUTINE mumaterial_block_solve
 
 !-----------------------------------------------------------------------
 ! mumaterial_cluster_setup: Calculates position, diameter, initial dipole
@@ -2325,6 +2706,17 @@
           END IF
           CALL mumaterial_dipole_field_calc_single(rix, riy, riz, r_partial(:,j), V_partial(j), M, hx, hy, hz)
         END DO
+        ! Subtract block elements
+        DO k = 1, ntet_proc
+          j = map_g2p(dom_proc(k))
+          IF (.NOT.(lfull.OR.is_stale(j))) CYCLE
+          IF (lfull) THEN
+            M = -M_partial(:,j) ! Added full contribution before
+          ELSE
+            M = -(M_partial(:,j)-M_snapshot(:,j)) ! Added correction before
+          END IF
+          CALL mumaterial_dipole_field_calc_single(rix, riy, riz, r_partial(:,j), V_partial(j), M, hx, hy, hz)
+        END DO
         H_mid(1,i) = hx; H_mid(2,i) = hy; H_mid(3,i) = hz
       END DO  
       !-----------------------------
@@ -2487,6 +2879,107 @@
       RETURN
 
       END SUBROUTINE mumaterial_getstate_slopes
+
+!-----------------------------------------------------------------------
+! mumaterial_getstate_scalar_batch: Interpolates a function f at 
+! many evaluation points xq using Cubic Hermite polynomials. With derivative.
+!-----------------------------------------------------------------------
+! param[in]:  fx. x-coordinates of function to be interpolated
+! param[in]:  fy. y-values of function to be interpolated
+! param[in]:  x. evaluation points
+! param[out]: y. interpolated f(x)
+! param[out]: dydx. derivative at x
+!-----------------------------------------------------------------------
+      SUBROUTINE mumaterial_getstate_scalar_batch(fx, fy, m, x, y, dydx)
+        USE qsort
+
+        IMPLICIT NONE
+        DOUBLE PRECISION, INTENT(IN) :: fx(:), fy(:), m(:), x(:)
+        DOUBLE PRECISION, INTENT(OUT) :: y(:)
+        DOUBLE PRECISION, INTENT(OUT) :: dydx(:)
+
+        DOUBLE PRECISION :: x_s(SIZE(x)), xt, y_s(SIZE(x)), dydx_s(SIZE(x))
+        INTEGER :: i, j, k, n, nq, idx(SIZE(x))
+
+        DOUBLE PRECISION :: t, h, hinv, t2, t3, mk, mk1
+        DOUBLE PRECISION :: fxk, fxk1, fyk, fyk1
+        DOUBLE PRECISION :: fx1, fxn, fy1, fyn
+
+
+  
+        ! First sort
+        nq = SIZE(x)
+        DO i = 1, nq
+          idx(i) = i
+        END DO
+        CALL quicksort(x, idx, 1, nq)
+        x_s = x(idx(:))
+
+        ! Now loop
+        n = SIZE(fx)
+        fx1 = fx(1)
+        fxn = fx(n)  
+        fy1 = fy(1)
+        fyn = fy(n)
+
+        k = 1
+        DO i = 1, nq
+          xt = x_s(i)
+          ! Clamp to range
+          IF (xt .LE. fx1) THEN
+            y_s(i) = fy1
+            dydx_s(i) = 0.0d0
+            CYCLE
+          ELSE IF (xt .GE. fxn) THEN
+            y_s(i) = fyn
+            dydx_s(i) = 0.0d0
+            CYCLE
+          END IF
+  
+          ! Find interval
+          DO WHILE (xt .GT. fx(k+1) .AND. k .LT. (n-1))
+            k = k + 1
+          END DO
+
+          ! Spline x & f(x)
+          fxk = fx(k)
+          fxk1 = fx(k+1)
+          fyk = fy(k)
+          fyk1 = fy(k+1)
+          ! Spline slopes
+          mk = m(k)
+          mk1 = m(k+1)
+    
+          ! Cubic Hermite interpolation
+          h = fxk1 - fxk
+          hinv = 1.0d0/h
+          t = (xt - fxk)*hinv
+          t2 = t*t
+          t3 = t2*t
+    
+          y_s(i) = (2.0d0*t3 - 3.0d0*t2 + 1.0d0) * fyk   &
+                  + (t3 - 2.0d0*t2 + t)          * h * mk  &
+                  + (-2.0d0*t3 + 3.0d0*t2)       * fyk1 &
+                  + (t3 - t2)                    * h * mk1
+    
+          ! Analytical derivative
+          dydx_s(i) = (6.0d0*t2 - 6.0d0*t) * fyk * hinv      &
+                + (3.0d0*t2 - 4.0d0*t + 1.0d0) * mk      &
+                + (-6.0d0*t2 + 6.0d0*t) * fyk1 * hinv    &
+                + (3.0d0*t2 - 2.0d0*t) * mk1
+        END DO
+
+        ! Scatter back
+        DO i = 1, nq
+          j = idx(i)
+          y(j) = y_s(i)
+          dydx(j) = dydx_s(i)
+        END DO
+
+        RETURN
+  
+        END SUBROUTINE mumaterial_getstate_scalar_batch
+
 !-----------------------------------------------------------------------
 ! mumaterial_getstate_scalar_new: Interpolates a function f at xq to get 
 ! a value y using Cubic Hermite polynomials.
@@ -2672,6 +3165,42 @@
       END SUBROUTINE mumaterial_getstate_vector
 
 !-----------------------------------------------------------------------
+! mumaterial_getstate_vector_batch: Vector form of above. Calculates a vector
+! magnitude using mumaterial_getstate_vector, then outputs a vector of
+! that magnitude aligned with the input vector.
+!-----------------------------------------------------------------------
+! param[in]:  fx. x-coordinates of function to be interpolated
+! param[in]:  fy. y-values of function to be interpolated
+! param[in]:  Xq. evaluation vector
+! param[out]: Yq. interpolated fy(|Xq|) aligned with Xq
+!-----------------------------------------------------------------------
+      SUBROUTINE mumaterial_getstate_vector_batch(fx, fy, m, x, y, n, dydx)
+      IMPLICIT NONE
+
+      INTEGER, INTENT(in) :: n
+      DOUBLE PRECISION, INTENT(in)  :: fx(:), fy(:), x(3,n), m(:)
+      DOUBLE PRECISION, INTENT(out) :: y(3,n), dydx(n)
+      DOUBLE PRECISION :: xnorm(n), ynorm(n), alpha(n)
+      INTEGER :: i
+      
+      DO i = 1, n
+        xnorm(i) = SQRT(x(1,i)*x(1,i)+x(2,i)*x(2,i)+x(3,i)*x(3,i))
+      END DO
+
+      CALL mumaterial_getstate_scalar_batch(fx, fy, m, xnorm, ynorm, dydx)
+      alpha = 0.0d0
+      WHERE (xnorm .GT. small)
+        alpha = ynorm / xnorm
+      END WHERE
+      y(1,:) = x(1,:) * alpha
+      y(2,:) = x(2,:) * alpha
+      y(3,:) = x(3,:) * alpha
+     
+      RETURN
+
+      END SUBROUTINE mumaterial_getstate_vector_batch
+
+!-----------------------------------------------------------------------
 ! mumaterial_getb: Calculates total magnetic field at a point in space
 !-----------------------------------------------------------------------
 ! param[in]: x. x-coordinate of point where to get the B-field
@@ -2724,7 +3253,7 @@
 
       ! Get clusters
       DO i = 1, world_size
-        iscluster_proc(i) = NORM2(r_cluster(:,i)-r)>(cutoff*d_cluster(i) + padFactor*max_tet_rad(i))
+        iscluster_proc(i) = NORM2(r_cluster(:,i)-r)>(cutoff*d_cluster(i) + pF*max_tet_rad(i))
       END DO
 
       ! Get neighbors
@@ -2736,7 +3265,7 @@
           d = (tet_cen(1,k)-r(1))*(tet_cen(1,k)-r(1)) + &
               (tet_cen(2,k)-r(2))*(tet_cen(2,k)-r(2)) + &
               (tet_cen(3,k)-r(3))*(tet_cen(3,k)-r(3))
-          mask_out(k) = d < (padFactor*tet_rad(k))**2
+          mask_out(k) = d < (pF*tet_rad(k))**2
         END DO
       END DO
       n_nbrs = COUNT(mask_out)
@@ -2770,7 +3299,7 @@
       ! Neighbor field
       DO i = 1, n_nbrs
         i_tile = nbrs_out(i)
-        N = GET_DEMAG(vertex(:,tet(1,i_tile)), vertex(:,tet(2,i_tile)), vertex(:,tet(3,i_tile)), vertex(:,tet(4,i_tile)), [x, y, z])
+        N = GET_DEMAG(tet_P(:,:,:,i_tile), tet_D(:,:,i_tile), tet_v(:,:,:,i_tile), [x, y, z])
         H = H + MATMUL(N, M_global(:,i_tile))
         ! Remove dipole contribution
         CALL mumaterial_dipole_field_calc_single(x, y, z, tet_cen(:,i_tile), tet_vol(i_tile), -M_global(:,i_tile), hx, hy, hz)
@@ -2946,79 +3475,118 @@
       END FUNCTION EYE
 
 !-----------------------------------------------------------------------
-! GET_DEMAG: Helper function to determine the demagnetization tensor
+! GET_DEMAG_HELPERS: Helper function to determine the demagnetization tensor
 !-----------------------------------------------------------------------
-! param[in]: v1-4: Vertices of the tetrahedron (3)
-! param[in]: pos: Reference position for which to determine the demagnetization tensor (3)
-! param[in]: N. Resulting demagnetization tensor (3,3)
+! param[in]: v1-4: Vertices of the tetrahedron
+! param[out]: P: Rotation matrix of face
+! param[out]: D: Face base 
+! param[out]: v_rot: Vertices of each face
 !-----------------------------------------------------------------------
-      FUNCTION GET_DEMAG(v1, v2, v3, v4, pos) result(N)
+      SUBROUTINE GET_DEMAG_HELPERS(v1, v2, v3, v4, P, D, v_rot)
 
       IMPLICIT NONE
-      DOUBLE PRECISION, INTENT(in), DIMENSION(3) :: v1, v2, v3, v4, pos
-      DOUBLE PRECISION :: N(3,3)
-
-      DOUBLE PRECISION :: N_loc(3,3), v(3,4), v_temp(3), angles(3), P(3,3), Pinv(3,3), D(3), r(3)
+      DOUBLE PRECISION, INTENT(in), DIMENSION(3) :: v1, v2, v3, v4
+      DOUBLE PRECISION, INTENT(out) :: P(3,3,4), D(3,4), v_rot(3,3,4)
+      DOUBLE PRECISION :: v(3,4), v_temp(3), cosalpha(3), d12, d13, d23
       INTEGER :: i, j
 
-      N = 0.d0
 
+      ! Rotate vertices
       DO i = 1, 4
-        ! Shift vertices
-        v(:,i) = v1
-        v(:,MOD(i,4)+1) = v2
+        v(:,i)            = v1
+        v(:,MOD(i  ,4)+1) = v2
         v(:,MOD(i+1,4)+1) = v3
-        v(:,MOD(i+2,4)+1)= v4
+        v(:,MOD(i+2,4)+1) = v4
 
-        ! todo: ensure vertices are not collinear and v4 is not in plane of v1-3?
+        ! todo: ensure vertices are not colinear and v4 is not in plane of v1-3?
 
         ! Ensure largest angle is for v2
-        angles(1) = ACOS(MAX(-1.0d0, MIN(1.0d0, &
-                        DOT_PRODUCT(v(:,1)-v(:,2),v(:,1)-v(:,3)) / (NORM2(v(:,1)-v(:,2)) * NORM2(v(:,1)-v(:,3))))))
-        angles(2) = ACOS(MAX(-1.0d0, MIN(1.0d0, &
-                        DOT_PRODUCT(v(:,2)-v(:,1),v(:,2)-v(:,3)) / (NORM2(v(:,2)-v(:,1)) * NORM2(v(:,2)-v(:,3))))))
-        angles(3) = ACOS(MAX(-1.0d0, MIN(1.0d0, &
-                        DOT_PRODUCT(v(:,3)-v(:,2),v(:,3)-v(:,1)) / (NORM2(v(:,3)-v(:,2)) * NORM2(v(:,3)-v(:,1))))))
+        d12 = NORM2(v(:,1)-v(:,2))
+        d13 = NORM2(v(:,1)-v(:,3))
+        d23 = NORM2(v(:,2)-v(:,3))
+        cosalpha(1) = MAX(1.0d0, MIN(1.0d0, DOT_PRODUCT(v(:,1)-v(:,2),v(:,1)-v(:,3)) / (d12*d13)))
+        cosalpha(2) = MAX(1.0d0, MIN(1.0d0, DOT_PRODUCT(v(:,2)-v(:,1),v(:,2)-v(:,3)) / (d12*d23)))
+        cosalpha(3) = MAX(1.0d0, MIN(1.0d0, DOT_PRODUCT(v(:,3)-v(:,2),v(:,3)-v(:,1)) / (d13*d23)))
 
-        IF (angles(1) > angles(2) .and. angles(1) > angles(3)) THEN ! v1 and v2 should be interchanged
+        IF (cosalpha(1) < cosalpha(2) .and. cosalpha(1) < cosalpha(3)) THEN ! v1 and v2 should be interchanged
           v_temp = v(:,2)
           v(:,2) = v(:,1)
           v(:,1) = v_temp
-        ELSE IF (angles(3) > angles(1) .and. angles(3) > angles(2)) THEN ! v2 and v3 should be interchanged
+        ELSE IF (cosalpha(3) < cosalpha(1) .and. cosalpha(3) < cosalpha(2)) THEN ! v2 and v3 should be interchanged
           v_temp = v(:,2)
           v(:,2) = v(:,3)
           v(:,3) = v_temp
         END IF
 
-        ! Ensure normal vector is pointing in the right direction
-        IF (DOT_PRODUCT(CROSS_PRODUCT(v(:,1) - v(:,3), v(:,2) - v(:,3)), v(:,4) - v(:,2)) .gt. 0) THEN 
         ! normal vector of triangle is pointing towards v4, so v1 and v3 need to be interchanged
+        IF (DOT_PRODUCT(CROSS_PRODUCT(v(:,1) - v(:,3), v(:,2) - v(:,3)), v(:,4) - v(:,2)) .gt. 0) THEN 
           v_temp = v(:,1)
           v(:,1) = v(:,3)
           v(:,3) = v_temp
         END IF
+        v_rot(:,1,i) = v(:,1)
+        v_rot(:,2,i) = v(:,2)
+        v_rot(:,3,i) = v(:,3)
+      END DO
 
+      P = 0.0d0
+      D = 0.0d0
+
+      DO i = 1, 4
         ! Rotation matrix
-        P(:,1) = v(:,1) - v(:,3)
-        P(:,1) = P(:,1) / NORM2(P(:,1))
+        v(:,1) = v_rot(:,1,i)
+        v(:,2) = v_rot(:,2,i)
+        v(:,3) = v_rot(:,3,i)
 
-        P(:,3) = CROSS_PRODUCT(P(:,1), v(:,2)-v(:,3))
-        P(:,3) = P(:,3) / NORM2(P(:,3))
+        P(:,1,i) = v(:,1) - v(:,3)
+        P(:,1,i) = P(:,1,i) / NORM2(P(:,1,i))
 
-        P(:,2) = CROSS_PRODUCT(P(:,3), P(:,1))
-        P(:,2) = P(:,2) / NORM2(P(:,2))
+        P(:,3,i) = CROSS_PRODUCT(P(:,1,i), v(:,2)-v(:,3))
+        P(:,3,i) = P(:,3,i) / NORM2(P(:,3,i))
 
-        ! Inverse rotation matrix, transpose since P is orthogonal
-        Pinv = TRANSPOSE(P)
+        P(:,2,i) = CROSS_PRODUCT(P(:,3,i), P(:,1,i))
+        P(:,2,i) = P(:,2,i) / NORM2(P(:,2,i))
 
         ! Position of triangle base
-        D = DOT_PRODUCT(v(:,3)-v(:,2),v(:,3)-v(:,1)) / (NORM2(v(:,3)-v(:,2)) * NORM2(v(:,3)-v(:,1))) * NORM2(v(:,2) - v(:,3)) * P(:,1) + v(:,3)
+        d13 = NORM2(v(:,1)-v(:,3))
+        d23 = NORM2(v(:,2)-v(:,3))
+        D(:,i) = DOT_PRODUCT(v(:,3)-v(:,2),v(:,3)-v(:,1)) / (d23 * d13) * d23 * P(:,1,i) + v(:,3)
+
+      END DO
+      RETURN
+
+      END SUBROUTINE GET_DEMAG_HELPERS
+
+!-----------------------------------------------------------------------
+! GET_DEMAG: Helper function to determine the demagnetization tensor
+!-----------------------------------------------------------------------
+! param[in]: pos: Reference position for which to determine the demagnetization tensor (3)
+! param[in]: N. Resulting demagnetization tensor (3,3)
+!-----------------------------------------------------------------------
+      FUNCTION GET_DEMAG(P, D, v_rot, pos) result(N)
+
+      IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(in), DIMENSION(3) :: P(3,3,4), D(3,4), v_rot(3,3,4), pos(3)
+      DOUBLE PRECISION :: N(3,3)
+
+      DOUBLE PRECISION :: N_loc(3,3), v(3,4), v_temp(3), cosalpha(3), Pinv(3,3), r(3), d12, d13, d23
+      INTEGER :: i, j
+
+      N = 0.d0
+
+      DO i = 1, 4
+        ! Rotated vertices
+        v(:,1) = v_rot(:,1,i)
+        v(:,2) = v_rot(:,2,i)
+        v(:,3) = v_rot(:,3,i)
+
+        Pinv = TRANSPOSE(P(:,:,i))
 
         ! Transform evaluation position and vertices to local coordinate frame
-        r = MATMUL(Pinv, (pos - D))
+        r = MATMUL(Pinv, (pos - D(:,i)))
 
         DO j = 1, 3
-          v(:,j) = MATMUL(Pinv, (v(:,j) - D))
+          v(:,j) = MATMUL(Pinv, (v(:,j) - D(:,i)))
           IF (ABS(r(j)) .lt. 1.0D-6) THEN ! make sure position is not too close to x, y or z = 0
             r(j) = SIGN(1.0D-6, r(j))
           END IF
@@ -3039,7 +3607,7 @@
               WRITE(6,*) "h=",v(2,2)
               WRITE(6,*)
         END IF
-        N = N + MATMUL(MATMUL(P, N_loc), Pinv)
+        N = N + MATMUL(MATMUL(P(:,:,i), N_loc), Pinv)
       END DO
 
       RETURN
