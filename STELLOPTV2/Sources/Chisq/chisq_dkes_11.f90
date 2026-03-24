@@ -79,7 +79,7 @@
             DO ij = 1, nprof
                IF (E_dkes(ij) <= -bigno .or. nu_dkes(ij) <= -bigno) CYCLE
                mtargets = mtargets + 1
-               nruns_dkes = nruns_dkes + 1
+               !nruns_dkes = nruns_dkes + 1
                IF (niter == -2) target_dex(mtargets)=jtarget_dkes_11
             END DO
          END DO

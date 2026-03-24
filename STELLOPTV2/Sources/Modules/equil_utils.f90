@@ -154,6 +154,22 @@
       RETURN
       END SUBROUTINE get_equil_volume
       
+      SUBROUTINE get_equil_bdotb(s_val,val,ier)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(inout) ::  s_val
+      REAL(rprec), INTENT(out)   ::  val
+      INTEGER, INTENT(inout)     ::  ier
+      IF (ier < 0) RETURN
+      IF (EZspline_allocated(bdotb_spl)) THEN
+         CALL EZspline_isInDomain(bdotb_spl,s_val,ier)
+         IF (ier .ne. 0) RETURN
+         CALL EZspline_interp(bdotb_spl,s_val,val,ier)
+      ELSE
+         ier = -1
+      END IF
+      RETURN
+      END SUBROUTINE get_equil_bdotb
+      
       SUBROUTINE get_equil_jdotb(s_val,val,ier)
       IMPLICIT NONE
       REAL(rprec), INTENT(inout) ::  s_val

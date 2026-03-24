@@ -83,13 +83,13 @@
                END DO
          END DO
          ! SIGMA DKES may have already counted the nruns
-         DO ii = 1, nsd
-            IF ((sigma_dkes_11(ii) < bigno) .or. (sigma_dkes_31(ii) < bigno) .or. (sigma(ii) >= bigno)) CYCLE
-               DO ij = 1, nprof
-                  IF (E_dkes(ij) <= -bigno .or. nu_dkes(ij) <= -bigno) CYCLE
-                  nruns_dkes = nruns_dkes + 1
-               END DO
-         END DO
+         !DO ii = 1, nsd
+         !   IF ((sigma_dkes_11(ii) < bigno) .or. (sigma_dkes_31(ii) < bigno) .or. (sigma(ii) >= bigno)) CYCLE
+         !      DO ij = 1, nprof
+         !         IF (E_dkes(ij) <= -bigno .or. nu_dkes(ij) <= -bigno) CYCLE
+         !         nruns_dkes = nruns_dkes + 1
+         !      END DO
+         !END DO
       END IF
       RETURN
 !----------------------------------------------------------------------

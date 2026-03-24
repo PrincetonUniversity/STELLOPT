@@ -1,4 +1,6 @@
 ObjectFiles = \
+chisq_penta_er.o \
+stellopt_penta.o \
 chisq_coil_distortion.o \
 chisq_coil_total_torsion.o \
 chisq_coil_energy.o \
