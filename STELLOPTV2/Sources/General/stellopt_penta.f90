@@ -12,12 +12,17 @@
 !       Libraries
 !-----------------------------------------------------------------------
    USE stellopt_runtime, ONLY: proc_string, bigno, rprec
-   USE stellopt_targets, ONLY: lneed_penta, nsd
+   USE stellopt_targets, ONLY: lneed_penta, lneed_dkes, nsd, nprof, &
+      nu_dkes, E_dkes
    USE stellopt_vars, ONLY: ne_type, te_type, ti_type
    USE equil_utils, ONLY: get_equil_te, get_equil_ti, get_equil_ne, &
       get_equil_volume, get_equil_bdotb
    USE equil_vals, ONLY: Aminor, Rmajor, rho, shat, Er_PENTA, JBS_PENTA
    USE read_boozer_mod, ONLY: bcast_boozer_vars, phip_b, iota_b, buco_b, bvco_b
+!DEC$ IF DEFINED (DKES_OPT)
+   USE dkes_realspace, ONLY: DKES_L11m, DKES_L11p, DKES_L31m, &
+      DKES_L31p, DKES_L33m, DKES_L33p
+!DEC$ ENDIF
    ! PENTA library
    USE PENTA_INTERFACE_MOD
    USE mpi_params
@@ -33,11 +38,13 @@
 
 !-----------------------------------------------------------------------
 !  Local Variables
-!     ii,ij,ik          Helper index
+!     ii,ij,ik,il       Helper index
 !     ier               Error flag
 !     mystart, myend    Helpers for parallelization over arrays
 !     nsurf_penta       Number of PENTA surfaces
 !     nion_prof         Number of ions
+!     ncstar            Number of unique collisionalities
+!     nestar            Number of unique Er
 !     s_local           Normalized Toroidal Flux helper
 !     s2_local          Normalized Toroidal Flux helper (for deriv.)
 !     rho_local         Rho helper
@@ -47,15 +54,18 @@
 !     XX_local          Arrays of size nsurf_penta to help run
 !     temp_str          String helper for file names
 !-----------------------------------------------------------------------
-   INTEGER :: ii, ij, ik, ier, mystart, myend
-   INTEGER :: nsurf_penta, nion_prof
-   REAL(rprec) :: s_local, s2_local, rho_local, dprof, EparB
+   INTEGER :: ii, ij, ik, il, im, ier, mystart, myend
+   INTEGER :: nsurf_penta, nion_prof, ncstar, nestar, nsurf_dkes
+   REAL(rprec) :: s_local, s2_local, rho_local, dprof, EparB, Er, Nu
    INTEGER, DIMENSION(:), ALLOCATABLE :: ik_penta
    REAL(rprec), DIMENSION(:), ALLOCATABLE :: te_local, ne_local, &
                               dtedrho_local, dnedrho_local, &
-                              vp_local, bdotb_local
+                              vp_local, bdotb_local, &
+                              dkes_nustar, dkes_erstar
    REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: ti_local, ni_local, &
                               dtidrho_local, dnidrho_local
+   REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: DKES_D11, DKES_D31, DKES_D33
+
    CHARACTER(LEN=256) :: temp_str 
 
 !-----------------------------------------------------------------------
@@ -109,12 +119,64 @@
              ii = ii +1
          END IF
       END DO
-      ! Determine number of Er,nu pairs
-      ! Need to implement the E and Nu arrays for PENTA based on
-      ! the STELLOPT inputs
-      !IF (E_dkes(ij) <= -bigno .or. nu_dkes(ij) <= -bigno) CYCLE
    END IF
+   !!!!!!!!!!!!!!!!!!!!!!!!Sorting of NU_DKES and ER_DKES!!!!!!!!!!!!
+   !!  This assumes that the arrays are in ascending order and ER 
+   !!  varies faster than NU
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   ! First count unique values
+   ncstar = 0; nestar = 0
+   nu = -bigno; Er = -bigno
+   DO ij = 1, nprof
+      IF (nu_dkes(ij) > nu) THEN
+         ncstar = ncstar + 1
+         nu = nu_dkes(ij)
+      END IF
+      IF (E_dkes(ij)  > Er) THEN
+         nestar = nestar + 1
+         Er = E_dkes(ij)
+      END IF
+   END DO
+   ! Now setup helper arrays
+   ALLOCATE(dkes_nustar(ncstar), dkes_erstar(nestar))
    ! Now we send data to the rest of the threads
+   ncstar = 0; nestar = 0
+   nu = -bigno; Er = -bigno
+   DO ij = 1, nprof
+      IF (nu_dkes(ij) > nu) THEN
+         ncstar = ncstar + 1
+         nu = nu_dkes(ij)
+         dkes_nustar(ncstar) = nu_dkes(ij)
+      END IF
+      IF (E_dkes(ij)  > Er) THEN
+         nestar = nestar + 1
+         Er = E_dkes(ij)
+         dkes_erstar(nestar) = E_dkes(ij)
+      END IF
+   END DO
+   ! Now do the DKES Coefficient arrays
+   ! Note there can be more DKES surfaces than PENTA
+   ALLOCATE(DKES_D11(nsurf_penta,ncstar,nestar),DKES_D31(nsurf_penta,ncstar,nestar),DKES_D33(nsurf_penta,ncstar,nestar))
+   il = 1; im = 0
+   nsurf_dkes = COUNT(lneed_dkes)
+   DO ik = 1, nsurf_dkes
+      IF (lneed_penta(ik)) im = im + 1
+      DO ii = 1, ncstar
+         DO ij = 1, nestar
+            IF (lneed_penta(ik)) THEN
+               DKES_D11(im,ii,ij) = DKES_L11p(il) + DKES_L11m(il)
+               DKES_D31(im,ii,ij) = DKES_L31p(il) + DKES_L31m(il)
+               DKES_D33(im,ii,ij) = DKES_L33p(il) + DKES_L33m(il)
+            END IF
+            il = il + 1
+         END DO
+      END DO
+   END DO
+   DKES_D11 = DKES_D11 * 0.5
+   DKES_D31 = DKES_D31 * 0.5
+   DKES_D33 = DKES_D33 * 0.5
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !DEC$ IF DEFINED (MPI_OPT)
    ierr_mpi = 0
    CALL MPI_BCAST(nsurf_penta,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
@@ -145,6 +207,9 @@
    CALL MPI_BCAST(dtedrho_local,nsurf_penta,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
    CALL MPI_BCAST(dtidrho_local,nsurf_penta*nion_prof,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
    CALL MPI_BCAST(dnidrho_local,nsurf_penta*nion_prof,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+   CALL MPI_BCAST(DKES_D11,nsurf_penta*ncstar*nestar,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+   CALL MPI_BCAST(DKES_D31,nsurf_penta*ncstar*nestar,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+   CALL MPI_BCAST(DKES_D33,nsurf_penta*ncstar*nestar,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
 !DEC$ ENDIF   
    ! Everyone allocates the JBS and ER arrays
    IF (ALLOCATED(JBS_PENTA)) DEALLOCATE(JBS_PENTA)
@@ -173,10 +238,9 @@
                            te_local(ik),   dtedrho_local(ik)/Aminor,&
                            ni_local(ik,:), dnidrho_local(ik,:)/Aminor,&
                            ti_local(ik,:), dtidrho_local(ik,:)/Aminor)
-      ! This still needs to be sorted out
       ! MAKE CORRECTIONS ON D31 AND D33 -- values coming from DKES2 miss Bsq factors (see J. Lore documentation)
-      !CALL PENTA_SET_DKES_STAR(ncstar,nestar,DKES_NUSTAR(1:ncstar),DKES_ERSTAR(1:nestar), &
-      !      DKES_D11(k,:,:), DKES_D31(k,:,:)*SQRT(bsq(k)), DKES_D33(k,:,:)*bsq(k))
+      CALL PENTA_SET_DKES_STAR(ncstar, nestar, DKES_NUSTAR(1:ncstar), DKES_ERSTAR(1:nestar), &
+            DKES_D11(ik,:,:), DKES_D31(ik,:,:)*SQRT(bdotb_local(ik)), DKES_D33(ik,:,:)*bdotb_local(ik))
       CALL PENTA_SET_BEAM(0.0_rprec) ! Zero becasue we don't read
       CALL PENTA_SET_U2() ! Leave blank for default value
       CALL PENTA_READ_INPUT_FILES(.FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.)
@@ -237,6 +301,8 @@
    DEALLOCATE(ik_penta, ne_local, te_local, ni_local, ti_local)
    DEALLOCATE(dnedrho_local, dtedrho_local, dnidrho_local, dtidrho_local)
    DEALLOCATE(vp_local, bdotb_local)
+   DEALLOCATE(dkes_nustar, dkes_erstar)
+   DEALLOCATE(DKES_D11, DKES_D31, DKES_D33)
    ! Now make sure the master thread has the full set of data.
 !DEC$ IF DEFINED (MPI_OPT)
    CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)

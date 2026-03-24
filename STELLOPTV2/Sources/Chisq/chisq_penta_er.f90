@@ -60,10 +60,6 @@
             lneed_penta(ii) = .TRUE.
             mtargets = mtargets + 1
             IF (niter == -2) target_dex(mtargets)=jtarget_penta_er
-            !DO ij = 1, nprof
-            !   IF (E_dkes(ij) <= -bigno .or. nu_dkes(ij) <= -bigno) CYCLE
-            !   nruns_dkes = nruns_dkes + 1
-            !END DO
          END DO
          istat = 0
          CALL read_penta_ion_params_namelist("input."//TRIM(id_string),istat)
