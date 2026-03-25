@@ -61,7 +61,8 @@
    REAL(rprec), DIMENSION(:), ALLOCATABLE :: te_local, ne_local, &
                               dtedrho_local, dnedrho_local, &
                               vp_local, bdotb_local, &
-                              dkes_nustar, dkes_erstar
+                              dkes_nustar, dkes_erstar, &
+                              s_penta
    REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: ti_local, ni_local, &
                               dtidrho_local, dnidrho_local
    REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: DKES_D11, DKES_D31, DKES_D33
@@ -86,7 +87,7 @@
    IF (myworkid == master) THEN
       nsurf_penta = COUNT(lneed_penta)
       nion_prof = num_ion_species
-      ALLOCATE(ik_penta(nsurf_penta), &
+      ALLOCATE(ik_penta(nsurf_penta), s_penta(nsurf_penta), &
          ne_local(nsurf_penta), te_local(nsurf_penta), &
          ni_local(nsurf_penta,nion_prof), ti_local(nsurf_penta,nion_prof))
       ALLOCATE(dnedrho_local(nsurf_penta), dtedrho_local(nsurf_penta),&
@@ -96,6 +97,7 @@
       DO ik = 1, nsd
          IF (lneed_penta(ik)) THEN
              ik_penta(ii) = ik
+             s_penta(ii) = shat(ik)
              s_local = shat(ik)
              s2_local = shat(ik-1)
              rho_local = rho(ik)
@@ -186,7 +188,7 @@
 !DEC$ ENDIF
    ! Other threads allocate helpers  
    IF (myworkid /= master) THEN
-      ALLOCATE(ik_penta(nsurf_penta), &
+      ALLOCATE(ik_penta(nsurf_penta), s_penta(nsurf_penta), &
          ne_local(nsurf_penta), te_local(nsurf_penta), &
          ni_local(nsurf_penta,nion_prof), ti_local(nsurf_penta,nion_prof))
       ALLOCATE(dnedrho_local(nsurf_penta), dtedrho_local(nsurf_penta),&
@@ -197,6 +199,7 @@
 !DEC$ IF DEFINED (MPI_OPT)
    ierr_mpi = 0
    CALL MPI_BCAST(ik_penta,nsurf_penta,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+   CALL MPI_BCAST(s_penta,nsurf_penta,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
    CALL MPI_BCAST(vp_local,nsurf_penta,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
    CALL MPI_BCAST(bdotb_local,nsurf_penta,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
    CALL MPI_BCAST(ne_local,nsurf_penta,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
@@ -222,8 +225,8 @@
    DO ik = mystart,myend
       ! ii is the index in VMEC/Boozer grid, ik is over the PENTA surfaces
       ii = ik_penta(ik)
-      s_local = shat(ii)
-      rho_local = rho(ii)
+      s_local = s_penta(ik)
+      rho_local = SQRT(s_local)
       ! Not needed beacause we read indata namelist (in chisq_penta_er, everyone does this)
       !CALL PENTA_SET_ION_PARAMS(nion_prof, DBLE(Zatom_local), Matom_local)
       EparB = 0.0 ! Ummm should this be zero for steady state?
@@ -298,7 +301,7 @@
       CALL PENTA_RUN_5_CLEANUP(lscreen)
    END DO
    ! Now deallocate all the helper arrays
-   DEALLOCATE(ik_penta, ne_local, te_local, ni_local, ti_local)
+   DEALLOCATE(ik_penta, s_penta, ne_local, te_local, ni_local, ti_local)
    DEALLOCATE(dnedrho_local, dtedrho_local, dnidrho_local, dtidrho_local)
    DEALLOCATE(vp_local, bdotb_local)
    DEALLOCATE(dkes_nustar, dkes_erstar)
