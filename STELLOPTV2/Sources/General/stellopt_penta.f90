@@ -110,7 +110,7 @@
              dnidrho_local(ii,:) = dnedrho_local(ii)/nion_prof ! Assume equal for now
              CALL get_equil_ti(s_local,TRIM(ti_type),ti_local(ii,1),ier)
              CALL get_equil_ti(s2_local,TRIM(ti_type),dprof,ier)
-             dtidrho_local(ii,1) = 2.0*rho_local*(ti_local(ii,0)-dprof)/(s_local-s2_local)
+             dtidrho_local(ii,1) = 2.0*rho_local*(ti_local(ii,1)-dprof)/(s_local-s2_local)
              ti_local(ii,:) = ti_local(ii,1)
              dtidrho_local(ii,:) = dtidrho_local(ii,1)
              ! VP
