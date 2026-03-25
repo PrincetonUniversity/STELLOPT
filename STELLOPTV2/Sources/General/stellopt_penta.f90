@@ -122,6 +122,15 @@
          END IF
       END DO
    END IF
+!DEC$ IF DEFINED (MPI_OPT)
+   ierr_mpi = 0
+   CALL MPI_BCAST(nsurf_penta, 1,          MPI_INTEGER, master, MPI_COMM_MYWORLD, ierr_mpi)
+   CALL MPI_BCAST(     ncstar, 1,          MPI_INTEGER, master, MPI_COMM_MYWORLD, ierr_mpi)
+   CALL MPI_BCAST(     nestar, 1,          MPI_INTEGER, master, MPI_COMM_MYWORLD, ierr_mpi)
+   CALL MPI_BCAST(  nion_prof, 1,          MPI_INTEGER, master, MPI_COMM_MYWORLD, ierr_mpi)
+   CALL MPI_BCAST(     Aminor, 1, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
+   CALL MPI_BCAST(     Rmajor, 1, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
+!DEC$ ENDIF
    !!!!!!!!!!!!!!!!!!!!!!!!Sorting of NU_DKES and ER_DKES!!!!!!!!!!!!
    !!  This assumes that the arrays are in ascending order and ER 
    !!  varies faster than NU
@@ -179,13 +188,6 @@
    DKES_D33 = DKES_D33 * 0.5
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!DEC$ IF DEFINED (MPI_OPT)
-   ierr_mpi = 0
-   CALL MPI_BCAST(nsurf_penta,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
-   CALL MPI_BCAST(nion_prof,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
-   CALL MPI_BCAST(Aminor,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
-   CALL MPI_BCAST(Rmajor,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
-!DEC$ ENDIF
    ! Other threads allocate helpers  
    IF (myworkid /= master) THEN
       ALLOCATE(ik_penta(nsurf_penta), s_penta(nsurf_penta), &
@@ -198,21 +200,21 @@
    ! Now we broadcast the helpers to all threads
 !DEC$ IF DEFINED (MPI_OPT)
    ierr_mpi = 0
-   CALL MPI_BCAST(ik_penta,nsurf_penta,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
-   CALL MPI_BCAST(s_penta,nsurf_penta,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
-   CALL MPI_BCAST(vp_local,nsurf_penta,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
-   CALL MPI_BCAST(bdotb_local,nsurf_penta,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
-   CALL MPI_BCAST(ne_local,nsurf_penta,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
-   CALL MPI_BCAST(te_local,nsurf_penta,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
-   CALL MPI_BCAST(ti_local,nsurf_penta*nion_prof,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
-   CALL MPI_BCAST(ni_local,nsurf_penta*nion_prof,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
-   CALL MPI_BCAST(dnedrho_local,nsurf_penta,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
-   CALL MPI_BCAST(dtedrho_local,nsurf_penta,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
-   CALL MPI_BCAST(dtidrho_local,nsurf_penta*nion_prof,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
-   CALL MPI_BCAST(dnidrho_local,nsurf_penta*nion_prof,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
-   CALL MPI_BCAST(DKES_D11,nsurf_penta*ncstar*nestar,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
-   CALL MPI_BCAST(DKES_D31,nsurf_penta*ncstar*nestar,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
-   CALL MPI_BCAST(DKES_D33,nsurf_penta*ncstar*nestar,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+   CALL MPI_BCAST(     ik_penta,               nsurf_penta,          MPI_INTEGER, master, MPI_COMM_MYWORLD, ierr_mpi)
+   CALL MPI_BCAST(      s_penta,               nsurf_penta, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
+   CALL MPI_BCAST(     vp_local,               nsurf_penta, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
+   CALL MPI_BCAST(  bdotb_local,               nsurf_penta, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
+   CALL MPI_BCAST(     ne_local,               nsurf_penta, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
+   CALL MPI_BCAST(     te_local,               nsurf_penta, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
+   CALL MPI_BCAST(dnedrho_local,               nsurf_penta, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
+   CALL MPI_BCAST(dtedrho_local,               nsurf_penta, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
+   CALL MPI_BCAST(     ti_local,     nsurf_penta*nion_prof, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
+   CALL MPI_BCAST(     ni_local,     nsurf_penta*nion_prof, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
+   CALL MPI_BCAST(dtidrho_local,     nsurf_penta*nion_prof, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
+   CALL MPI_BCAST(dnidrho_local,     nsurf_penta*nion_prof, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
+   CALL MPI_BCAST(     DKES_D11, nsurf_penta*ncstar*nestar, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
+   CALL MPI_BCAST(     DKES_D31, nsurf_penta*ncstar*nestar, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
+   CALL MPI_BCAST(     DKES_D33, nsurf_penta*ncstar*nestar, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
 !DEC$ ENDIF   
    ! Everyone allocates the JBS and ER arrays
    IF (ALLOCATED(JBS_PENTA)) DEALLOCATE(JBS_PENTA)
