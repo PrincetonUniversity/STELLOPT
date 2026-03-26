@@ -372,7 +372,7 @@
                          lcoilsurf_opt, dcoilsurf_opt, &
                          rbc_coilsurf, rbc_coilsurf_min, rbc_coilsurf_max,&
                          zbs_coilsurf, zbs_coilsurf_min, zbs_coilsurf_max,&
-                         lcoil_kts_opt, dcoil_kts_opt, &
+                         coil_type, lcoil_kts_opt, dcoil_kts_opt, &
                          rho_coil_kts, rho_coil_kts_min, rho_coil_kts_max, &
                          theta_coil_kts, theta_coil_kts_min, theta_coil_kts_max, &
                          zeta_coil_kts, zeta_coil_kts_min, zeta_coil_kts_max, &
@@ -621,6 +621,7 @@
       emis_xics_f(:)   = 0.0
       ! COILS
       lcreate_coils = .false.
+      coil_type           = 1
       rho_coil_kts(:,:)   = -1.0
       theta_coil_kts(:,:) =  0.0
       zeta_coil_kts(:,:)  =  0.0
@@ -1358,6 +1359,7 @@
             IF (ANY(lcoil_kts_opt(n,:))) THEN
                m = FINDLOC(LCOIL_KTS_OPT(n,:),.true.,DIM=1,BACK=.true.)
                WRITE(iunit,'(A,I2)') '!----- COIL ',n
+               WRITE(iunit,'(2X,A,I3,A,I3)') 'COIL_TYPE(',n,') = ',coil_type(n) 
                WRITE(outputstring,'(A,I2,A)') '(2X,A,I3,A,',m,'(2X,L))'
                WRITE(iunit,outputstring) 'LCOIL_KTS_OPT(',n,',:) = ', (lcoil_kts_opt(n,ii), ii=1,m)
                WRITE(outputstring,'(A,I2,A)') '(2X,A,I3,A,',m,'(ES22.12E3))'
