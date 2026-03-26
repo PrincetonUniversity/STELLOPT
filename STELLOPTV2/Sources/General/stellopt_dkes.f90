@@ -79,7 +79,6 @@
       CALL MPI_BCAST(nruns_dkes,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
 !DEC$ ENDIF
       ! Enter the main loop
-      IF (ALLOCATED(DKES_rundex)) DEALLOCATE(DKES_rundex)
       IF (ALLOCATED(DKES_L11p)) DEALLOCATE(DKES_L11p)
       IF (ALLOCATED(DKES_L33p)) DEALLOCATE(DKES_L33p)
       IF (ALLOCATED(DKES_L31p)) DEALLOCATE(DKES_L31p)
@@ -91,12 +90,10 @@
       IF (ALLOCATED(DKES_scal31)) DEALLOCATE(DKES_scal31)
       ALLOCATE(DKES_L11p(nruns_dkes),DKES_L33p(nruns_dkes),DKES_L31p(nruns_dkes),&
                DKES_L11m(nruns_dkes),DKES_L33m(nruns_dkes),DKES_L31m(nruns_dkes),&
-               DKES_scal11(nruns_dkes),DKES_scal33(nruns_dkes),DKES_scal31(nruns_dkes),&
-               DKES_rundex(nruns_dkes))
+               DKES_scal11(nruns_dkes),DKES_scal33(nruns_dkes),DKES_scal31(nruns_dkes))
       DKES_L11p=0.0; DKES_L33p=0.0; DKES_L31p=0.0
       DKES_L11m=0.0; DKES_L33m=0.0; DKES_L31m=0.0
       DKES_scal11=0.0; DKES_scal33=0.0; DKES_scal31=0.0
-      DKES_rundex=-1;
       ! Setup the helper arrays
       IF (ALLOCATED(ik_dkes)) DEALLOCATE(ik_dkes)
       IF (ALLOCATED(nuarr_dkes)) DEALLOCATE(nuarr_dkes)
@@ -107,51 +104,14 @@
          ! First do traditional DKES
          DO ir = 1, nsd
             IF (.not.lneed_dkes(ir)) CYCLE
-            !IF ((sigma_dkes_11(ir)   >= bigno) .and. &
-            !    (sigma_dkes_31(ir)   >= bigno) .and. &
-            !    (sigma_dkes_33(ir)   >= bigno) .and. &
-            !    (sigma_dkes_boot(ir) >= bigno))  CYCLE
             DO ij = 1, nprof
                IF (E_dkes(ij) <= -bigno .or. nu_dkes(ij) <= -bigno) CYCLE
                ik = ik + 1
                ik_dkes(ik) = ir
                nuarr_dkes(ik) = nu_dkes(ij)
                Earr_dkes(ik) = E_dkes(ij)
-               DKES_rundex(ik) = 1
             END DO
          END DO
-         ! Now ErDiff
-         ! DO ir = 1, nsd
-         !    IF (sigma_dkes_erdiff(ir) >= bigno) CYCLE
-         !    ik = ik + 1
-         !    ik_dkes(ik) = ir
-         !    nuarr_dkes(ik) = nu_dkes_Erdiff
-         !    Earr_dkes(ik) = Ep_DKES_Erdiff
-         !    DKES_rundex(ik) = 2
-         !    ik = ik + 1
-         !    ik_dkes(ik) = ir
-         !    nuarr_dkes(ik) = nu_dkes_Erdiff
-         !    Earr_dkes(ik) = Em_DKES_Erdiff
-         !    DKES_rundex(ik) = 2
-         ! END DO
-         ! ! Now Alpha
-         ! DO ir = 1, nsd
-         !    IF (sigma_dkes_alpha(ir) >= bigno) CYCLE
-         !    DO ij = 1, nprof
-         !       IF (Ep_DKES_alpha(ij) <= -bigno .or. nup_dkes_alpha(ij) <= -bigno .or. &
-         !           Em_DKES_alpha(ij) <= -bigno .or. num_dkes_alpha(ij) <= -bigno) CYCLE
-         !       ik = ik + 1
-         !       ik_dkes(ik) = ir
-         !       nuarr_dkes(ik) = nup_dkes_alpha(ij)
-         !       Earr_dkes(ik) = Ep_DKES_alpha(ij)
-         !       DKES_rundex(ik) = 3
-         !       ik = ik + 1
-         !       ik_dkes(ik) = ir
-         !       nuarr_dkes(ik) = num_dkes_alpha(ij)
-         !       Earr_dkes(ik) = Em_DKES_alpha(ij)
-         !       DKES_rundex(ik) = 3
-         !    END DO
-         ! END DO
       END IF
       ! Now read the wout file
       CALL read_wout_file(proc_string, ier)
@@ -159,7 +119,6 @@
       CALL bcast_boozer_vars(master, MPI_COMM_MYWORLD, ierr_mpi)
 !DEC$ IF DEFINED (MPI_OPT)
       ierr_mpi = 0
-      CALL MPI_BCAST(DKES_rundex,nruns_dkes,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
       CALL MPI_BCAST(ik_dkes,nruns_dkes,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
       CALL MPI_BCAST(nuarr_dkes,nruns_dkes,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
       CALL MPI_BCAST(Earr_dkes,nruns_dkes,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)

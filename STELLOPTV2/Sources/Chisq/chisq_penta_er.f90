@@ -13,7 +13,7 @@
       USE stellopt_targets
       USE equil_vals, ONLY: ER_PENTA
       USE penta_interface_mod, ONLY: read_penta_ion_params_namelist, &
-         read_penta_run_params_namelist
+         read_penta_run_params_namelist, init_penta_input
       
 !-----------------------------------------------------------------------
 !     Input/Output Variables
@@ -62,6 +62,7 @@
             IF (niter == -2) target_dex(mtargets)=jtarget_penta_er
          END DO
          istat = 0
+         CALL init_penta_input
          CALL read_penta_ion_params_namelist("input."//TRIM(id_string),istat)
          CALL read_penta_run_params_namelist("input."//TRIM(id_string),istat)
       END IF

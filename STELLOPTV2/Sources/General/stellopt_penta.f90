@@ -244,7 +244,7 @@
       rho_local = SQRT(s_local)
       ! Not needed beacause we read indata namelist (in chisq_penta_er, everyone does this)
       !CALL PENTA_SET_ION_PARAMS(nion_prof, DBLE(Zatom_local), Matom_local)
-      EparB = 0.0 ! Ummm should this be zero for steady state?
+      EparB = 0.0 ! Zero in steady-state
       CALL PENTA_SET_COMMANDLINE(Er_min_Vcm,Er_max_Vcm,ii,1,EparB,1,'','','')
       CALL PENTA_ALLOCATE_SPECIES
       ! I'm passing actual rho here, so if you need s then use s_local
@@ -257,7 +257,7 @@
                            ni_local(ik,:), dnidrho_local(ik,:)/Aminor,&
                            ti_local(ik,:), dtidrho_local(ik,:)/Aminor)
       ! MAKE CORRECTIONS ON D31 AND D33 -- values coming from DKES2 miss Bsq factors (see J. Lore documentation)
-      CALL PENTA_SET_DKES_STAR(ncstar, nestar, DKES_NUSTAR(1:ncstar), DKES_ERSTAR(1:nestar), &
+      CALL PENTA_SET_DKES_STAR(ncstar, nestar, DKES_NUSTAR, DKES_ERSTAR, &
             DKES_D11(ik,:,:), DKES_D31(ik,:,:)*SQRT(bdotb_local(ik)), DKES_D33(ik,:,:)*bdotb_local(ik))
       CALL PENTA_SET_BEAM(0.0_rprec) ! Zero becasue we don't read
       CALL PENTA_SET_U2() ! Leave blank for default value
