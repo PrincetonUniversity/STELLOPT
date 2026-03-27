@@ -1472,24 +1472,16 @@ MODULE PENTA_INTERFACE_MOD
 
    END SUBROUTINE penta_merge_fluxes_vs_Er_files
 
-   SUBROUTINE root_analysis
+   SUBROUTINE root_analysis(which_root)
       ! The array root_type indicates if the ambipolar root is set or not with .TRUE. or .FALSE.
 
       IMPLICIT NONE
 
+      CHARACTER(len=*), INTENT(IN) :: which_root
       INTEGER(iknd) :: i, j, idx_ion_root, idx_electron_root, one, zero, idx_closest_to_zero, selected_idx
       REAL(rknd), DIMENSION(num_Er_test) :: Jr
       REAL(rknd) :: temp_sum, electron_root, ion_root, integral, Er_closest_to_zero, best_neg
       LOGICAL :: cond_A, cond_B
-
-      ! DEPRECATED: Maxwell construction criterium
-      ! Do i=1, num_Er_test
-      !    temp_sum = 0.0
-      !    Do j=1, num_ion_species
-      !       temp_sum = temp_sum + Z_ion(j)*Gamma_i_vs_Er(i,j)
-      !    End Do
-      !    Jr(i) = temp_sum - Gamma_e_vs_Er(i)
-      ! End Do
 
       IF( mod(num_roots,2) == 0) THEN
          STOP 'ERROR: an even number of roots was found. This is non-physical...'
@@ -1503,23 +1495,15 @@ MODULE PENTA_INTERFACE_MOD
       IF( num_roots ==1 ) THEN
          root_type(1) = .TRUE.
       ELSE IF(num_roots==3) THEN
-         ! pick root that corresponds to lowest Er (ion root)
-         root_type(1) = .TRUE. !Er_roots are ordered
-
-         ! ! DEPRECATED: Maxwell construction criterium
-         ! electron_root = MAXVAL(Er_roots(1:num_roots),1)
-         ! ion_root = MINVAL(Er_roots(1:num_roots),1)
-         ! ! Find the index in Er_test_vals closest to electron_root and ion_root
-         ! idx_electron_root = MINLOC( ABS(Er_test_vals-electron_root), 1 )
-         ! idx_ion_root = MINLOC( ABS(Er_test_vals-ion_root), 1 )
-         ! ! Compute integrals
-         ! integral = SUM( Jr(idx_ion_root:idx_electron_root)*(Er_test_vals(2)-Er_test_vals(1)) )
-         ! ! Set root type
-         ! IF(integral>0) THEN
-         !    root_type(1) = .TRUE.
-         ! ELSE
-         !    root_type(3) = .TRUE.
-         ! ENDIF
+         
+         !Er_roots are ordered
+         IF(trim(adjustl(which_root)) == 'ion_root') THEN
+            root_type(1) = .TRUE. 
+         ELSE IF(trim(adjustl(which_root)) == 'electron_root') THEN
+            root_type(3) = .TRUE.
+         ELSE
+            STOP 'Only ion_root and electron_root are possible which_root'
+         END IF
          
       ELSE IF(num_roots==5) THEN
          ! There are 2 possibilities:

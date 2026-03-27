@@ -291,7 +291,7 @@
       
       ! The call to ROOT_ANALYSIS sets the array 'root_type' which decides which root to pick
       ! The criterium is to pick the 'ion_root'
-      CALL ROOT_ANALYSIS
+      CALL ROOT_ANALYSIS('electron_root')
 
       ! Using root_type, pick the ambipolar root that will be saved by THRIFT
       DO ij=1,num_roots
