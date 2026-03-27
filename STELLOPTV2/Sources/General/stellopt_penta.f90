@@ -235,6 +235,9 @@
    ! Break up the work
    CALL MPI_CALC_MYRANGE(MPI_COMM_MYWORLD,1,nsurf_penta,mystart,myend)
    ! Loop over radial surfaces
+!DEC$ IF DEFINED (MPI_OPT)
+   CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
+!DEC$ ENDIF
    DO ik = mystart,myend
       ! ii is the index in VMEC/Boozer grid, ik is over the PENTA surfaces
       ii = ik_penta(ik)
