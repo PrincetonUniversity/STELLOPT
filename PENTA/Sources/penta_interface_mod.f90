@@ -91,8 +91,52 @@ MODULE PENTA_INTERFACE_MOD
       Er_max_Vcm           =  250.0_rknd
       save_all_ambipolar_roots = .FALSE.
       save_fluxes_vs_Er = .FALSE.
+      num_ion_species   = 1
+      Z_ion_init        = 1.0
+      miomp_init        = 1.0
       RETURN
    END SUBROUTINE init_penta_input
+
+   SUBROUTINE bcast_penta_input(main_thread, mpi_communicator,ierr_mpi)
+      USE mpi_inc
+      IMPLICIT NONE
+      INTEGER, INTENT(in) :: main_thread
+      INTEGER, INTENT(inout) :: mpi_communicator
+      INTEGER, INTENT(out) :: ierr_mpi
+      ierr_mpi = 0
+#if defined(MPI_OPT)
+      CALL MPI_BCAST(num_ion_species,          1, MPI_INTEGER,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(num_species,              1, MPI_INTEGER,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(Z_ion_init,     NUM_ION_MAX, MPI_DOUBLE_PRECISION, main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(miomp_init,     NUM_ION_MAX, MPI_DOUBLE_PRECISION, main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(input_is_Er,              1, MPI_LOGICAL,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(log_interp,               1, MPI_LOGICAL,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(use_quanc8,               1, MPI_LOGICAL,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(read_U2_file,             1, MPI_LOGICAL,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(flux_cap,                 1, MPI_LOGICAL,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(output_QoT_vs_Er,         1, MPI_LOGICAL,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(Add_Spitzer_to_D33,       1, MPI_LOGICAL,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(use_beam,                 1, MPI_LOGICAL,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(save_all_ambipolar_roots, 1, MPI_LOGICAL,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(save_fluxes_vs_Er,        1, MPI_LOGICAL,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(num_Er_test,              1, MPI_INTEGER,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(numKsteps,                1, MPI_INTEGER,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(kord_pprof,               1, MPI_INTEGER,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(keord,                    1, MPI_INTEGER,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(kcord,                    1, MPI_INTEGER,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(Kmin,                     1, MPI_DOUBLE_PRECISION, main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(Kmax,                     1, MPI_DOUBLE_PRECISION, main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(epsabs,                   1, MPI_DOUBLE_PRECISION, main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(epsrel,                   1, MPI_DOUBLE_PRECISION, main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(sigma_par,                1, MPI_DOUBLE_PRECISION, main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(sigma_par_Spitzer,        1, MPI_DOUBLE_PRECISION, main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(J_BS,                     1, MPI_DOUBLE_PRECISION, main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(Er_min_Vcm,               1, MPI_DOUBLE_PRECISION, main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(Er_max_Vcm,               1, MPI_DOUBLE_PRECISION, main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(method,                  10, MPI_CHARACTER,        main_thread, mpi_communicator, ierr_mpi)
+#endif
+      RETURN
+   END SUBROUTINE bcast_penta_input
 
    SUBROUTINE penta_set_ion_params(num_ion_in, Z_ion_in, miomp_in)
       IMPLICIT NONE
