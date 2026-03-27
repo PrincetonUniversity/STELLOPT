@@ -898,6 +898,7 @@ class MyApp(QMainWindow):
 					'XICS','XICS_BRIGHT','XICS_W3','XICS_V','SXR','VPHI','VACIOTA',\
 					'IOTA','BALLOON','BOOTSTRAP',\
 					'DKES_11','DKES_31','DKES_33','DKES_BOOT','DKES_ERDIFF','DKES_ALPHA',\
+					'PENTA_ER', \
 					'B10B11','HELICITY','HELICITY_FULL','QUASIISO','GAMMA_C', \
 					'KINK','ORBIT','JDOTB','J_STAR','NEO','TXPORT','ECEREFLECT',\
 					'S11','S12','S21','S22','MAGWELL',\
@@ -920,6 +921,7 @@ class MyApp(QMainWindow):
 		self.ui.ComboBoxOPTplot_type.addItem('-----SPECIAL-----')
 		for name in ['BALLOON','KINK','ORBIT','NEO','HELICITY','HELICITY_FULL',\
 					'B10B11','BOOTSTRAP','TXPORT','B_PROBES','FLUXLOOPS','SEGROG',\
+					'PENTA_ER', \
 					'NELINE','TELINE','TILINE','ZEFFLINE',\
 					'XICS','XICS_BRIGHT','XICS_W3','XICS_V',\
 					'S11','S12','S21','S22','MAGWELL','VACIOTA',\
@@ -1360,6 +1362,19 @@ class MyApp(QMainWindow):
 			self.ax2.set_title("DKES Coefficient "+txt_type)
 			self.ax2.set_yscale('log')
 			self.ax2.set_xscale('log')
+		elif (plot_name == 'PENTA_ER_evolution'):
+			x = self.stel_data.PENTA_ER_K
+			y = self.stel_data.PENTA_ER_VAL
+			t = self.stel_data.PENTA_ER_TARGET
+			d = self.stel_data.PENTA_ER_SIGMA
+			self.ax2.errorbar(x[0,:],t[0,:],yerr=d[0,:],fmt='ok',fillstyle='none',label='Target')
+			self.ax2.plot(x[0,:],y[0,:],'o',fillstyle='none',label='Initial',color='red')
+			for i in range(1,niter-1,1):
+				self.ax2.plot(x[i,:],y[i,:],'.k',fillstyle='none')
+			self.ax2.plot(x[niter-1,:],y[niter-1,:],'o',fillstyle='none',label='Final',color='green')
+			self.ax2.set_ylabel(f'$E_r~[V/m]$')
+			self.ax2.set_title('Radial Electric Field (PENTA)')
+			self.ax2.legend()
 		elif (plot_name == 'HELICITY_FULL_evolution'):
 			x = self.stel_data.HELICITY_FULL_K
 			y = self.stel_data.HELICITY_FULL_VAL
