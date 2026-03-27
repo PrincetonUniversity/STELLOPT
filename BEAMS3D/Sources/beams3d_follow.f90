@@ -366,13 +366,15 @@ SUBROUTINE beams3d_follow
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,      'S_lines', DBLVAR=S_lines)
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,      'U_lines', DBLVAR=U_lines)
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,      'B_lines', DBLVAR=B_lines)
+
     CALL beams3d_write1d_parhdf5(         1, nparticles, mystart_save, myend_save,      't_end',   DBLVAR=t_last,FILENAME='beams3d_'//TRIM(id_string))
     ALLOCATE(itemp(0:npoinc,mystart_save:myend_save))
     itemp = 0; WHERE(neut_lines) itemp=1
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,   'neut_lines', INTVAR=itemp)
     IF (lboxsim) THEN
-      CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,  'charge_lines',INTVAR=charge_lines)
+      CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,   'charge_lines',INTVAR=charge_lines)
       CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,   'mass_lines', INTVAR=mass_lines) 
+      CALL beams3d_write1d_parhdf5(1, nparticles, mystart_save, myend_save,            'reaction_count', INTVAR=reaction_count) 
     END IF
     DEALLOCATE(itemp)
     IF (ALLOCATED(mnum)) DEALLOCATE(mnum)

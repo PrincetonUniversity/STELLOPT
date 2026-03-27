@@ -16,9 +16,15 @@
 !         
 !-----------------------------------------------------------------------
 MODULE tabshi_sigma
-    PUBLIC :: get_sigma_neut_Hplus, get_sigma_neut_Hmin,  &
-              get_sigma_ionp_Hneut, get_sigma_ionp_Hmin,  &
-              get_sigma_ionn_Hneut
+    PUBLIC :: get_sigma_Hp_H, get_sigma_Hn_H,  &
+              get_sigma_H_Hp, get_sigma_Hm_Hp, &
+              get_sigma_H_Hm
+    PUBLIC :: get_sigma_H2p_H2, get_sigma_H2_H2p, &
+              get_sigma_H2p_HHp, get_sigma_H2_HHp
+    PUBLIC :: get_sigma_H3p_H2H, get_sigma_H3p_3H, &
+              get_sigma_H3p_H2pH, get_sigma_H3p_H2Hp,&
+              get_sigma_H3p_Hp2H, get_sigma_H3p_H2pHp, &
+              get_sigma_H3p_2HpH, get_sigma_H3p_3Hp
 !-----------------------------------------------------------------------
 !   MODULE PARAMETERS
 !-----------------------------------------------------------------------
@@ -311,7 +317,7 @@ CONTAINS
 !---------------------------------------------------------------------------
 !---------------------------------------------------------------------------
 
-    FUNCTION get_sigma_neut_Hplus(E) result(sigma)
+    FUNCTION get_sigma_Hp_H(E) result(sigma)
         !-------------------------------------------------------------------
         !     Reaction (6) in Tabata (2000) [H+ + H2 -> fast H]
         !       
@@ -333,9 +339,9 @@ CONTAINS
         sigma = get_sigma_eq8(E1,a1,a2,a3,a4,a5,a6,a7,a8,a9)
         RETURN
 
-    END FUNCTION get_sigma_neut_Hplus
+    END FUNCTION get_sigma_Hp_H
 
-    FUNCTION get_sigma_ionp_Hneut(E) result(sigma)
+    FUNCTION get_sigma_H_Hp(E) result(sigma)
         !-------------------------------------------------------------------
         !     Reaction (31) in Tabata (2000) [H + H2 -> fast H+]
         !       
@@ -356,9 +362,9 @@ CONTAINS
         sigma = get_sigma_eq2(E1,a1,a2,a3,a4,a5,a6)
         RETURN
 
-    END FUNCTION get_sigma_ionp_Hneut
+    END FUNCTION get_sigma_H_Hp
 
-    FUNCTION get_sigma_ionn_Hneut(E) result(sigma)
+    FUNCTION get_sigma_H_Hm(E) result(sigma)
         !-------------------------------------------------------------------
         !     Reaction (29) in Tabata (2000) [H + H2 -> fast H-]
         !       
@@ -380,9 +386,9 @@ CONTAINS
         sigma = get_sigma_eq13(E1,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12)
         RETURN
 
-    END FUNCTION get_sigma_ionn_Hneut   
+    END FUNCTION get_sigma_H_Hm   
 
-    FUNCTION get_sigma_neut_Hmin(E) result(sigma)
+    FUNCTION get_sigma_Hn_H(E) result(sigma)
         !-------------------------------------------------------------------
         !     Reaction (47) in Tabata (2000) [H- + H2 -> fast H]
         !       
@@ -404,9 +410,9 @@ CONTAINS
         sigma = get_sigma_eq11(E1,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10)
         RETURN
 
-    END FUNCTION get_sigma_neut_Hmin
+    END FUNCTION get_sigma_Hn_H
     
-    FUNCTION get_sigma_ionp_Hmin(E) result(sigma)
+    FUNCTION get_sigma_Hm_Hp(E) result(sigma)
         !-------------------------------------------------------------------
         !     Reaction (49) in Tabata (2000) [H- + H2 -> fast H+]
         !       
@@ -427,7 +433,7 @@ CONTAINS
         sigma = get_sigma_eq6(E1,a1,a2,a3,a4,a5,a6)
         RETURN
 
-    END FUNCTION get_sigma_ionp_Hmin 
+    END FUNCTION get_sigma_Hm_Hp 
 
 !---------------------------------------------------------------------------
 !---------------------------------------------------------------------------
@@ -440,7 +446,7 @@ CONTAINS
 !---------------------------------------------------------------------------
 !---------------------------------------------------------------------------
 
-    FUNCTION get_sigma_neut_H2plus(E) result(sigma)
+    FUNCTION get_sigma_H2p_H2(E) result(sigma)
         !-------------------------------------------------------------------
         !     Reaction (50) in Tabata (2000) [H2+ + H2 -> fast H2]
         !       
@@ -462,9 +468,9 @@ CONTAINS
         sigma = get_sigma_eq12(E1,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12)
         RETURN
 
-    END FUNCTION get_sigma_neut_H2plus
+    END FUNCTION get_sigma_H2p_H2
 
-    FUNCTION get_sigma_ionp_H2neut(E) result(sigma)
+    FUNCTION get_sigma_H2_H2p(E) result(sigma)
         !-------------------------------------------------------------------
         !     Reaction (38) in Tabata (2000) [H2 + H2 -> fast H2+]
         !       
@@ -486,9 +492,9 @@ CONTAINS
         sigma = get_sigma_eq10(E1,a1,a2,a3,a4,a5,a6,a7,a8)
         RETURN
 
-    END FUNCTION get_sigma_ionp_H2neut
+    END FUNCTION get_sigma_H2_H2p
 
-    FUNCTION get_sigma_diss_H2plus(E) result(sigma)
+    FUNCTION get_sigma_H2p_HHp(E) result(sigma)
         !-------------------------------------------------------------------
         !     Reaction (14) in Tabata (2000) [H2+ + H2 -> fast H+ + fast H]
         !       
@@ -510,9 +516,9 @@ CONTAINS
         sigma = get_sigma_eq4(E1,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10)
         RETURN
 
-    END FUNCTION get_sigma_diss_H2plus
+    END FUNCTION get_sigma_H2p_HHp
 
-    FUNCTION get_sigma_diss_H2neut(E) result(sigma)
+    FUNCTION get_sigma_H2_HHp(E) result(sigma)
         !-------------------------------------------------------------------
         !     Reaction (43) in Tabata (2000) [H2 + H2 -> fast H+ + fast H]
         !       
@@ -533,7 +539,7 @@ CONTAINS
         sigma = get_sigma_eq2(E1,a1,a2,a3,a4,a5,a6)
         RETURN
 
-    END FUNCTION get_sigma_diss_H2neut
+    END FUNCTION get_sigma_H2_HHp
 
 !---------------------------------------------------------------------------
 !---------------------------------------------------------------------------
@@ -644,82 +650,200 @@ CONTAINS
 !---------------------------------------------------------------------------
 !---------------------------------------------------------------------------
 !       ACTUAL TRIPLE-PROTON REACTIONS (H3+)
-!           1. H3+ + H2 -> H2+ + H       + (H2) 
-!           2. H3+ + H2 -> H+  + H2      + (H2) (unused)
-!           3. H3+ + H2 -> H   + H2      + (H2+)
-!           4. H3+ + H2 -> H+  + H  + H  + (H2) 
-!           5. H3+ + H2 -> H+  + H+ + H  + (H2) (unused)
-!           6. H3+ + H2 -> H+  + H+ + H+ + (H2) (unused)
+!           1. H3+ + H2 -> H2  + H        + (H2+) 
+!           2. H3+ + H2 -> H   + H  + H   + (H2+)
+!           3. H3+ + H2 -> H2+ + H        + (H2)
+!           4. H3+ + H2 -> H2  + H+       + (H2) 
+!           5. H3+ + H2 -> H+  + H  + H   + (H2) 
+!           6. H3+ + H2 -> H2+ + H+       + (H2 +  e-)
+!           7. H3+ + H2 -> H+  + H+ + H   + (H2 +  e-)
+!           8. H3+ + H2 -> H+  + H+ + H+  + (H2 + 2e-)
 !---------------------------------------------------------------------------
 !---------------------------------------------------------------------------
-    FUNCTION get_sigma_diss_H3plus_H2plus(E) result(sigma)
+
+!-------------------------------------------------------------------
+!    GET_SIGMAS_H3P : Calculates cross-sections of H3+ reactions.
+!-------------------------------------------------------------------
+    FUNCTION get_sigmas_H3p(E) result(sigmas_H3p)
+
+        IMPLICIT NONE
+        DOUBLE PRECISION :: E ! Energy in keV
+        DOUBLE PRECISION :: sigmas_H3p(8)
+        DOUBLE PRECISION :: sigma(4), mat(4,4)
+        DOUBLE PRECISION, PARAMETER :: BR_cd = 0.4d0,  &     ! "Free" branching ratios
+                                    BR_fd = 0.01d0, &
+                                    BR_ge = 0.1d0,  &
+                                    BR_he = 0.05d0
+        DOUBLE PRECISION, PARAMETER :: BR_dd = 1.0d0-BR_cd-BR_fd, & ! Fixed branching ratios
+                                    BR_ee = 1.0d0-BR_ge-BR_he
+        INTEGER :: IPIV(4), INFO
+
+        ! Get cross-sections
+        s(1)=get_sigma_18(E)
+        s(2)=get_sigma_19(E)
+        s(3)=get_sigma_20(E)
+        s(4)=get_sigma_21(E)
+
+        ! build matrix
+        mat(1,:) = (/ 0d0, 0d0, 1*BR_dd+1*BR_fd, 1*BR_ee+2*BR_ge+3*BR_he/)
+        mat(2,:) = (/ 0d0, 0d0, 1*BR_cd+1*BR_fd, 0d0/)
+        mat(3,:) = (/ 1d0, 3d0, 1*BR_cd, 2*BR_ee+1*BR_ge/)
+        mat(4,:) = (/ 1d0, 0d0, 1*BR_dd, 0d0/)
+        
+        ! solve
+        CALL DGESV(4, 1, mat, 4, IPIV, s, 4, INFO)
+        IF (INFO /= 0) THEN
+            PRINT *, 'DGESV failed, info = ', info
+        END IF
+
+        sigmas_H3p(1) = s(1)        
+        sigmas_H3p(2) = s(2)
+        sigmas_H3p(3) = BR_cd*s(3)
+        sigmas_H3p(4) = BR_dd*s(3)
+        sigmas_H3p(5) = BR_ee*s(4)
+        sigmas_H3p(6) = BR_fd*s(3)
+        sigmas_H3p(7) = BR_ge*s(4)
+        sigmas_H3p(8) = BR_he*s(4)
+
+        RETURN
+    END FUNCTION get_sigmas_H3p
+
+
+    FUNCTION get_sigma_H3p_H2H(E) result(sigma)
         !-------------------------------------------------------------------
-        !    H3+ + H2 -> H2+ + H       + (H2) 
+        !    H3+ + H2 -> H2 + H + (H2+) 
         !       Input parameters
-        !           E       energy in keV
+        !           E       energy in keV 
         !       Output parameters
         !           sigma   cross-section in m^-2
         !-------------------------------------------------------------------
         IMPLICIT NONE
         DOUBLE PRECISION :: sigma
         DOUBLE PRECISION, INTENT(in) :: E
-
-        sigma = get_sigma_19(E)
-
+        DOUBLE PRECISION :: sigmas_H3p(8)
+        sigmas_H3p = get_sigmas_H3p(E)
+        sigma = sigmas_H3p(1)
         RETURN
-    END FUNCTION get_sigma_diss_H3plus_H2plus
+    END FUNCTION get_sigma_H3p_H2H
 
-    FUNCTION get_sigma_diss_H3plus_neut(E) result(sigma)
+    FUNCTION get_sigma_H3p_3H(E) result(sigma)
         !-------------------------------------------------------------------
-        !    H3+ + H2 -> H2 + H       + (H2+) 
+        !    H3+ + H2 -> H + H + H + (H2+) 
         !       Input parameters
-        !           E       energy in keV
+        !           E       energy in keV 
         !       Output parameters
         !           sigma   cross-section in m^-2
         !-------------------------------------------------------------------
         IMPLICIT NONE
         DOUBLE PRECISION :: sigma
         DOUBLE PRECISION, INTENT(in) :: E
-
-        sigma = get_sigma_21(E)
-
+        DOUBLE PRECISION :: sigmas_H3p(8)
+        sigmas_H3p = get_sigmas_H3p(E)
+        sigma = sigmas_H3p(2)
         RETURN
-    END FUNCTION get_sigma_diss_H3plus_neut
+    END FUNCTION get_sigma_H3p_3H
 
-
-
-    ! FUNCTION get_sigma_diss_H3plus_Hplus(E) result(sigma)
-    !     !-------------------------------------------------------------------
-    !     !    H3+ + H2 -> H+ + H2       + (H2) 
-    !     !       Input parameters
-    !     !           E       energy in keV
-    !     !       Output parameters
-    !     !           sigma   cross-section in m^-2
-    !     !-------------------------------------------------------------------
-    !     IMPLICIT NONE
-    !     DOUBLE PRECISION :: sigma
-    !     DOUBLE PRECISION, INTENT(in) :: E
-
-    !     sigma = get_sigma_18(E) - (get_sigma_20(E) - get_sigma_19(E))/2.0d0
-
-    !     RETURN
-    ! END FUNCTION get_sigma_diss_H3plus_Hplus
-
-
-    FUNCTION get_sigma_diss_H3plus_triple(E) result(sigma)
+    FUNCTION get_sigma_H3p_H2pH(E) result(sigma)
         !-------------------------------------------------------------------
-        !    H3+ + H2 -> H+  + H  + H  + (H2)
+        !    H3+ + H2 -> H2+ + H + (H2) 
         !       Input parameters
-        !           E       energy in keV
+        !           E       energy in keV 
         !       Output parameters
         !           sigma   cross-section in m^-2
         !-------------------------------------------------------------------
         IMPLICIT NONE
         DOUBLE PRECISION :: sigma
         DOUBLE PRECISION, INTENT(in) :: E
-
-        sigma = (get_sigma_20(E)-get_sigma_19(E)-get_sigma_21(E))/2.0d0
-
+        DOUBLE PRECISION :: sigmas_H3p(8)
+        sigmas_H3p = get_sigmas_H3p(E)
+        sigma = sigmas_H3p(3)
         RETURN
-    END FUNCTION get_sigma_diss_H3plus_triple
+    END FUNCTION get_sigma_H3p_H2pH
+
+    FUNCTION get_sigma_H3p_H2Hp(E) result(sigma)
+        !-------------------------------------------------------------------
+        !    H3+ + H2 -> H2 + H+ + (H2) 
+        !       Input parameters
+        !           E       energy in keV 
+        !       Output parameters
+        !           sigma   cross-section in m^-2
+        !-------------------------------------------------------------------
+        IMPLICIT NONE
+        DOUBLE PRECISION :: sigma
+        DOUBLE PRECISION, INTENT(in) :: E
+        DOUBLE PRECISION :: sigmas_H3p(8)
+        sigmas_H3p = get_sigmas_H3p(E)
+        sigma = sigmas_H3p(4)
+        RETURN
+    END FUNCTION get_sigma_H3p_H2Hp
+
+    FUNCTION get_sigma_H3p_Hp2H(E) result(sigma)
+        !-------------------------------------------------------------------
+        !    H3+ + H2 -> H+ + H + H + (H2) 
+        !       Input parameters
+        !           E       energy in keV 
+        !       Output parameters
+        !           sigma   cross-section in m^-2
+        !-------------------------------------------------------------------
+        IMPLICIT NONE
+        DOUBLE PRECISION :: sigma
+        DOUBLE PRECISION, INTENT(in) :: E
+        DOUBLE PRECISION :: sigmas_H3p(8)
+        sigmas_H3p = get_sigmas_H3p(E)
+        sigma = sigmas_H3p(5)
+        RETURN
+    END FUNCTION get_sigma_H3p_Hp2H
+
+    FUNCTION get_sigma_H3p_H2pHp(E) result(sigma)
+        !-------------------------------------------------------------------
+        !    H3+ + H2 -> H2+ + H+ + (H2 + e-)
+        !       Input parameters
+        !           E       energy in keV 
+        !       Output parameters
+        !           sigma   cross-section in m^-2
+        !-------------------------------------------------------------------
+        IMPLICIT NONE
+        DOUBLE PRECISION :: sigma
+        DOUBLE PRECISION, INTENT(in) :: E
+        DOUBLE PRECISION :: sigmas_H3p(8)
+        sigmas_H3p = get_sigmas_H3p(E)
+        sigma = sigmas_H3p(6)
+        RETURN
+    END FUNCTION get_sigma_H3p_H2pHp
+
+    FUNCTION get_sigma_H3p_2HpH(E) result(sigma)
+        !-------------------------------------------------------------------
+        !    H3+ + H2 -> H+ + H+ + H + (H2 + e-)
+        !       Input parameters
+        !           E       energy in keV 
+        !       Output parameters
+        !           sigma   cross-section in m^-2
+        !-------------------------------------------------------------------
+        IMPLICIT NONE
+        DOUBLE PRECISION :: sigma
+        DOUBLE PRECISION, INTENT(in) :: E
+        DOUBLE PRECISION :: sigmas_H3p(8)
+        sigmas_H3p = get_sigmas_H3p(E)
+        sigma = sigmas_H3p(7)
+        RETURN
+    END FUNCTION get_sigma_H3p_2HpH
+
+    FUNCTION get_sigma_H3p_3Hp(E) result(sigma)
+        !-------------------------------------------------------------------
+        !    H3+ + H2 -> H+ + H+ + H+ + (H2 + 2e-)
+        !       Input parameters
+        !           E       energy in keV 
+        !       Output parameters
+        !           sigma   cross-section in m^-2
+        !-------------------------------------------------------------------
+        IMPLICIT NONE
+        DOUBLE PRECISION :: sigma
+        DOUBLE PRECISION, INTENT(in) :: E
+        DOUBLE PRECISION :: sigmas_H3p(8)
+        sigmas_H3p = get_sigmas_H3p(E)
+        sigma = sigmas_H3p(8)
+        RETURN
+    END FUNCTION get_sigma_H3p_3Hp
+
+
 END MODULE 
