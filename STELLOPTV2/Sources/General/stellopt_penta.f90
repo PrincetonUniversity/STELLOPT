@@ -54,8 +54,9 @@
 !     XX_local          Arrays of size nsurf_penta to help run
 !     temp_str          String helper for file names
 !-----------------------------------------------------------------------
+   LOGICAL :: first_pass
    INTEGER :: ii, ij, ik, il, im, ier, mystart, myend
-   INTEGER :: nsurf_penta, nion_prof, ncstar, nestar
+   INTEGER :: nsurf_penta, nion_prof, ncstar, nestar, iappend
    REAL(rprec) :: s_local, s2_local, rho_local, dprof, EparB, Er, Nu, &
          D11, D31, D33
    INTEGER, DIMENSION(:), ALLOCATABLE :: ik_penta
@@ -83,7 +84,9 @@
    IF (lscreen) WRITE(6,'(a)') ' ---------------------------    PENTA CALCULATION     -------------------------'
    ! This make sure everyone has boozer data
    CALL bcast_boozer_vars(master, MPI_COMM_MYWORLD, ierr_mpi)
-   ! Master is the only thread who knows things
+   first_pass = .TRUE.
+   ! We need to broadcast the PENTA namelist vars
+   CALL bcast_penta_input(master, MPI_COMM_MYWORLD, ierr_mpi)
    ! We setup a bunch of helper arrays using lookup functions
    IF (myworkid == master) THEN
       nsurf_penta = COUNT(lneed_penta)
@@ -232,11 +235,6 @@
    ! Break up the work
    CALL MPI_CALC_MYRANGE(MPI_COMM_MYWORLD,1,nsurf_penta,mystart,myend)
    ! Loop over radial surfaces
-   !WRITE(6,*) myworkid, mystart,myend
-   !WRITE(6,*) myworkid, DKES_NUSTAR
-   !WRITE(6,*) myworkid, DKES_ERSTAR
-   !WRITE(6,*) myworkid, DKES_D11
-   !CALL FLUSH(6)
    DO ik = mystart,myend
       ! ii is the index in VMEC/Boozer grid, ik is over the PENTA surfaces
       ii = ik_penta(ik)
@@ -245,7 +243,9 @@
       ! Not needed beacause we read indata namelist (in chisq_penta_er, everyone does this)
       !CALL PENTA_SET_ION_PARAMS(nion_prof, DBLE(Zatom_local), Matom_local)
       EparB = 0.0 ! Zero in steady-state
-      CALL PENTA_SET_COMMANDLINE(Er_min_Vcm,Er_max_Vcm,ii,1,EparB,1,'','','')
+      iappend = 1
+      IF (lscreen .and. myworkid == master .and. first_pass) iappend = 0
+      CALL PENTA_SET_COMMANDLINE(Er_min_Vcm,Er_max_Vcm,ii,iappend,EparB,1,'','','')
       CALL PENTA_ALLOCATE_SPECIES
       ! I'm passing actual rho here, so if you need s then use s_local
       CALL PENTA_SET_EQ_DATA(rho_local, Aminor, Rmajor, &
@@ -314,6 +314,7 @@
       END DO
       !       
       CALL PENTA_RUN_5_CLEANUP(lscreen)
+      first_pass = .FALSE.
    END DO
    ! Now deallocate all the helper arrays
    DEALLOCATE(ik_penta, s_penta, ne_local, te_local, ni_local, ti_local)
