@@ -187,6 +187,7 @@
       REAL(rprec), DIMENSION(nprof) ::  nup_dkes_alpha, num_dkes_alpha, Ep_dkes_alpha, Em_dkes_alpha
       LOGICAL, DIMENSION(nsd)       ::  lneed_penta
       REAL(rprec), DIMENSION(nsd)   ::  target_PENTA_ER, sigma_PENTA_ER
+      REAL(rprec), DIMENSION(nsd)   ::  target_PENTA_J, sigma_PENTA_J
       REAL(rprec), DIMENSION(nsd)        :: target_gamma_c, sigma_gamma_c
       REAL(rprec), DIMENSION(nu_max,nv_max) ::  target_separatrix, sigma_separatrix, &
                                                 r_separatrix, z_separatrix, phi_separatrix
@@ -305,6 +306,7 @@
       INTEGER, PARAMETER :: jtarget_dkes_alpha        = 6084
       INTEGER, PARAMETER :: jtarget_dkes_boot         = 6085
       INTEGER, PARAMETER :: jtarget_penta_er          = 6086
+      INTEGER, PARAMETER :: jtarget_penta_j           = 6087
       INTEGER, PARAMETER :: jtarget_jdotb      = 609
       INTEGER, PARAMETER :: jtarget_jcurv      = 6091
       INTEGER, PARAMETER :: jtarget_bmin       = 610
@@ -465,6 +467,8 @@
             WRITE(iunit, out_format) 'DKES Alpha (D11 Slope)'
          CASE(jtarget_penta_er)
             WRITE(iunit, out_format) 'PENTA Er'
+         CASE(jtarget_penta_j)
+            WRITE(iunit, out_format) 'PENTA J'
          CASE(jtarget_jdotb)
             WRITE(iunit, out_format) '<J.B>'
          CASE(jtarget_jcurv)
