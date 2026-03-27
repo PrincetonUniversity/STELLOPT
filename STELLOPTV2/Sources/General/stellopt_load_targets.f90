@@ -304,6 +304,8 @@
          CALL chisq_dkes_boot(target_dkes_boot, sigma_dkes_boot, ncnt,iflag)
       IF (ANY(sigma_penta_er < bigno)) &
          CALL chisq_penta_er(target_penta_er, sigma_penta_er, ncnt,iflag)
+      IF (ANY(sigma_penta_j < bigno)) &
+         CALL chisq_penta_j(target_penta_j, sigma_penta_j, ncnt,iflag)
       ! For now not supported
       !IF (ANY(sigma_dkes_erdiff < bigno)) &
       !   CALL chisq_dkes_erdiff(target_dkes_erdiff, sigma_dkes_erdiff, ncnt,iflag)

@@ -626,6 +626,13 @@ chisq_penta_er.o : \
       $(PENTA_DIR/$(LOCTYPE)/penta_interface_mod.o
       
 
+chisq_penta_j.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      equil_vals.o \
+      $(PENTA_DIR/$(LOCTYPE)/penta_interface_mod.o
+      
+
 chisq_phiedge.o : \
       stellopt_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
