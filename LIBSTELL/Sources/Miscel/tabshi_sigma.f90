@@ -16,7 +16,7 @@
 !         
 !-----------------------------------------------------------------------
 MODULE tabshi_sigma
-    PUBLIC :: get_sigma_Hp_H, get_sigma_Hn_H,  &
+    PUBLIC :: get_sigma_Hp_H, get_sigma_Hm_H,  &
               get_sigma_H_Hp, get_sigma_Hm_Hp, &
               get_sigma_H_Hm
     PUBLIC :: get_sigma_H2p_H2, get_sigma_H2_H2p, &
@@ -388,7 +388,7 @@ CONTAINS
 
     END FUNCTION get_sigma_H_Hm   
 
-    FUNCTION get_sigma_Hn_H(E) result(sigma)
+    FUNCTION get_sigma_Hm_H(E) result(sigma)
         !-------------------------------------------------------------------
         !     Reaction (47) in Tabata (2000) [H- + H2 -> fast H]
         !       
@@ -410,7 +410,7 @@ CONTAINS
         sigma = get_sigma_eq11(E1,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10)
         RETURN
 
-    END FUNCTION get_sigma_Hn_H
+    END FUNCTION get_sigma_Hm_H
     
     FUNCTION get_sigma_Hm_Hp(E) result(sigma)
         !-------------------------------------------------------------------
