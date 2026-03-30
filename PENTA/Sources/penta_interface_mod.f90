@@ -727,8 +727,11 @@ MODULE PENTA_INTERFACE_MOD
    END SUBROUTINE penta_fit_DXX_coef
 
    SUBROUTINE penta_screen_info
+      USE PENTA_subroutines, ONLY: lscreen_penta
       IMPLICIT NONE
+      lscreen_penta = .FALSE.
       If ( i_append == 0 ) Then
+         lscreen_penta = .TRUE.
          WRITE(6,'(A)') ""
          WRITE(6,'(A)') "Welcome to PENTA3, please note the following settings:"
          WRITE(6,'(A)')
@@ -1109,10 +1112,12 @@ MODULE PENTA_INTERFACE_MOD
             Er_min = Er_min - 50.0_rknd
             Er_max = Er_max + 50.0_rknd
             num_Er_test = num_Er_test + additional_roots
-            WRITE(6,'(A,F7.2,A,F7.2,A,F7.2,A,F7.2,A)') '[Er_min,Er_max] changed from [', Er_min+50.0_rknd, ',', Er_max-50.0_rknd, &
+            IF ( i_append == 0 ) THEN
+               WRITE(6,'(A,F7.2,A,F7.2,A,F7.2,A,F7.2,A)') '[Er_min,Er_max] changed from [', Er_min+50.0_rknd, ',', Er_max-50.0_rknd, &
                                  '] to [', Er_min, ',', Er_max, ']'
-            WRITE(6,'(A,I4,A,I4)') 'num_Er_test increased from ', num_Er_test-additional_roots, ' to ', num_Er_test
-            WRITE(6,'(A)') ' '
+               WRITE(6,'(A,I4,A,I4)') 'num_Er_test increased from ', num_Er_test-additional_roots, ' to ', num_Er_test
+               WRITE(6,'(A)') ' '
+            END IF
             CALL PENTA_RUN_2_EFIELD
          Elseif( flag_roots==2 ) THEN
             ! case where numEr must increase
