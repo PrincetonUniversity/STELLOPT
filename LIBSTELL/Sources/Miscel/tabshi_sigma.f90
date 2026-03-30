@@ -669,7 +669,7 @@ CONTAINS
         IMPLICIT NONE
         DOUBLE PRECISION :: E ! Energy in keV
         DOUBLE PRECISION :: sigmas_H3p(8)
-        DOUBLE PRECISION :: sigma(4), mat(4,4)
+        DOUBLE PRECISION :: s(4), mat(4,4)
         DOUBLE PRECISION, PARAMETER :: BR_cd = 0.4d0,  &     ! "Free" branching ratios
                                     BR_fd = 0.01d0, &
                                     BR_ge = 0.1d0,  &
