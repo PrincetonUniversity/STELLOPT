@@ -68,6 +68,7 @@
       lfirst_pass = .TRUE.
       IF (lscreen) WRITE(6,'(a)') ' ---------------------------    DKES CALCULATION     -------------------------'
       ! First count E and nu pairs
+      nruns_dkes = 0
       DO ij = 1, nprof
          IF (E_dkes(ij) <= -bigno .or. nu_dkes(ij) <= -bigno) CYCLE
          nruns_dkes = nruns_dkes + 1
@@ -77,6 +78,8 @@
 !DEC$ IF DEFINED (MPI_OPT)
       ierr_mpi = 0
       CALL MPI_BCAST(nruns_dkes,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+      CALL MPI_BCAST(lbooz,nsd,MPI_LOGICAL,master,MPI_COMM_MYWORLD,ierr_mpi)
+      CALL MPI_BCAST(lneed_dkes,nsd,MPI_LOGICAL,master,MPI_COMM_MYWORLD,ierr_mpi)
 !DEC$ ENDIF
       ! Enter the main loop
       IF (ALLOCATED(DKES_L11p)) DEALLOCATE(DKES_L11p)
@@ -139,7 +142,7 @@
          WRITE(arg1(4),'(e20.10)') dkes_efield
          arg1(5) = 'F'
          IF (lscreen .and. lfirst_pass) arg1(5) = 'T'
-         WRITE(temp_str,'(i3.3)') ik
+         WRITE(temp_str,'(i4.4)') ik
          arg1(6) = '_s' // TRIM(temp_str)
          ier_phi = 0 ! We don't read the boozmn or wout file we've done that already
          CALL dkes_input_prepare_old(arg1,6,dkes_input_file,ier_phi)
@@ -274,6 +277,7 @@
          CLOSE(unit=ioout_opt)
          lfirst_pass = .FALSE.
       END DO
+      DEALLOCATE(ik_dkes,nuarr_dkes,Earr_dkes)
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
       IF (myworkid == master) THEN

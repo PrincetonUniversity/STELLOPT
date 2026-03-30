@@ -84,7 +84,7 @@
    IF (lscreen) WRITE(6,'(a)') ' ---------------------------    PENTA CALCULATION     -------------------------'
    ! This make sure everyone has boozer data
    CALL bcast_boozer_vars(master, MPI_COMM_MYWORLD, ierr_mpi)
-   first_pass = .TRUE.
+   first_pass = .TRUE.; iflag = 0
    ! We need to broadcast the PENTA namelist vars
    CALL bcast_penta_input(master, MPI_COMM_MYWORLD, ierr_mpi)
    ! We setup a bunch of helper arrays using lookup functions

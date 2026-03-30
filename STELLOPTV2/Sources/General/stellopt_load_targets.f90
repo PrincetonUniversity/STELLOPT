@@ -11,8 +11,9 @@
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
-      USE stellopt_runtime
-      USE stellopt_input_mod
+      USE stellopt_runtime, ONLY: mtargets, targets, sigmas, vals
+      USE stellopt_globals, ONLY: bigno
+!      USE stellopt_input_mod
       USE stellopt_targets
       IMPLICIT NONE
       
@@ -29,11 +30,8 @@
       REAL(rprec), INTENT(out) :: fvec(m)
       
 !-----------------------------------------------------------------------
-!     Local Variables
-!        ier         Error flag
-!        iunit       File unit number
+!     Local Variables (NONE)
 !----------------------------------------------------------------------
-      INTEGER ::  ier, iunit,m_sav
 
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -329,7 +327,11 @@
       IF (ncnt < 0) RETURN
       
       ! Check some stuff
-      IF (mtargets .ne. m) THEN; iflag=-2; RETURN; END IF
+      IF (mtargets /= m) THEN
+         PRINT *,'ERROR (mtargets /= m): ',ncnt,m,mtargets
+         iflag=-2
+         RETURN
+      END IF
       
       ! Calculate fvec
       !PRINT *,m,fvec
