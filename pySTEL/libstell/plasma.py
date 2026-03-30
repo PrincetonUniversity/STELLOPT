@@ -416,18 +416,17 @@ class PLASMA:
             rho_a = np.atleast_1d(rho) 
             vtest_a = self.get_thermal_speed(species,rho_a)
         
-        # collisionfreq_PENTA does not accept arrays
-        # so need to make a loop in rho
+        # arrays are organized as: first element corresponds to species we want the collisionality
+        # the order of the others are arbitrary
+        species_order = [species] + [sp for sp in self.list_of_species if sp != species]
+        #
+        m = np.array([self.mass[sp] for sp in species_order])
+        Z = np.array([self.Zcharge[sp] for sp in species_order])
+            
         nu_D = []
         for r,vt in zip(rho_a,vtest_a):
-            
-            # arrays are organized as: first element corresponds to species we want the collisionality
-            # The order of the others are arbitrary
-            
-            m = np.array([self.mass[species]] + [self.mass[sp] for sp in self.list_of_species if sp != species])
-            Z = np.array([self.Zcharge[species]] + [self.Zcharge[sp] for sp in self.list_of_species if sp != species])
-            T = np.array([self.get_temperature(species,r)] + [self.get_temperature(sp,r) for sp in self.list_of_species if sp != species])
-            n = np.array([self.get_density(species,r)] + [self.get_density(sp,r) for sp in self.list_of_species if sp != species])
+            T = np.array([self.get_temperature(sp,r) for sp in species_order])
+            n = np.array([self.get_density(sp,r) for sp in species_order])
             
             #compute loglambda as in PENTA
             Te = self.get_temperature('electrons',r)
@@ -436,9 +435,8 @@ class PLASMA:
                 loglambda = 25.3 - 1.15*np.log10(ne/1e6) + 2.3*np.log10(Te)
             else:
                 loglambda = 23.4 - 1.15*np.log10(ne/1e6) + 3.45*np.log10(Te)
-            clog = np.full(len(m),loglambda)
             
-            nu = np.sum( coll.collisionfreq_PENTA(vt,m,Z,T,n,clog) )
+            nu = np.sum( coll.collisionfreq_PENTA(vt,m,Z,T,n,loglambda) )
             
             nu_D.append( nu )
             
