@@ -925,7 +925,7 @@
          Em_dkes_alpha      = -2*bigno
          nruns_dkes        = 0 ! This is here to default the value for each run
       END IF
-      lneed_dkes        = .false.
+      !lneed_dkes        = .false.
       target_dkes       = 0.0
       sigma_dkes        = bigno
       target_dkes_11    = 0.0
@@ -940,7 +940,7 @@
       sigma_dkes_alpha   = bigno
       target_dkes_boot   = 0.0
       sigma_dkes_boot    = bigno
-      lneed_penta       = .false.
+      !lneed_penta       = .false.
       target_penta_er    = 0.0
       sigma_penta_er    = bigno
       target_penta_j    = 0.0

@@ -190,11 +190,11 @@ MODULE PENTA_INTERFACE_MOD
       CHARACTER(LEN=*), PARAMETER :: outint  = "(2X,A,1X,'=',1X,I0)"
       INTEGER(iknd) :: k
       WRITE(iunit,'(A)') '&ION_PARAMS'
-      WRITE(iunit,'(A)') '----------------------------------------------------------------'
+      !WRITE(iunit,'(A)') '!----------------------------------------------------------------'
       WRITE(iunit,outint) 'NUM_ION_SPECIES',num_ion_species
       WRITE(iunit,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'Z_ION_INIT',(Z_ion_init(k), k=1,num_ion_species)
       WRITE(iunit,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'MIOMP_INIT',(miomp_init(k), k=1,num_ion_species)
-      WRITE(iunit,'(A)') '/\n'
+      WRITE(iunit,'(A)') '/'
    END SUBROUTINE write_ion_params_nml
 
    SUBROUTINE write_ion_params_namelist_byfile(filename)
@@ -277,8 +277,8 @@ MODULE PENTA_INTERFACE_MOD
       WRITE(iunit,outdbl) 'KMAX',kmax
       WRITE(iunit,outdbl) 'EPSABS',epsabs
       WRITE(iunit,outdbl) 'EPSREL',epsrel
-      WRITE(iunit,outstr) 'METHOD',method
-      WRITE(iunit,'(A)') '/\n'
+      WRITE(iunit,outstr) 'METHOD',TRIM(method)
+      WRITE(iunit,'(A)') '/'
    END SUBROUTINE write_run_params_nml
 
    SUBROUTINE write_run_params_namelist_byfile(filename)
