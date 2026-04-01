@@ -2239,7 +2239,6 @@ def merge_output_files(*output_files,concatenated_file=None):
     # ------------------------------------------------------------
     ref_solver = joblib.load(output_files[0])
     concatenated_class = deepcopy(ref_solver)
-    
     # ------------------------------------------------------------
     # Loop over remaining solvers
     # ------------------------------------------------------------
@@ -2338,12 +2337,12 @@ def merge_output_files(*output_files,concatenated_file=None):
                         axis=0
                     )
         
-        concatenated_class.Nt = len(concatenated_class.time)
-        
-        if(concatenated_file is not None):
-            joblib.dump(concatenated_class, concatenated_file)
-        
-        return concatenated_class
+    concatenated_class.Nt = len(concatenated_class.time)
+    
+    if(concatenated_file is not None):
+        joblib.dump(concatenated_class, concatenated_file)
+    
+    return concatenated_class
                     
         
 # def process_surfaces(surface,wout_path):
