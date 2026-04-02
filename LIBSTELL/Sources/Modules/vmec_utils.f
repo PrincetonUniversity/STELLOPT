@@ -95,6 +95,8 @@ C-----------------------------------------------
 !     If info == -1 then the tollerance was not achieved
 !     If info < -1 then most likely the point is outside the eq.
 !
+      IF (info_loc.eq.-1 .and. (fmin .le. fmin_acceptable)) info_loc = 0
+
       IF (PRESENT(info)) info = info_loc
       IF (info_loc .lt. -1) RETURN
 
@@ -1091,7 +1093,7 @@ C-----------------------------------------------
       nfe = 0
       fmin0 = 1
 
-      DO itry = 1, 4
+      DO itry = 1, 8
 
          CALL newt2d(xc_opt, fmin, ftol, nfe_out, nvar, info)
          nfe = nfe + nfe_out
@@ -1100,14 +1102,11 @@ C-----------------------------------------------
 !
 !        JOG POINT (BY ROTATING ANGLE) TO IMPROVE CONVERGENCE
 !
-         IF (fmin .gt. 1.E-3*fmin0) THEN
-            xc_opt(2) = xc_opt(2) + twopi/20
-         ELSE 
-            xc_opt(2) = xc_opt(2) + twopi/40
-         END IF
+         xc_opt(2) = xc_opt(2) + twopi/8
+         IF (MOD(itry,2).eq.0) xc_opt(1) = one/(2*(ns_loc-1))
 
          fmin0 = MIN(fmin, fmin0)
-            
+
       END DO
          
       c_flx(1) = xc_opt(1); c_flx(2) = xc_opt(2); c_flx(3) = phi_target
@@ -1159,7 +1158,8 @@ C-----------------------------------------------
       REAL(rprec) :: c_flx(3), r_cyl_out(3), 
      1               eps0, eps, xc_min(nvar), factor
       REAL(rprec) :: x0(3), xs(3), xu(3), dels, delu, tau, fmin0,
-     1               ru1, zu1, edge_value, snew, rs1, zs1, z_small
+     1               ru1, zu1, edge_value, snew, rs1, zs1, z_small,
+     2               damp
 C-----------------------------------------------
 !
 !     INPUT/OUTPUT:
@@ -1222,6 +1222,14 @@ C-----------------------------------------------
          IF (fmin .gt. fmin0) THEN
             factor = (2*factor)/3
             xc_opt = xc_min
+!           RE-EVALUATE AT BEST POINT FOR CORRECT GRADIENT
+            c_flx(1) = xc_opt(1);  c_flx(2) = xc_opt(2)
+            CALL get_flxcoord(x0, c_flx, rs=rs1, zs=zs1,
+     1                        ru=ru1, zu=zu1)
+            xu(1) = ru1; xu(3) = zu1
+            xs(1) = rs1; xs(3) = zs1
+            x0(1) = x0(1) - r_target
+            x0(3) = x0(3) - z_target
 !           REDIRECT ALONG STEEPEST-DESCENT PATH
             IF (6*factor .lt. one) THEN
                dels =-(x0(1)*xs(1) + x0(3)*xs(3))/(xs(1)**2 + xs(3)**2)
@@ -1234,14 +1242,17 @@ C-----------------------------------------------
 
 !           NEWTON STEP
             tau = xu(1)*xs(3) - xu(3)*xs(1)
-            IF (ABS(tau) .le. ABS(z_small)*r_target**2) THEN
-               iflag = -2
-               EXIT
+            IF (ABS(tau) .le. eps0*r_target**2) THEN
+               xc_opt(2) = xc_opt(2) + twopi/20
+               xc_opt(1) = MAX(xc_opt(1), one/(ns_loc-1))
+               CYCLE
             END IF
             dels = ( x0(1)*xu(3) - x0(3)*xu(1))/tau
             delu = (-x0(1)*xs(3) + x0(3)*xs(1))/tau
             IF (fmin .gt. 1.E-3_dp) THEN
-               dels = dels*0.5; delu = delu*0.5
+               damp = MIN(one, 1.E-3_dp/fmin)
+               damp = MAX(damp, 0.1_dp)
+               dels = dels*damp; delu = delu*damp
             END IF
  
          END IF

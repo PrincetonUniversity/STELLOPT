@@ -257,13 +257,13 @@
       CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL,1, nr*nphi*nz, mystart, myend)
 
 
+      sflx = 0.0
       IF (lafield_only) THEN
          DO s = mystart, myend
             i = MOD(s-1,nr)+1
             j = MOD(s-1,nr*nphi)
             j = FLOOR(REAL(j) / REAL(nr))+1
             k = CEILING(REAL(s) / REAL(nr*nphi))
-            sflx = 0.0
             CALL GetAcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
                          br, bphi, bz, SFLX=sflx,info=ier)
             IF (ier == 0 .and. bphi /= 0 .and. sflx<=1) THEN
@@ -306,7 +306,6 @@
             j = MOD(s-1,nr*nphi)
             j = FLOOR(REAL(j) / REAL(nr))+1
             k = CEILING(REAL(s) / REAL(nr*nphi))
-            sflx = 0.0
             ! The GetBcyl Routine returns -3 if cyl2flx thinks s>1
             ! however, if cyl2flx fails to converge then s may be
             ! greater than 1 but cyl2flux won't throw the -3 code.
