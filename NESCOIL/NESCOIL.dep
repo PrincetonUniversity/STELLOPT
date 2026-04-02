@@ -167,10 +167,12 @@ nesopt.o : \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
 
 NumParams.o : \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/nescoil_globals.o
 
 OutCtrl.o : \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/nescoil_globals.o
 
 precal.o : \
       ../../LIBSTELL/$(LOCTYPE)/fftfax.o \
@@ -293,7 +295,8 @@ surfcur_diag.o : \
       Vsurfcurdiag.o
 
 SvdCtrl.o : \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/nescoil_globals.o
 
 Vbiopre.o : \
       Vmeshes.o
@@ -317,7 +320,8 @@ Vfourier2.o : \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
 
 Vmeshes.o : \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/nescoil_globals.o
 
 Voptim1.o : \
       Vmeshes.o 
@@ -326,7 +330,8 @@ Vprecal10.o : \
       Vmeshes.o
 
 Vprecal1.o : \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/nescoil_globals.o
 
 Vprecal2.o : \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
@@ -401,20 +406,26 @@ Vsurfcurdiag.o : \
       Vmeshes.o
 
 Vvacuum1.o : \
-      Vmeshes.o
+      Vmeshes.o \
+      ../../LIBSTELL/$(LOCTYPE)/nescoil_globals.o
 
 Vvacuum2.o : \
-      Vmeshes.o
+      Vmeshes.o \
+      ../../LIBSTELL/$(LOCTYPE)/nescoil_globals.o
 
 Vvacuum3.o : \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/nescoil_globals.o
 
 Vvacuum4.o : \
-      Vmeshes.o
+      Vmeshes.o \
+      ../../LIBSTELL/$(LOCTYPE)/nescoil_globals.o
 
 Vvacuum5.o : \
-      Vmeshes.o
+      Vmeshes.o \
+      ../../LIBSTELL/$(LOCTYPE)/nescoil_globals.o
 
 Vvacuum6.o : \
-      Vmeshes.o
+      Vmeshes.o \
+      ../../LIBSTELL/$(LOCTYPE)/nescoil_globals.o
 

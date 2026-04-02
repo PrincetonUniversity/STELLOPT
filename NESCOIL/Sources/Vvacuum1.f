@@ -1,6 +1,7 @@
 
       module Vvacuum1
       use Vmeshes
-      integer   ms, ns
-      real(rprec), dimension(:,:), allocatable :: cr, cz
+      use nescoil_globals, ONLY: cr, cz, ms, ns
+      !integer   ms, ns
+      !real(rprec), dimension(:,:), allocatable :: cr, cz
       end module Vvacuum1

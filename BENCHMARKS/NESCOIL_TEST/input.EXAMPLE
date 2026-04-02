@@ -1,0 +1,39 @@
+&NESCOIL_INPUT
+!---------- Plasma Surface Parameters ------------
+  NU1 = 64
+  NV1 = 64
+  NP = 3
+  IOTA_EDGE =    0.46888094303
+  PHIP_EDGE =   -9.961507888E-2
+  CURPOL =   1.2
+!---------- Potential Surface Parameters ------------
+  NU = 64
+  NV = 64
+  MF = 8
+  NF = 8
+  CUT =    0.000000000000E+000
+  CUP =    1.000000000000E+000
+  IBEX = 0
+  NPOL = 64
+  NTOR = 7
+!---------- Solver Parameters ------------
+  MSTRT = 0
+  MSTEP = 0
+  MKEEP = 0
+  MDSPW = 4
+  CURWT =    0.000000000000E+000
+  TRGWT =    0.000000000000E+000
+!---------- Output Parameters ------------
+  W_PSURF = 0
+  W_CSURF = 0
+  W_BNUV = 0
+  W_JSURF = 0
+  W_XERR = 0
+  W_SVD = 0
+!---------- Equilibrium Surface Harmonics ------------
+  RBC_PLASMA( 000,000) =    1.420000000000E+000    ZBS_PLASMA( 000,000) =    0.000000000000E+000    LBS_PLASMA( 000,000) =    0.000000000000E+000
+  RBC_PLASMA( 000,001) =    0.320000000000E+000    ZBS_PLASMA( 000,001) =    0.590000000000E+000    LBS_PLASMA( 000,001) =    0.000000000000E+000
+!---------- Potential Surface Harmonics ------------
+  RBC_SURF( 000,000) =    1.420000000000E+000    ZBS_SURF( 000,000) =    0.000000000000E+000
+  RBC_SURF( 000,001) =    0.420000000000E+000    ZBS_SURF( 000,001) =    0.690000000000E+000
+/
