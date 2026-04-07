@@ -1356,7 +1356,9 @@ class MyApp(QMainWindow):
 					x = np.squeeze(nu3d[i,j,:])
 					ym = np.squeeze(Lval[i,j,:,0])
 					yp = np.squeeze(Lval[i,j,:,1])
+					ya = (ym+yp)/2.0
 					self.ax2.fill_between(x,ym,yp,alpha=0.2)
+					self.ax2.plot(x,ya,'k')
 			self.ax2.set_xlabel('Collisionality nu*')
 			self.ax2.set_ylabel(txt_type)
 			self.ax2.set_title("DKES Coefficient "+txt_type)
