@@ -199,9 +199,9 @@ class THRIFT():
             for it,time in enumerate(times):
                 try:
                     # ax.plot(np.sqrt(self.THRIFT_S),plot_var[it,:],label=f't={time}s')
-                    ax.plot(np.sqrt(self.THRIFT_S),plot_var[it,:],label=f't={time:.1f}s'+r', $\beta=$'+f'{self.THRIFT_BETATOT[idx[it]]*100:.2f}%')   
+                    ax.plot(np.sqrt(self.THRIFT_S),plot_var[it,:],label=f't={time:.2f}s'+r', $\beta=$'+f'{self.THRIFT_BETATOT[idx[it]]*100:.2f}%')   
                 except:
-                    ax.plot(np.sqrt(self.THRIFT_SNOB),plot_var[it,:],label=f't={time}s')
+                    ax.plot(np.sqrt(self.THRIFT_SNOB),plot_var[it,:],label=f't={time:.2f}s')
                 ax.set_xlabel('r/a') 
                 ax.set_title(var)   
             ax.grid()    
@@ -1007,15 +1007,15 @@ class THRIFT():
 
         return outname
     
-    def solve_time_dependent_current_equation_fixed_profiles(self,t_select,dt,L_inductance,edge_factor=None,tend=None):
-        """ Solves the time dependent current diffusion equation with profiles at t_select 
+    def solve_time_dependent_current_equation(self,L_inductance,edge_factor=None,add_neglected_terms=False):
+        """ Solves the time dependent current diffusion equation. Profiles are time-dependent
             
             Equation is written in the conservative form:
-            dI/dt = (S11/phia^2) * d/ds[ D(s)*dI/ds + P(s)*I ] + F(s)
+            dI/dt = (S11/phia^2) * d/ds[ D(s,t)*dI/ds + P(s,t)*I ] + F(s)
             where:
             D(s) = etapar*V' * <B2>/mu0
             P(s) = etapar*V' * p'
-            F(s) = -S11/phia^2 * d/ds[etapar*V' * phia/mu0 * <JNI*B>]
+            F(s) = -S11/phia^2 * d/ds[etapar*V' * phia/mu0 * <JNI*B>]  +  phia/mu0 * [dS12/dt + iota*dS11/dt]
             
             We solve this time-dependent PDE using an implicit backward Euler time scheme:
             (I_new - I_old)/dt = L*I_new + F
@@ -1025,90 +1025,92 @@ class THRIFT():
         mu0 = 4*np.pi*1e-7
         
         # Define time array
-        t_init = 0.0
-        if(tend is None):
-            tend = self.THRIFT_T[-1]
-        Nt = round(1+(tend-t_init)/dt)
-        t_solver = np.linspace(t_init, tend, num=Nt)
-        
-        it_select = np.argmin(np.abs(self.THRIFT_T-t_select))
-        
-        J_SOURCE = self.THRIFT_JSOURCE[it_select,:].copy() # copy to avoid modifying original array
-        if(edge_factor is not None):
-            J_SOURCE[-1] *= edge_factor 
-        
-        phia = self.THRIFT_PHIEDGE[it_select]
-        #
-        aux1 = self.THRIFT_S11[it_select,:]/phia**2
-        aux2 = self.THRIFT_ETAPARA[it_select,:]*self.THRIFT_VP[it_select,:]
-        aux3 = aux2 * (phia/mu0) * J_SOURCE *self.THRIFT_BAV[it_select,:]
-        #
-        D = aux2 * self.THRIFT_BSQAV[it_select,:]/mu0
-        P = aux2 * self.THRIFT_PPRIME[it_select,:]
-        F = -aux1 * np.gradient(aux3,self.THRIFT_S)
-        #
-        # rmaj = self.THRIFT_RMAJOR[it_select,-1]
-        # amin = self.THRIFT_AMINOR[it_select,-1]
-        # L_inductance = mu0*rmaj*(np.log(8*rmaj/amin)-2) # mu0 R (log(8R/a)-2)
-        
-        # Assemble L operator
-        Dminus = 0.5 * (D[0:-2] + D[1:-1])
-        Dplus  = 0.5 * (D[1:-1] + D[2:])
-        #
-        Pminus = 0.5 * (P[0:-2] + P[1:-1])
-        Pplus  = 0.5 * (P[1:-1] + P[2:])
+        t_solver = self.THRIFT_T
+        Nt = len(t_solver)
         #
         Ns = len(self.THRIFT_S)
         ds = self.THRIFT_S[1] - self.THRIFT_S[0]
+        
+        J_SOURCE = self.THRIFT_JSOURCE.copy() # copy to avoid modifying original array
+        if(edge_factor is not None):
+            J_SOURCE[:,-1] *= edge_factor 
+        
+        phia = self.THRIFT_PHIEDGE
         #
-        main_diag = np.zeros(Ns)
-        upper_diag = np.zeros(Ns-1)
-        lower_diag = np.zeros(Ns-1)
+        aux1 = self.THRIFT_S11/phia[:,np.newaxis]**2
+        aux2 = self.THRIFT_ETAPARA*self.THRIFT_VP
+        aux3 = aux2 * (phia[:,np.newaxis]/mu0) * J_SOURCE *self.THRIFT_BAV
         #
-        main_diag[1:-1] = -Dplus/ds - Pplus/2 - Dminus/ds - Pminus/2
-        upper_diag[1:] = Dplus/ds + Pplus/2 
-        lower_diag[0:-1] = Dminus/ds + Pminus/2
+        D = aux2 * self.THRIFT_BSQAV/mu0
+        P = aux2 * self.THRIFT_PPRIME
+        F = -aux1 * np.gradient(aux3,self.THRIFT_S,axis=1)
         #
-        L = diags([lower_diag/ds, main_diag/ds, upper_diag/ds], offsets=[-1, 0, 1], format="csr")  
+        if(add_neglected_terms):
+            iota = self.THRIFT_IOTA
+            S11 = self.THRIFT_S11
+            S12 = self.THRIFT_S12
+            dS11dt = np.gradient(S11,t_solver,axis=0)
+            dS12dt = np.gradient(S12,t_solver,axis=0)
+            #
+            F = F + (phia[:,np.newaxis]/mu0) * (dS12dt + iota*dS11dt)
         
-        # Multiply L operator by S11/phia^2 term
-        G = diags(aux1, 0, format="csr")
-        L = G @ L
-        
-        # Create LHS matrix
-        Id = identity(Ns, format="csr")
-        LHS = Id - dt*L
-        
-        # Create RHS matrix
-        RHS_last = -phia*L_inductance / (self.THRIFT_VP[it_select,-1]*self.THRIFT_ETAPARA[it_select,-1])
-        # 
-        diag = np.ones(Ns)
-        diag[-1] = RHS_last
-        #
-        RHS = diags(diag, offsets=0, format="csr")
-        
-        # Source Vector with boundary conditions
-        SOURCE = dt*F
-        SOURCE[0] = 0.0
-        SOURCE[-1] = -J_SOURCE[-1]*self.THRIFT_BAV[it_select,-1]*dt
-        
-        # Apply edge BC on LHS
-        LHS = LHS.tolil()  # Convert to LIL for easy row modification
-        VpEtapar = self.THRIFT_VP[it_select,-1]*self.THRIFT_ETAPARA[it_select,-1]
-        B2 = self.THRIFT_BSQAV[it_select,-1]
-        pp = self.THRIFT_PPRIME[it_select,-1]
-        LHS[-1,:] = 0.0 
-        LHS[-1,-1] = -phia*L_inductance/(VpEtapar) - 1.5*B2*dt/(phia*ds) - mu0*pp*dt/phia
-        LHS[-1,-2] = 2.0*B2*dt / (phia*ds)
-        LHS[-1,-3] = -0.5*B2*dt / (phia*ds)
-        LHS = LHS.tocsr()
-        
-        # Solve
         I_solution = np.zeros((Nt,Ns)) # initial condition is I(t=0,s) = 0.0
         #
-        for i in range(1,Nt):
-            I_solution[i,:] = spsolve(LHS, RHS.dot(I_solution[i-1,:]) + SOURCE)
+        for it in range(1,Nt):
             
+            # Assemble L operator
+            Dminus = 0.5 * (D[it,0:-2] + D[it,1:-1])
+            Dplus  = 0.5 * (D[it,1:-1] + D[it,2:])
+            #
+            Pminus = 0.5 * (P[it,0:-2] + P[it,1:-1])
+            Pplus  = 0.5 * (P[it,1:-1] + P[it,2:])
+            #
+            main_diag = np.zeros(Ns)
+            upper_diag = np.zeros(Ns-1)
+            lower_diag = np.zeros(Ns-1)
+            #
+            main_diag[1:-1] = -Dplus/ds - Pplus/2 - Dminus/ds - Pminus/2
+            upper_diag[1:] = Dplus/ds + Pplus/2 
+            lower_diag[0:-1] = Dminus/ds + Pminus/2
+            #
+            L = diags([lower_diag/ds, main_diag/ds, upper_diag/ds], offsets=[-1, 0, 1], format="csr")  
+            
+            # Multiply L operator by S11/phia^2 term
+            G = diags(aux1[it,:], 0, format="csr")
+            L = G @ L
+            
+            # Create LHS matrix
+            dt = t_solver[it] - t_solver[it-1]
+            Id = identity(Ns, format="csr")
+            LHS = Id - dt*L
+            
+            # Create RHS matrix
+            RHS_last = -phia[it]*L_inductance / (self.THRIFT_VP[it,-1]*self.THRIFT_ETAPARA[it,-1])
+            # 
+            diag = np.ones(Ns)
+            diag[-1] = RHS_last
+            #
+            RHS = diags(diag, offsets=0, format="csr")
+            
+            # Source Vector with boundary conditions
+            SOURCE = dt*F[it,:]
+            SOURCE[0] = 0.0
+            SOURCE[-1] = -J_SOURCE[it,-1]*self.THRIFT_BAV[it,-1]*dt
+            
+            # Apply edge BC on LHS
+            LHS = LHS.tolil()  # Convert to LIL for easy row modification
+            VpEtapar = self.THRIFT_VP[it,-1]*self.THRIFT_ETAPARA[it,-1]
+            B2 = self.THRIFT_BSQAV[it,-1]
+            pp = self.THRIFT_PPRIME[it,-1]
+            LHS[-1,:] = 0.0 
+            LHS[-1,-1] = -phia[it]*L_inductance/(VpEtapar) - 1.5*B2*dt/(phia[it]*ds) - mu0*pp*dt/phia[it]
+            LHS[-1,-2] = 2.0*B2*dt / (phia[it]*ds)
+            LHS[-1,-3] = -0.5*B2*dt / (phia[it]*ds)
+            LHS = LHS.tocsr()
+            
+            # Solve    
+            I_solution[it,:] = spsolve(LHS, RHS.dot(I_solution[it-1,:]) + SOURCE)
+        
         return t_solver, I_solution
     
     def create_plasma_profiles_file_from_transport_solver_jolib(self,joblib_file,output_filename='plasma_profiles.h5'):
