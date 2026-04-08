@@ -153,6 +153,9 @@ class PLASMA:
                     if( np.any((rho_vals<0) | (rho_vals>1))):
                         print('WARNING: There are rho_vals outside the domain [0,1]')
                     interpolating_func = CubicSpline(rho_vals,n_vals)
+                else:
+                    rho_vals = np.linspace(0,1,100)
+                    interpolating_func = CubicSpline(rho_vals,interpolating_func(rho_vals))
                     
             case _:
                 print(f'ERROR: profile_type is either polynomial or interp. Cannot be {profile_type}')
@@ -199,6 +202,9 @@ class PLASMA:
                     if( np.any((rho_vals<0) | (rho_vals>1))):
                         print('WARNING: There are rho_vals outside the domain [0,1]')
                     interpolating_func = CubicSpline(rho_vals,T_vals)
+                else:
+                    rho_vals = np.linspace(0,1,100)
+                    interpolating_func = CubicSpline(rho_vals,interpolating_func(rho_vals))
                     
             case _:
                 print(f'ERROR: profile_type is either polynomial or interp. Cannot be {profile_type}')
