@@ -16,7 +16,7 @@
       nu_dkes, E_dkes
    USE stellopt_vars, ONLY: ne_type, te_type, ti_type
    USE equil_utils, ONLY: get_equil_te, get_equil_ti, get_equil_ne, &
-      get_equil_volume, get_equil_bdotb
+      get_equil_volume, get_equil_bdotb, get_equil_ne_der, get_equil_te_der, get_equil_ti_der
    USE equil_vals, ONLY: Aminor, Rmajor, rho, shat, Er_PENTA, JBS_PENTA
    USE read_boozer_mod, ONLY: bcast_boozer_vars, phip_b, iota_b, buco_b, bvco_b
 !DEC$ IF DEFINED (DKES_OPT)
@@ -57,7 +57,7 @@
    LOGICAL :: first_pass
    INTEGER :: ii, ij, ik, il, im, ier, mystart, myend
    INTEGER :: nsurf_penta, nion_prof, ncstar, nestar, iappend
-   REAL(rprec) :: s_local, s2_local, rho_local, dprof, EparB, Er, Nu, &
+   REAL(rprec) :: s_local, rho_local, dprof, EparB, Er, Nu, &
          D11, D31, D33
    INTEGER, DIMENSION(:), ALLOCATABLE :: ik_penta
    REAL(rprec), DIMENSION(:), ALLOCATABLE :: te_local, ne_local, &
@@ -103,20 +103,19 @@
              ik_penta(ii) = ik
              s_penta(ii) = shat(ik)
              s_local = shat(ik)
-             s2_local = shat(ik-1)
              rho_local = rho(ik)
              CALL get_equil_ne(s_local,TRIM(ne_type),ne_local(ii),ier)
-             CALL get_equil_ne(s2_local,TRIM(ne_type),dprof,ier)
-             dnedrho_local(ii) = 2.0*rho_local*(ne_local(ii)-dprof)/(s_local-s2_local)
+             CALL get_equil_ne_der(s_local,TRIM(ne_type),dprof,ier)
+             dnedrho_local(ii) = 2.0*rho_local*dprof
              CALL get_equil_te(s_local,TRIM(te_type),te_local(ii),ier)
-             CALL get_equil_te(s2_local,TRIM(te_type),dprof,ier)
-             dtedrho_local(ii) = 2.0*rho_local*(te_local(ii)-dprof)/(s_local-s2_local)
+             CALL get_equil_te_der(s_local,TRIM(te_type),dprof,ier)
+             dtedrho_local(ii) = 2.0*rho_local*dprof
              ! Ions 
              ni_local(ii,:) = ne_local(ii)/nion_prof ! Assume equal for now
              dnidrho_local(ii,:) = dnedrho_local(ii)/nion_prof ! Assume equal for now
              CALL get_equil_ti(s_local,TRIM(ti_type),ti_local(ii,1),ier)
-             CALL get_equil_ti(s2_local,TRIM(ti_type),dprof,ier)
-             dtidrho_local(ii,1) = 2.0*rho_local*(ti_local(ii,1)-dprof)/(s_local-s2_local)
+             CALL get_equil_ti_der(s_local,TRIM(ti_type),dprof,ier)
+             dtidrho_local(ii,1) = 2.0*rho_local*dprof
              ti_local(ii,:) = ti_local(ii,1)
              dtidrho_local(ii,:) = dtidrho_local(ii,1)
              ! VP
