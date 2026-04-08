@@ -1111,6 +1111,50 @@ class THRIFT():
             
         return t_solver, I_solution
     
+    def create_plasma_profiles_file_from_transport_solver_jolib(self,joblib_file,output_filename='plasma_profiles.h5'):
+        """ This function creates a plasma profiles files, which is read by THRIFT, 
+        from a joblib output file of transport solver solver
+        """
+        import joblib
+        import h5py
+        from libstell.plasma import PLASMA
+        
+        solver = joblib.load(joblib_file)
+        
+        time_array = solver.time
+        nt = len(time_array)
+        raxis_prof = solver.rho_grid
+        nrho = len(raxis_prof)
+        
+        ne = solver.N['electrons'].T
+        Te = solver.T['electrons'].T
+        
+        ions = [s for s in solver.list_of_species if s != 'electrons']
+        num_ions = len(ions)
+        
+        plasma = PLASMA(list_of_species=solver.list_of_species)
+        Zcharge_ions = np.array( [plasma.Zcharge[ion] for ion in plasma.ion_species], dtype=float )
+        mass_ions    = [plasma.mass[ion] for ion in plasma.ion_species]
+        
+        ni = np.stack([solver.N[ion].T for ion in ions], axis=-1)
+        Ti = np.stack([solver.T[ion].T for ion in ions], axis=-1)  
+
+        hf = h5py.File(output_filename, 'w')
+        #
+        hf.create_dataset('nrho', data=nrho)
+        hf.create_dataset('nt', data=nt)
+        hf.create_dataset('nion', data=num_ions)
+        hf.create_dataset('raxis_prof', data=raxis_prof)
+        hf.create_dataset('taxis_prof', data=time_array)
+        hf.create_dataset('Z_prof', data=Zcharge_ions)
+        hf.create_dataset('mass_prof', data=mass_ions)
+        hf.create_dataset('ne_prof', data=ne)
+        hf.create_dataset('te_prof', data=Te)
+        hf.create_dataset('ni_prof', data=ni)
+        hf.create_dataset('ti_prof', data=Ti)
+        #
+        hf.close()
+    
 # THRIFT Class
 class THRIFT_plasma_solver():
     """" Class for working with plasma solver implemented in THRIFT
