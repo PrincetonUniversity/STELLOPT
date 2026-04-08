@@ -427,15 +427,31 @@
          CASE ('power_series_rho2')
             x0 = MIN(MAX(s_val,0.0),1.0)**0.25
             IF (s_val .eq. 0) x0 = 0
+            IF (s_val .eq. 0 .and. ((coefs(2) .ne. 0.0_rprec) .or. (coefs(3) .ne. 0.0_rprec) .or. (coefs(4) .ne. 0.0_rprec))) THEN
+               STOP 'Error! power_series_rho2 with coefs(2)!=0 or coefs(3)!=0 or coefs(4)!=0 is not differentiable at s=0'
+            END IF
             DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1)+1, -1
                val = x0*val + (i-1)*coefs(i)
             END DO
+            ! Chain rule
+            IF (x0 > 0.0_rprec) THEN
+               val = val / (4.0_rprec * x0**3)
+            ELSE
+               val = coefs(5)
+            END IF
          CASE ('power_series_rho')
             x0 = MIN(MAX(s_val,0.0),1.0)**0.5
             IF (s_val .eq. 0) x0 = 0
+            IF (s_val .eq. 0 .and. coefs(2) .ne. 0) STOP 'Error! power_series_rho with coefs(2)!=0 is not differentiable at s=0'
             DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1)+1, -1
                val = x0*val + (i-1)*coefs(i)
             END DO
+            ! Chain rule
+            IF (x0 > 0.0_rprec) THEN
+               val = val / (2.0_rprec * x0)
+            ELSE
+               val = coefs(3)
+            END IF
          CASE ('spline','akima_spline','akima_spline_ip')
             IF (EZspline_allocated(spl_obj)) THEN
                CALL EZspline_isInDomain(spl_obj,s_val,ier)
