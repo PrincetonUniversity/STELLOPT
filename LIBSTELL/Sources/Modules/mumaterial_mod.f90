@@ -1810,10 +1810,10 @@
         END IF
         IF (lverb) THEN 
           IF (iter.EQ.1) THEN
-            WRITE(6,'(/,A)') '  iter  dW/W_all   dW/W_cl  dM/M_max |    tile     Hnorm     Mnorm    dMnorm'
+            WRITE(6,'(/,A)') '  iter %done dW/W_all   dW/W_cl  dM/M_max |    tile     Hnorm     Mnorm    dMnorm'
             WRITE(6,*)       '==============================================================================='
           END IF
-          WRITE(6,'(1X,I5,3ES10.3,A,I7,3ES10.3,F7.4)') iter, r_W_all, r_W_cl, info_max(1), ' | ', & 
+          WRITE(6,'(1X,I5,F5.1, 3ES10.3,A,I7,3ES10.3,F7.4)') iter, conv_glob, r_W_all, r_W_cl, info_max(1), ' | ', & 
                       INT(info_max(2)),info_max(3),info_max(4),info_max(5), info_max(6)
           CALL FLUSH(6)
         END IF
