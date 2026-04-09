@@ -723,19 +723,19 @@
       !-----------------------------------------
       IF (PRESENT(offset).AND.(NORM2(offset) .GT. 0.d0)) THEN
         mystart = 1; myend = nvertex
-  #if defined(MPI_OPT)
+#if defined(MPI_OPT)
         IF (lcomm) CALL MPI_CALC_MYRANGE(comm_world, 1, nvertex, mystart, myend)
-  #endif
+#endif
         DO i = mystart, myend
           vertex(:,i) = vertex(:,i) + offset
         END DO
             
-  #if defined(MPI_OPT)
+#if defined(MPI_OPT)
         CALL MPI_BARRIER(comm_world, ierr_mpi)
         IF (shar_rank.EQ.master) THEN
           CALL MPI_ALLREDUCE( MPI_IN_PLACE, vertex,   3*nvertex, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
         END IF
-  #endif
+#endif
       END IF
       !-----------------------------------------
       ! Calculate center, volume, inradius
@@ -747,10 +747,10 @@
       ! Calculate range
       mystart = 1; myend = ntet
       IF (lcomm) THEN 
-  #if defined(MPI_OPT)
+#if defined(MPI_OPT)
         CALL MPI_BARRIER(comm_world, ierr_mpi)
         CALL MPI_CALC_MYRANGE(comm_world, 1, ntet, mystart, myend) 
-  #endif
+#endif
       END IF
 
       DO i = mystart, myend
@@ -763,7 +763,7 @@
       !-----------------------------------------
       ! Synchronize shared arrays
       !-----------------------------------------
-  #if defined(MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(comm_shar, ierr_mpi)
       IF (shar_rank.EQ.master) THEN
         CALL MPI_ALLREDUCE( MPI_IN_PLACE, tet_cen, 3*ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
@@ -771,7 +771,7 @@
         CALL MPI_ALLREDUCE( MPI_IN_PLACE, tet_rad,   ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
       ENDIF
       CALL MPI_BARRIER(comm_shar, ierr_mpi)
-  #endif
+#endif
       tet_vol_tot = SUM(tet_vol)
 
       END SUBROUTINE mumaterial_init_mesh
@@ -886,10 +886,10 @@
       H_app_norm_min = MINVAL(NORM2(H_app,DIM=1))
       H_app_norm_max = MAXVAL(NORM2(H_app,DIM=1))
       IF (lcomm) THEN
-  #if defined(MPI_OPT)
+#if defined(MPI_OPT)
         CALL MPI_ALLREDUCE(MPI_IN_PLACE,H_app_norm_min,1,MPI_DOUBLE_PRECISION,MPI_MIN,comm_world,ierr_mpi)
         CALL MPI_ALLREDUCE(MPI_IN_PLACE,H_app_norm_max,1,MPI_DOUBLE_PRECISION,MPI_MAX,comm_world,ierr_mpi)
-  #endif
+#endif
       END IF
 
       IF (lverb) THEN
@@ -1022,12 +1022,12 @@
       ! Print to screen only
       !-----------------------------------------
       nbrs_proc_min = MINVAL(nbrs_count)
-  #if defined(MPI_OPT)
+#if defined(MPI_OPT)
       IF (lcomm) THEN
         CALL MPI_ALLREDUCE(MPI_IN_PLACE,nbrs_proc_min,1,MPI_INTEGER,MPI_MIN,comm_world,ierr_mpi)
         CALL MPI_ALLREDUCE(MPI_IN_PLACE,nbrs_proc_max,1,MPI_INTEGER,MPI_MAX,comm_world,ierr_mpi)
       END IF
-  #endif
+#endif
       IF (lverb) THEN
         WRITE(6,'(3X,A,I0,A,I0,A)') 'Neighb. range: [',nbrs_proc_min,', ',nbrs_proc_max,']'
         FLUSH(6)
@@ -1171,12 +1171,12 @@
         END IF
       END DO
       DEALLOCATE(isdipole)
-  #if defined(MPI_OPT)
+#if defined(MPI_OPT)
         IF (lcomm) THEN
           CALL MPI_ALLREDUCE(ntet_dip_min,ntet_mid_proc_min,1,MPI_INTEGER,MPI_MIN,comm_world,ierr_mpi)        
           CALL MPI_ALLREDUCE(ntet_dip_max,ntet_mid_proc_max,1,MPI_INTEGER,MPI_MAX,comm_world,ierr_mpi) 
         END IF
-  #endif
+#endif
         IF (lverb) THEN
           WRITE(6,'(3X,A,I0,A,I0,A)') 'Dipole range : [',ntet_mid_proc_min,', ',ntet_mid_proc_max,']'
           FLUSH(6)
@@ -1203,13 +1203,13 @@
       IF (lverb)  WRITE(6,*)  ' ------- Domain Division ------'
       ! Only masters get a color
       color = 0
-  #if defined(MPI_OPT)
+#if defined(MPI_OPT)
       IF (shar_rank.NE.0) THEN
         color = 1
       ELSE
         color = (world_rank*master_size)/world_size
       END IF
-  #endif
+#endif
       !-----------------------------------------
       ! Boot up world_rank = 0 to start; non-MPI
       !-----------------------------------------
@@ -1226,7 +1226,7 @@
       !-----------------------------------------
       ! Recursively boot up other masters
       !-----------------------------------------
-  #if defined(MPI_OPT)   
+#if defined(MPI_OPT)   
       IF ((master_size.GT.1) .AND. (shar_rank.EQ.master)) THEN         
         r = NINT(LOG(DBLE(master_size))/LOG(2.0)) ! log_2(X) = ln(X)/log(2)
         DO WHILE (r.GT.0)
@@ -1268,7 +1268,7 @@
       CALL MPI_BARRIER(comm_world, ierr_mpi)
       CALL MPI_ALLREDUCE(ntet_shar,ntet_shar_min,1,MPI_INTEGER,MPI_MIN,comm_world,ierr_mpi)
       CALL MPI_ALLREDUCE(ntet_shar,ntet_shar_max,1,MPI_INTEGER,MPI_MAX,comm_world,ierr_mpi)  
-  #endif
+#endif
       !------------------------------------------------------------------------
       ! Done; print to screen
       !------------------------------------------------------------------------
@@ -1307,7 +1307,7 @@
       END IF
 
       IF (lcomm .AND. (shar_size.GT.1)) THEN
-  #if defined(MPI_OPT)   
+#if defined(MPI_OPT)   
         IF (shar_rank.EQ.master) THEN 
           !-----------------------------------------
           ! Master logic A: Build first 2 domains 
@@ -1406,7 +1406,7 @@
         WRITE(6,'(3X,A,ES9.2,A,/,19X,ES9.2,A)') 'Element size :  ',min_tet_rad_all,' m',max_tet_rad_all,' m'
         FLUSH(6)
       END IF
-  #endif
+#endif
       ALLOCATE(vol_proc(ntet_proc))
       DO i = 1, ntet_proc
         vol_proc(i) = tet_vol(dom_proc(i))
@@ -1759,7 +1759,7 @@
         info_max = (/r_M_max, DBLE(dom_proc(i_bad)), NORM2(H_prev(:,i_bad)),  NORM2(M_local(:,i_bad)), NORM2(res_M(:,i_bad)), lambda_n(i_bad)/)
         conv_loc = 0.0
         DO i = 1, ntet_proc
-          conv_loc = conv_loc + vol_proc(i)*is_conv(i) ! Track converged volume
+          IF (is_conv(i)) conv_loc = conv_loc + vol_proc(i) ! Track converged volume
         END DO
 
         ! Energy residual
@@ -1813,7 +1813,7 @@
             WRITE(6,'(/,A)') '  iter %done dW/W_all   dW/W_cl  dM/M_max |    tile     Hnorm     Mnorm    dMnorm'
             WRITE(6,*)       '==============================================================================='
           END IF
-          WRITE(6,'(1X,I5,F5.1, 3ES10.3,A,I7,3ES10.3,F7.4)') iter, conv_glob, r_W_all, r_W_cl, info_max(1), ' | ', & 
+          WRITE(6,'(1X,I5,F5.1, 3ES10.3,A,I7,3ES10.3,F7.4)') iter, conv_glob/tet_vol_tot, r_W_all, r_W_cl, info_max(1), ' | ', & 
                       INT(info_max(2)),info_max(3),info_max(4),info_max(5), info_max(6)
           CALL FLUSH(6)
         END IF
