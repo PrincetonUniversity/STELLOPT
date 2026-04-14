@@ -41,9 +41,10 @@
       !-----------------------------------------------------------------
       !     Compute helpers
       !-----------------------------------------------------------------
+      n = 0
       DO i = 1, ncoils_max
          DO k = 1, nknots_coils_max
-            IF (rho_coil_kts(i,k)>0) n=k
+            IF (rho_coil_kts(i,k)>0) n=MAX(k,n)
          ENDDO
       ENDDO
       !n = MAXVAL(MAXLOC(rho_coil_kts,DIM=2,BACK=.TRUE.))
@@ -83,6 +84,7 @@
       !     Create coils
       !-----------------------------------------------------------------
       CALL spline_to_coils(numcoilgroups,coil_type(1:numcoilgroups),isigng)
+      CALL write_coils_file(TRIM(proc_string))
 
       !-----------------------------------------------------------------
       !     Set the Current
