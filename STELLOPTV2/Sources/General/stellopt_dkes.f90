@@ -19,7 +19,7 @@
                                   Em_DKES_Erdiff, Ep_DKES_alpha, &
                                   Em_DKES_alpha, sigma_dkes_alpha, &
                                   nu_dkes_Erdiff, num_dkes_alpha, &
-                                  nup_dkes_alpha, lneed_dkes
+                                  nup_dkes_alpha, lneed_dkes, lkeep_dkes
       ! NEO LIBRARIES
 !DEC$ IF DEFINED (DKES_OPT)
       USE Vimatrix
@@ -171,7 +171,7 @@
          borbi = 0
          READ (iodata, nml=dkes_indata, iostat=istat)
          IF (istat .ne. 0) STOP 'Error reading dkes_indata NAMELIST in DKES'
-         CLOSE (iodata)
+         CLOSE (iodata,STATUS='DELETE')
          ! Recompute ntorb, mpolb for new style input where
          ! borbi is input with actual index value, borbi(n,m)
          IF (nvalsb(1) <= -bigint) THEN
@@ -273,8 +273,13 @@
          DEALLOCATE (cols, al1, al2, al3, al4, bl1, bl2, bl3, bl4, cl1,&
             cl2, cl3, cl4, cols0, omgl, al01, al02, al03, al04, bl01,&
             bl02, bl03, bl04, cl01, cl02, cl03, cl04, fzerop, fzerom)
-         CLOSE(unit=ioout)
-         CLOSE(unit=ioout_opt)
+         IF (lkeep_dkes) THEN
+            CLOSE(unit=ioout)
+            CLOSE(unit=ioout_opt)
+         ELSE
+            CLOSE(unit=ioout,STATUS='DELETE')
+            CLOSE(unit=ioout_opt,STATUS='DELETE')
+         ENDIF
          lfirst_pass = .FALSE.
       END DO
       DEALLOCATE(ik_dkes,nuarr_dkes,Earr_dkes)
@@ -303,7 +308,14 @@
       END IF
 !DEC$ ENDIF
       IF (lscreen) WRITE(6,'(a)') ' -----------------  DKES CALCULATION (DONE) ----------------'
-      IF (myworkid .ne. master) CALL read_wout_deallocate
+      IF (myworkid .ne. master) THEN
+         CALL read_wout_deallocate
+         IF (.not. lkeep_dkes) THEN
+            call safe_open(itab_out, istat, summary_file,'unknown', &
+              'formatted')
+            CLOSE(unit=itab_out,STATUS='DELETE')
+         ENDIF
+      END IF
 !DEC$ ELSE
       IF (lscreen) WRITE(6,'(a)') ' !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
       IF (lscreen) WRITE(6,'(a)') ' !! DKES based optimization not supported on your machine !!'
