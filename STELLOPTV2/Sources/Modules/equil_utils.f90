@@ -397,6 +397,76 @@
       RETURN
       END SUBROUTINE eval_prof_stel
 
+      SUBROUTINE eval_prof_der_stel(s_val,type,val,ncoefs,coefs,ier,spl_obj)
+      IMPLICIT NONE
+      REAL(rprec),      INTENT(in)             :: s_val
+      CHARACTER(LEN=*), INTENT(in)             :: type
+      REAL(rprec),      INTENT(inout)          :: val
+      INTEGER,          INTENT(in)             :: ncoefs
+      REAL(rprec),      INTENT(inout)          :: coefs(ncoefs)
+      INTEGER,          INTENT(inout)          ::  ier
+      TYPE(EZspline1_r8),OPTIONAL              :: spl_obj
+      INTEGER :: i
+      REAL(rprec) :: x0,x1, x2, h, x3, xp
+      REAL(rprec), PARAMETER :: one = 1.0_rprec
+      val = 0
+      IF (ier < 0) RETURN
+      CALL tolower(type)
+      SELECT CASE (type)
+         CASE ('two_power')
+            val = - coefs(1) * coefs(3) * (one - s_val**coefs(2))**(coefs(3)-1) * coefs(2) * s_val**(coefs(2)-1)
+         CASE ('two_power_offset')
+            val = - coefs(1) * coefs(3) * (one - s_val**coefs(2))**(coefs(3)-1) * coefs(2) * s_val**(coefs(2)-1)
+         CASE ('two_power_hollow')
+            val = coefs(1) * (one - s_val**coefs(2))**coefs(3) - &
+                  s_val * coefs(1) * coefs(3) * (one - s_val**coefs(2))**(coefs(3)-1) * coefs(2) * s_val**(coefs(2)-1)
+         CASE ('power_series')
+            DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1)+1, -1
+               val = s_val*val + (i-1)*coefs(i)
+            END DO
+         CASE ('power_series_rho2')
+            x0 = MIN(MAX(s_val,0.0),1.0)**0.25
+            IF (s_val .eq. 0) x0 = 0
+            IF (s_val .eq. 0 .and. ((coefs(2) .ne. 0.0_rprec) .or. (coefs(3) .ne. 0.0_rprec) .or. (coefs(4) .ne. 0.0_rprec))) THEN
+               STOP 'Error! power_series_rho2 with coefs(2)!=0 or coefs(3)!=0 or coefs(4)!=0 is not differentiable at s=0'
+            END IF
+            DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1)+1, -1
+               val = x0*val + (i-1)*coefs(i)
+            END DO
+            ! Chain rule
+            IF (x0 > 0.0_rprec) THEN
+               val = val / (4.0_rprec * x0**3)
+            ELSE
+               val = coefs(5)
+            END IF
+         CASE ('power_series_rho')
+            x0 = MIN(MAX(s_val,0.0),1.0)**0.5
+            IF (s_val .eq. 0) x0 = 0
+            IF (s_val .eq. 0 .and. coefs(2) .ne. 0) STOP 'Error! power_series_rho with coefs(2)!=0 is not differentiable at s=0'
+            DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1)+1, -1
+               val = x0*val + (i-1)*coefs(i)
+            END DO
+            ! Chain rule
+            IF (x0 > 0.0_rprec) THEN
+               val = val / (2.0_rprec * x0)
+            ELSE
+               val = coefs(3)
+            END IF
+         CASE ('spline','akima_spline','akima_spline_ip')
+            IF (EZspline_allocated(spl_obj)) THEN
+               CALL EZspline_isInDomain(spl_obj,s_val,ier)
+               IF (ier .ne. 0) RETURN
+               CALL EZspline_derivative(spl_obj,1,s_val,val,ier)
+            ELSE
+               ier = -1
+            END IF
+         CASE DEFAULT
+            PRINT *,"Error! Unknown profile type in subroutine eval_prof_der_stel:",type
+            STOP
+      END SELECT
+      RETURN
+      END SUBROUTINE eval_prof_der_stel
+
       SUBROUTINE setup_prof_spline(spl_obj,l_aux,s_aux,f_aux,ier)
       IMPLICIT NONE
       TYPE(EZspline1_r8), INTENT(inout) :: spl_obj
@@ -490,6 +560,26 @@
       val = MAX(val * ne_norm,0.0)
       RETURN
       END SUBROUTINE get_equil_ne
+
+      SUBROUTINE get_equil_ne_der(s_val,type,val,ier)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) ::  s_val
+      CHARACTER(LEN=*), INTENT(in)   :: type
+      REAL(rprec), INTENT(inout)   ::  val
+      INTEGER, INTENT(inout)     ::  ier
+      INTEGER :: i
+      REAL(rprec), PARAMETER :: one = 1.0_rprec
+      IF (ier < 0) RETURN
+      CALL tolower(type)
+      SELECT CASE (type)
+         CASE ('spline','akima_spline','akima_spline_ip')
+            CALL eval_prof_der_stel(s_val,type,val,21,ne_opt(0:20),ier,ne_spl)
+         CASE DEFAULT
+            CALL eval_prof_der_stel(s_val,type,val,21,ne_opt(0:20),ier)
+      END SELECT
+      val = val * ne_norm
+      RETURN
+      END SUBROUTINE get_equil_ne_der
       
       SUBROUTINE get_equil_te(s_val,type,val,ier)
       IMPLICIT NONE
@@ -517,6 +607,25 @@
       val = MAX(val,0.0)
       RETURN
       END SUBROUTINE get_equil_te
+
+      SUBROUTINE get_equil_te_der(s_val,type,val,ier)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) ::  s_val
+      CHARACTER(LEN=*), INTENT(in)   :: type
+      REAL(rprec), INTENT(inout)   ::  val
+      INTEGER, INTENT(inout)     ::  ier
+      INTEGER :: i
+      REAL(rprec), PARAMETER :: one = 1.0_rprec
+      IF (ier < 0) RETURN
+      CALL tolower(type)
+      SELECT CASE (type)
+         CASE ('spline','akima_spline','akima_spline_ip')
+            CALL eval_prof_der_stel(s_val,type,val,21,te_opt(0:20),ier,te_spl)
+         CASE DEFAULT
+            CALL eval_prof_der_stel(s_val,type,val,21,te_opt(0:20),ier)
+      END SELECT
+      RETURN
+      END SUBROUTINE get_equil_te_der
       
       SUBROUTINE get_equil_ti(s_val,type,val,ier)
       IMPLICIT NONE
@@ -540,6 +649,25 @@
       val = MAX(val,0.0)
       RETURN
       END SUBROUTINE get_equil_ti
+
+      SUBROUTINE get_equil_ti_der(s_val,type,val,ier)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) ::  s_val
+      CHARACTER(LEN=*), INTENT(in)   :: type
+      REAL(rprec), INTENT(inout)   ::  val
+      INTEGER, INTENT(inout)     ::  ier
+      INTEGER :: i
+      REAL(rprec), PARAMETER :: one = 1.0_rprec
+      IF (ier < 0) RETURN
+      CALL tolower(type)
+      SELECT CASE (type)
+         CASE ('spline','akima_spline','akima_spline_ip')
+            CALL eval_prof_der_stel(s_val,type,val,21,ti_opt(0:20),ier,ti_spl)
+         CASE DEFAULT
+            CALL eval_prof_der_stel(s_val,type,val,21,ti_opt(0:20),ier)
+      END SELECT
+      RETURN
+      END SUBROUTINE get_equil_ti_der
       
       SUBROUTINE get_equil_emis_xics(s_val,type,val,ier)
       IMPLICIT NONE
