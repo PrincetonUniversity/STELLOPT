@@ -2015,6 +2015,128 @@ class LIBSTELL():
 		if not (ierr.value == 0):
 			return None
 
+	def define_friction_coeffs(self,masses,charges,v_ths,Temps,dens,
+                                loglambda,num_species,Smax):
+		"""Wrapper to define_friction_coeffs subroutine
+
+		This routine wrappers the define_friction_coeffs subroutine found in
+		LIBSTELL/Sources/Modules/transport_mod. It computes the friction
+		coefficients between all species and at all orders (up to Smax) 
+  		as derived in J. Lore PhD Thesis
+
+		Parameters
+		----------
+		masses : real
+			Array of species masses [kg].
+		charges : real
+			Array of species charges [C].
+		v_ths : real
+			Array of thermal velocities [m/s].
+		Temps : real
+			Array of temperatures [eV].
+		dens : real
+			Array of densities [m^-3].
+		loglambda : real
+			Coulomb logarithm (assumed same for all species).
+		num_species : int
+			Number of species.
+		Smax : int
+			Order of Sonine polynomial expansion.
+		Returns
+		-------
+		lmat : matrix of friction coefficients (:,:,:,:)
+	  		First two indices are the plasma species (ex: l_ei)
+    	    Second two indices are the order (ex: l_ee^1,1)
+		"""
+		import ctypes as ct
+		import numpy as np
+		module_name = self.s1+'transport_mod_'+self.s2
+		defFrictionCoeffs = getattr(self.libstell,module_name+'_define_friction_coeffs'+self.s3)
+		defFrictionCoeffs.argtypes = [ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),ct.POINTER(ct.c_double), \
+			ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),ct.POINTER(ct.c_double), \
+			ct.POINTER(ct.c_long),ct.POINTER(ct.c_long),ct.POINTER(ct.c_double)]
+		defFrictionCoeffs.restype=None
+		masses = np.ascontiguousarray(masses, dtype=np.float64)
+		charges = np.ascontiguousarray(charges, dtype=np.float64)
+		v_ths = np.ascontiguousarray(v_ths, dtype=np.float64)
+		Temps = np.ascontiguousarray(Temps, dtype=np.float64)
+		dens = np.ascontiguousarray(dens, dtype=np.float64)
+		loglambda = ct.c_double(loglambda)
+		lmat = np.zeros(((Smax+1)*num_species, (Smax+1)*num_species), order='F', dtype=np.float64)
+		num_species = ct.c_long(num_species)
+		Smax = ct.c_long(Smax)
+		defFrictionCoeffs(
+			masses.ctypes.data_as(ct.POINTER(ct.c_double)),
+			charges.ctypes.data_as(ct.POINTER(ct.c_double)),
+			v_ths.ctypes.data_as(ct.POINTER(ct.c_double)),
+			Temps.ctypes.data_as(ct.POINTER(ct.c_double)),
+			dens.ctypes.data_as(ct.POINTER(ct.c_double)),
+			ct.byref(loglambda),
+			ct.byref(num_species),
+			ct.byref(Smax),
+			lmat.ctypes.data_as(ct.POINTER(ct.c_double))
+		)
+		return lmat
+
+	def collision_frequency_penta(self,vparticles,masses,Zcharges,Temps,dens,
+                                   loglambda,Nvparticles,num_species):
+		"""Wrapper to collision_frequency_penta function
+
+		This routine wrappers the function collision_frequency penta found in
+		LIBSTELL/Sources/Modules/transport_mod. It computes the collision frequency
+		between test particles with v=vparticles and all species in the plasma. The returned
+		The collision frequency is the sum of sum_b(nu_ab) where a is the test particle and b
+		all species in the plasma.
+
+		Parameters
+		----------
+		vparticles : real
+			Array of test particle velocities [m/s].
+		masses : real
+			Array of species masses [kg].
+		Zcharges : real
+			Array of species charge numbers [-].
+		Temps : real
+			Array of temperatures [eV].
+		dens : real
+			Array of densities [m^-3].
+		loglambda : real
+			Coulomb logarithm (assumed same for all species).
+		Nvparticles : int
+			Number of test particles.
+		num_species : int
+			Number of species.
+		Returns
+		-------
+		nu : array of collision frequencies as defined in PENTA code (Nvparticles)
+		"""
+		import ctypes as ct
+		import numpy as np
+		module_name = self.s1+'transport_mod_'+self.s2
+		collFrequencyPENTA = getattr(self.libstell,module_name+'_collision_frequency_penta'+self.s3)
+		collFrequencyPENTA.argtypes = [ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),ct.POINTER(ct.c_double), \
+			ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),ct.POINTER(ct.c_double), \
+			ct.POINTER(ct.c_long),ct.POINTER(ct.c_long)]
+		collFrequencyPENTA.restype=None
+		masses = np.ascontiguousarray(masses, dtype=np.float64)
+		Zcharges = np.ascontiguousarray(Zcharges, dtype=np.float64)
+		vparticles = np.ascontiguousarray(vparticles, dtype=np.float64)
+		Temps = np.ascontiguousarray(Temps, dtype=np.float64)
+		dens = np.ascontiguousarray(dens, dtype=np.float64)
+		loglambda = ct.c_double(loglambda)
+		num_species = ct.c_long(num_species)
+		nu = np.zeros(Nvparticles, dtype=np.float64)
+		Nvparticles = ct.c_long(Nvparticles)
+		collFrequencyPENTA(vparticles.ctypes.data_as(ct.POINTER(ct.c_double)),
+                                        masses.ctypes.data_as(ct.POINTER(ct.c_double)),
+                                        Zcharges.ctypes.data_as(ct.POINTER(ct.c_double)),
+                                        Temps.ctypes.data_as(ct.POINTER(ct.c_double)),
+                                        dens.ctypes.data_as(ct.POINTER(ct.c_double)),
+                                        ct.byref(loglambda),
+                                        ct.byref(Nvparticles),
+										ct.byref(num_species),
+           								nu.ctypes.data_as(ct.POINTER(ct.c_double)))
+		return nu
 class FourierRep():
 	def __init__(self, parent=None):
 		test = None
