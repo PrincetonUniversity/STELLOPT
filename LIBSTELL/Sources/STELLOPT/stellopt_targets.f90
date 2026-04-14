@@ -173,6 +173,7 @@
       REAL(rprec), DIMENSION(nsd)   ::  target_txport, sigma_txport, &
                                         s_txport
       CHARACTER(256)                ::  txport_proxy
+      LOGICAL                       ::  lkeep_dkes
       LOGICAL, DIMENSION(nsd)       ::  lneed_dkes
       INTEGER                       ::  nruns_dkes
       REAL(rprec), DIMENSION(nsd)   ::  target_DKES, sigma_DKES

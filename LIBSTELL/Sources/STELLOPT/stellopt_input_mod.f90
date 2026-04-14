@@ -349,7 +349,7 @@
                          target_dkes_33, sigma_dkes_33, &
                          target_dkes_boot, sigma_dkes_boot, &
                          target_dkes, sigma_dkes, &
-                         nu_dkes, E_dkes,&
+                         nu_dkes, E_dkes, lkeep_dkes, &
                          target_dkes_Erdiff, sigma_dkes_Erdiff, nu_dkes_Erdiff, Ep_dkes_Erdiff, Em_dkes_Erdiff, &
                          target_dkes_alpha, sigma_dkes_alpha, &
                          nup_dkes_alpha, num_dkes_alpha, Ep_dkes_alpha, Em_dkes_alpha, &
@@ -925,7 +925,7 @@
          Em_dkes_alpha      = -2*bigno
          nruns_dkes        = 0 ! This is here to default the value for each run
       END IF
-      !lneed_dkes        = .false.
+      lkeep_dkes        = .false.
       target_dkes       = 0.0
       sigma_dkes        = bigno
       target_dkes_11    = 0.0
@@ -1776,6 +1776,7 @@
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          DKES Er/nu pairs'  
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,outboo) 'LKEEP_DKES',lkeep_dkes
          DO ii = 1, nprof
             IF (E_dkes(ii)>-bigno .and. nu_dkes(ii)>-bigno) &
                WRITE(iunit,"(2X,2(2X,A,I3.3,A,ES22.12E3))") &
