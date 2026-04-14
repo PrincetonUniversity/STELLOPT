@@ -1412,14 +1412,25 @@
          IF (nw_coil > 1) WRITE(iunit,outflt) 'WIDTH_COIL',width_coil
          IF (nh_coil > 1) WRITE(iunit,outflt) 'HEIGHT_COIL',height_coil
          DO n = LBOUND(rho_coil_kts,DIM=1), UBOUND(rho_coil_kts,DIM=1)
-            IF (ANY(rho_coil_kts(n,:)>=0)) THEN
-               m = FINDLOC(rho_coil_kts(n,:)>=0,.true.,DIM=1,BACK=.true.)
-               WRITE(iunit,'(A,I2)') '!----- COIL ',n
-               WRITE(iunit,'(2X,A,I3,A,I3)') 'COIL_TYPE(',n,') = ',coil_type(n) 
-               WRITE(outputstring,'(A,I2,A)') '(2X,A,I3,A,',m,'(ES22.12E3))'
-               WRITE(iunit,outputstring) 'RHO_COIL_KTS(',n,',:) = ', (rho_coil_kts(n,ii), ii=1,m)
-               WRITE(iunit,outputstring) 'THETA_COIL_KTS(',n,',:) = ', (theta_coil_kts(n,ii), ii=1,m)
-               WRITE(iunit,outputstring) 'ZETA_COIL_KTS(',n,',:) = ', (zeta_coil_kts(n,ii), ii=1,m)
+            IF (coil_type(n) < 3) THEN
+               IF (ANY(rho_coil_kts(n,:)>=0)) THEN
+                  m = FINDLOC(rho_coil_kts(n,:)>=0,.true.,DIM=1,BACK=.true.)
+                  WRITE(iunit,'(A,I2)') '!----- COIL ',n
+                  WRITE(iunit,'(2X,A,I3,A,I3)') 'COIL_TYPE(',n,') = ',coil_type(n) 
+                  WRITE(outputstring,'(A,I2,A)') '(2X,A,I3,A,',m,'(ES22.12E3))'
+                  WRITE(iunit,outputstring) 'RHO_COIL_KTS(',n,',:) = ', (rho_coil_kts(n,ii), ii=1,m)
+                  WRITE(iunit,outputstring) 'THETA_COIL_KTS(',n,',:) = ', (theta_coil_kts(n,ii), ii=1,m)
+                  WRITE(iunit,outputstring) 'ZETA_COIL_KTS(',n,',:) = ', (zeta_coil_kts(n,ii), ii=1,m)
+               END IF
+            ELSEIF (coil_type(n) == 3) THEN
+               IF (rho_coil_kts(n,1)>=0) THEN
+                  WRITE(iunit,'(A,I2)') '!----- SADDLE COIL ',n
+                  WRITE(iunit,'(2X,A,I3,A,I3)') 'COIL_TYPE(',n,') = ',coil_type(n) 
+                  WRITE(outputstring,'(A,I2,A)') '(2X,A,I3,A,',1,'(ES22.12E3))'
+                  WRITE(iunit,'(2X,A,I3,A,1(ES22.12E3))') 'RHO_COIL_KTS(',n,',:) = ', rho_coil_kts(n,1)
+                  WRITE(iunit,'(2X,A,I3,A,2(ES22.12E3))') 'THETA_COIL_KTS(',n,',:) = ', (theta_coil_kts(n,ii), ii=1,2)
+                  WRITE(iunit,'(2X,A,I3,A,2(ES22.12E3))') 'ZETA_COIL_KTS(',n,',:) = ', (zeta_coil_kts(n,ii), ii=1,2)
+               END IF
             END IF
          END DO
       END IF
