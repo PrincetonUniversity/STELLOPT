@@ -82,7 +82,7 @@
       ! Read the Equilibrium input
       CALL tolower(equil_type)
       SELECT CASE (TRIM(equil_type))
-         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vmec2000_oneeq')
+         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vmec2000_oneeq','vmec_provided')
               ltst = .false.
               tstr1 = 'parvmec_init'
               id_string = id_string(7:LEN(id_string))
@@ -121,7 +121,7 @@
       iter  = 0
       nvars = 0
       SELECT CASE (TRIM(equil_type))
-         CASE('vmec2000','flow','animec','satire','paravmec','parvmec','vboot','vmec2000_oneeq')
+         CASE('vmec2000','flow','animec','satire','paravmec','parvmec','vboot','vmec2000_oneeq','vmec_provided')
               ! Single Values
               IF (lphiedge_opt) nvars = nvars + 1
               IF (lcurtor_opt)  nvars = nvars + 1
@@ -239,7 +239,7 @@
       ! Initialize nvar_in to 0
       nvar_in=0
       SELECT CASE (TRIM(equil_type))
-         CASE('vmec2000','animec','flow','satire','paravmec','parvmec','vboot','vmec2000_oneeq')
+         CASE('vmec2000','animec','flow','satire','paravmec','parvmec','vboot','vmec2000_oneeq','vmec_provided')
               ! Set some defaults
               IF (ncurr /= 0 .and. ANY(lai_opt)) lai_opt(:) = .false.
               IF (ncurr /= 0 .and. ANY(lai_f_opt)) lai_f_opt(:) = .false.
