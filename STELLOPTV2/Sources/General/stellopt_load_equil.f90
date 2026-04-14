@@ -26,7 +26,7 @@
                                ns_vmec => ns, volume_vmec => Volume, &
                                wp_vmec => wp, pres_vmec => presf, &
                                vp_vmec => vp, presh_vmec => pres, &
-                               jdotb_vmec => jdotb, &
+                               bdotb_vmec => bdotb, jdotb_vmec => jdotb, &
                                iota_vmec => iotaf, rmnc_vmec => rmnc, &
                                rmns_vmec => rmns, zmnc_vmec => zmnc, &
                                gmns_vmec => gmns, gmnc_vmec => gmnc, &
@@ -98,7 +98,7 @@
       IF (iflag < 0) RETURN
       ier = 0
       SELECT CASE (TRIM(equil_type))
-         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
+         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq','vmec_provided')
             ! Read the VMEC output
             CALL read_wout_deallocate
             CALL read_wout_file(TRIM(proc_string),ier)
@@ -146,6 +146,7 @@
             CALL setup_prof_spline(iota_spl,  ns_vmec, shat, iota_vmec, iflag)
             !CALL setup_prof_spline(ip_spl,    ns_vmec, shat, ip_vmec,   iflag)
             CALL setup_prof_spline(jdotb_spl, ns_vmec, shat, jdotb_vmec, iflag)
+            CALL setup_prof_spline(bdotb_spl, ns_vmec, shat, bdotb_vmec, iflag)
             CALL setup_prof_spline(jcurv_spl, ns_vmec, shat, jcurv_vmec, iflag)
             ALLOCATE(Vol(ns_vmec))
             FORALL(u=1:ns_vmec) Vol(u) = SUM(vp_vmec(1:u))

@@ -349,10 +349,12 @@
                          target_dkes_33, sigma_dkes_33, &
                          target_dkes_boot, sigma_dkes_boot, &
                          target_dkes, sigma_dkes, &
-                         nu_dkes, E_dkes,&
+                         nu_dkes, E_dkes, lkeep_dkes, &
                          target_dkes_Erdiff, sigma_dkes_Erdiff, nu_dkes_Erdiff, Ep_dkes_Erdiff, Em_dkes_Erdiff, &
                          target_dkes_alpha, sigma_dkes_alpha, &
                          nup_dkes_alpha, num_dkes_alpha, Ep_dkes_alpha, Em_dkes_alpha, &
+                         target_penta_er, sigma_penta_er, &
+                         target_penta_j, sigma_penta_j, &
                          target_jdotb,sigma_jdotb,target_bmin,sigma_bmin,&
                          target_bmax,sigma_bmax,target_jcurv,sigma_jcurv,&
                          target_orbit,sigma_orbit,nu_orbit,nv_orbit,&
@@ -924,6 +926,7 @@
          Em_dkes_alpha      = -2*bigno
          nruns_dkes        = 0 ! This is here to default the value for each run
       END IF
+      lkeep_dkes        = .false.
       target_dkes       = 0.0
       sigma_dkes        = bigno
       target_dkes_11    = 0.0
@@ -938,6 +941,11 @@
       sigma_dkes_alpha   = bigno
       target_dkes_boot   = 0.0
       sigma_dkes_boot    = bigno
+      !lneed_penta       = .false.
+      target_penta_er    = 0.0
+      sigma_penta_er    = bigno
+      target_penta_j    = 0.0
+      sigma_penta_j    = bigno
       target_jdotb      = 0.0
       sigma_jdotb       = bigno
       target_jcurv      = 0.0
@@ -1075,6 +1083,8 @@
       target_dkes_Erdiff(1) = 0.0; sigma_dkes_Erdiff(1) = bigno
       target_dkes_alpha(1) = 0.0; sigma_dkes_alpha(1) = bigno
       target_dkes_boot(1) = 0.0; sigma_dkes_boot(1) = bigno
+      target_penta_er(1)  = 0.0;  sigma_penta_er(1)   = bigno
+      target_penta_j(1)  = 0.0;  sigma_penta_j(1)   = bigno
 
       ! Backwards compatibility for old DKES deffinition
       WHERE(sigma_dkes < bigno) target_dkes_11 = target_dkes
@@ -1759,6 +1769,23 @@
                           'LSSD_KINK(',ik,') = ',lssd_kink(ik)
          END DO
       END IF
+      IF (ANY(sigma_dkes_11   < bigno ) .or. &
+          ANY(sigma_dkes_31   < bigno ) .or. &
+          ANY(sigma_dkes_33   < bigno ) .or. &
+          ANY(sigma_dkes_boot < bigno ) .or. &
+          ANY(sigma_penta_er  < bigno ) .or. &
+          ANY(sigma_penta_j   < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          DKES Er/nu pairs'  
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,outboo) 'LKEEP_DKES',lkeep_dkes
+         DO ii = 1, nprof
+            IF (E_dkes(ii)>-bigno .and. nu_dkes(ii)>-bigno) &
+               WRITE(iunit,"(2X,2(2X,A,I3.3,A,ES22.12E3))") &
+                       'NU_DKES(',ii,') = ',NU_dkes(ii), &
+                       'E_DKES(',ii,') = ',E_dkes(ii)
+         END DO
+      END IF
       IF (ANY(sigma_dkes_11 < bigno ) .or. &
           ANY(sigma_dkes_31 < bigno ) .or. &
           ANY(sigma_dkes_33 < bigno )) THEN
@@ -1798,12 +1825,6 @@
                           'SIGMA_DKES_33(',ik,') = ',sigma_dkes_33(ik)
             END IF
          END DO
-         DO ii = 1, nprof
-            IF (E_dkes(ii)>-bigno .and. nu_dkes(ii)>-bigno) &
-               WRITE(iunit,"(2X,2(2X,A,I3.3,A,ES22.12E3))") &
-                       'NU_DKES(',ii,') = ',NU_dkes(ii), &
-                       'E_DKES(',ii,') = ',E_dkes(ii)
-         END DO
       END IF
       IF (ANY(sigma_dkes_Erdiff < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
@@ -1839,12 +1860,6 @@
                           'SIGMA_DKES_BOOT(',ik,') = ',sigma_dkes_boot(ik)
             END IF
          END DO
-         DO ii = 1, nprof
-            IF (E_dkes(ii)>-bigno .and. nu_dkes(ii)>-bigno) &
-               WRITE(iunit,"(2X,2(2X,A,I3.3,A,ES22.12E3))") &
-                       'NU_DKES(',ii,') = ',NU_dkes(ii), &
-                       'E_DKES(',ii,') = ',E_dkes(ii)
-         END DO
       END IF
       IF (ANY(sigma_dkes_alpha < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
@@ -1870,6 +1885,38 @@
                WRITE(iunit,"(2X,2(2X,A,I3.3,A,ES22.12E3))") &
                              'Ep_DKES_ALPHA(',ii,') = ',Ep_dkes_alpha(ii), &
                              'Em_DKES_ALPHA(',ii,') = ',Em_dkes_alpha(ii)
+         END DO
+      END IF
+      IF (ANY(sigma_penta_er < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          PENTA ER'  
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         n=0
+         DO ik = 1,UBOUND(sigma_penta_er,DIM=1)
+            IF(sigma_penta_er(ik) < bigno) n=ik
+         END DO
+         DO ik = 1, n
+            IF (sigma_penta_er(ik) < bigno) THEN
+               WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
+                          'TARGET_PENTA_ER(',ik,') = ',target_penta_er(ik), &
+                          'SIGMA_PENTA_ER(',ik,') = ',sigma_penta_er(ik)
+            END IF
+         END DO
+      END IF
+      IF (ANY(sigma_penta_j < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          PENTA J'  
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         n=0
+         DO ik = 1,UBOUND(sigma_penta_j,DIM=1)
+            IF(sigma_penta_j(ik) < bigno) n=ik
+         END DO
+         DO ik = 1, n
+            IF (sigma_penta_j(ik) < bigno) THEN
+               WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
+                          'TARGET_PENTA_J(',ik,') = ',target_penta_j(ik), &
+                          'SIGMA_PENTA_J(',ik,') = ',sigma_penta_j(ik)
+            END IF
          END DO
       END IF
       IF (ANY(sigma_jdotb < bigno)) THEN

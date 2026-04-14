@@ -10,9 +10,10 @@
       USE stellopt_vars, ONLY: equil_type
       USE stellopt_targets, ONLY: txport_proxy, sigma_orbit, &
          sigma_bootstrap, sigma_balloon, sigma_kink, sigma_ece, &
-         sigma_dkes, &
+         sigma_dkes_11, sigma_dkes_31, sigma_dkes_33, &
          sigma_dkes_Erdiff, sigma_dkes_alpha, sigma_fluxloop, &
-         sigma_bprobe, sigma_segrog, sigma_neo, sigma_txport
+         sigma_bprobe, sigma_segrog, sigma_neo, sigma_txport, &
+         sigma_penta_j, sigma_penta_er
       USE mpi_params
       USE diagno_runtime, ONLY: DIAGNO_VERSION
       USE beams3d_runtime, ONLY: BEAMS3D_VERSION
@@ -39,7 +40,7 @@
          WRITE(6,"(2X,A)")        "================================================================================="
          WRITE(6,"(2X,A,F5.2,A)") "=========                      BEAMS3D (v",BEAMS3D_VERSION,")                         ========="
          WRITE(6,"(2X,A)")        "=========                  (M. McMillan, S. Lazerson)                   ========="
-         WRITE(6,"(2X,A)")        "=========                       lazerson@pppl.gov                       ========="
+         WRITE(6,"(2X,A)")        "=========               samuel.lazerson@gauss-fusion.com                ========="
          WRITE(6,"(2X,A)")        "=========          http://vmecwiki.pppl.wikispaces.net/BEAMS3D          ========="
          WRITE(6,"(2X,A)")        "================================================================================="
          WRITE(6,*)        "    "
@@ -117,7 +118,9 @@
       END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (DKES_OPT)
-      IF (myid == master .and. ( ANY(sigma_dkes < bigno) .or. &
+      IF (myid == master .and. ( ANY(sigma_dkes_11 < bigno) .or. &
+                                 ANY(sigma_dkes_31 < bigno) .or. &
+                                 ANY(sigma_dkes_33 < bigno) .or. &
                                  ANY(sigma_dkes_Erdiff < bigno) .or. &
                                  ANY(sigma_dkes_alpha < bigno) ) ) THEN
          WRITE(6,*)        " Drift-Kinetic Equation Solver (DKES) provided by: "
@@ -129,8 +132,14 @@
          WRITE(6,*)        "    "
       END IF
 !DEC$ ELSE
-      IF (ANY(sigma_dkes < bigno) .or. ANY(sigma_dkes_Erdiff < bigno) .or. ANY(sigma_dkes_alpha < bigno)) THEN
-         sigma_dkes(:) = bigno
+      IF  ( ANY(sigma_dkes_11 < bigno) .or. &
+            ANY(sigma_dkes_31 < bigno) .or. &
+            ANY(sigma_dkes_33 < bigno) .or. &
+            ANY(sigma_dkes_Erdiff < bigno) .or. &
+            ANY(sigma_dkes_alpha < bigno) ) THEN
+         sigma_dkes_11(:) = bigno
+         sigma_dkes_31(:) = bigno
+         sigma_dkes_33(:) = bigno
          sigma_dkes_Erdiff(:) = bigno
          sigma_dkes_alpha(:) = bigno
          IF (myid == master) THEN
@@ -142,12 +151,22 @@
          END IF
       END IF
 !DEC$ ENDIF
+      IF (myid == master .and. ( ANY(sigma_penta_j  < bigno) .or. &
+                                 ANY(sigma_penta_er < bigno) )) THEN
+         WRITE(6,*)        " Parallel and ENergy Transport Analysis (PENTA) provided by: "
+         WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,"(2X,A)") "=========               Parallel and ENergy Transport Analysis          ========="
+         WRITE(6,"(2X,A)") "=========                  (D. Spong, J. Lore, A. Coelho)               ========="
+         WRITE(6,"(2X,A)") "=========                        spongda@ornl.gov                       ========="
+         WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,*)        "    "
+      END IF
       IF (myid == master .and. (ANY(sigma_fluxloop < bigno) .or. ANY(sigma_bprobe < bigno) .or. ANY(sigma_segrog < bigno) )) THEN
          WRITE(6,*)        " Magnetic Diagnostic calculation provided by: "
          WRITE(6,"(2X,A)") "================================================================================="
          WRITE(6,"(2X,A,F5.2,A)") "=========                    DIAGNO (v",DIAGNO_VERSION,")                             ========="
          WRITE(6,"(2X,A)") "=========            (S.Lazerson, H Gardner, J. Geiger)                 ========="
-         WRITE(6,"(2X,A)") "=========                   lazerson@pppl.gov                           ========="
+         WRITE(6,"(2X,A)") "=========               samuel.lazerson@gauss-fusion.com                ========="
          WRITE(6,"(2X,A)") "=========       http://vmecwiki.pppl.wikispaces.net/DIAGNO              ========="
          WRITE(6,"(2X,A)") "================================================================================="
          WRITE(6,*)        "    "
@@ -178,9 +197,9 @@
       IF (myid == master .and. ANY(sigma_txport < bigno)) THEN
          WRITE(6,*)        " Geometry Interface to Turbulent Transport provided by: "
          WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,"(2X,A)")       "=========        Geometry Interface for Stellarators and Tokamaks       ========="
-         WRITE(6,"(2X,A)")       "=========          (P.Xanthopoulos, W.A.Cooper, and Yu.Turkin)          ========="
-         WRITE(6,"(2X,A)")       "=========          pax@ipp.mpg.de  http://www.ipp.mpg.de/~pax/          ========="
+         WRITE(6,"(2X,A)") "=========        Geometry Interface for Stellarators and Tokamaks       ========="
+         WRITE(6,"(2X,A)") "=========          (P.Xanthopoulos, W.A.Cooper, and Yu.Turkin)          ========="
+         WRITE(6,"(2X,A)") "=========                        pax@ipp.mpg.de                         ========="
          WRITE(6,"(2X,A)") "================================================================================="
          WRITE(6,*)        "    "
          WRITE(6,"(2X,A)") "     NOTICE: New TXPORT variables now used to control execution COORDINATES,"

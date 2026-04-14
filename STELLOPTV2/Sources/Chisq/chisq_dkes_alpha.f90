@@ -93,11 +93,11 @@
       ELSE
          DO ii = 1, nsd
             IF (sigma(ii) >= bigno) CYCLE
-            lneed_dkes = .TRUE.
+            lneed_dkes(ii) = .TRUE.
+            lbooz(ii) = .TRUE.
             DO ij = 1, nprof
                IF (Ep_DKES_alpha(ij) <= -bigno .or. nup_dkes_alpha(ij) <= -bigno .or. &
                    Em_DKES_alpha(ij) <= -bigno .or. num_dkes_alpha(ij) <= -bigno) CYCLE
-               lbooz(ii) = .TRUE.
                mtargets = mtargets + 1
                nruns_dkes = nruns_dkes + 2 ! + and - for each run
                IF (niter == -2) target_dex(mtargets)=jtarget_dkes_alpha
