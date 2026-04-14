@@ -5,6 +5,7 @@ results data. It also prepares the input PENTA coefficients
 
 import numpy as np
 import sys
+from libstell.libstell import LIBSTELL 
 
 # Constants
 EC = 1.602176634E-19 # Electron charge [C]
@@ -14,6 +15,9 @@ class DKES:
     
     def __init__(self, surface, wout_file, eps_rel=0.03):
         self.eps_rel = eps_rel
+        
+        # Create a libstell class. Is used when computing fluxes
+        self.libStell = LIBSTELL()
         
         #check surface is an integer
         if not isinstance(surface,int):
@@ -1116,17 +1120,18 @@ class DKES:
         """
         from scipy.special import assoc_laguerre
         from time import perf_counter
-        from libstell.libstell import LIBSTELL
-        libStell = LIBSTELL()
         
+        start_time = perf_counter()
         Er = Er_Vcm
         # Check Er!=0
         if(np.abs(Er) < 1E-6):
             raise ValueError('Please Choose Er != 0, cause this brings problems when taking the log of Er')
-        
+        end_time = perf_counter()
+        time_dict['initialize_time'] += (end_time-start_time)
         ############################################################################################################################
         ####################### Setup Convolutions in the SN Flow Equation (Eq. 3.2.3.1 in PENTA's notes)  #########################
         ############################################################################################################################
+        start_time = perf_counter()
         vth = {}
         n = {}
         T = {}
@@ -1141,14 +1146,11 @@ class DKES:
         flow_conv_QoT = {species: np.zeros((Smax+1)) for species in plasma_class.list_of_species}
         # 
         for species in plasma_class.list_of_species:
-            start_time = perf_counter()
             vth[species] = plasma_class.get_thermal_speed(species,self.roa)
             n[species] = plasma_class.get_density(species,self.roa)
             T[species] = plasma_class.get_temperature(species,self.roa)
             q[species] = plasma_class.charge[species]
             m[species] = plasma_class.mass[species]
-            end_time = perf_counter()
-            time_dict['get_plasma_quantities_time'] += (end_time-start_time)
         
         #compute loglambda as in PENTA
         Te = T['electrons']
@@ -1157,7 +1159,10 @@ class DKES:
             loglambda = 25.3 - 1.15*np.log10(ne/1e6) + 2.3*np.log10(Te)
         else:
             loglambda = 23.4 - 1.15*np.log10(ne/1e6) + 3.45*np.log10(Te)
-                
+        
+        end_time = perf_counter()
+        time_dict['get_plasma_quantities_time'] += (end_time-start_time)
+        
         for species in plasma_class.list_of_species:
             start_time = perf_counter()
 
@@ -1187,7 +1192,7 @@ class DKES:
             # cmul_K = nu / vparticles
             
             # OPTION 2:
-            nu_libstell = libStell.collision_frequency_penta(vparticles,m_ordered,Z_ordered,T_ordered,n_ordered,loglambda,Nvparticles,num_species)
+            nu_libstell = self.libStell.collision_frequency_penta(vparticles,m_ordered,Z_ordered,T_ordered,n_ordered,loglambda,Nvparticles,num_species)
             cmul_K = nu_libstell / vparticles
             
             end_time = perf_counter()
@@ -1271,7 +1276,7 @@ class DKES:
         temps = np.fromiter(T.values(), dtype=float)
         dens = np.fromiter(n.values(), dtype=float)
         nspecies = len(plasma_class.list_of_species)
-        lmat = libStell.define_friction_coeffs(masses,charges,vths,temps,dens,loglambda,nspecies,Smax)
+        lmat = self.libStell.define_friction_coeffs(masses,charges,vths,temps,dens,loglambda,nspecies,Smax)
         
 
         end_time = perf_counter()
@@ -1351,7 +1356,6 @@ class DKES:
         # Q_NEO = -Dp * dp/dr + cp * p
         # The returned Dn,cn,Dp,cp are dictionaries with 'species' as their inputs
         from scipy.special import assoc_laguerre
-        import friction
         
         Er = Er_Vcm
         # Check Er!=0
@@ -1401,6 +1405,9 @@ class DKES:
             T_ordered = np.array([T[sp] for sp in species_order])
             n_ordered = np.array([n[sp] for sp in species_order])
             
+            Nvparticles = len(vparticles)
+            num_species = len(plasma_class.list_of_species)
+            
             # ## OPTION 1: Local routine
             # nu_all = collisionfreq_PENTA_vec(
             #         vparticles,
@@ -1413,10 +1420,9 @@ class DKES:
             # nu = np.sum(nu_all, axis=1)   # (Nv,)
             # cmul_K = nu / vparticles
             
-            ## OPTION 2: Fortran
-            Nvparticles = len(vparticles)
-            nu_fortran = friction.friction_module.collision_frequency_penta(vparticles,m_ordered,Z_ordered,T_ordered,n_ordered,loglambda,Nvparticles,Nspecies)
-            cmul_K = nu_fortran / vparticles
+            # OPTION 2: Via libstell (much much faster)
+            nu_libstell = self.libStell.collision_frequency_penta(vparticles,m_ordered,Z_ordered,T_ordered,n_ordered,loglambda,Nvparticles,num_species)
+            cmul_K = nu_libstell / vparticles
             
             efield_K = np.abs(Er)*100/(vth[species]*np.sqrt(self.K))
             
@@ -1485,13 +1491,13 @@ class DKES:
         #                              num_species=len(plasma_class.list_of_species), 
         #                              Smax=Smax)
         
-        # OPTION 2: fortran routine
+        # OPTION 2: Via libstell (much much faster)
         masses = np.fromiter(m.values(), dtype=float)
         charges = np.fromiter(q.values(), dtype=float)
         vths = np.fromiter(vth.values(), dtype=float)
         temps = np.fromiter(T.values(), dtype=float)
         dens = np.fromiter(n.values(), dtype=float)
-        lmat = friction.friction_module.define_friction_coeffs(masses,charges,vths,temps,dens,loglambda,1,Nspecies)    
+        lmat = self.libStell.define_friction_coeffs(masses,charges,vths,temps,dens,loglambda,num_species,Smax)
             
         ############################################################################################################################
         ###########################################  Assemble flow matrix ##########################################################
@@ -1589,9 +1595,10 @@ class DKES:
                 cn[species] += self.U2/(na*qa) * (l_ab_11-l_ab_12) * EC * Tb_prime_r / q[speciesb]
                 cp[species] += self.U2/(na*qa) * (2.2*l_ab_12 - l_ab_22) * nb_prime_r * EC * T[speciesb] / (q[speciesb]*n[speciesb])
                 
-                ### NEGLECTED TERM -- REMOVE; HERE JUST FOR DEBUG
-                if(speciesb != species):
-                    cn[species] += self.U2/(na*qa) * l_ab_11 * nb_prime_r * EC * T[speciesb] / (q[speciesb]*n[speciesb])
+                ### NEGLECTED TERM -- Be careful cause is important for hevy impuritites
+                # if(speciesb != species):
+                #     cn[species] += self.U2/(na*qa) * l_ab_11 * nb_prime_r * EC * T[speciesb] / (q[speciesb]*n[speciesb])
+                #     cp[species] += to be done ...
         
         return Dn,cn,Dp,cp
                        
