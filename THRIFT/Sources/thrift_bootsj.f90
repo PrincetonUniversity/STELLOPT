@@ -455,14 +455,20 @@
                CALL EZspline_setup(dIds_spl,dIds_temp,ier,EXACT_DIM=.true.)
                DEALLOCATE(dIds_temp,rho_temp)
 
-               ! Calculate J in s space = dI/ds * 1/(pi*a^2)
-               DO i = 1, nsj
-                  s_val = THRIFT_S(i)
-               !   rho_val = SQRT(s_val)
-               !   CALL EZspline_interp(dIds_spl,rho_val,temp,ier)
-                  CALL EZspline_interp(dIds_spl,s_val,temp,ier)
-                  THRIFT_JBOOT(i,mytimestep) = temp/(pi2/2*eq_Aminor**2) ! for some reason 'pi' is an ambigious reference
-               END DO
+               ! Calculate JBOOT := <J_BS.b> = [ <B^2>/<B> ] * (1/phi_edge) * dIds
+               CALL EZspline_interp(dIds_spl,nsj,THRIFT_S,THRIFT_JBOOT(:,mytimestep),ier)
+               THRIFT_JBOOT(:,mytimestep) = THRIFT_JBOOT(:,mytimestep)*(THRIFT_BSQAV(:,mytimestep)/THRIFT_BAV(:,mytimestep))/THRIFT_PHIEDGE(mytimestep)
+
+
+               ! ! Calculate J in s space = dI/ds * 1/(pi*a^2)
+               ! DO i = 1, nsj
+               !    s_val = THRIFT_S(i)
+               ! !   rho_val = SQRT(s_val)
+               ! !   CALL EZspline_interp(dIds_spl,rho_val,temp,ier)
+               !    CALL EZspline_interp(dIds_spl,s_val,temp,ier)
+               !    THRIFT_JBOOT(i,mytimestep) = temp/(pi2/2*eq_Aminor**2) ! for some reason 'pi' is an ambigious reference
+               ! END DO
+
                CALL EZspline_free(dIds_spl,ier)
 
             END IF
