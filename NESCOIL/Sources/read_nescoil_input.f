@@ -14,6 +14,8 @@ c     Now they are all dynamically allocated arrays
 c................................................................
       USE stel_kinds
       use safe_open_mod
+      USE nescoil_input_mod, ONLY: init_nescoil_input, 
+     1     read_nescoil_input_mod => read_nescoil_input
       use SvdCtrl, ONLY: mstrt, mstep, mkeep, mdspw, curwt, trgwt
       use OutCtrl
       use LoopCtrl
@@ -60,12 +62,20 @@ C-----------------------------------------------
          extension = arg1(numargs+7:len_trim(arg1))
       end if
 
-      iunit = nescoil0
-      call safe_open(iunit, istat, trim(arg1), 'old', 'formatted')
-      if (istat .ne. 0) then
-         print *,' Type xnescoil -h for proper syntax'
-         stop 'Error opening input file in nescoil'
-      endif
+      CALL init_nescoil_input
+      CALL read_nescoil_input_mod(TRIM(extension),
+     1                             istat,.TRUE.)
+      ! Try the old way
+      IF (istat .ne. 0) THEN
+          iunit = nescoil0
+          call safe_open(iunit, istat, trim(arg1), 'old', 'formatted')
+          if (istat .ne. 0) then
+             print *,' Type xnescoil -h for proper syntax'
+             stop 'Error opening input file in nescoil'
+          endif
+      ELSE
+        RETURN
+      END IF
 
       call safe_open(inesc, istat, 'nescout.'//extension,
      1   'unknown', 'formatted')

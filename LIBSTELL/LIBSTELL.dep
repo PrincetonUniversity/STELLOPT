@@ -1,5 +1,11 @@
 # Microsoft Developer Studio Generated Dependency File, included by LIBSTELL.mak      
 
+
+nescoil_input_mod.o : \
+      stel_kinds.o \
+      safe_open_mod.o \
+      nescoil_globals.o
+
 conrec.o :
 
 spline_coils_mod.o : \
@@ -21,6 +27,9 @@ read_nescoil_mod.o : \
       mpi_inc.o
 
 stellopt_globals.o : \
+      stel_kinds.o 
+
+nescoil_globals.o : \
       stel_kinds.o 
 
 stellopt_vars.o : \
@@ -1224,8 +1233,9 @@ sxrc_T.o : \
 tf_coils.o : \
       stel_constants.o \
       vcoilpts.o 
-      
 
+transport_mod.o : \
+      
 v3_utilities.o : \
       mpi_inc.o \
       stel_kinds.o 
