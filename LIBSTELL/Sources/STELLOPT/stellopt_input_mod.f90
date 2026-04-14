@@ -621,7 +621,7 @@
       emis_xics_f(:)   = 0.0
       ! COILS
       lcreate_coils = .false.
-      coil_type           = 1
+      coil_type(:)           = 1 ! 1: modular, 2: helical, 3:saddle
       rho_coil_kts(:,:)   = -1.0
       theta_coil_kts(:,:) =  0.0
       zeta_coil_kts(:,:)  =  0.0
