@@ -89,7 +89,7 @@
          DO ii = 1, nsd
             IF (sigma(ii) >= bigno) CYCLE
             lbooz(ii) = .TRUE.
-            lneed_dkes = .TRUE.
+            lneed_dkes(ii) = .TRUE.
             mtargets = mtargets + 1
             nruns_dkes = nruns_dkes + 2 ! Ep and Em run
             IF (niter == -2) target_dex(mtargets)=jtarget_dkes_erdiff
