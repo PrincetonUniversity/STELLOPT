@@ -63,7 +63,7 @@
       IF (iflag < 0) RETURN
       IF (lscreen) WRITE(6,'(a)') ' --------------------  BOOTSTRAP CALCULATION USING BOOTSJ  -------------------'
       SELECT CASE(TRIM(equil_type))
-         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
+         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq','vmec_provided')
             ! Get the data into bootsj
             call second0 (time1)
             timecpu = time1
