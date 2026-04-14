@@ -48,7 +48,7 @@
 !        iflag       Error flag
 !        iunit       File unit number
 !----------------------------------------------------------------------
-      LOGICAL ::  lscreen
+      LOGICAL ::  lscreen, lload_equil
       INTEGER ::  nvar_in, dex, dex2, ik, istat, iunit, pass, mf,nf
       INTEGER ::  vctrl_array(5)
       REAL(rprec) :: norm_aphi, norm_am, norm_ac, norm_ai, norm_ah,&
@@ -366,6 +366,9 @@
 !         END IF
 !      END IF
 
+      ! We may not have to reload the equilibrium, if it does not change
+      lload_equil = .FALSE.
+
       ! Handle making a temporary string
       IF (iflag .eq. -1) istat = 0
       WRITE(temp_str,'(i5)') istat
@@ -380,6 +383,7 @@
          SELECT CASE (TRIM(equil_type))
             CASE('vmec2000_old','animec','flow','satire')
             CASE('paravmec','parvmec','vmec2000')
+               lload_equil = .TRUE.
                iflag = 0
                CALL stellopt_run_vmec(lscreen,iflag)
             CASE('vboot')
@@ -388,10 +392,12 @@
                  iflag = 0
                ELSE
                  iflag = 0
+                 lload_equil = .TRUE.
                  CALL stellopt_vboot(lscreen,iflag)
                END IF
             CASE('vmec2000_oneeq')
                IF (iflag .eq. -1) THEN
+                  lload_equil = .TRUE.
                   iflag = 0
                   CALL stellopt_paraexe('paravmec_run',proc_string,lscreen)
                   iflag = ier_paraexe
@@ -422,8 +428,10 @@
          ! a function call which is handles every equil_type.  Note these
          ! functions should handle iflag by returning immediately if
          ! iflag is set to a negative number upon entry.
+         IF (lload_equil) THEN
          CALL stellopt_load_equil(lscreen,iflag)
-
+         END IF
+         
          ! Calls to secondary codes
          proc_string_old = proc_string ! So we can find the DIAGNO files
          IF (ANY(sigma_balloon < bigno)) CALL stellopt_balloon(lscreen,iflag)
