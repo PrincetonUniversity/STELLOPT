@@ -1126,26 +1126,13 @@ class DKES:
         # Check Er!=0
         if(np.abs(Er) < 1E-6):
             raise ValueError('Please Choose Er != 0, cause this brings problems when taking the log of Er')
-        end_time = perf_counter()
-        time_dict['initialize_time'] += (end_time-start_time)
-        ############################################################################################################################
-        ####################### Setup Convolutions in the SN Flow Equation (Eq. 3.2.3.1 in PENTA's notes)  #########################
-        ############################################################################################################################
-        start_time = perf_counter()
-        vth = {}
-        n = {}
-        T = {}
-        q = {}
-        m = {}
-        #
-        A1_conv_Gamma = {}
-        A1_conv_QoT = {}
-        A2_conv_Gamma = {}
-        A2_conv_QoT = {}
-        flow_conv_Gamma = {species: np.zeros((Smax+1)) for species in plasma_class.list_of_species}
-        flow_conv_QoT = {species: np.zeros((Smax+1)) for species in plasma_class.list_of_species}
-        # 
-        for species in plasma_class.list_of_species:
+        
+        list_of_species = plasma_class.list_of_species
+        Nspecies = len(list_of_species)
+        
+        vth = {}; n = {}; T = {}; q = {}; m = {}
+        
+        for species in list_of_species:
             vth[species] = plasma_class.get_thermal_speed(species,self.roa)
             n[species] = plasma_class.get_density(species,self.roa)
             T[species] = plasma_class.get_temperature(species,self.roa)
@@ -1160,8 +1147,22 @@ class DKES:
         else:
             loglambda = 23.4 - 1.15*np.log10(ne/1e6) + 3.45*np.log10(Te)
         
+        ############################################################################################################################
+        ####################### Setup Convolutions in the SN Flow Equation (Eq. 3.2.3.1 in PENTA's notes)  #########################
+        ############################################################################################################################
+        
+        A1_conv_Gamma = {}
+        A1_conv_QoT = {}
+        A2_conv_Gamma = {}
+        A2_conv_QoT = {}
+        # flow_conv_Gamma = {species: np.zeros((Smax+1)) for species in plasma_class.list_of_species}
+        # flow_conv_QoT = {species: np.zeros((Smax+1)) for species in plasma_class.list_of_species}
+        flow_LHS_conv = {species: np.zeros((Smax+1,Smax+1)) for species in list_of_species}
+        flow_RHS_A1_conv = {species: np.zeros((Smax+1)) for species in list_of_species}
+        flow_RHS_A2_conv = {species: np.zeros((Smax+1)) for species in list_of_species}
+                
         end_time = perf_counter()
-        time_dict['get_plasma_quantities_time'] += (end_time-start_time)
+        time_dict['initialize_time'] = (end_time-start_time)
         
         for species in plasma_class.list_of_species:
             start_time = perf_counter()
@@ -1207,6 +1208,7 @@ class DKES:
             
             start_time = perf_counter()
             D31_over_D33_corrected = self.get_interpolated_coeff('D31_over_D33_corrected',cmul_K,efield_K,log_interp_coeff=False)
+            fact_LHS_SN_flow = self.get_interpolated_coeff('LHS_SN_flow_eq',cmul=cmul_K,efield=efield_K,log_interp_coeff=False)
             capped_fluxes_coefficient = self.get_interpolated_coeff('capped_fluxes_coefficient',cmul_K,efield_K,log_interp_coeff=False)
             end_time = perf_counter()
             time_dict['get_interpolated_coeff_time'] += (end_time-start_time)
@@ -1218,19 +1220,28 @@ class DKES:
             
             integrand = capped_fluxes_coefficient * self.K**2.5 * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, 0, k=1.5)
             A2_conv_Gamma[species] = np.trapezoid(integrand,x=self.K) * n[species] * 2 / np.sqrt(np.pi)
-            A1_conv_QoT[species]   = np.trapezoid(integrand,x=self.K) * n[species] * 2 / np.sqrt(np.pi)
+            A1_conv_QoT[species]   = A2_conv_Gamma[species]
             
             integrand = capped_fluxes_coefficient * self.K**3.5 * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, 0, k=1.5)
             A2_conv_QoT[species] = np.trapezoid(integrand,x=self.K) * n[species] * 2 / np.sqrt(np.pi)
             
-            #### Convolutions that multiply flows ####
+            #### flows LHS convolution ####
             for jval in range(Smax+1):
-
+                for kval in range(Smax+1):
+                    integrand = fact_LHS_SN_flow * assoc_laguerre(self.K, kval, k=1.5)
+                    integrand = integrand * self.K**1.5 * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, jval, k=1.5)
+                    flow_LHS_conv[species][jval,kval] = np.trapz(integrand,x=self.K) * n[species] * 2 / np.sqrt(np.pi)          
+            
+            #### flows RHS convolutions ####
+            for jval in range(Smax+1):
+                # A1
                 integrand = D31_over_D33_corrected * self.K**1.5 * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, jval, k=1.5)
-                flow_conv_Gamma[species][jval] =  np.trapz(integrand,x=self.K) * n[species] * 2 / np.sqrt(np.pi)
-                
+                integrand = integrand * n[species] * 2 / np.sqrt(np.pi)
+                flow_RHS_A1_conv[species][jval] =  np.trapz(integrand,x=self.K)
+                # A2
                 integrand = D31_over_D33_corrected * self.K**2.5 * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, jval, k=1.5)
-                flow_conv_QoT[species][jval] =  np.trapz(integrand,x=self.K) * n[species] * 2 / np.sqrt(np.pi)
+                integrand = integrand * n[species] * 2 / np.sqrt(np.pi)
+                flow_RHS_A2_conv[species][jval] =  np.trapz(integrand,x=self.K)
             
             end_time = perf_counter()
             time_dict['convolutions_time'] += (end_time-start_time)    
@@ -1278,9 +1289,39 @@ class DKES:
         nspecies = len(plasma_class.list_of_species)
         lmat = self.libStell.define_friction_coeffs(masses,charges,vths,temps,dens,loglambda,nspecies,Smax)
         
-
         end_time = perf_counter()
-        time_dict['lmat_compute_time'] += (end_time-start_time) 
+        time_dict['lmat_compute_time'] += (end_time-start_time)
+        
+        ############################################################################################################################
+        ###########################################  Get flows ##########################################################
+        ############################################################################################################################
+        start_time = perf_counter()
+        flow_mat = np.zeros(((Smax+1)*Nspecies,(Smax+1)*Nspecies))
+        
+        for ispec1,species1 in enumerate(list_of_species):
+            fact1 = q[species1] / (EC*T[species1])
+            fact2 = 1.5*q[species1] / (m[species1]*vth[species1]*EC*T[species1])
+            
+            for jval in range(Smax+1):
+                
+                for kval in range(Smax+1):
+                    # ind1_LHS1 = (ispec1-1)*(Smax+1)
+                    ind1_LHS1 = (ispec1)*(Smax+1)
+                    flow_mat[ind1_LHS1+jval,ind1_LHS1+kval] = fact1*flow_LHS_conv[species1][jval,kval]
+                    
+                    for ispec2,species2 in enumerate(list_of_species):
+                        # ind1_LHS2 = ( ispec1 - 1 ) * ( Smax + 1 ) + jval +1
+                        ind1_LHS2 = ( ispec1 ) * ( Smax + 1 ) + jval
+                        # ind2_LHS2 = ( ispec2 - 1 ) * ( Smax + 1 ) + kval +1 
+                        ind2_LHS2 = ( ispec2 ) * ( Smax + 1 ) + kval
+                        flow_mat[ind1_LHS2,ind2_LHS2] += -fact2*lmat[ind1_LHS2,ind2_LHS2] 
+                        
+        RHS = np.array([-flow_RHS_A1_conv[species][jval]*A1[species] - flow_RHS_A2_conv[species][jval]*A2[species] for species in list_of_species for jval in range(Smax+1)])
+        uB_over_B2 = np.linalg.solve(flow_mat,RHS)        
+        
+        end_time = perf_counter()
+        time_dict['compute_flows_time'] += (end_time-start_time)
+             
         ############################################################################################################################
         ######################################################  Compute PS term ####################################################
         ############################################################################################################################
@@ -1321,11 +1362,7 @@ class DKES:
         ############################################################################################################################
         ###################################################  Compute fluxes ########################################################
         ############################################################################################################################         
-        start_time = perf_counter()
-        uB_over_B2 = self.get_BS_current(Er,plasma_class,Smax,output='flows')
-        end_time = perf_counter()
-        time_dict['compute_flows_time'] += (end_time-start_time)
-        
+
         start_time = perf_counter()
         num_species = len(plasma_class.list_of_species)
         
@@ -1335,13 +1372,13 @@ class DKES:
             
             mono_flux_1 = - (m[species]**2 * vth[species]**3) / (2*q[species]**2)*A1_conv_Gamma[species]*A1[species]
             mono_flux_2 = - (m[species]**2 * vth[species]**3) / (2*q[species]**2)*A2_conv_Gamma[species]*A2[species]
-            flux_Ua = -(2/3)*self.Bsq*m[species]*vth[species]/q[species] * np.dot(flow_conv_Gamma[species][:],uB_over_B2[ispecies*(Smax+1):ispecies*(Smax+1)+(Smax+1)])
+            flux_Ua = -(2/3)*self.Bsq*m[species]*vth[species]/q[species] * np.dot(flow_RHS_A1_conv[species][:],uB_over_B2[ispecies*(Smax+1):ispecies*(Smax+1)+(Smax+1)])
             
             Gamma[ispecies]  = mono_flux_1 + mono_flux_2 + flux_Ua + PS_term_Gamma[species]
             
             part1 = - (m[species]**2 * vth[species]**3) / (2*q[species]**2)*A1_conv_QoT[species]*A1[species]
             part2 = - (m[species]**2 * vth[species]**3) / (2*q[species]**2)*A2_conv_QoT[species]*A2[species]
-            part3 = -(2/3)*self.Bsq*m[species]*vth[species]/q[species] * np.dot(flow_conv_QoT[species][:],uB_over_B2[ispecies*(Smax+1):ispecies*(Smax+1)+(Smax+1)])
+            part3 = -(2/3)*self.Bsq*m[species]*vth[species]/q[species] * np.dot(flow_RHS_A2_conv[species][:],uB_over_B2[ispecies*(Smax+1):ispecies*(Smax+1)+(Smax+1)])
             
             QoverT[ispecies] = part1 + part2 + part3 + PS_term_QoT[species]
         end_time = perf_counter()
