@@ -84,7 +84,6 @@
       !     Create coils
       !-----------------------------------------------------------------
       CALL spline_to_coils(numcoilgroups,coil_type(1:numcoilgroups),isigng)
-      CALL write_coils_file(TRIM(proc_string))
 
       !-----------------------------------------------------------------
       !     Set the Current
