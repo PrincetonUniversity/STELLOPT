@@ -1160,6 +1160,15 @@ class DKES:
         flow_LHS_conv = {species: np.zeros((Smax+1,Smax+1)) for species in list_of_species}
         flow_RHS_A1_conv = {species: np.zeros((Smax+1)) for species in list_of_species}
         flow_RHS_A2_conv = {species: np.zeros((Smax+1)) for species in list_of_species}
+        
+        Lag = np.zeros((Smax+1, len(self.K)))
+        for j in range(Smax+1):
+            Lag[j, :] = assoc_laguerre(self.K, j, k=1.5)
+            
+        weight = np.sqrt(self.K) * np.exp(-self.K)
+        base_K32 = weight * self.K**1.5
+        base_K52 = weight * self.K**2.5
+        base_K72 = weight * self.K**3.5 
                 
         end_time = perf_counter()
         time_dict['initialize_time'] = (end_time-start_time)
@@ -1213,33 +1222,34 @@ class DKES:
             end_time = perf_counter()
             time_dict['get_interpolated_coeff_time'] += (end_time-start_time)
             
-            start_time = perf_counter()
             # Convolutions
-            integrand = capped_fluxes_coefficient * self.K**1.5 * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, 0, k=1.5)
+            start_time = perf_counter()                
+            
+            integrand = capped_fluxes_coefficient * base_K32 * Lag[0]
             A1_conv_Gamma[species] = np.trapezoid(integrand,x=self.K) * n[species] * 2 / np.sqrt(np.pi)
             
-            integrand = capped_fluxes_coefficient * self.K**2.5 * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, 0, k=1.5)
+            integrand = capped_fluxes_coefficient * base_K52 * Lag[0]
             A2_conv_Gamma[species] = np.trapezoid(integrand,x=self.K) * n[species] * 2 / np.sqrt(np.pi)
             A1_conv_QoT[species]   = A2_conv_Gamma[species]
             
-            integrand = capped_fluxes_coefficient * self.K**3.5 * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, 0, k=1.5)
+            integrand = capped_fluxes_coefficient * base_K72 * Lag[0]
             A2_conv_QoT[species] = np.trapezoid(integrand,x=self.K) * n[species] * 2 / np.sqrt(np.pi)
             
             #### flows LHS convolution ####
             for jval in range(Smax+1):
                 for kval in range(Smax+1):
-                    integrand = fact_LHS_SN_flow * assoc_laguerre(self.K, kval, k=1.5)
-                    integrand = integrand * self.K**1.5 * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, jval, k=1.5)
+                    integrand = fact_LHS_SN_flow * Lag[kval]
+                    integrand = integrand * base_K32 * Lag[jval]
                     flow_LHS_conv[species][jval,kval] = np.trapz(integrand,x=self.K) * n[species] * 2 / np.sqrt(np.pi)          
             
             #### flows RHS convolutions ####
             for jval in range(Smax+1):
                 # A1
-                integrand = D31_over_D33_corrected * self.K**1.5 * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, jval, k=1.5)
+                integrand = D31_over_D33_corrected * base_K32 * Lag[jval]
                 integrand = integrand * n[species] * 2 / np.sqrt(np.pi)
                 flow_RHS_A1_conv[species][jval] =  np.trapz(integrand,x=self.K)
                 # A2
-                integrand = D31_over_D33_corrected * self.K**2.5 * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, jval, k=1.5)
+                integrand = D31_over_D33_corrected * base_K52 * Lag[jval]
                 integrand = integrand * n[species] * 2 / np.sqrt(np.pi)
                 flow_RHS_A2_conv[species][jval] =  np.trapz(integrand,x=self.K)
             
@@ -1428,6 +1438,15 @@ class DKES:
         flow_LHS_conv    = {species: np.zeros((Smax+1,Smax+1)) for species in list_of_species}
         flow_RHS_A1_conv = {species: np.zeros((Smax+1)) for species in list_of_species}
         flow_RHS_A2_conv = {species: np.zeros((Smax+1)) for species in list_of_species}
+        
+        Lag = np.zeros((Smax+1, len(self.K)))
+        for j in range(Smax+1):
+            Lag[j, :] = assoc_laguerre(self.K, j, k=1.5)
+            
+        weight = np.sqrt(self.K) * np.exp(-self.K)
+        base_K32 = weight * self.K**1.5
+        base_K52 = weight * self.K**2.5
+        base_K72 = weight * self.K**3.5 
             
         for species in list_of_species:
             
@@ -1480,30 +1499,30 @@ class DKES:
             #### flows LHS convolution ####
             for jval in range(Smax+1):
                 for kval in range(Smax+1):
-                    integrand = fact_LHS_SN_flow * assoc_laguerre(self.K, kval, k=1.5)
-                    integrand = integrand * self.K**1.5 * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, jval, k=1.5)
+                    integrand = fact_LHS_SN_flow * Lag[kval]
+                    integrand = integrand * base_K32 * Lag[jval]
                     flow_LHS_conv[species][jval,kval] = np.trapz(integrand,x=self.K) * n[species] * 2 / np.sqrt(np.pi)          
             
             #### flows RHS convolutions ####
             for jval in range(Smax+1):
                 # A1
-                integrand = D31_over_D33_corrected * self.K**1.5 * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, jval, k=1.5)
+                integrand = D31_over_D33_corrected * base_K32 * Lag[jval]
                 integrand = integrand * n[species] * 2 / np.sqrt(np.pi)
                 flow_RHS_A1_conv[species][jval] =  np.trapz(integrand,x=self.K)
                 # A2
-                integrand = D31_over_D33_corrected * self.K**2.5 * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, jval, k=1.5)
+                integrand = D31_over_D33_corrected * base_K52 * Lag[jval]
                 integrand = integrand * n[species] * 2 / np.sqrt(np.pi)
                 flow_RHS_A2_conv[species][jval] =  np.trapz(integrand,x=self.K)
             
             ### fluxes RHS convolutions
-            integrand = capped_fluxes_coefficient * self.K**1.5 * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, 0, k=1.5)
+            integrand = capped_fluxes_coefficient * base_K32 * Lag[0]
             A1_conv_Gamma[species] = (m[species]**2 * vth[species]**3) / (2*q[species]**2) * np.trapezoid(integrand,x=self.K) * n[species] * 2 / np.sqrt(np.pi)
             
-            integrand = capped_fluxes_coefficient * self.K**2.5 * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, 0, k=1.5)
+            integrand = capped_fluxes_coefficient * base_K52 * Lag[0]
             A2_conv_Gamma[species] = (m[species]**2 * vth[species]**3) / (2*q[species]**2) * np.trapezoid(integrand,x=self.K) * n[species] * 2 / np.sqrt(np.pi)
             # A1_conv_QoT[species]   = (m[species]**2 * vth[species]**3) / (2*q[species]**2) * np.trapezoid(integrand,x=self.K) * n[species] * 2 / np.sqrt(np.pi)
             
-            integrand = capped_fluxes_coefficient * self.K**3.5 * np.sqrt(self.K) * np.exp(-self.K) * assoc_laguerre(self.K, 0, k=1.5)
+            integrand = capped_fluxes_coefficient * base_K72 * Lag[0]
             A2_conv_QoT[species] = (m[species]**2 * vth[species]**3) / (2*q[species]**2) * np.trapezoid(integrand,x=self.K) * n[species] * 2 / np.sqrt(np.pi)
         
             # #### convolutions that multiply flows in flux equation ####
