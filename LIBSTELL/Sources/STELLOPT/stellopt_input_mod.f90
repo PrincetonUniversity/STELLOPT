@@ -1426,10 +1426,16 @@
                IF (rho_coil_kts(n,1)>=0) THEN
                   WRITE(iunit,'(A,I2)') '!----- SADDLE COIL ',n
                   WRITE(iunit,'(2X,A,I3,A,I3)') 'COIL_TYPE(',n,') = ',coil_type(n) 
-                  WRITE(outputstring,'(A,I2,A)') '(2X,A,I3,A,',1,'(ES22.12E3))'
                   WRITE(iunit,'(2X,A,I3,A,1(ES22.12E3))') 'RHO_COIL_KTS(',n,',:) = ', rho_coil_kts(n,1)
                   WRITE(iunit,'(2X,A,I3,A,2(ES22.12E3))') 'THETA_COIL_KTS(',n,',:) = ', (theta_coil_kts(n,ii), ii=1,2)
                   WRITE(iunit,'(2X,A,I3,A,2(ES22.12E3))') 'ZETA_COIL_KTS(',n,',:) = ', (zeta_coil_kts(n,ii), ii=1,2)
+               END IF
+            ELSEIF (coil_type(n) == 4) THEN
+               IF (rho_coil_kts(n,1)>=0) THEN
+                  WRITE(iunit,'(A,I2)') '!----- TF COIL ',n
+                  WRITE(iunit,'(2X,A,I3,A,I3)') 'COIL_TYPE(',n,') = ',coil_type(n) 
+                  WRITE(iunit,'(2X,A,I3,A,1(ES22.12E3))') 'RHO_COIL_KTS(',n,',:) = ', rho_coil_kts(n,1)
+                  WRITE(iunit,'(2X,A,I3,A,1(ES22.12E3))') 'ZETA_COIL_KTS(',n,',:) = ', zeta_coil_kts(n,1)
                END IF
             END IF
          END DO

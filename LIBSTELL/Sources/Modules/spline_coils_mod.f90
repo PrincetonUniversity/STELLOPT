@@ -200,6 +200,8 @@
             CALL spline_to_helical_coils(i,normal_sign)
          ELSEIF (coil_type(i) == 3) THEN
             CALL spline_to_saddle_coils(i,normal_sign)
+         ELSEIF (coil_type(i) == 4) THEN
+            CALL spline_to_tf_coils(i,normal_sign)
          END IF
       END DO
       RETURN
@@ -211,7 +213,6 @@
       INTEGER, INTENT(in) :: normal_sign
       INTEGER :: i, j, mn, ns1, ier
       DOUBLE PRECISION :: rho, theta, zeta, X, Y, Z, cop, sip, L, rx, ry
-      DOUBLE PRECISION, DIMENSION(ns) :: Rc,Zc,Pc
       DOUBLE PRECISION, DIMENSION(3,ns) :: xnod_in, xnod_ss, xnod_bb
       CHARACTER(len=100) :: s_name
       CHARACTER(len=100) :: l_name
@@ -231,9 +232,6 @@
          rho = SQRT(rx*rx+ry*ry)
          theta = ATAN2(ry,rx)
          CALL rhothetazeta2xyz(rho,theta,zeta,X,Y,Z)
-         RC(j) = SQRT(X*X+Y*Y)
-         PC(j) = ATAN2(Y,X)
-         ZC(j) = Z
          xnod_in(1,j) = X
          xnod_in(2,j) = Y
          xnod_in(3,j) = Z
@@ -244,28 +242,9 @@
       CALL bsc_construct_coil(coil_temp,'fil_loop',TRIM(s_name),'',one,xnod_in(1:3,1:ns))
       CALL bsc_append(coil_group(i),coil_temp)
       ! Now create the stellarator symmetric coil
-      Zc = -Zc
-      Pc = factor - Pc
-      xnod_ss(1,2:ns) = Rc(ns1:1:-1)*cos(Pc(ns1:1:-1))
-      xnod_ss(2,2:ns) = Rc(ns1:1:-1)*sin(Pc(ns1:1:-1))
-      xnod_ss(3,2:ns) = Zc(ns1:1:-1)
-      xnod_ss(:,1) = xnod_ss(:,ns)
-      CALL bsc_construct_coil(coil_temp,'fil_loop',TRIM(s_name),'',one,xnod_ss(1:3,1:ns))
-      CALL bsc_append(coil_group(i),coil_temp)
-      ! Now create rest of the coils
+      CALL construct_ss_coil(coil_dex,ns,xnod_in(1,:),xnod_in(2,:),xnod_in(3,:))
       DO j = 2, nfp
-         cop  = cos((j-1)*factor)
-         sip  = sin((j-1)*factor)
-         xnod_bb(1,:) = xnod_in(1,:)*cop - xnod_in(2,:)*sip
-         xnod_bb(2,:) = xnod_in(2,:)*cop + xnod_in(1,:)*sip
-         xnod_bb(3,:) = xnod_in(3,:)
-         CALL bsc_construct_coil(coil_temp,'fil_loop',s_name,'',one,xnod_bb(1:3,1:ns))
-         CALL bsc_append(coil_group(i),coil_temp)
-         xnod_bb(1,:) = xnod_ss(1,:)*cop - xnod_ss(2,:)*sip
-         xnod_bb(2,:) = xnod_ss(2,:)*cop + xnod_ss(1,:)*sip
-         xnod_bb(3,:) = xnod_ss(3,:)
-         CALL bsc_construct_coil(coil_temp,'fil_loop',s_name,'',one,xnod_bb(1:3,1:ns))
-         CALL bsc_append(coil_group(i),coil_temp)
+         CALL construct_fp_coils(coil_dex,j,ns,xnod_in(1,:),xnod_in(2,:),xnod_in(3,:))
       END DO
       RETURN
       END SUBROUTINE spline_to_modular_coils
@@ -328,8 +307,7 @@
       DOUBLE PRECISION :: rho, theta, zeta, dtheta, dzeta, &
          X0, Y0, Z0, Xp, Yp, Zp, Tx, Ty, Tz, Px, Py, Pz, &
          l, denom, cop, sip
-      DOUBLE PRECISION, DIMENSION(ns) :: Rc,Zc,Pc
-      DOUBLE PRECISION, DIMENSION(3,ns) :: xnod_in, xnod_ss, xnod_bb
+      DOUBLE PRECISION, DIMENSION(3,ns) :: xnod_in
       CHARACTER(len=100) :: s_name
       CHARACTER(len=100) :: l_name
       CHARACTER(len=100) :: c_name
@@ -366,39 +344,110 @@
          xnod_in(3,j) = Z0 + Tz*Xp + Pz*Yp
       END DO
       xnod_in(:,ns) = xnod_in(:,1)
-      RC = SQRT(SUM(xnod_in(1:2,:)*xnod_in(1:2,:),DIM=1))
-      PC = ATAN2(xnod_in(2,:),xnod_in(1,:))
-      ZC = xnod_in(3,:)
       ! Now create the first coil
       WRITE(s_name, '(a4,i5.5)') 'ID ', 1
       CALL bsc_construct_coil(coil_temp,'fil_loop',TRIM(s_name),'',one,xnod_in(1:3,1:ns))
       CALL bsc_append(coil_group(coil_dex),coil_temp)
       ! Now create the stellarator symmetric coil
-      Zc = -Zc
-      Pc = factor - Pc
-      xnod_ss(1,2:ns) = Rc(ns1:1:-1)*cos(Pc(ns1:1:-1))
-      xnod_ss(2,2:ns) = Rc(ns1:1:-1)*sin(Pc(ns1:1:-1))
-      xnod_ss(3,2:ns) = Zc(ns1:1:-1)
-      xnod_ss(:,1) = xnod_ss(:,ns)
-      CALL bsc_construct_coil(coil_temp,'fil_loop',TRIM(s_name),'',one,xnod_ss(1:3,1:ns))
-      CALL bsc_append(coil_group(coil_dex),coil_temp)
-      ! Now create rest of the coils
+      CALL construct_ss_coil(coil_dex,ns,xnod_in(1,:),xnod_in(2,:),xnod_in(3,:))
       DO j = 2, nfp
-         cop  = cos((j-1)*factor)
-         sip  = sin((j-1)*factor)
-         xnod_bb(1,:) = xnod_in(1,:)*cop - xnod_in(2,:)*sip
-         xnod_bb(2,:) = xnod_in(2,:)*cop + xnod_in(1,:)*sip
-         xnod_bb(3,:) = xnod_in(3,:)
-         CALL bsc_construct_coil(coil_temp,'fil_loop',s_name,'',one,xnod_bb(1:3,1:ns))
-         CALL bsc_append(coil_group(coil_dex),coil_temp)
-         xnod_bb(1,:) = xnod_ss(1,:)*cop - xnod_ss(2,:)*sip
-         xnod_bb(2,:) = xnod_ss(2,:)*cop + xnod_ss(1,:)*sip
-         xnod_bb(3,:) = xnod_ss(3,:)
-         CALL bsc_construct_coil(coil_temp,'fil_loop',s_name,'',one,xnod_bb(1:3,1:ns))
-         CALL bsc_append(coil_group(coil_dex),coil_temp)
+         CALL construct_fp_coils(coil_dex,j,ns,xnod_in(1,:),xnod_in(2,:),xnod_in(3,:))
       END DO
       RETURN
       END SUBROUTINE spline_to_saddle_coils
+
+      SUBROUTINE spline_to_tf_coils(coil_dex,normal_sign)
+      IMPLICIT NONE
+      INTEGER, INTENT(in) :: coil_dex
+      INTEGER, INTENT(in) :: normal_sign
+      INTEGER :: i, ns1, j
+      DOUBLE PRECISION :: rho, theta, zeta, dtheta, dzeta, &
+         rho0, X0, Y0, Z0, X1, Y1, Z1, l, Rp, Zp
+      DOUBLE PRECISION, DIMENSION(3,ns) :: xnod_in
+      CHARACTER(len=100) :: s_name
+      CHARACTER(len=100) :: l_name
+      CHARACTER(len=100) :: c_name
+      TYPE(bsc_coil)     :: coil_temp
+      ns1 = ns - 1
+      WRITE(l_name,*) 'i = ',coil_dex
+      WRITE(c_name,'(A,I2.2)') 'TF_COIL_',coil_dex
+      CALL bsc_construct_coilcoll(coil_group(coil_dex),TRIM(c_name),TRIM(l_name))
+
+      rho    = rho_kts(coil_dex,1)
+      zeta   = zeta_kts(coil_dex,1)
+      rho0   = one
+      theta  = zero
+      CALL rhothetazeta2xyz(rho0,theta,zeta,X0,Y0,Z0)
+      theta  = pi2/2
+      CALL rhothetazeta2xyz(rho0,theta,zeta,X1,Y1,Z1)
+      DO j = 1, ns
+         l = pi2*DBLE(j-1)/DBLE(ns-1)
+         Rp = COS(l)*rho
+         Zp = -SIN(l)*rho ! Negative sign for winding convention
+         xnod_in(1,j) = 0.5*(X0 + X1) + Rp*COS(zeta/nfp)
+         xnod_in(2,j) = 0.5*(Y0 + Y1) + Rp*SIN(zeta/nfp)
+         xnod_in(3,j) = 0.5*(Z0 + Z1) + Zp
+      END DO
+      xnod_in(:,ns) = xnod_in(:,1)
+      ! Now create the first coil
+      WRITE(s_name, '(a4,i5.5)') 'ID ', 1
+      CALL bsc_construct_coil(coil_temp,'fil_loop',TRIM(s_name),'',one,xnod_in(1:3,1:ns))
+      CALL bsc_append(coil_group(coil_dex),coil_temp)
+      ! Now create the stellarator symmetric coil
+      CALL construct_ss_coil(coil_dex,ns,xnod_in(1,:),xnod_in(2,:),xnod_in(3,:))
+      DO j = 2, nfp
+         CALL construct_fp_coils(coil_dex,j,ns,xnod_in(1,:),xnod_in(2,:),xnod_in(3,:))
+      END DO
+      RETURN
+      END SUBROUTINE spline_to_tf_coils
+
+      SUBROUTINE construct_ss_coil(coil_dex,npts,x_in,y_in,z_in)
+      IMPLICIT NONE
+      INTEGER, INTENT(in) :: coil_dex
+      INTEGER, INTENT(in) :: npts
+      DOUBLE PRECISION, DIMENSION(npts), INTENT(in) :: x_in, y_in, z_in
+      INTEGER :: i, j
+      DOUBLE PRECISION, DIMENSION(npts) :: R_in, P_in
+      DOUBLE PRECISION, DIMENSION(3,ns) :: xnod
+      CHARACTER(len=100) :: s_name
+      TYPE(bsc_coil)     :: coil_temp
+      R_in = SQRT(x_in*x_in+y_in*y_in)
+      P_in = ATAN2(y_in,x_in)
+      ! Need to flip order
+      DO i = 1,npts
+         j = npts-i+1
+         xnod(1,i) = R_in(j)*COS(factor-P_in(j))
+         xnod(2,i) = R_in(j)*SIN(factor-P_in(j))
+         xnod(3,i) = -z_in(j)
+      END DO
+      WRITE(s_name, '(a4,i5.5)') 'ID ', 1
+      CALL bsc_construct_coil(coil_temp,'fil_loop',TRIM(s_name),'',one,xnod(1:3,1:npts))
+      CALL bsc_append(coil_group(coil_dex),coil_temp)
+      RETURN
+      END SUBROUTINE construct_ss_coil
+
+      SUBROUTINE construct_fp_coils(coil_dex,fp,npts,x_in,y_in,z_in)
+      IMPLICIT NONE
+      INTEGER, INTENT(in) :: coil_dex
+      INTEGER, INTENT(in) :: npts
+      INTEGER, INTENT(in) :: fp
+      DOUBLE PRECISION    :: cop, sip
+      DOUBLE PRECISION, DIMENSION(npts), INTENT(in) :: x_in, y_in, z_in
+      DOUBLE PRECISION, DIMENSION(npts) :: R_in, P_in
+      DOUBLE PRECISION, DIMENSION(3,ns) :: xnod, xnod_ss
+      CHARACTER(len=100) :: s_name
+      TYPE(bsc_coil)     :: coil_temp
+      cop  = cos((fp-1)*factor)
+      sip  = sin((fp-1)*factor)
+      xnod(1,:) = x_in*cop - y_in*sip
+      xnod(2,:) = y_in*cop + x_in*sip
+      xnod(3,:) = z_in
+      WRITE(s_name, '(a4,i5.5)') 'ID ', 1
+      CALL bsc_construct_coil(coil_temp,'fil_loop',TRIM(s_name),'',one,xnod(1:3,1:npts))
+      CALL bsc_append(coil_group(coil_dex),coil_temp)
+      CALL construct_ss_coil(coil_dex,npts,xnod(1,:),xnod(2,:),xnod(3,:))
+      RETURN
+      END SUBROUTINE construct_fp_coils
 
       SUBROUTINE xyz2rhothetazeta(x_in,y_in,z_in,rho_out,theta_out,zeta_out)
       IMPLICIT NONE
