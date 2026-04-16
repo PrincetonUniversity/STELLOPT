@@ -49,7 +49,6 @@
       ENDDO
       !n = MAXVAL(MAXLOC(rho_coil_kts,DIM=2,BACK=.TRUE.))
       numcoilgroups = COUNT(ANY(rho_coil_kts>0,DIM=2))
-      k=1
 
       !-----------------------------------------------------------------
       !     Screen Output
@@ -68,7 +67,7 @@
       !-----------------------------------------------------------------
       !     Load Splines
       !-----------------------------------------------------------------
-      CALL init_spline_coils(nscoil, numcoilgroups, n, n+k, &
+      CALL init_spline_coils(nscoil, numcoilgroups, n, &
                               rho_coil_kts(1:numcoilgroups,1:n), &
                               theta_coil_kts(1:numcoilgroups,1:n), &
                               zeta_coil_kts(1:numcoilgroups,1:n),&
