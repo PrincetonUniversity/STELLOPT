@@ -79,6 +79,7 @@
             zeta_kts(i,n_in+1) = zeta_kts(i,1)
          ELSEIF (coil_type(i) == 2) THEN
             n_kts = nin_kts
+            bcs0 = (/0,0/)
          ELSEIF (coil_type(i) >= 3) THEN
             CYCLE
          END IF
@@ -298,7 +299,6 @@
          ! 1 2 3 4 5 4 3 2 1
          DO j = ns+1, 2*ns-1
             k = 2*ns-j
-            PRINT *,j,k
             rho = SQRT(xnod_in(1,k)**2+xnod_in(2,k)**2)
             zeta = ATAN2(xnod_in(2,k),xnod_in(1,k))
             xnod_in(1,j) = rho * COS(factor-zeta)
@@ -311,7 +311,6 @@
          DO j = 2, nfp
             cop  = cos((j-1)*factor)
             sip  = sin((j-1)*factor)
-            PRINT *,i1,i2,i3,i4,ns_total
             xnod_in(1,i3:i4) = xnod_in(1,i1:i2)*cop - xnod_in(2,i1:i2)*sip
             xnod_in(2,i3:i4) = xnod_in(2,i1:i2)*cop + xnod_in(1,i1:i2)*sip
             xnod_in(3,i3:i4) = xnod_in(3,i1:i2)
