@@ -54,7 +54,8 @@
          mumaterial_niter, mumaterial_nneighbor, &
          mumaterial_lamthresh, mumaterial_tol, &
          mumaterial_lambda, mumaterial_lamfactor, &
-         mumaterial_padfactor, mumaterial_convcheck
+         mumaterial_padfactor, mumaterial_convcheck,&
+         mumaterital_scale
 !-----------------------------------------------------------------------
 !     Module Variables
 !          lverb         Logical to control screen output
