@@ -66,7 +66,7 @@ MODULE thrift_plasma_solver_mod
 
         IMPLICIT NONE
         INTEGER :: istat, i, idx, irho, j, ispecies, ier, plasma_iteration
-        REAL(rprec) :: rho, delta_p, delta_n
+        REAL(rprec) :: rho, delta_p, delta_n, k_prev, k_now
         REAL(rprec), DIMENSION(:), ALLOCATABLE :: pressure_total, pressure_total_old, ne_old
         REAL(rprec), DIMENSION(:), ALLOCATABLE :: RHS_density, lower_diag, upper_diag, main_diag, RHS_pressure
         real(rprec), DIMENSION(:,:), ALLOCATABLE :: LHS_pressure
@@ -186,9 +186,18 @@ MODULE thrift_plasma_solver_mod
 
                 ! Run PENTA if NEO fluxes are to be added
                 IF(add_NEO) THEN
-                    look_for_ambipolar = .false.
+                    ! Only look for ambipolar at every dt_Er
+                    k_prev = int( (time_plasma_grid(mytimestep_plasma_solver-1) - time_plasma_grid(1)) / dt_Er_ambipolar)
+                    k_now  = int( (time_plasma_grid(mytimestep_plasma_solver)   - time_plasma_grid(1)) / dt_Er_ambipolar)
+                    IF(k_now > k_prev) THEN
+                        look_for_ambipolar = .true.
+                    ELSE
+                        look_for_ambipolar = .false.
+                    END IF
                     CALL thrift_paraexe('penta',proc_string,lscreen_subcodes)
                     IF (ier /= 0) STOP 'Error running PENTA inside plasma solver'
+                    ! Restore look_for_ambipolar so that if code leaves to thrift_evolve after this plasma iteration
+                    ! then the ambipolar solution is computed
                     look_for_ambipolar = .true.
                 END IF
   
