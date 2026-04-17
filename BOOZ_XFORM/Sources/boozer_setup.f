@@ -1,6 +1,6 @@
       SUBROUTINE boozer_setup
       USE booz_params
-      USE booz_persistent, ONLY: nu2_b, nu3_b
+      USE booz_persistent
       IMPLICIT NONE
 C-----------------------------------------------
 !
