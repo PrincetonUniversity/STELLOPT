@@ -5,22 +5,22 @@
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
-      INTEGER :: jrad, jsurf
+      INTEGER, INTENT(in) :: jrad, jsurf
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
-      INTEGER :: nparity, istat1, nv2_b, i1, nrep                        
-!      INTEGER, SAVE :: jsurf = 0                                       ! moved to function call for multi-processing
+      INTEGER :: nparity, istat1, nv2_b, i1, nrep
       INTEGER :: ier_arr(50)
       REAL(rprec) ::  bmodv(4), bmodb(4), err(4), jacfac
       REAL(rprec) :: u_b(4), v_b(4), piu, piv
       REAL(rprec), DIMENSION(:), ALLOCATABLE ::
-     1   r1, z1, rodd, zodd, r12, z12, p1, q1, xjac, 
+     1   r1, z1, rodd, zodd, r12, z12, p1, q1, xjac,
      1   lt, lz, lam, wt, wz, wp
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE ::
      1   cosmm, sinmm, cosnn, sinnn
 C-----------------------------------------------
 c       jrad         radial point where Boozer coords. are needed
+c       jsurf        packed output index (1..jsize) for this surface
 c       ns           number of vmec radial grid points
 c       nu_boz       number of theta points in integration
 c       nv_boz       number of zeta points in integration
@@ -31,41 +31,12 @@ c       ntor_nyq     number of zeta harmonics from vmec (no. zeta modes = 2*ntor
 c       mboz         number of boozer theta harmonics
 c       nboz         number of boozer zeta harmonics
 c
+!     NOTE: The one-time Boozer-grid initialization that formerly lived
+!     inside this routine (guarded by `IF (jsurf .eq. 0)`) has been
+!     moved to boozer_setup so that the per-surface work can be
+!     distributed across MPI ranks. Callers must invoke boozer_setup
+!     once before the first call to boozer_coords.
 
-
-      IF (jsurf .eq. 0) THEN
-!
-!        ALLOCATE GLOBAL ARRAYS
-!
-
-         CALL setup_booz (ntorsum, ns, mnmax, ohs, xmb, xnb, 
-     1      sfull, scl, mboz, nboz, mnboz, nu2_b, nu_boz, 
-     2      nv_boz, nfp, lasym_b)
-
-!
-!        SET UP FIXED ANGLE ARRAYS
-!
-
-         IF (lasym_b) THEN
-            nu3_b = nu_boz
-         ELSE
-            nu3_b = nu2_b                            !!ONLY need top half of theta mesh for symmetric plasma
-         END IF
-
-         nunv = nu3_b*nv_boz
-
-         CALL foranl (nu3_b, nv_boz, nfp, nunv, lasym_b)
-
-         IF (lscreen) WRITE(6, 50) mboz-1, -nboz, nboz, nu_boz, nv_boz
-  50     FORMAT('  0 <= mboz <= ',i4,3x,i4,' <= nboz <= ',i4,/,
-     1          '  nu_boz = ',i5,' nv_boz = ',i5,//,
-     1         13x,'OUTBOARD (u=0)',14x,'JS',10x,'INBOARD (u=pi)'
-     2         /,77('-')/,'  v     |B|vmec    |B|booz    Error',13x,
-     3         '|B|vmec    |B|booz    Error'/)
-
-      ENDIF
-
-      jsurf = jsurf + 1
 !
 !     ALLOCATE LOCAL MEMORY
 !
