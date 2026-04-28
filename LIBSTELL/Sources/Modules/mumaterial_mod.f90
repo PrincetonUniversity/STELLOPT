@@ -91,6 +91,7 @@
       INTEGER, PRIVATE  ::  ntet, nvertex
       DOUBLE PRECISION, POINTER, PRIVATE :: vertex(:,:), tet_cen(:,:), & 
                                             tet_vol(:), tet_edge(:)
+
       INTEGER, POINTER, PRIVATE :: tet(:,:)
 
       ! magnetics variables
@@ -121,6 +122,7 @@
       ! MPI windows
       INTEGER, PRIVATE :: win_vertex, win_tet, win_tet_cen, &
                           win_tet_vol, win_tet_edge,  &
+                          win_tet_P, win_tet_D, win_tet_v, &
                           win_state_dex, win_state_type, &
                           win_constant_mu, win_m, win_Mrem, &
                           win_Happ, win_constant_mu_o
@@ -130,6 +132,12 @@
 
       ! verbose and debug variables
       LOGICAL, PRIVATE                    :: lverb, ldebugm, ldebugs, ldebugt
+
+      DOUBLE PRECISION, POINTER, PRIVATE :: &
+      tet_P(:,:,:,:), & ! Rotation matrix of all tetrahedron faces
+      tet_D(:,:,:),   & ! Base vectors of all tetrahedron faces
+      tet_v(:,:,:,:)! Rotated vertices of all tetrahedron faces
+      DOUBLE PRECISION, ALLOCATABLE :: tet_P_loc(:,:,:,:), tet_v_loc(:,:,:,:), tet_D_loc(:,:,:)
 
       ! precomputed constants
       DOUBLE PRECISION, PARAMETER, PRIVATE :: PI = 4.0D0*ATAN(1.0D0)
@@ -160,7 +168,7 @@
 !           mumaterial_getNxz: x-component 
 !           mumaterial_getNyz: y-component 
 !           mumaterial_getNzz: z-component
-!         mumaterial_cross:         Cross product of two vectors
+!         CROSS_PRODUCT:         Cross product of two vectors
 !         mumaterial_getState:      Interpolates function 
 !         mumaterial_gethdipole:    Calculates dipole field at point from tet
 !
@@ -286,7 +294,7 @@
       WRITE(iunit_out,outflt) 'PADFACTOR',padFactor
       WRITE(iunit_out,outflt) 'CONVCHECK',convCheck
       WRITE(iunit_out,'(A)') '/'
-
+        istat = 0 ! Just zero for now
       RETURN
 
       END SUBROUTINE mumaterial_write_nml
@@ -376,6 +384,9 @@
       IF (ASSOCIATED(tet_cen))       CALL free_mpi_array2d_dbl(win_tet_cen,tet_cen,.TRUE.)
       IF (ASSOCIATED(tet_vol))       CALL free_mpi_array1d_dbl(win_tet_vol,tet_vol,.TRUE.)
       IF (ASSOCIATED(tet_edge))      CALL free_mpi_array1d_dbl(win_tet_edge,tet_edge,.TRUE.)
+      IF (ASSOCIATED(tet_P))         CALL free_mpi_array4d_dbl(win_tet_P,tet_P,.TRUE.)
+      IF (ASSOCIATED(tet_D))         CALL free_mpi_array3d_dbl(win_tet_D,tet_D,.TRUE.)
+      IF (ASSOCIATED(tet_v))         CALL free_mpi_array4d_dbl(win_tet_v,tet_v,.TRUE.)
       IF (ASSOCIATED(M))             CALL free_mpi_array2d_dbl(win_M,M,.TRUE.)
       ! TODO: Remove once allocated locally (Make sure code works beforehand)
       IF (ASSOCIATED(Mrem))          CALL free_mpi_array2d_dbl(win_Mrem,Mrem,.TRUE.)
@@ -506,7 +517,7 @@
 
       ! Nullify pointers
       NULLIFY(vertex, tet, tet_cen, tet_vol, tet_edge, state_dex, state_type, &
-              constant_mu, constant_mu_o, Mrem, M, Happ)
+              constant_mu, constant_mu_o, Mrem, M, Happ, tet_P, tet_D, tet_V)
 
       ! open file, return if fails
       iunit = 327; istat = 0
@@ -537,6 +548,9 @@
         CALL mpialloc_2d_dbl(tet_cen,3,ntet,      shar_rank,0,comm_shar,win_tet_cen)
         CALL mpialloc_1d_dbl(tet_vol,ntet,        shar_rank,0,comm_shar,win_tet_vol)
         CALL mpialloc_1d_dbl(tet_edge,ntet,       shar_rank,0,comm_shar,win_tet_edge)
+        CALL mpialloc_4d_dbl(tet_P,3,3,4,ntet,    shar_rank,0,comm_shar,win_tet_P)
+        CALL mpialloc_3d_dbl(tet_D,3,4,ntet,      shar_rank,0,comm_shar,win_tet_D) 
+        CALL mpialloc_4d_dbl(tet_v,3,3,4,ntet,    shar_rank,0,comm_shar,win_tet_v)
         CALL mpialloc_1d_int(state_dex,ntet,      shar_rank,0,comm_shar,win_state_dex)
         CALL mpialloc_1d_int(state_type,nstate,   shar_rank,0,comm_shar,win_state_type)
         CALL mpialloc_1d_dbl(constant_mu,nstate,  shar_rank,0,comm_shar,win_constant_mu)
@@ -553,6 +567,9 @@
                   tet_cen(3,ntet),tet_vol(ntet),tet_edge(ntet),M(3,ntet), &
                   constant_mu_o(nstate),Mrem(3,ntet),stateFunction(nstate), &
                   STAT=istat)
+          ALLOCATE(tet_P(3,3,4,ntet))
+          ALLOCATE(tet_D(3,4,ntet))
+          ALLOCATE(tet_v(3,3,4,ntet))
 #if defined(MPI_OPT)
       END IF
 #endif
@@ -747,7 +764,62 @@
       CLOSE(15)
         
       END SUBROUTINE mumaterial_writedebug
+!-----------------------------------------------------------------------
+! mumaterial_init_demag: Calculates and synchronizes helpers for demagnetization tensor calculation
+!-----------------------------------------------------------------------
+      SUBROUTINE mumaterial_init_demag()
 
+#if defined(MPI_OPT)
+      USE mpi
+      USE mpi_params
+#endif
+      IMPLICIT NONE
+
+      INTEGER :: i_tile, mystart, myend
+      DOUBLE PRECISION :: v(3,4)
+      IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Calculating demag helpers"
+
+      mystart = 1; myend = ntet   
+
+#if defined(MPI_OPT)
+      IF (lcomm) THEN 
+        CALL MPI_CALC_MYRANGE(comm_world, 1, ntet, mystart, myend) 
+      END IF
+#endif
+      IF (shar_rank.EQ.0) THEN
+      ! Zero out
+            tet_P = 0.0d0  
+            tet_D = 0.0d0 
+            tet_v = 0.0d0
+      END IF
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(comm_world, ierr_mpi)
+#endif
+      ! Now populate
+      DO i_tile = mystart, myend
+        CALL GET_DEMAG_HELPERS(vertex(:,tet(1,i_tile)), &
+                               vertex(:,tet(2,i_tile)), &
+                               vertex(:,tet(3,i_tile)), &
+                               vertex(:,tet(4,i_tile)), &
+                               tet_P(:,:,:,i_tile), &
+                               tet_D(:,:,i_tile), &
+                               tet_v(:,:,:,i_tile),(i_tile.EQ.mystart))
+      END DO
+      ! Sync
+#if defined(MPI_OPT)
+        CALL MPI_BARRIER(comm_world, ierr_mpi)
+        IF (shar_rank.EQ.0) THEN
+          CALL MPI_ALLREDUCE( MPI_IN_PLACE, tet_P,    3*3*4*ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
+          CALL MPI_ALLREDUCE( MPI_IN_PLACE, tet_D,    3*4*ntet,   MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
+          CALL MPI_ALLREDUCE( MPI_IN_PLACE, tet_v,  3*3*4*ntet,   MPI_DOUBLE_PRECISION, MPI_SUM, comm_master, ierr_mpi )
+        END IF
+        CALL MPI_BARRIER(comm_world, ierr_mpi)
+#endif
+
+      RETURN 
+        
+      END SUBROUTINE mumaterial_init_demag
+  
 !------------------------------------------------------------------------------
 ! mumaterial_init: Initial calculations, does MPI, and calls iterations
 !------------------------------------------------------------------------------
@@ -771,7 +843,7 @@
       INTEGER :: mstat(MPI_STATUS_SIZE)
       CHARACTER(LEN=6) :: strcount, splitcount
 
-      DOUBLE PRECISION :: Bx, By, Bz
+      DOUBLE PRECISION :: Bx, By, Bz, pos(3), Ntemp(3,3)
       DOUBLE PRECISION :: tol, delta, xmin, xmax, ymin, ymax, zmin, zmax, pad
       INTEGER :: splits, dim, ydomsize, reci
       INTEGER, ALLOCATABLE :: domin(:), yourdom(:), tdom(:), idx(:)
@@ -809,9 +881,9 @@
 #if defined(MPI_OPT)
       IF (lcomm) THEN 
         CALL MPI_CALC_MYRANGE(comm_world, 1, ntet, mystart, myend) 
-        tet_cen(:,mystart:myend) = 99999.0  ! these values will be overwritten;
-        tet_vol(mystart:myend)   = 99999.0  ! big numbers make problems obvious
-        tet_edge(mystart:myend)  = 99999.0
+        tet_cen(:,mystart:myend) = 0.0d0  
+        tet_vol(mystart:myend)   = 0.0d0 
+        tet_edge(mystart:myend)  = 0.0d0
       END IF
 #endif
 
@@ -1002,19 +1074,31 @@
       ! Calculate N_store
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Calculating N_store"
+      
+      CALL mumaterial_init_demag()
+      IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Calculating N tensor"
 
       NULLIFY(N_store)
       ALLOCATE(N_store(3,3,maxNbC,mystart:myend))
       N_store(:,:,:,:) = 0.0
       DO i = mystart, myend
         i_tile = mydom(i)
+        pos = tet_cen(:,i_tile)
         DO j = 1, NbC(i)
           j_tile = Nb(j,i)
-          CALL mumaterial_getN(vertex(:,tet(1,j_tile)), vertex(:,tet(2,j_tile)), vertex(:,tet(3,j_tile)), vertex(:,tet(4,j_tile)), tet_cen(:,i_tile), N_store(:,:,j,i)) 
+          CALL mumaterial_getN(vertex(:,tet(1,j_tile)), &
+                              vertex(:,tet(2,j_tile)), &
+                              vertex(:,tet(3,j_tile)), & 
+                              vertex(:,tet(4,j_tile)), pos, Ntemp) 
+          
+          N_store(:,:,j,i) = GET_DEMAG(tet_P(:,:,:,j_tile), &
+                                       tet_D(:,:,j_tile), &
+                                       tet_v(:,:,:,j_tile), &
+                                       pos) 
+
         END DO 
       END DO
-
+         
 #if defined(MPI_OPT)
       IF (lcomm) CALL MPI_BARRIER(comm_world, ierr_mpi)
 #endif
@@ -1061,7 +1145,7 @@
       DOUBLE PRECISION :: M_tmp(3), M_tmp_local(3), Mrem_norm, u_ea(3), u_oa_1(3), u_oa_2(3) ! hard magnet
 
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: Mnorm, MnormPrev, dM, dMPrev, lambda
-      DOUBLE PRECISION ::  maxdM, maxdMall, maxlambda
+      DOUBLE PRECISION ::  maxdM, maxdMall, maxlambda, mu
       INTEGER          :: lambdaCount
       LOGICAL          :: lalldone, lboxdone, lprocdone, lbreakiterH
       LOGICAL, DIMENSION(:), ALLOCATABLE :: ldone
@@ -1125,6 +1209,8 @@
           H = Happ(:,i)
           DO j = 1, NbC(i)  ! Full field if neighbour
             j_tile = Nb(j,i)
+            IF (ISNAN(SUM(N_store(:,:,j,i)))) WRITE(6,*) "TILE ",i_tile, j_tile, "N CONTAINS NAN"
+
             IF (j_tile.EQ.i_tile) THEN
               N = N_store(:,:,j,i)
               CYCLE
@@ -1193,15 +1279,17 @@
               END DO
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             CASE (3) ! Soft magnet using constant permeability
-              lambda_s = MIN(1/constant_mu(state_dex(i_tile)), 0.5)
-              DO
-                  iterH = iterH + 1
+              mu = constant_mu(state_dex(i_tile))
+              lambda_s = MIN(1/mu, 0.5)
+              DO iterH = 1, maxiterH
                   H_old = H_new
-                  H_new = H + (constant_mu(state_dex(i_tile)) - 1) * MATMUL(N, H_new)
+
+                  H_new = H + (mu - 1) * MATMUL(N, H_new)
                   H_new = H_old + lambda_s * (H_new - H_old)
-                  IF (iterH.GT.maxiterH)  WRITE(6,*) "  Exceeded maxiterH on tile ", i_tile
-                  IF ((MAXVAL(ABS((H_new - H_old)/H_old)).lt.dMmax*lambda_s).or.(iterH.GT.maxiterH)) THEN
-                    M_new(:,i) = (constant_mu(state_dex(i_tile)) - 1) * H_new
+                
+                  
+                  IF ((MAXVAL(ABS((H_new - H_old)/H_old)).lt.dMmax*lambda_s)) THEN
+                    M_new(:,i) = (mu - 1) * H_new
                     EXIT
                   END IF
               END DO
@@ -1210,6 +1298,7 @@
               WRITE(6,*) "  Unknown magnet type: ", stype
               STOP
           END SELECT
+          IF (iterH.GT.maxiterH)  WRITE(6,*) "  Exceeded maxiterH on tile ", i_tile
 
           M(:,i_tile) = M(:,i_tile) + lambda(i)*(M_new(:,i) - M(:,i_tile))
           Mnorm(i) = NORM2(M(:,i_tile))
@@ -1355,7 +1444,8 @@
       N = 0.d0
 
       DO i = 1, 4
-            ! Shift vertices
+
+          ! Shift vertices
             v(:,i) = v1
             v(:,MOD(i,4)+1) = v2
             v(:,MOD(i+1,4)+1) = v3
@@ -1379,7 +1469,7 @@
             END IF
 
             ! Ensure normal vector is pointing in the right direction
-            IF (DOT_PRODUCT(mumaterial_cross(v(:,1) - v(:,3), v(:,2) - v(:,3)), v(:,4) - v(:,2)) .gt. 0) THEN 
+            IF (DOT_PRODUCT(CROSS_PRODUCT(v(:,1) - v(:,3), v(:,2) - v(:,3)), v(:,4) - v(:,2)) .gt. 0) THEN 
                 ! normal vector of triangle is pointing towards v4, so v1 and v3 need to be interchanged
                   v_temp = v(:,1)
                   v(:,1) = v(:,3)
@@ -1390,10 +1480,10 @@
             P(:,1) = v(:,1) - v(:,3)
             P(:,1) = P(:,1) / NORM2(P(:,1))
 
-            P(:,3) = mumaterial_cross(P(:,1), v(:,2)-v(:,3))
+            P(:,3) = CROSS_PRODUCT(P(:,1), v(:,2)-v(:,3))
             P(:,3) = P(:,3) / NORM2(P(:,3))
 
-            P(:,2) = mumaterial_cross(P(:,3), P(:,1))
+            P(:,2) = CROSS_PRODUCT(P(:,3), P(:,1))
             P(:,2) = P(:,2) / NORM2(P(:,2))
 
             ! Inverse rotation matrix, transpose since P is orthogonal
@@ -1557,24 +1647,266 @@
 
       END FUNCTION mumaterial_getNzz
 
-      FUNCTION mumaterial_cross(a, b)
+!-----------------------------------------------------------------------
+! GET_DEMAG_HELPERS: Helper function to determine the demagnetization tensor
+!-----------------------------------------------------------------------
+! param[in]: i_tile: tile index
+!-----------------------------------------------------------------------
+      SUBROUTINE GET_DEMAG_HELPERS(v1, v2, v3, v4, P, D, v_loc,ltest)
+
+        IMPLICIT NONE
+        DOUBLE PRECISION, INTENT(in), DIMENSION(3) :: v1, v2, v3, v4
+        DOUBLE PRECISION, INTENT(out) :: P(3,3,4), D(3,4), v_loc(3,3,4)
+        DOUBLE PRECISION :: v_swap(3), cosalpha(3), d12, d13, d23, angles(3), Pinv(3,3)
+        DOUBLE PRECISION :: Ptmp(3,3), Dtmp(3), vtmp(3,3)
+        LOGICAL, INTENT(in) :: ltest
+        INTEGER :: i_f, i_v
+        DOUBLE PRECISION, PARAMETER :: v_min = 1.0d-12
+        
+        ! Rotate vertices
+        DO i_f = 1, 4
+          vtmp(:,i_f)            = v1
+          vtmp(:,MOD(i_f  ,4)+1) = v2
+          vtmp(:,MOD(i_f+1,4)+1) = v3
+          vtmp(:,MOD(i_f+2,4)+1) = v4
+  
+          ! todo: ensure vertices are not colinear and v4 is not in plane of v1-3?
+  
+          ! Ensure largest angle is for v2
+          d12 = NORM2(vtmp(:,1)-vtmp(:,2))
+          d13 = NORM2(vtmp(:,1)-vtmp(:,3))
+          d23 = NORM2(vtmp(:,2)-vtmp(:,3))
+          ! angles(1) = ACOS(DOT_PRODUCT(vtmp(:,1)-vtmp(:,2),vtmp(:,1)-vtmp(:,3)) / (d12*d13))
+          ! angles(2) = ACOS(DOT_PRODUCT(vtmp(:,2)-vtmp(:,1),vtmp(:,2)-vtmp(:,3)) / (d12*d23))
+          ! angles(3) = ACOS(DOT_PRODUCT(vtmp(:,3)-vtmp(:,2),vtmp(:,3)-vtmp(:,1)) / (d13*d23))
+
+          ! IF (angles(1) > angles(2) .and. angles(1) > angles(3)) THEN ! v1 and v2 should be interchanged
+          !   v_swap = vtmp(:,2)
+          !   vtmp(:,2) = vtmp(:,1)
+          !   vtmp(:,1) = v_swap
+          ! ELSE IF (angles(3) > angles(1) .and. angles(3) > angles(2)) THEN ! v2 and v3 should be interchanged
+          !   v_swap = vtmp(:,2)
+          !   vtmp(:,2) = vtmp(:,3)
+          !   vtmp(:,3) = v_swap
+          ! END IF
+
+
+
+          cosalpha(1) = MAX(1.0d0, MIN(1.0d0, DOT_PRODUCT(vtmp(:,1)-vtmp(:,2),vtmp(:,1)-vtmp(:,3)) / (d12*d13)))
+          cosalpha(2) = MAX(1.0d0, MIN(1.0d0, DOT_PRODUCT(vtmp(:,2)-vtmp(:,1),vtmp(:,2)-vtmp(:,3)) / (d12*d23)))
+          cosalpha(3) = MAX(1.0d0, MIN(1.0d0, DOT_PRODUCT(vtmp(:,3)-vtmp(:,2),vtmp(:,3)-vtmp(:,1)) / (d13*d23)))
+
+          IF (cosalpha(1) < cosalpha(2) .and. cosalpha(1) < cosalpha(3)) THEN ! v1 and v2 should be interchanged
+            v_swap = vtmp(:,2)
+            vtmp(:,2) = vtmp(:,1)
+            vtmp(:,1) = v_swap
+          ELSE IF (cosalpha(3) < cosalpha(1) .and. cosalpha(3) < cosalpha(2)) THEN ! v2 and v3 should be interchanged
+            v_swap = vtmp(:,2)
+            vtmp(:,2) = vtmp(:,3)
+            vtmp(:,3) = v_swap
+          END IF
+          ! Ensure normal vector is pointing in the right direction
+          IF (DOT_PRODUCT(CROSS_PRODUCT(vtmp(:,1) - vtmp(:,3), vtmp(:,2) - vtmp(:,3)), vtmp(:,4) - vtmp(:,2)) .gt. 0) THEN 
+            ! normal vector of triangle is pointing towards v4, so v1 and v3 need to be interchanged
+            v_swap = vtmp(:,1)
+            vtmp(:,1) = vtmp(:,3)
+            vtmp(:,3) = v_swap
+          END IF
+
+          ! Rotation matrix
+
+          Ptmp = 0.0d0
+          Ptmp(:,1) = vtmp(:,1) - vtmp(:,3)
+          Ptmp(:,1) = Ptmp(:,1) / NORM2(Ptmp(:,1))
+          Ptmp(:,3) = CROSS_PRODUCT(Ptmp(:,1), vtmp(:,2)-vtmp(:,3))
+          Ptmp(:,3) = Ptmp(:,3) / NORM2(Ptmp(:,3))
+          Ptmp(:,2) = CROSS_PRODUCT(Ptmp(:,3), Ptmp(:,1))
+          Ptmp(:,2) = Ptmp(:,2) / NORM2(Ptmp(:,2))
+          
+          Pinv = TRANSPOSE(Ptmp)
+ 
+          ! Position of triangle base
+          Dtmp = 0.0d0
+          d13 = NORM2(vtmp(:,1)-vtmp(:,3))
+          d23 = NORM2(vtmp(:,2)-vtmp(:,3))
+          Dtmp = DOT_PRODUCT(vtmp(:,3)-vtmp(:,2),vtmp(:,3)-vtmp(:,1)) & 
+                             /(d23 * d13) * d23 * Ptmp(:,1) + vtmp(:,3)
+
+          ! Vertices in local coordinate frame
+          DO i_v = 1, 3
+            vtmp(:,i_v) = MATMUL(Pinv, (vtmp(:,i_v) - Dtmp))
+            IF (ABS(vtmp(1,i_v)) .lt.v_min) vtmp(1,i_v) = SIGN(v_min, vtmp(1,i_v))
+          END DO
+
+          v_loc(:,:,i_f) = vtmp
+          P(:,:,i_f) = Ptmp
+          D(:,i_f) = Dtmp
+
+        END DO
+        RETURN
+  
+        END SUBROUTINE GET_DEMAG_HELPERS
+
+!-----------------------------------------------------------------------
+! GET_DEMAG: Helper function to determine the demagnetization tensor
+!-----------------------------------------------------------------------
+! param[in]: pos: Reference position for which to determine the demagnetization tensor (3)
+! param[in]: N. Resulting demagnetization tensor (3,3)
+!-----------------------------------------------------------------------
+        FUNCTION GET_DEMAG(P, D, v_tile, pos) result(N)
+
+        IMPLICIT NONE
+        DOUBLE PRECISION, INTENT(in), DIMENSION(3) :: P(3,3,4), D(3,4), v_tile(3,3,4), pos(3)
+        DOUBLE PRECISION :: N(3,3)
+        DOUBLE PRECISION, PARAMETER :: d_min = 1.0D-6
+  
+        DOUBLE PRECISION :: N_loc(3,3), v_loc(3,3), Pinv(3,3), r(3), Ptmp(3,3), larr(2)
+        INTEGER :: i_f, i
+  
+        N = 0.d0
+        ! Loop over faces
+        DO i_f = 1, 4
+          ! Evaluation position in local frame
+          Ptmp = P(:,:,i_f) 
+          Pinv = TRANSPOSE(Ptmp)
+          r = MATMUL(Pinv, (pos - D(:,i_f)))
+          v_loc = v_tile(:,:,i_f)
+
+          ! make sure position is not too close to face origin
+          DO i = 1, 3
+            IF (ABS(r(i)) .lt. d_min)  r(i) = SIGN(d_min, r(i))
+          END DO
+
+          ! Difficult math
+          larr = (/v_loc(1,1), v_loc(1,3)/)
+          N_loc = 0.0d0
+          N_loc(:,3) =  GET_NLOC(r, larr, v_loc(2,2))          
+          N = N + MATMUL(MATMUL(Ptmp, N_loc), Pinv)
+        END DO
+  
+        RETURN
+        END FUNCTION GET_DEMAG
+  
+!-----------------------------------------------------------------------
+! GET_NLOC: Helper function to determine the demagnetization tensor.
+! Combines earlier functions of get_Nxz, get_Nyz, get_Nzz to reduce
+! the number of operations.
+!-----------------------------------------------------------------------
+! param[in]: r: Reference position for which to determine the demagnetization tensor (3)
+! param[in]: larr: Array of size 2. Should contain v_loc(1,1) and v_loc(1,3)
+! param[in]: hp. Top side of the triangle. Should be v_loc(2,2)
+!-----------------------------------------------------------------------
+        FUNCTION GET_NLOC(r, larr, h) RESULT(N_loc)
+
+        IMPLICIT NONE
+        
+        DOUBLE PRECISION :: N_loc(3)
+        DOUBLE PRECISION, INTENT(IN) :: r(3), larr(2), h
+        
+        DOUBLE PRECISION :: r1, r2, r3, ir3
+        DOUBLE PRECISION :: r1_2, r2_2, r3_2
+        DOUBLE PRECISION :: rnorm_2, h_2
+        
+        DOUBLE PRECISION :: C1, C2, C3, C4, C5, C6
+        DOUBLE PRECISION :: l, l_2
+        DOUBLE PRECISION :: sqrt1, sqrt3, sqrt6
+        DOUBLE PRECISION :: isqrt1, isqrt3, isqrt6, isqrt13, isqrt16
+        DOUBLE PRECISION :: div1, div2
+        
+        DOUBLE PRECISION :: F1, F2, K1, K2, F12, K12
+        DOUBLE PRECISION :: L1, L2, Q1, Q2
+        DOUBLE PRECISION :: G1, G2, P1, P2
+        
+        DOUBLE PRECISION :: Nlocx, Nlocy, Nlocz,s
+        INTEGER :: i
+        
+        ! Fixed geometry
+        r1 = r(1)
+        r2 = r(2)
+        r3 = r(3)
+        r1_2 = r1 * r1
+        r2_2 = r2 * r2
+        r3_2 = r3 * r3
+        ir3 = 1.0d0/r3
+        rnorm_2 = r1_2 + r2_2 + r3_2
+        
+        h_2 = h * h
+        
+        C6 = rnorm_2 - 2 * r2 * h + h_2
+        sqrt6 = sqrt(C6)
+        isqrt6 = 1.0d0 / sqrt6
+
+        ! These terms are fixed so cancel out
+        !rnorm = sqrt(rnorm_2)
+        ! G1 = ATANH((r2 - h) / sqrt6)
+        ! G2 = ATANH(r2 / rnorm)
+        ! L2 = ATANH(r1 / rnorm)
+        ! Q2 = -ATAN(r1 * r2 / (r3 * rnorm))
+
+        ! Different l
+        DO i = 1, 2
+          s = 3.0d0-2.0d0*i
+          l = larr(i)
+          l_2 = l * l
+        
+          C1 = l_2 + h_2
+          C2 = l_2 - l * r1 + h * r2
+          C3 = rnorm_2 - 2 * r1 * l + l_2
+          C4 = h_2 + l * r1 - h * r2
+          C5 = h * (r1_2 + r3_2) / l
+        
+          sqrt1 = sqrt(C1)
+          sqrt3 = sqrt(C3)
+        
+          isqrt1 = 1.0d0 / sqrt1
+          isqrt3 = 1.0d0 / sqrt3
+          isqrt13 = isqrt1*isqrt3
+          isqrt16 = isqrt1*isqrt6
+          div1 = h * isqrt1
+          div2 = l * isqrt1
+        
+          F1 = div1 * ATANH((C2 - C1)*isqrt16)
+          F2 = div1 * ATANH(C2*isqrt13)
+
+          K1 = div2 * ATANH((C4 - C1)*isqrt13)
+          K2 = div2 * ATANH(C4*isqrt16)
+
+          L1 = ATANH((r1 - l) * isqrt3)
+        
+          P1 = ATAN((r1 * (h - r2) - (h * (l - r1) - r2 * l) - C5) * ir3 * isqrt3)
+          P2 = ATAN((r1 * (h - r2) - C5) * ir3*isqrt6)
+        
+          Q1 = -ATAN((r1 - l) * r2  * ir3 * isqrt3)
+
+          Nlocx = Nlocx - INV4PI*s*(F1 - F2)
+          Nlocy = Nlocy - INV4PI*s*(K1 - K2 - L1)
+          Nlocz = Nlocz - INV4PI*s*(P1 - P2 - Q1)
+        END DO
+        
+        N_loc = (/Nlocx, Nlocy, Nlocz/)
+        
+        RETURN
+        
+        END FUNCTION GET_NLOC
+        
+      FUNCTION CROSS_PRODUCT(a, b)
             IMPLICIT NONE
             DOUBLE PRECISION, INTENT(IN), DIMENSION(3) :: a, b
-            DOUBLE PRECISION, DIMENSION(3) :: mumaterial_cross
+            DOUBLE PRECISION, DIMENSION(3) :: CROSS_PRODUCT
 
-            mumaterial_cross(1) = a(2)*b(3) - a(3)*b(2)
-            mumaterial_cross(2) = a(3)*b(1) - a(1)*b(3)
-            mumaterial_cross(3) = a(1)*b(2) - a(2)*b(1)
+            CROSS_PRODUCT(1) = a(2)*b(3) - a(3)*b(2)
+            CROSS_PRODUCT(2) = a(3)*b(1) - a(1)*b(3)
+            CROSS_PRODUCT(3) = a(1)*b(2) - a(2)*b(1)
 
             RETURN
-      END FUNCTION mumaterial_cross
+      END FUNCTION CROSS_PRODUCT
 
       FUNCTION mumaterial_gettetvolume(v1,v2,v3,v4)
             IMPLICIT NONE
             DOUBLE PRECISION, DIMENSION(3), INTENT(in) :: v1, v2, v3, v4
             DOUBLE PRECISION :: mumaterial_gettetvolume
 
-            mumaterial_gettetvolume = ABS(dot_product(v1-v4,mumaterial_cross(v2-v4,v3-v4)))/6.0
+            mumaterial_gettetvolume = ABS(dot_product(v1-v4,CROSS_PRODUCT(v2-v4,v3-v4)))/6.0
             RETURN
 
       END FUNCTION mumaterial_gettetvolume
@@ -1906,9 +2238,7 @@
       H = H + INV4PI*(3*dot_product(mom, rhat)*rhat-mom)/(rnorm**3)
 
       END SUBROUTINE mumaterial_gethdipole
-      
-
-
+    
       SUBROUTINE mumaterial_getb_scalar(x, y, z, Bx, By, Bz, getBfld)
       !-----------------------------------------------------------------------
       ! mumaterial_getb: Calculates total magnetic field at a point in space
@@ -1930,9 +2260,11 @@
       INTEGER :: i
 
       H = 0.d0
-
       DO i = 1, ntet
-            CALL mumaterial_getN(vertex(:,tet(1,i)), vertex(:,tet(2,i)), vertex(:,tet(3,i)), vertex(:,tet(4,i)), [x, y, z], N)
+            N = GET_DEMAG(tet_P(:,:,:,i), &
+                          tet_D(:,:,i), &
+                          tet_v(:,:,:,i), &
+                          [x, y, z]) 
             H = H + MATMUL(N, M(:,i))
       END DO
 
@@ -1966,8 +2298,11 @@
       H = 0.d0
 
       DO i = 1, ntet
-            CALL mumaterial_getN(vertex(:,tet(1,i)), vertex(:,tet(2,i)), vertex(:,tet(3,i)), vertex(:,tet(4,i)), [x, y, z], N)
-            H = H + MATMUL(N, M(:,i))
+        N = GET_DEMAG(tet_P(:,:,:,i), &
+                      tet_D(:,:,i), &
+                      tet_v(:,:,:,i), &
+                      [x, y, z]) 
+        H = H + MATMUL(N, M(:,i))
       END DO
 
       Bx = H(1) * mu0
@@ -1977,68 +2312,55 @@
       RETURN
       END SUBROUTINE mumaterial_getbmag_scalar
 
-
       SUBROUTINE mumaterial_getb_vector(x, y, z, B, getBfld)!, linclvac)
-      !-----------------------------------------------------------------------
-      ! mumaterial_getb_vector: Calculates total magnetic field at multiple points in space
-      !-----------------------------------------------------------------------
-      ! param[in]: x. x-coordinates of points at which to determine the magnetic field
-      ! param[in]: y. y-coordinates of points at which to determine the magnetic field
-      ! param[in]: z. z-coordinates of points at which to determine the magnetic field
-      ! param[in]: linclvac. Whether or not vacuum magnetic field should be included.
-      ! param[out]: B.  B-field at required points [T]
-      ! fcn           : getBfld. Function which returns the vacuum magnetic field
-      !                 SUBROUTINE FCN(x,y,z,bx,by,bz)
-      !-----------------------------------------------------------------------
-#if defined(MPI_OPT)
-      USE mpi
-      USE mpi_params
-#endif
-      IMPLICIT NONE
-      EXTERNAL:: getBfld
-      DOUBLE PRECISION, INTENT(in) :: x(:), y(:), z(:)
-      DOUBLE PRECISION, INTENT(out), ALLOCATABLE :: B(:,:)
-      DOUBLE PRECISION, ALLOCATABLE :: B_local(:,:)
-      INTEGER :: mystart, myend
-      INTEGER :: i 
-      INTEGER :: npoints
-!      LOGICAL, OPTIONAL :: linclvac
-
-!      IF (.NOT.(PRESENT(linclvac))) linclvac = .TRUE.
-
-
-      npoints = size(x)
-      mystart = 1; myend = npoints
-
-#if defined(MPI_OPT)
-      IF (lcomm) CALL MPI_CALC_MYRANGE(comm_world, 1, npoints, mystart, myend)
-#endif
-
-      allocate(B_local(3,npoints),B(3,npoints))
-      B_local = 0; B = 0
+        !-----------------------------------------------------------------------
+        ! mumaterial_getb_vector: Calculates total magnetic field at multiple points in space
+        !-----------------------------------------------------------------------
+        ! param[in]: x. x-coordinates of points at which to determine the magnetic field
+        ! param[in]: y. y-coordinates of points at which to determine the magnetic field
+        ! param[in]: z. z-coordinates of points at which to determine the magnetic field
+        ! param[out]: B.  B-field at required points [T]
+        ! fcn           : getBfld. Function which returns the vacuum magnetic field
+        !                 SUBROUTINE FCN(x,y,z,bx,by,bz)
+        !-----------------------------------------------------------------------
+  #if defined(MPI_OPT)
+        USE mpi
+        USE mpi_params
+  #endif
+        IMPLICIT NONE
+        EXTERNAL:: getBfld
+        DOUBLE PRECISION, INTENT(in) :: x(:), y(:), z(:)
+        DOUBLE PRECISION, INTENT(out), ALLOCATABLE :: B(:,:)
+        DOUBLE PRECISION, ALLOCATABLE :: B_local(:,:)
+        INTEGER :: mystart, myend
+        INTEGER :: i 
+        INTEGER :: npoints
+        npoints = size(x)
+        mystart = 1; myend = npoints
+  
+  #if defined(MPI_OPT)
+        IF (lcomm) CALL MPI_CALC_MYRANGE(comm_world, 1, npoints, mystart, myend)
+  #endif
+  
+        allocate(B_local(3,npoints),B(3,npoints))
+        B_local = 0; B = 0
+        
+        DO i = mystart, myend
+          CALL mumaterial_getb_scalar(   x(i), y(i), z(i), B_local(1,i), B_local(2,i), B_local(3,i), getBfld)
+        END DO
+  
       
-!     IF (linclvac) THEN
-      DO i = mystart, myend
-        CALL mumaterial_getb_scalar(   x(i), y(i), z(i), B_local(1,i), B_local(2,i), B_local(3,i), getBfld)
-      END DO
-!     ELSE
-!       DO i = mystart, myend
-!          CALL mumaterial_getbmag_scalar(x(i), y(i), z(i), B_local(1,i), B_local(2,i), B_local(3,i))
-!       END DO
-!      END IF
-    
-#if defined(MPI_OPT)
-      IF (lcomm) THEN
-        CALL MPI_REDUCE(B_local,B,3*npoints,MPI_DOUBLE_PRECISION,MPI_SUM,0,comm_shar,ierr_mpi)
-        IF (shar_rank.EQ.0) CALL MPI_ALLREDUCE( MPI_IN_PLACE,B,3*npoints,MPI_DOUBLE_PRECISION,MPI_SUM,comm_master,ierr_mpi)
-      END IF
-#endif
-
-      deallocate(B_local)
-      
-      RETURN
-      END SUBROUTINE mumaterial_getb_vector
-
+  #if defined(MPI_OPT)
+        IF (lcomm) THEN
+          CALL MPI_REDUCE(B_local,B,3*npoints,MPI_DOUBLE_PRECISION,MPI_SUM,0,comm_shar,ierr_mpi)
+          IF (shar_rank.EQ.0) CALL MPI_ALLREDUCE( MPI_IN_PLACE,B,3*npoints,MPI_DOUBLE_PRECISION,MPI_SUM,comm_master,ierr_mpi)
+        END IF
+  #endif
+  
+        deallocate(B_local)
+        
+        RETURN
+        END SUBROUTINE mumaterial_getb_vector
 
       SUBROUTINE mumaterial_readmag(filename)
 
@@ -2118,13 +2440,10 @@
       INTEGER :: i 
       INTEGER :: npoints
       DOUBLE PRECISION, ALLOCATABLE :: B(:,:)
-!      LOGICAL, OPTIONAL :: linclvac
 
-!      IF (.NOT.(PRESENT(linclvac))) linclvac = .TRUE.
 
       IF (lismaster) THEN
         npoints = size(x)
-        WRITE(6,*) "Outputting points"
         OPEN(13, file='./points.dat')
         DO i = 1, npoints
           WRITE(13, "(F15.7,A,F15.7,A,F15.7)") x(i), ',', y(i), ',', z(i)
@@ -2132,10 +2451,10 @@
         CLOSE(13)
       END IF
 
-      CALL mumaterial_getb_vector(x, y, z, B, getBfld)!, linclvac)
+      IF (lismaster) WRITE(6,'(A,I0,A)') "Calculating B-field for ", npoints, " points"
+      CALL mumaterial_getb_vector(x, y, z, B, getBfld)
  
       IF (lismaster) THEN
-        WRITE(6,*) "Outputting B-field"
         OPEN(14, file='./B.dat')
         DO i = 1, npoints
           WRITE(14, "(E15.7,A,E15.7,A,E15.7)") B(1,i), ',', B(2,i), ',', B(3,i)
@@ -2436,6 +2755,40 @@
       RETURN
       END SUBROUTINE mpialloc_4d_dbl
 
+      
+      SUBROUTINE mpialloc_3d_dbl(array,n1,n2,n3,subid,mymaster,share_comm,win)
+        ! Libraries
+        USE MPI
+        USE ISO_C_BINDING
+        IMPLICIT NONE
+        ! Arguments
+        DOUBLE PRECISION, POINTER, INTENT(inout) :: array(:,:,:)
+        INTEGER, INTENT(in) :: n1
+        INTEGER, INTENT(in) :: n2
+        INTEGER, INTENT(in) :: n3
+        INTEGER, INTENT(in) :: subid
+        INTEGER, INTENT(in) :: mymaster
+        INTEGER, INTENT(in) :: share_comm
+        INTEGER, INTENT(inout) :: win
+        ! Variables
+        INTEGER :: disp_unit, ier
+        INTEGER :: array_shape(3)
+        INTEGER(KIND=MPI_ADDRESS_KIND) :: window_size
+        TYPE(C_PTR) :: baseptr
+        ! Initialization
+        ier = 0
+        array_shape(1) = n1
+        array_shape(2) = n2
+        array_shape(3) = n3
+        disp_unit = 1
+        window_size = 0_MPI_ADDRESS_KIND
+        IF (subid == mymaster) window_size = INT(n1*n2*n3,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
+        CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
+        IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
+        CALL C_F_POINTER(baseptr, array, array_shape)
+        RETURN
+        END SUBROUTINE mpialloc_3d_dbl
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!    Memory Freeing Subroutines
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2565,6 +2918,27 @@
 #endif
          RETURN
          END SUBROUTINE free_mpi_array4d_dbl
+
+         SUBROUTINE free_mpi_array3d_dbl(win_local,array_local,isshared)
+          IMPLICIT NONE
+          LOGICAL, INTENT(in) :: isshared
+          INTEGER, INTENT(inout) :: win_local
+          DOUBLE PRECISION, POINTER, INTENT(inout) :: array_local(:,:,:)
+          INTEGER :: istat
+          istat=0
+ #if defined(MPI_OPT)
+          IF (isshared) THEN
+             CALL MPI_WIN_FENCE(0, win_local,istat)
+             CALL MPI_WIN_FREE(win_local,istat)
+             IF (ASSOCIATED(array_local)) NULLIFY(array_local)
+          ELSE
+ #endif
+             IF (ASSOCIATED(array_local)) DEALLOCATE(array_local)
+ #if defined(MPI_OPT)
+          ENDIF
+ #endif
+          RETURN
+          END SUBROUTINE free_mpi_array3d_dbl
 
 !-----------------------------------------------------------------------
 !     End Module
