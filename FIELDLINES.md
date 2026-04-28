@@ -122,6 +122,7 @@ name lists should look like:
      ZAXIS = 0.0  0.1 0.001
     /
     &FIELDLINES_INPUT
+    !---------- Background Grid Parameters ------------
      NR = 251                          ! Number of radial gridpoints
      NPHI = 36                         ! Number of toroidal gridpoints
      NZ = 301                          ! Number of vertical gridpoints
@@ -131,32 +132,65 @@ name lists should look like:
      ZMAX = 1.5                        ! Maximum extent of vertical grid
      PHIMIN = 0.0                      ! Minimum extent of toroidal grid, overridden by mgrid or coils file
      PHIMAX = 0.628                    ! Maximum extent of toroidal grid, overridden by mgrid or coils file
+     VC_ADAPT_TOL = 1.0E-7             ! Virtual casing tolerance (if using plasma field from equilibria)
+    !---------- Magnetic Material Parameters ----------
+     MUMATERIAL_NITER = 1000           ! Maximum number of iterations in magnetization solve
+     MUMATERIAL_TOL   = 1.0E-5         ! Error Threshold
+     MUMATERIAL_LAMTHRESH = 10         ! 
+     MUMATERIAL_LAMBDA    = 0.7        ! Damping Factor for Picard Iteration
+     MUMATERIAL_LAMFACTOR = 0.75       !
+     MUMATERIAL_PADFACTOR = 0.3        ! Factor of NN in terms of total domain
+     MUMATERIAL_CONVCHECK = 99.0       ! Convergence Check in % 
+    !---------- Marker Tracking Parameters ------------
+     INT_TYPE = 'LSODE'                ! Fieldline integration method (NAG, RKH68, LSODE)
+     FOLLOW_TOL = 1.0E-12              ! Fieldline ODE solver tollerance
+     NPOINC = 72                       ! Number of toroidal points per-period to output the field line trajectory
      MU = 0.0                          ! Fieldline diffusion (mu=D/v) [m^2/m]
      R_START =  3.6  3.7  3.8          ! Radial starting locations of fieldlines
      Z_START =  0.0  0.0  0.0          ! Vertical starting locations of fieldlines
      PHI_START =  0.0  0.0  0.0        ! Toroidal starting locations of fieldlines (radians)
      PHI_END =  629.0  629.0  629.0    ! Maximum distance in toroidal direction to follow fieldlines
-     NPOINC = 72                       ! Number of toroidal points per-period to output the field line trajectory
-     INT_TYPE = 'NAG'                  ! Fieldline integration method (NAG, RKH68, LSODE)
-     FOLLOW_TOL = 1.0E-12              ! Fieldline following tollerance
-     VC_ADAPT_TOL = 1.0E-7             ! Virtual casing tolerance (if using plasma field from equilibria)
+    !---------- Periodic Orbits (-full) ------------
+     NUM_HCP = 512                     ! Number of points for separatrix plot (-full)
+     DELTA_HC = 1.0E-4                 ! Initial length of separatrix line (-full)
      R_HC = 3.5                        ! R Location of periodic orbit (-full)
      Z_HC = 0.5                        ! Z Location guess for periodic orbit (-full)
      PHI_HC = 0.0                      ! PHI Location for periodic orbit(-full)
-     NUM_HCP = 512                     ! Number of points for separatrix plot (-full)
-     DELTA_HC = 1.0E-4                ! Initial length of separatrix line (-full)
+    !---------- Error Fields ------------
+     ERRORFIELD_AMP =   1.0E-4 0.0 0.0 ! Amplitude of analytic error field
+     ERRORFIELD_PHASE = 1      2   3   ! Toroidal phase (n) of error field
     /
     &END
 
-If you wish to model an NFP=1 system please comment out the PHIMAX line
-(this sets PHIMAX to 2\*pi to machine precision). If you system has an
-underlying field symmetry (such as a stellarator) please make sure the
-choice of NPHI is consistent. For example a 5 field period machine which
-was modeled with NFP=5 and NPHI=36, would require NPHI=176 and NFP=1 for
-consistency. This places a spline knot at every point in the original 5
-field period model. In general the formula is NPHI1=(NPHI-1)\*NFP+1,
-where NPHI1 is the full device model (nphi) and NPHI is the field period
-model (nphi).
+The toroidal background grid repeats the endpoint so that grid points
+`1` and `NPHI` are the same. To enforce the half field period point,
+one should choose an odd number for number of gridpoints.  The
+following table outlines some common choices for 1 degree separation
+
+| NPF | NPHI |
+| --- | --- |
+|  1  | 361 |
+|  2  | 181 |
+|  3  | 121 |
+|  4  |  91 |
+|  5  |  73 |
+| 10  |  19 |
+
+When modeling an `NFP=1` system it is best to comment out `PHIMAX` as
+this sets it to `2*pi` at machine precision. It is important to remember
+that if you system has an underlying stellarator symmetry you need to
+carefully choose the number of grid points. The general rule is if you
+want NPHI0 unique gridpoints per field period, then you need to set
+`NPHI = NPHI0*NFP+1`.  The following table should help
+
+| NPF | 1 deg | Half res |
+| --- | --- | --- |
+|  1  | 361 | 181 |
+|  2  | 361 | 181 |
+|  3  | 361 | 181 |
+|  4  | 361 | 177 |
+|  5  | 361 | 181 |
+| 10  | 361 | 181 |
 
 The MU diffusion coefficient has units of \[m^2/m\]. To convert the
 traditional diffusion coefficient D \[m^2/s\] to MU you simply divide
@@ -179,22 +213,31 @@ and FIELDLINES_IN namelists in it.
 | Argument | Default | Description | 
 | --- | --- | --- | 
 | -vmec   | NONE | VMEC input extension | 
-| -pies   | NONE | PIES input extension |
-| -spec   | NONE | SPEC input extension |
+| -hint   | NONE | HINT input/magslice extension | 
+| -eqdsk  | NONE | FIELDLINES input extension and gfile |
 | -coil   | NONE | Coils File | 
 | -mgrid  | NONE | Makegrid style vacuum grid file | 
+| -nescoil | NONE | NESCOIL file (for vacuum) |
 | -vessel | NONE | First wall file | 
-| -restart | NONE | FIELDLINES input extension to load magnetic field from | 
 | -screen | NONE | Poincaré Screen file | 
+| -mumat  | NONE | Magnetic materials mesh file |
+| -mumat_magfile | NONE | Magnetic materials magnetization file |
+| -mumat_skipiter | NONE | Skip iterations |
+| -mumat_writemagfile | NONE | Write out magnetization file |
 | -vac    | NONE | Only compute the vacuum field | 
-| -hitonly | NONE | Only save strikepoint locations (used in conjunction with -vessel) | 
+| -raw    | NONE | Treat vacuum field current in RAW format (EXTCUR as scaling factor) | 
+| -plasma | NONE | Plasma field only | 
+| -field | NONE | Outputs the B-Field on the cylindrical grid only. |  
+| -vecpot | NONE | Outputs the vector potential on the cylindrical grid only. |  
+| -emc3   | NONE | Output EMC3 Grid (very experimental) | 
+| -gridgen   | NONE | Create a fieldline grid for BEAMS3D. | 
+| -modb | NONE | Save |B| along fieldline. |  
+| -field_start | NONE | Extension and fieldline number to use for initializing run. |
+| -auto | NONE | Starting points set equal to radial grid and run from the min to max values of R_START and Z_START |
 | -full | NONE | Auto calculate axis and edge maximum resolution | 
+| -hitonly | NONE | Only save strikepoint locations (used in conjunction with -vessel) |
 | -reverse | NONE | Follow particles in oposite direction. | 
 | -edge | NONE | Place all starting points at VMEC boundary. | 
-| -field | NONE | Outputs the B-Field on the cylindrical grid only. | 
-| -raw | NONE | Treats EXTCUR array as raw values (EXTCUR is a scale factor applied to what\'s in the coils file). | 
-| -auto | NONE | Starting points set equal to radial grid and run from the min to max values of R_START and Z_START | 
-| -field_start | NONE | Extension and fieldline number to use for initializing run. |
 | -noverb | NONE | Suppresses screen output | 
 | -help | NONE | Print help message |
 
@@ -333,8 +376,9 @@ A sample of the HDF5 data structure looks like:
 
 ### Visualization
 
-Various visualization packages exist which can read the HDF5 file. Each
-field line is defined as a set of points in R phi and Z.
+A command line tool for visualizing FIELDLINES data is provided called
+`fieldlines_util.py`. It is installed when you install the pySTEL
+library included with STELLOPT.
 
 ------------------------------------------------------------------------
 
