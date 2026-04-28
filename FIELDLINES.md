@@ -226,7 +226,7 @@ and FIELDLINES_IN namelists in it.
 | -vecpot | NONE | Outputs the vector potential on the cylindrical grid only. |  
 | -emc3   | NONE | Output EMC3 Grid (very experimental) | 
 | -gridgen   | NONE | Create a fieldline grid for BEAMS3D. | 
-| -modb | NONE | Save |B| along fieldline. |  
+| -modb | NONE | Save mod(B) along fieldline. |  
 | -field_start | NONE | Extension and fieldline number to use for initializing run. |
 | -auto | NONE | Starting points set equal to radial grid and run from the min to max values of R_START and Z_START |
 | -full | NONE | Auto calculate axis and edge maximum resolution | 
