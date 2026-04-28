@@ -88,12 +88,7 @@ orbit the code will find it and the associated separatrix.
 
 ### Compilation
 
-FIELDLINES is a component of the STELLOPT suite of codes. It is
-contained within the \'stellopt.zip\' file. Compilation of the STELLOPT
-suite is discussed on the
-[STELLOPT Compilation Page](vmecwiki/STELLOPT Compilation). To obtain
-the code please contact the author Samuel A. Lazerson
-(<lazerson@pppl.gov>).
+FIELDLINES is a component of the STELLOPT suite of codes.
 
 ------------------------------------------------------------------------
 
