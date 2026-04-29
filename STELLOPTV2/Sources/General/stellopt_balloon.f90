@@ -52,7 +52,7 @@
       IF (iflag < 0) RETURN
       IF (lscreen) WRITE(6,'(a)') ' ---------------------------  BALLOONING CALCULATION  ------------------------'
       SELECT CASE(TRIM(equil_type))
-         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
+         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq','vmec_provided')
             lscreen_cobra = lscreen
             sigma_balloon(1) = bigno  ! Don't do the first surface (aka magaxis)
             ! First we need to initialize the COBRA variables

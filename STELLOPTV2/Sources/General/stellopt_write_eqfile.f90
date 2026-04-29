@@ -45,7 +45,7 @@
             CALL runvmec(vctrl_array,proc_string,.false.,MPI_COMM_SELF,'')
          CASE('parvmec','paravmec','vmec2000','vboot')
             CALL stellopt_paraexe('paravmec_write',proc_string,.false.)
-         CASE('vmec2000_oneeq')
+         CASE('vmec2000_oneeq','vmec_provided')
             CALL read_wout_deallocate
             CALL read_wout_file(TRIM(proc_string_old),ier)
             CALL write_wout_file('wout_'//TRIM(proc_string)//'.nc',ier)

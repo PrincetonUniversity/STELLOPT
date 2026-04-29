@@ -165,7 +165,8 @@ contains
     endif
 
     do ix = nx+1, nx+kxord
-       xknot(ix) = xvec(nx) * (1.0_dbl + eps)
+      !  xknot(ix) = xvec(nx) * (1.0_dbl + eps)
+      xknot(ix) = xvec(nx) + 1e-12_dbl * max(1.0_dbl, abs(xvec(nx)))
     end do
 
   end subroutine dbsnak

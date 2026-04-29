@@ -25,7 +25,7 @@
       !LOGICAL ::  lrestart
       LOGICAL ::  lfile_exists, lskip_min, ldeleteopt, lsocleanup
       INTEGER ::  ier, iunit,nvar_in, nprint, info, ldfjac,nfev,&
-                  iunit_restart, nfev_save, npop, ndiv, i
+                  iunit_restart, nfev_save, npop, ndiv, i, m
       INTEGER, ALLOCATABLE :: ipvt(:)
       REAL(rprec)              ::  target_fitness, c1, c2
       REAL(rprec), ALLOCATABLE ::  qtf(:), wa1(:), wa2(:), wa3(:), &
@@ -157,10 +157,11 @@
             nprint   = 0
             info     = 0
             nfev     = 0
+            m        = mtargets
             ldfjac   = mtargets
             vars_min = -bigno; vars_max = bigno
             WHERE(vars > bigno) vars_max = 1E30
-            CALL lmdif(stellopt_fcn, mtargets, nvars, vars, fvec, &
+            CALL lmdif(stellopt_fcn, m, nvars, vars, fvec, &
                        ftol, xtol, gtol, nfunc_max, epsfcn, diag, mode, &
                        factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
                        qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
@@ -174,8 +175,9 @@
             nprint   = 0
             info     = 0
             nfev     = 0
+            m        = mtargets
             ldfjac   = mtargets
-            CALL lmdif(stellopt_fcn, mtargets, nvars, vars, fvec, &
+            CALL lmdif(stellopt_fcn, m, nvars, vars, fvec, &
                        ftol, xtol, gtol, nfunc_max, epsfcn, diag, mode, &
                        factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
                        qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
@@ -183,7 +185,8 @@
          CASE('eval_xvec')
             ldeleteopt = .FALSE.
             lskip_min = .true.
-            CALL xvec_eval(stellopt_fcn,nvars,mtargets,xvec_file)
+            m        = mtargets
+            CALL xvec_eval(stellopt_fcn,nvars,m,xvec_file)
          CASE('one_iter','single','eval','single_iter')
             lskip_min = .true.
             ldeleteopt = .FALSE.
@@ -191,7 +194,8 @@
             fvec     = 0.0
             info     = FLAG_SINGLETASK
             nfev     = 0
-            CALL stellopt_fcn(mtargets, nvars, vars,fvec,info, nfev)
+            m        = mtargets
+            CALL stellopt_fcn(m, nvars, vars,fvec,info, nfev)
             c1 = enorm(mtargets,fvec)
             iunit = 12; info = 0
             CALL safe_open(iunit,info,'xvec.dat','unknown','formatted',ACCESS_IN='APPEND')
@@ -209,7 +213,8 @@
             fvec     = 0.0
             info     = FLAG_SINGLETASK
             nfev     = 0
-            IF (myid == master) CALL stellopt_fcn(mtargets, nvars, vars,fvec,info, nfev)
+            m        = mtargets
+            IF (myid == master) CALL stellopt_fcn(m, nvars, vars,fvec,info, nfev)
          CASE('gade')
             ALLOCATE(fvec(mtargets))
          !   Notes on this
@@ -232,7 +237,8 @@
                END IF
             END IF
             nfev           = 0
-            CALL DE2_Evolve(stellopt_fcn,mtargets,nvars,npopulation,&
+            m        = mtargets
+            CALL DE2_Evolve(stellopt_fcn,m,nvars,npopulation,&
                             vars_min,vars_max,vars,fvec,nfunc_max,&
                             factor,epsfcn,mode,cr_strategy,iunit,&
                             iunit_restart,lrestart)
@@ -243,7 +249,8 @@
             lskip_min = .true.
             nprint = 6
             lno_restart = .true.
-            CALL MAP(stellopt_fcn,nvars,mtargets,vars_min,vars_max,npopulation,nprint,mode,MPI_COMM_STEL)
+            m        = mtargets
+            CALL MAP(stellopt_fcn,nvars,m,vars_min,vars_max,npopulation,nprint,mode,MPI_COMM_STEL)
             info = 5
             IF (lverb) THEN
                 WRITE(6,*) '!!!!!  PARAMETER SPACE MAPPING DONE  !!!!!'
@@ -254,7 +261,8 @@
             lskip_min = .true.
             nprint = 6
             lno_restart = .true.
-            CALL MAP_LINEAR(stellopt_fcn,nvars,mtargets,vars,vars_min,vars_max,noptimizers,nprint,mode)
+            m        = mtargets
+            CALL MAP_LINEAR(stellopt_fcn,nvars,m,vars,vars_min,vars_max,noptimizers,nprint,mode)
             info = 5
             IF (lverb) THEN
                 WRITE(6,*) '!!!!!  LINEAR MAPPING DONE  !!!!!'
@@ -265,7 +273,8 @@
             lskip_min = .true.
             nprint = 6
             lno_restart = .true.
-            CALL MAP_PLANE(stellopt_fcn,nvars,mtargets,vars,vars_min,vars_max,factor,noptimizers,nprint,mode)
+            m        = mtargets
+            CALL MAP_PLANE(stellopt_fcn,nvars,m,vars,vars_min,vars_max,factor,noptimizers,nprint,mode)
             info = 5
             IF (lverb) THEN
                 WRITE(6,*) '!!!!!  HYPERPLANE MAPPING DONE  !!!!!'
@@ -278,7 +287,8 @@
             wa1 = vars
             nprint = 6
             lno_restart = .true.
-            CALL MAP_HYPERS(stellopt_fcn,mtargets,nvars,noptimizers,vars_min,vars_max,&
+            m        = mtargets
+            CALL MAP_HYPERS(stellopt_fcn,m,nvars,noptimizers,vars_min,vars_max,&
                             wa1,fvec,factor,epsfcn,nfunc_max,MPI_COMM_STEL)
             IF (lverb) THEN
                 WRITE(6,*) '!!!!!  HYPERSHPERE MAPPING DONE  !!!!!'
@@ -290,7 +300,8 @@
             lno_restart = .TRUE.
             c1 = epsfcn
             c2 = gtol
-            CALL PSO_Evolve(stellopt_fcn,mtargets,nvars,npopulation,vars_min,vars_max,&
+            m        = mtargets
+            CALL PSO_Evolve(stellopt_fcn,m,nvars,npopulation,vars_min,vars_max,&
                             wa1,fvec,c1,c2,factor,ftol,xtol,nfunc_max)
             DEALLOCATE(wa1)
          CASE('rocket')
@@ -299,7 +310,8 @@
             lno_restart = .TRUE.
             c1 = epsfcn
             c2 = 1.0
-            CALL ROCKET_Evolve(stellopt_fcn,mtargets,nvars,npopulation,vars_min,vars_max,&
+            m        = mtargets
+            CALL ROCKET_Evolve(stellopt_fcn,m,nvars,npopulation,vars_min,vars_max,&
                             wa1,fvec,c1,c2,factor,ftol,xtol,nfunc_max)
             DEALLOCATE(wa1)
          CASE DEFAULT
@@ -316,11 +328,13 @@
          IF (.NOT.ALLOCATED(fvec)) ALLOCATE(fvec(mtargets))
          IF (lrenorm) CALL stellopt_renorm(mtargets,fvec)
          nfev_save = nfev
+         m        = mtargets
          ier=0
-         CALL stellopt_fcn(mtargets,nvars,vars,fvec,ier,nfev)
+         CALL stellopt_fcn(m,nvars,vars,fvec,ier,nfev)
          nfev = nfev_save
          ier=-500
-         CALL stellopt_fcn(mtargets,nvars,vars,fvec,ier,nfev)
+         m        = mtargets
+         CALL stellopt_fcn(m,nvars,vars,fvec,ier,nfev)
       END IF
 !DEC$ IF DEFINED (STELZIP)
       IF (myid == master .and. lsocleanup) THEN

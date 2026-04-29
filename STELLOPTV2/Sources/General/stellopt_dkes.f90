@@ -19,7 +19,7 @@
                                   Em_DKES_Erdiff, Ep_DKES_alpha, &
                                   Em_DKES_alpha, sigma_dkes_alpha, &
                                   nu_dkes_Erdiff, num_dkes_alpha, &
-                                  nup_dkes_alpha
+                                  nup_dkes_alpha, lneed_dkes, lkeep_dkes
       ! NEO LIBRARIES
 !DEC$ IF DEFINED (DKES_OPT)
       USE Vimatrix
@@ -67,12 +67,21 @@
       lscreen_dkes = lscreen
       lfirst_pass = .TRUE.
       IF (lscreen) WRITE(6,'(a)') ' ---------------------------    DKES CALCULATION     -------------------------'
+      ! First count E and nu pairs
+      nruns_dkes = 0
+      DO ij = 1, nprof
+         IF (E_dkes(ij) <= -bigno .or. nu_dkes(ij) <= -bigno) CYCLE
+         nruns_dkes = nruns_dkes + 1
+      END DO
+      ! Now multiply by the number of surfaces
+      nruns_dkes = nruns_dkes * COUNT(lneed_dkes)
 !DEC$ IF DEFINED (MPI_OPT)
       ierr_mpi = 0
       CALL MPI_BCAST(nruns_dkes,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+      CALL MPI_BCAST(lbooz,nsd,MPI_LOGICAL,master,MPI_COMM_MYWORLD,ierr_mpi)
+      CALL MPI_BCAST(lneed_dkes,nsd,MPI_LOGICAL,master,MPI_COMM_MYWORLD,ierr_mpi)
 !DEC$ ENDIF
       ! Enter the main loop
-      IF (ALLOCATED(DKES_rundex)) DEALLOCATE(DKES_rundex)
       IF (ALLOCATED(DKES_L11p)) DEALLOCATE(DKES_L11p)
       IF (ALLOCATED(DKES_L33p)) DEALLOCATE(DKES_L33p)
       IF (ALLOCATED(DKES_L31p)) DEALLOCATE(DKES_L31p)
@@ -84,12 +93,10 @@
       IF (ALLOCATED(DKES_scal31)) DEALLOCATE(DKES_scal31)
       ALLOCATE(DKES_L11p(nruns_dkes),DKES_L33p(nruns_dkes),DKES_L31p(nruns_dkes),&
                DKES_L11m(nruns_dkes),DKES_L33m(nruns_dkes),DKES_L31m(nruns_dkes),&
-               DKES_scal11(nruns_dkes),DKES_scal33(nruns_dkes),DKES_scal31(nruns_dkes),&
-               DKES_rundex(nruns_dkes))
+               DKES_scal11(nruns_dkes),DKES_scal33(nruns_dkes),DKES_scal31(nruns_dkes))
       DKES_L11p=0.0; DKES_L33p=0.0; DKES_L31p=0.0
       DKES_L11m=0.0; DKES_L33m=0.0; DKES_L31m=0.0
       DKES_scal11=0.0; DKES_scal33=0.0; DKES_scal31=0.0
-      DKES_rundex=-1;
       ! Setup the helper arrays
       IF (ALLOCATED(ik_dkes)) DEALLOCATE(ik_dkes)
       IF (ALLOCATED(nuarr_dkes)) DEALLOCATE(nuarr_dkes)
@@ -99,63 +106,15 @@
          ik = 0
          ! First do traditional DKES
          DO ir = 1, nsd
-            IF ((sigma_dkes_11(ir)   >= bigno) .and. &
-                (sigma_dkes_31(ir)   >= bigno) .and. &
-                (sigma_dkes_33(ir)   >= bigno) .and. &
-                (sigma_dkes_boot(ir) >= bigno))  CYCLE
+            IF (.not.lneed_dkes(ir)) CYCLE
             DO ij = 1, nprof
                IF (E_dkes(ij) <= -bigno .or. nu_dkes(ij) <= -bigno) CYCLE
                ik = ik + 1
                ik_dkes(ik) = ir
                nuarr_dkes(ik) = nu_dkes(ij)
                Earr_dkes(ik) = E_dkes(ij)
-               DKES_rundex(ik) = 1
             END DO
          END DO
-         ! Now ErDiff
-         DO ir = 1, nsd
-            IF (sigma_dkes_erdiff(ir) >= bigno) CYCLE
-            ik = ik + 1
-            ik_dkes(ik) = ir
-            nuarr_dkes(ik) = nu_dkes_Erdiff
-            Earr_dkes(ik) = Ep_DKES_Erdiff
-            DKES_rundex(ik) = 2
-            ik = ik + 1
-            ik_dkes(ik) = ir
-            nuarr_dkes(ik) = nu_dkes_Erdiff
-            Earr_dkes(ik) = Em_DKES_Erdiff
-            DKES_rundex(ik) = 2
-         END DO
-         ! Now Alpha
-         DO ir = 1, nsd
-            IF (sigma_dkes_alpha(ir) >= bigno) CYCLE
-            DO ij = 1, nprof
-               IF (Ep_DKES_alpha(ij) <= -bigno .or. nup_dkes_alpha(ij) <= -bigno .or. &
-                   Em_DKES_alpha(ij) <= -bigno .or. num_dkes_alpha(ij) <= -bigno) CYCLE
-               ik = ik + 1
-               ik_dkes(ik) = ir
-               nuarr_dkes(ik) = nup_dkes_alpha(ij)
-               Earr_dkes(ik) = Ep_DKES_alpha(ij)
-               DKES_rundex(ik) = 3
-               ik = ik + 1
-               ik_dkes(ik) = ir
-               nuarr_dkes(ik) = num_dkes_alpha(ij)
-               Earr_dkes(ik) = Em_DKES_alpha(ij)
-               DKES_rundex(ik) = 3
-            END DO
-         END DO
-
-            
-         !DO ir = 1, nsd
-         !   IF (sigma_dkes(ir) >= bigno .and. sigma_dkes_erdiff(ir) >= bigno) CYCLE
-         !   DO ij = 1, nprof
-         !      IF (E_dkes(ij) <= -bigno .or. nu_dkes(ij) <= -bigno) CYCLE
-         !      ik = ik + 1
-         !      ik_dkes(ik)    = ir
-         !      nuarr_dkes(ik) = nu_dkes(ij)
-         !      Earr_dkes(ik)  = E_dkes(ij)
-         !   END DO
-         !ENDDO
       END IF
       ! Now read the wout file
       CALL read_wout_file(proc_string, ier)
@@ -163,7 +122,6 @@
       CALL bcast_boozer_vars(master, MPI_COMM_MYWORLD, ierr_mpi)
 !DEC$ IF DEFINED (MPI_OPT)
       ierr_mpi = 0
-      CALL MPI_BCAST(DKES_rundex,nruns_dkes,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
       CALL MPI_BCAST(ik_dkes,nruns_dkes,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
       CALL MPI_BCAST(nuarr_dkes,nruns_dkes,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
       CALL MPI_BCAST(Earr_dkes,nruns_dkes,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
@@ -184,7 +142,7 @@
          WRITE(arg1(4),'(e20.10)') dkes_efield
          arg1(5) = 'F'
          IF (lscreen .and. lfirst_pass) arg1(5) = 'T'
-         WRITE(temp_str,'(i3.3)') ik
+         WRITE(temp_str,'(i4.4)') ik
          arg1(6) = '_s' // TRIM(temp_str)
          ier_phi = 0 ! We don't read the boozmn or wout file we've done that already
          CALL dkes_input_prepare_old(arg1,6,dkes_input_file,ier_phi)
@@ -213,7 +171,7 @@
          borbi = 0
          READ (iodata, nml=dkes_indata, iostat=istat)
          IF (istat .ne. 0) STOP 'Error reading dkes_indata NAMELIST in DKES'
-         CLOSE (iodata)
+         CLOSE (iodata,STATUS='DELETE')
          ! Recompute ntorb, mpolb for new style input where
          ! borbi is input with actual index value, borbi(n,m)
          IF (nvalsb(1) <= -bigint) THEN
@@ -315,10 +273,16 @@
          DEALLOCATE (cols, al1, al2, al3, al4, bl1, bl2, bl3, bl4, cl1,&
             cl2, cl3, cl4, cols0, omgl, al01, al02, al03, al04, bl01,&
             bl02, bl03, bl04, cl01, cl02, cl03, cl04, fzerop, fzerom)
-         CLOSE(unit=ioout)
-         CLOSE(unit=ioout_opt)
+         IF (lkeep_dkes) THEN
+            CLOSE(unit=ioout)
+            CLOSE(unit=ioout_opt)
+         ELSE
+            CLOSE(unit=ioout,STATUS='DELETE')
+            CLOSE(unit=ioout_opt,STATUS='DELETE')
+         ENDIF
          lfirst_pass = .FALSE.
       END DO
+      DEALLOCATE(ik_dkes,nuarr_dkes,Earr_dkes)
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
       IF (myworkid == master) THEN
@@ -344,7 +308,14 @@
       END IF
 !DEC$ ENDIF
       IF (lscreen) WRITE(6,'(a)') ' -----------------  DKES CALCULATION (DONE) ----------------'
-      IF (myworkid .ne. master) CALL read_wout_deallocate
+      IF (myworkid .ne. master) THEN
+         CALL read_wout_deallocate
+         IF (.not. lkeep_dkes) THEN
+            call safe_open(itab_out, istat, summary_file,'unknown', &
+              'formatted')
+            CLOSE(unit=itab_out,STATUS='DELETE')
+         ENDIF
+      END IF
 !DEC$ ELSE
       IF (lscreen) WRITE(6,'(a)') ' !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
       IF (lscreen) WRITE(6,'(a)') ' !! DKES based optimization not supported on your machine !!'
