@@ -733,15 +733,16 @@
          WRITE (6,48)
       END IF
 
-      IF (.true.) THEN
-      dkes_input_file = 'input_dkes.mem_' // TRIM(extension) 
-     1                                // TRIM(extension_mod)
-      iunit = 15
-      CALL safe_open(iunit, istat, dkes_input_file, 'replace',
-     1    'formatted')
-      WRITE(iunit,nml=dkes_indata)
-      CLOSE(iunit)
-      END IF
+      ! TESTING
+!      IF (.False.) THEN
+!      dkes_input_file = 'input_dkes.mem_' // TRIM(extension) 
+!     1                                // TRIM(extension_mod)
+!      iunit = 15
+!      CALL safe_open(iunit, istat, dkes_input_file, 'replace',
+!     1    'formatted')
+!      WRITE(iunit,nml=dkes_indata)
+!      CLOSE(iunit)
+!      END IF
 
 
       DEALLOCATE(bmn_local, abs_blocal, blocal_ordered,
