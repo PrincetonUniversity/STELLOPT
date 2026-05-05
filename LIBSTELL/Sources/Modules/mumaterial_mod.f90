@@ -50,67 +50,69 @@
 !         Nb:         Array of neighbours for each tetrahedron (:,:)
 !         NbC:        Number of neighbours for each tetrahedron (:)
 !         maxNbC:     Largest neighbour count in NbC
-!         Nb_domidx:  Neighbours indexed by appearance in mydom (:,:)
-!         NbC_dom:    Number of neighbours per tet in mydom (:)
 !         maxNbC_dom: Largest neighbour count in NbC_dom
-!
-!       Mesh
-!         ntet:     Number of tetrahedrons in mesh
-!         nvertex:  Number of vertices in mesh
-!         vertex:   Coordinates for vertices in mesh (3, ntet)
-!         tet:      Vertex indices for each tetrahedron (4, ntet)
-!         tet_cen:  Coordinates for tetrahedron centers (3, ntet)
-!         tet_vol:  Volumes of tetrahedrons (ntet)
-!         tet_edge: Equivalent length of edge of tetrahedrons (ntet)
-!   
+
 !       Magnetics
-!         nstate:           Number of state functions
-!         state_dex:        State function for each tetrahedron (ntet)
-!         state_type:       Type of state function (nstate) (1-3)
 !         constant_mu:      Mu for constant permeability (nstate)
 !         constant_mu_o:    Mu for orthogonal axis for hard magnet (nstate)
 !         Mrem:             Remanent magnetization for hard magnet (3,nstate)
 !         M:                Magnetization for all tetrahedrons (3,ntet)
 !         Happ:             Applied H-field at tetrahedron centres (3, ntet)
-!         mu0:              Permeability of free space: 4*pi*1E-7 [H/m]
-!         N_store:          Demagnetization tensor (3,3,maxNbC,:)
-!
-!       User settings
-!         dMmax:           Threshold error for convergence
-!         maxIter:         Max allowed number of iterations
-!         padFactor:   Affects number of neighbours for each tetrahedron
-!         lambdaStart:     Initial value of lambda for iterations
-!         lambdaFactor:    Multiplication factor for lambda
-!         lambdaThresh:    Multiply lambda if error grows this number of times
 !------------------------------------------------------------------------------
 
       CHARACTER(LEN=256), PRIVATE :: machine_string
       CHARACTER(LEN=256), PRIVATE :: date
 
-      ! mesh variables
-      INTEGER, PRIVATE  ::  ntet, nvertex
-      DOUBLE PRECISION, POINTER, PRIVATE :: vertex(:,:), tet_cen(:,:), & 
-                                            tet_vol(:), tet_edge(:)
+      ! Mesh variables
+      INTEGER, PRIVATE  ::  &
+        ntet, & ! Number of tetrahedrons
+        nvertex ! Number of vertices
+      DOUBLE PRECISION, POINTER, PRIVATE :: &
+        vertex(:,:),  & ! (3,Nvertex) array of vertices
+        tet_cen(:,:), & ! (3,Ntet) array of tetrahedron centers
+        tet_vol(:),   & ! (Ntet) array of tetrahedron volumes
+        tet_edge(:)     ! (Ntet) array of tetrahedron inradii
+      INTEGER, POINTER, PRIVATE :: &
+        tet(:,:)      & ! (4,Ntet) array of tetrahedron vertices
 
-      INTEGER, POINTER, PRIVATE :: tet(:,:)
+      ! Magnetics
+      INTEGER, PRIVATE :: &
+        nstate          ! Number of state functions
+      TYPE(stateFunctionType), PRIVATE, ALLOCATABLE :: &
+        stateFunction(:) !(nstate) array of state functions
+      INTEGER, POINTER, PRIVATE :: &
+        state_dex(:), & ! (Ntet) array of index 
+        state_type(:)   ! (nstate) array of state types (1-3)
+      DOUBLE PRECISION, POINTER, PRIVATE :: &
+        constant_mu(:), &
+        constant_mu_o(:), &
+        M(:,:),  &
+        Mrem(:,:), &
+        Happ(:,:)
+      DOUBLE PRECISION, POINTER, PRIVATE :: &
+        N_store(:,:,:,:) ! Demagnetization tensor (3,3,maxNbC,:)
+      DOUBLE PRECISION, PRIVATE, PARAMETER :: &
+        mu0 = 16.0D-7*ATAN(1.0d0) ! Permeability of free space
+      INTEGER, PRIVATE, PARAMETER :: &
+        STATE_HARD = 1, & ! Hard magnet with remanent magnetization
+        STATE_SOFT = 2, & ! Soft medium
+        STATE_LINEAR = 3  ! Linear medium
 
-      ! magnetics variables
-      INTEGER, POINTER, PRIVATE :: state_dex(:), state_type(:)
-      DOUBLE PRECISION, POINTER, PRIVATE :: constant_mu(:), constant_mu_o(:)
-      DOUBLE PRECISION, POINTER, PRIVATE :: M(:,:), Happ(:,:), Mrem(:,:)
-      DOUBLE PRECISION, DIMENSION(:,:,:,:), POINTER, PRIVATE :: N_store
-      DOUBLE PRECISION, PRIVATE :: mu0
-      INTEGER, PRIVATE :: nstate
-      TYPE(stateFunctionType), PRIVATE, ALLOCATABLE :: stateFunction(:)
-
-      ! user settings variables
-      DOUBLE PRECISION, PRIVATE :: dMmax, padFactor, lambdaStart, lambdaFactor, convCheck
-      INTEGER, PRIVATE          :: lambdaThresh, maxIter
+      ! User settings
+      DOUBLE PRECISION, PRIVATE :: &
+        dMmax, &        ! Threshold error for convergence
+        padFactor, &    ! Affects number of neighbours for each tetrahedron
+        lambdaStart, &  ! Initial value of lambda for iterations
+        lambdaFactor, & ! Multiplication factor for lambda
+        convCheck
+      INTEGER, PRIVATE :: &
+        lambdaThresh, & ! Multiply lambda if error grows this number of times
+        maxIter         !  Max number of iterations
 
       ! neighbour variables
-      INTEGER, DIMENSION(:,:), ALLOCATABLE, PRIVATE :: Nb, Nb_domidx
-      INTEGER, DIMENSION(:),   ALLOCATABLE, PRIVATE :: NbC, NbC_dom
-      INTEGER, PRIVATE                              :: maxNbC, maxNbC_dom
+      INTEGER, DIMENSION(:,:), ALLOCATABLE, PRIVATE :: Nb
+      INTEGER, DIMENSION(:),   ALLOCATABLE, PRIVATE :: NbC
+      INTEGER, PRIVATE                              :: maxNbC
 
       ! MPI variables
       INTEGER, PRIVATE :: comm_shar,   shar_rank,   shar_size, &
@@ -137,12 +139,12 @@
       tet_P(:,:,:,:), & ! Rotation matrix of all tetrahedron faces
       tet_D(:,:,:),   & ! Base vectors of all tetrahedron faces
       tet_v(:,:,:,:)! Rotated vertices of all tetrahedron faces
-      DOUBLE PRECISION, ALLOCATABLE :: tet_P_loc(:,:,:,:), tet_v_loc(:,:,:,:), tet_D_loc(:,:,:)
 
       ! precomputed constants
       DOUBLE PRECISION, PARAMETER, PRIVATE :: PI = 4.0D0*ATAN(1.0D0)
       DOUBLE PRECISION, PARAMETER, PRIVATE :: INVPI = 1.0D0/PI
       DOUBLE PRECISION, PARAMETER, PRIVATE :: INV4PI = 1.0D0/(4.0D0*PI)
+
 
 
 !------------------------------------------------------------------------------
@@ -162,7 +164,7 @@
 !         mumaterial_write_nml: Write the namelist to a file.
 !
 !       Helpers
-!         mumaterial_gettetvolume:  Calculates volume of a tetrahedron
+!         GET_VOL:  Calculates volume of a tetrahedron
 !         mumaterial_getneighbours: Determines tetrahedron neighbours
 !         mumaterial_getN:          Determines demagnetization tensor
 !           mumaterial_getNxz: x-component 
@@ -513,8 +515,6 @@
       END IF
 #endif
 
-      mu0 = 16.0D-7 * ATAN(1.d0)
-
       ! Nullify pointers
       NULLIFY(vertex, tet, tet_cen, tet_vol, tet_edge, state_dex, state_type, &
               constant_mu, constant_mu_o, Mrem, M, Happ, tet_P, tet_D, tet_V)
@@ -588,15 +588,15 @@
 
          DO ik = 1, nstate
             READ(iunit,*) state_type(ik)
-            IF (state_type(ik) == 1) THEN
+            IF (state_type(ik) == STATE_HARD) THEN
                READ(iunit,*) constant_mu(ik), constant_mu_o(ik)
                READ(iunit,*) Mrem(1,ik),Mrem(2,ik),Mrem(3,ik)
-            ELSEIF (state_type(ik) == 2) THEN
+            ELSEIF (state_type(ik) == STATE_SOFT) THEN
                READ(iunit,*) nMH
                ALLOCATE(stateFunction(ik)%H(nMH),stateFunction(ik)%M(nMH))
                READ(iunit,*) stateFunction(ik)%H(:)
                READ(iunit,*) stateFunction(ik)%M(:)
-            ELSEIF (state_type(ik) == 3) THEN 
+            ELSEIF (state_type(ik) == STATE_LINEAR) THEN 
                READ(iunit,*) constant_mu(ik)
             ELSE
                PRINT *, '!!! UNKNOWN STATE_TYPE == ',state_type(ik)
@@ -710,18 +710,18 @@
       WRITE(iunit,'(3X,A,EN12.3)') 'Converged at : ',convCheck
       DO i = 1, nstate
         WRITE(iunit,'(6X,A,I3)') 'State Fuction ',i
-        IF (state_type(i)==1) THEN
+        IF (state_type(i)==STATE_HARD) THEN
           WRITE(iunit,'(9X,A)') 'Type: Hard Magnet'
           WRITE(iunit,'(9X,A,EN12.3)')    '  Mu   :',constant_mu(i)
           WRITE(iunit,'(9X,A,EN12.3)')    '  Mu_o :',constant_mu_o(i)
           WRITE(iunit,'(9X,A,3(EN12.3))') '  Mrem :',Mrem(:,i)
-        ELSEIF (state_type(i)==2) THEN
+        ELSEIF (state_type(i)==STATE_SOFT) THEN
           k = SIZE(stateFunction(i)%H)
           WRITE(iunit,'(9X,A)')           '  Type : Soft Magnet (H-M)'
           WRITE(iunit,'(9X,A,I3)')        'NKnots :',k
           WRITE(iunit,'(9X,A,2(EN12.3))') '     H :',stateFunction(i)%H(1),stateFunction(i)%H(k)
           WRITE(iunit,'(9X,A,2(EN12.3))') '     M :',stateFunction(i)%M(1),stateFunction(i)%M(k)
-        ELSEIF (state_type(i)==3) THEN
+        ELSEIF (state_type(i)==STATE_LINEAR) THEN
           WRITE(iunit,'(9X,A)') 'Type: Soft Magnet (mu constant)'
           WRITE(iunit,'(9X,A,EN12.3)')    '    Mu :',constant_mu(i)
         ELSE
@@ -797,13 +797,13 @@
 #endif
       ! Now populate
       DO i_tile = mystart, myend
-        CALL GET_DEMAG_HELPERS(vertex(:,tet(1,i_tile)), &
+        CALL GET_N_HELPERS(vertex(:,tet(1,i_tile)), &
                                vertex(:,tet(2,i_tile)), &
                                vertex(:,tet(3,i_tile)), &
                                vertex(:,tet(4,i_tile)), &
                                tet_P(:,:,:,i_tile), &
                                tet_D(:,:,i_tile), &
-                               tet_v(:,:,:,i_tile),(i_tile.EQ.mystart))
+                               tet_v(:,:,:,i_tile))
       END DO
       ! Sync
 #if defined(MPI_OPT)
@@ -843,7 +843,7 @@
       INTEGER :: mstat(MPI_STATUS_SIZE)
       CHARACTER(LEN=6) :: strcount, splitcount
 
-      DOUBLE PRECISION :: Bx, By, Bz, pos(3), Ntemp(3,3)
+      DOUBLE PRECISION :: Bx, By, Bz
       DOUBLE PRECISION :: tol, delta, xmin, xmax, ymin, ymax, zmin, zmax, pad
       INTEGER :: splits, dim, ydomsize, reci
       INTEGER, ALLOCATABLE :: domin(:), yourdom(:), tdom(:), idx(:)
@@ -890,7 +890,7 @@
       DO i = mystart, myend
         tet_cen(:,i) = (vertex(:,tet(1,i)) + vertex(:,tet(2,i)) + &
                         vertex(:,tet(3,i)) + vertex(:,tet(4,i)))/4.d0
-        tet_vol(i) = mumaterial_gettetvolume(vertex(:,tet(1,i)),vertex(:,tet(2,i)), &
+        tet_vol(i) = GET_VOL(vertex(:,tet(1,i)),vertex(:,tet(2,i)), &
                                              vertex(:,tet(3,i)),vertex(:,tet(4,i)))
         tet_edge(i) = SQRT(6.0)/12.d0*(6.d0*SQRT(2.0)*tet_vol(i))**(1.0/3.0) 
       END DO
@@ -1080,21 +1080,15 @@
 
       NULLIFY(N_store)
       ALLOCATE(N_store(3,3,maxNbC,mystart:myend))
-      N_store(:,:,:,:) = 0.0
+      N_store(:,:,:,:) = 0.0d0
       DO i = mystart, myend
         i_tile = mydom(i)
-        pos = tet_cen(:,i_tile)
         DO j = 1, NbC(i)
           j_tile = Nb(j,i)
-          CALL mumaterial_getN(vertex(:,tet(1,j_tile)), &
-                              vertex(:,tet(2,j_tile)), &
-                              vertex(:,tet(3,j_tile)), & 
-                              vertex(:,tet(4,j_tile)), pos, Ntemp) 
-          
-          N_store(:,:,j,i) = GET_DEMAG(tet_P(:,:,:,j_tile), &
+          N_store(:,:,j,i) = GET_N(tet_P(:,:,:,j_tile), &
                                        tet_D(:,:,j_tile), &
                                        tet_v(:,:,:,j_tile), &
-                                       pos) 
+                                       tet_cen(:,i_tile)) 
 
         END DO 
       END DO
@@ -1113,7 +1107,6 @@
 
       ! DEALLOCATE Helpers
       DEALLOCATE(Nb, NbC)
-      ! DEALLOCATE( Nb_domidx, NbC_dom)
       DEALLOCATE(N_store)
       DEALLOCATE(Happ)
 
@@ -1225,7 +1218,7 @@
           lbreakiterH = .FALSE.
           stype = state_type(state_dex(i_tile))
           SELECT CASE (stype)
-            CASE (1) ! Hard magnet
+            CASE (STATE_HARD) ! Hard magnet
               Mrem_norm = NORM2(Mrem(:,state_dex(i_tile)))
               u_ea = Mrem(:,state_dex(i_tile))/Mrem_norm ! Easy axis assumed parallel to remanent magnetization
               IF (u_ea(2)/=0 .OR. u_ea(3)/=0) THEN      ! Cross product of u_ea with [1, 0, 0] and cross product of u_ea with cross product
@@ -1256,7 +1249,7 @@
                 IF ((MAXVAL(ABS((H_new-H_old)/H_old)).lt.dMmax*lambda_s).or.(iterH.GT.maxIterH)) lbreakiterH = .TRUE. 
               END DO
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            CASE (2) ! Soft magnet using state function
+            CASE (STATE_SOFT) ! Soft magnet using state function
               DO
                 iterH = iterH + 1
                 H_old = H_new
@@ -1278,7 +1271,7 @@
                 IF ((MAXVAL(ABS((H_new-H_old)/H_old)).lt.dMmax*lambda_s).or.(iterH.GT.maxIterH)) lbreakiterH = .TRUE. 
               END DO
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            CASE (3) ! Soft magnet using constant permeability
+            CASE (STATE_LINEAR) ! Soft magnet using constant permeability
               mu = constant_mu(state_dex(i_tile))
               lambda_s = MIN(1/mu, 0.5)
               DO iterH = 1, maxiterH
@@ -1425,241 +1418,21 @@
       RETURN
       END SUBROUTINE mumaterial_iterate_M
 
-
-      SUBROUTINE mumaterial_getN(v1, v2, v3, v4, pos, N)
-      !-----------------------------------------------------------------------
-      ! mumaterial_getN: Helper function to determine the demagnetization tensor
-      !-----------------------------------------------------------------------
-      ! param[in]: v1-4: Vertices of the tetrahedron (3)
-      ! param[in]: pos: Reference position for which to determine the demagnetization tensor (3)
-      ! param[in]: N. Resulting demagnetization tensor (3,3)
-      !-----------------------------------------------------------------------
-      IMPLICIT NONE
-      DOUBLE PRECISION, INTENT(in), DIMENSION(3) :: v1, v2, v3, v4, pos
-      DOUBLE PRECISION, INTENT(out) :: N(3,3)
-
-      DOUBLE PRECISION :: N_loc(3,3), v(3,4), v_temp(3), angles(3), P(3,3), Pinv(3,3), D(3), r(3)
-      INTEGER :: i, j
-
-      N = 0.d0
-
-      DO i = 1, 4
-
-          ! Shift vertices
-            v(:,i) = v1
-            v(:,MOD(i,4)+1) = v2
-            v(:,MOD(i+1,4)+1) = v3
-            v(:,MOD(i+2,4)+1)= v4
-
-            ! todo: ensure vertices are not collinear and v4 is not in plane of v1-3?
-
-            ! Ensure largest angle is for v2
-            angles(1) = ACOS(DOT_PRODUCT(v(:,1)-v(:,2),v(:,1)-v(:,3)) / (NORM2(v(:,1)-v(:,2)) * NORM2(v(:,1)-v(:,3))))
-            angles(2) = ACOS(DOT_PRODUCT(v(:,2)-v(:,1),v(:,2)-v(:,3)) / (NORM2(v(:,2)-v(:,1)) * NORM2(v(:,2)-v(:,3))))
-            angles(3) = ACOS(DOT_PRODUCT(v(:,3)-v(:,2),v(:,3)-v(:,1)) / (NORM2(v(:,3)-v(:,2)) * NORM2(v(:,3)-v(:,1))))
-
-            IF (angles(1) > angles(2) .and. angles(1) > angles(3)) THEN ! v1 and v2 should be interchanged
-                  v_temp = v(:,2)
-                  v(:,2) = v(:,1)
-                  v(:,1) = v_temp
-            ELSE IF (angles(3) > angles(1) .and. angles(3) > angles(2)) THEN ! v2 and v3 should be interchanged
-                  v_temp = v(:,2)
-                  v(:,2) = v(:,3)
-                  v(:,3) = v_temp
-            END IF
-
-            ! Ensure normal vector is pointing in the right direction
-            IF (DOT_PRODUCT(CROSS_PRODUCT(v(:,1) - v(:,3), v(:,2) - v(:,3)), v(:,4) - v(:,2)) .gt. 0) THEN 
-                ! normal vector of triangle is pointing towards v4, so v1 and v3 need to be interchanged
-                  v_temp = v(:,1)
-                  v(:,1) = v(:,3)
-                  v(:,3) = v_temp
-            END IF
-
-            ! Rotation matrix
-            P(:,1) = v(:,1) - v(:,3)
-            P(:,1) = P(:,1) / NORM2(P(:,1))
-
-            P(:,3) = CROSS_PRODUCT(P(:,1), v(:,2)-v(:,3))
-            P(:,3) = P(:,3) / NORM2(P(:,3))
-
-            P(:,2) = CROSS_PRODUCT(P(:,3), P(:,1))
-            P(:,2) = P(:,2) / NORM2(P(:,2))
-
-            ! Inverse rotation matrix, transpose since P is orthogonal
-            Pinv = TRANSPOSE(P)
-
-            ! Position of triangle base
-            D = DOT_PRODUCT(v(:,3)-v(:,2),v(:,3)-v(:,1)) / (NORM2(v(:,3)-v(:,2)) * NORM2(v(:,3)-v(:,1))) * NORM2(v(:,2) - v(:,3)) * P(:,1) + v(:,3)
-
-            ! Transform evaluation position and vertices to local coordinate frame
-            r = MATMUL(Pinv, (pos - D))
-
-            DO j = 1, 3
-                  v(:,j) = MATMUL(Pinv, (v(:,j) - D))
-                  IF (ABS(r(j)) .lt. 1.0D-6) THEN ! make sure position is not too close to x, y or z = 0
-                        r(j) = SIGN(1.0D-6, r(j))
-                  END IF
-                  IF (ABS(v(1,j)) .lt. 1.0D-6) THEN 
-                        v(1,j) = SIGN(1.0D-6, v(1,j))
-                  END IF                  
-            END DO
-
-            N_loc = 0.d0
-            N_loc(1,3) = mumaterial_getNxz(r, v(1,1), v(2,2)) - mumaterial_getNxz(r, v(1,3), v(2,2))
-            N_loc(2,3) = mumaterial_getNyz(r, v(1,1), v(2,2)) - mumaterial_getNyz(r, v(1,3), v(2,2))
-            N_loc(3,3) = mumaterial_getNzz(r, v(1,1), v(2,2)) - mumaterial_getNzz(r, v(1,3), v(2,2))
-            IF ((ISNAN(N_loc(1,3)).or.ISNAN(N_loc(2,3))).or.ISNAN(N_loc(3,3))) THEN 
-                  WRITE(6,*) "FOUND A NAN IN N_LOC"
-                  WRITE(6,*) "POS=",pos(1),pos(2),pos(3)
-                  WRITE(6,*) "R=",r(1),r(2),r(3)
-                  WRITE(6,*) "l_1=",v(1,1), "l_2=", v(1,3)
-                  WRITE(6,*) "h=",v(2,2)
-                  WRITE(6,*)
-            END IF
-            N = N + MATMUL(MATMUL(P, N_loc), Pinv)
-      END DO
-
-      RETURN
-      END SUBROUTINE mumaterial_getN
-
-      FUNCTION mumaterial_getNxz(r, l, h)
-      !-----------------------------------------------------------------------
-      ! mumaterial_getNxz: Helper function to determine the x-component of the demagnetization tensor
-      !-----------------------------------------------------------------------
-      ! param[in]: r: Reference position for which to determine the demagnetization tensor (3)
-      ! param[in]: l: Bottom side of the triangle 
-      ! param[in]: h. Top side of the triangle
-      !-----------------------------------------------------------------------
-      IMPLICIT NONE
-      DOUBLE PRECISION :: mumaterial_getNxz
-      DOUBLE PRECISION, INTENT(IN) :: r(3), l, h     
-
-            mumaterial_getNxz = -1.d0/(16.d0*ATAN(1.d0)) * (F(r,h,l,h) - F(r,0.d0,l,h) - (G(r,h) - G(r,0.d0)))
-            RETURN
-
-      CONTAINS
-
-            FUNCTION F(r, yp, l, h)
-            IMPLICIT NONE
-            DOUBLE PRECISION :: F
-            DOUBLE PRECISION, INTENT(IN) :: r(3), yp, l, h
-                  
-                  F = h / sqrt(h*h + l*l) * ATANH((l*l - l*r(1) + h*r(2) - h*yp*(1 + l*l/h/h)) / &
-                        sqrt((h*h + l*l) * (r(1)*r(1) - 2*r(1)*l + l*l + r(2)*r(2) - 2*(l*l - l*r(1) + h*r(2))*yp/h + &
-                        yp*yp*(1 + l*l/h/h) + r(3)*r(3))))
-
-            RETURN
-            END FUNCTION F
-
-            FUNCTION G(r, yp)
-                  IMPLICIT NONE
-                  DOUBLE PRECISION :: G
-                  DOUBLE PRECISION, INTENT(IN) :: r(3), yp
-                        
-                  G = ATANH((r(2) - yp) / sqrt(r(1)*r(1) + r(2)*r(2) - 2*r(2)*yp + yp*yp + r(3)*r(3)))
-                        
-                  RETURN
-            END FUNCTION G
-      END FUNCTION mumaterial_getNxz
-
-      FUNCTION mumaterial_getNyz(r, l, h)
-      !-----------------------------------------------------------------------
-      ! mumaterial_getNyz: Helper function to determine the y-component of the demagnetization tensor
-      !-----------------------------------------------------------------------
-      ! param[in]: r: Reference position for which to determine the demagnetization tensor (3)
-      ! param[in]: l: Bottom side of the triangle 
-      ! param[in]: h. Top side of the triangle
-      !-----------------------------------------------------------------------
-      IMPLICIT NONE
-      DOUBLE PRECISION :: mumaterial_getNyz
-      DOUBLE PRECISION, INTENT(IN) :: r(3), l, h
-
-            mumaterial_getNyz = -1.d0/(16.d0*ATAN(1.d0)) * (K(r,l,l,h) - K(r,0.d0,l,h) - (Lfunc(r,l) - Lfunc(r,0.d0)))
-            RETURN
-
-      CONTAINS
-
-            FUNCTION K(r, xp, l, h)
-            IMPLICIT NONE
-            DOUBLE PRECISION :: K
-            DOUBLE PRECISION, INTENT(IN) :: r(3), xp, l, h
-
-                  K = l / sqrt(h*h + l*l) * ATANH((h*h + l*r(1) - h*r(2) - l*xp*(1 + h*h/l/l)) / &
-                        sqrt((h*h + l*l) * (r(2)*r(2) - 2*r(2)*h + h*h + r(1)*r(1) - 2*(h*h + l*r(1) - h*r(2))*xp/l + &
-                        xp*xp*(1 + h*h/l/l) + r(3)*r(3))))
-
-            RETURN
-            END FUNCTION K
-
-            FUNCTION Lfunc(r, xp)
-                  IMPLICIT NONE
-                  DOUBLE PRECISION :: Lfunc
-                  DOUBLE PRECISION, INTENT(IN) :: r(3), xp
-                  
-                  Lfunc = ATANH((r(1) - xp) / sqrt(r(1)*r(1) - 2*r(1)*xp + xp*xp + r(2)*r(2) + r(3)*r(3)))
-
-                  RETURN
-                  
-            END FUNCTION Lfunc
-
-      END FUNCTION mumaterial_getNyz
-
-      FUNCTION mumaterial_getNzz(r, l, h)
-      !-----------------------------------------------------------------------
-      ! mumaterial_getNzz: Helper function to determine the z-component of the demagnetization tensor
-      !-----------------------------------------------------------------------
-      ! param[in]: r: Reference position for which to determine the demagnetization tensor (3)
-      ! param[in]: l: Bottom side of the triangle 
-      ! param[in]: h. Top side of the triangle
-      !-----------------------------------------------------------------------
-      IMPLICIT NONE
-      DOUBLE PRECISION :: mumaterial_getNzz
-      DOUBLE PRECiSION, INTENT(IN) :: r(3), l, h
-            
-            mumaterial_getNzz = -1.d0/(16.d0*ATAN(1.d0)) * (P(r,l,l,h) - P(r,0.d0,l,h) - (Q(r,l) - Q(r,0.d0)))
-
-            RETURN
-      
-      CONTAINS
-
-            FUNCTION P(r, xp, l, h)
-            IMPLICIT NONE
-            DOUBLE PRECISION :: P
-            DOUBLE PRECISION, INTENT(IN) :: r(3), xp, l, h
-
-                  P = ATAN((r(1)*(h - r(2)) - xp*(h*(1 - r(1)/l) - r(2)) - h*(r(1)*r(1) + r(3)*r(3))/l) / &
-                        (r(3)*sqrt(r(2)*r(2) - 2*r(2)*h + h*h + r(1)*r(1) + xp*xp*(1 + h*h/l/l) - &
-                        2*xp*(h*h + l*r(1) - h*r(2))/l + r(3)*r(3))))
-
-            RETURN
-            END FUNCTION P
-
-            FUNCTION Q(r, xp)
-            IMPLICIT NONE
-            DOUBLE PRECISION :: Q
-            DOUBLE PRECISION, INTENT(IN) :: r(3), xp
-
-                  Q = -ATAN((r(1) - xp)*r(2) / (r(3)*sqrt((r(1)*r(1) - 2*r(1)*xp + xp*xp + r(2)*r(2) + r(3)*r(3)))))
-            
-            RETURN
-            END FUNCTION Q
-
-      END FUNCTION mumaterial_getNzz
-
 !-----------------------------------------------------------------------
-! GET_DEMAG_HELPERS: Helper function to determine the demagnetization tensor
+! GET_N_HELPERS: Helper function to determine the demagnetization tensor
 !-----------------------------------------------------------------------
-! param[in]: i_tile: tile index
+! param[in]: v1, v2, v3, v4. Vertices of tetrahedron
+! param[out]: P. Rotation matrix for each face.
+! param[out]: D. Position of triangle base for each face.
+! param[out]: v_loc. Vertices of each face in right permutation and local face coordinates.
 !-----------------------------------------------------------------------
-      SUBROUTINE GET_DEMAG_HELPERS(v1, v2, v3, v4, P, D, v_loc,ltest)
+      SUBROUTINE GET_N_HELPERS(v1, v2, v3, v4, P, D, v_loc)
 
         IMPLICIT NONE
         DOUBLE PRECISION, INTENT(in), DIMENSION(3) :: v1, v2, v3, v4
         DOUBLE PRECISION, INTENT(out) :: P(3,3,4), D(3,4), v_loc(3,3,4)
         DOUBLE PRECISION :: v_swap(3), cosalpha(3), d12, d13, d23, angles(3), Pinv(3,3)
         DOUBLE PRECISION :: Ptmp(3,3), Dtmp(3), vtmp(3,3)
-        LOGICAL, INTENT(in) :: ltest
         INTEGER :: i_f, i_v
         DOUBLE PRECISION, PARAMETER :: v_min = 1.0d-12
         
@@ -1676,22 +1449,6 @@
           d12 = NORM2(vtmp(:,1)-vtmp(:,2))
           d13 = NORM2(vtmp(:,1)-vtmp(:,3))
           d23 = NORM2(vtmp(:,2)-vtmp(:,3))
-          ! angles(1) = ACOS(DOT_PRODUCT(vtmp(:,1)-vtmp(:,2),vtmp(:,1)-vtmp(:,3)) / (d12*d13))
-          ! angles(2) = ACOS(DOT_PRODUCT(vtmp(:,2)-vtmp(:,1),vtmp(:,2)-vtmp(:,3)) / (d12*d23))
-          ! angles(3) = ACOS(DOT_PRODUCT(vtmp(:,3)-vtmp(:,2),vtmp(:,3)-vtmp(:,1)) / (d13*d23))
-
-          ! IF (angles(1) > angles(2) .and. angles(1) > angles(3)) THEN ! v1 and v2 should be interchanged
-          !   v_swap = vtmp(:,2)
-          !   vtmp(:,2) = vtmp(:,1)
-          !   vtmp(:,1) = v_swap
-          ! ELSE IF (angles(3) > angles(1) .and. angles(3) > angles(2)) THEN ! v2 and v3 should be interchanged
-          !   v_swap = vtmp(:,2)
-          !   vtmp(:,2) = vtmp(:,3)
-          !   vtmp(:,3) = v_swap
-          ! END IF
-
-
-
           cosalpha(1) = MAX(1.0d0, MIN(1.0d0, DOT_PRODUCT(vtmp(:,1)-vtmp(:,2),vtmp(:,1)-vtmp(:,3)) / (d12*d13)))
           cosalpha(2) = MAX(1.0d0, MIN(1.0d0, DOT_PRODUCT(vtmp(:,2)-vtmp(:,1),vtmp(:,2)-vtmp(:,3)) / (d12*d23)))
           cosalpha(3) = MAX(1.0d0, MIN(1.0d0, DOT_PRODUCT(vtmp(:,3)-vtmp(:,2),vtmp(:,3)-vtmp(:,1)) / (d13*d23)))
@@ -1745,15 +1502,15 @@
         END DO
         RETURN
   
-        END SUBROUTINE GET_DEMAG_HELPERS
+        END SUBROUTINE GET_N_HELPERS
 
 !-----------------------------------------------------------------------
-! GET_DEMAG: Helper function to determine the demagnetization tensor
+! GET_N: Helper function to determine the demagnetization tensor
 !-----------------------------------------------------------------------
 ! param[in]: pos: Reference position for which to determine the demagnetization tensor (3)
 ! param[in]: N. Resulting demagnetization tensor (3,3)
 !-----------------------------------------------------------------------
-        FUNCTION GET_DEMAG(P, D, v_tile, pos) result(N)
+        FUNCTION GET_N(P, D, v_tile, pos) result(N)
 
         IMPLICIT NONE
         DOUBLE PRECISION, INTENT(in), DIMENSION(3) :: P(3,3,4), D(3,4), v_tile(3,3,4), pos(3)
@@ -1785,7 +1542,7 @@
         END DO
   
         RETURN
-        END FUNCTION GET_DEMAG
+        END FUNCTION GET_N
   
 !-----------------------------------------------------------------------
 ! GET_NLOC: Helper function to determine the demagnetization tensor.
@@ -1890,26 +1647,26 @@
         END FUNCTION GET_NLOC
         
       FUNCTION CROSS_PRODUCT(a, b)
-            IMPLICIT NONE
-            DOUBLE PRECISION, INTENT(IN), DIMENSION(3) :: a, b
-            DOUBLE PRECISION, DIMENSION(3) :: CROSS_PRODUCT
+      IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(IN), DIMENSION(3) :: a, b
+      DOUBLE PRECISION, DIMENSION(3) :: CROSS_PRODUCT
 
-            CROSS_PRODUCT(1) = a(2)*b(3) - a(3)*b(2)
-            CROSS_PRODUCT(2) = a(3)*b(1) - a(1)*b(3)
-            CROSS_PRODUCT(3) = a(1)*b(2) - a(2)*b(1)
+      CROSS_PRODUCT(1) = a(2)*b(3) - a(3)*b(2)
+      CROSS_PRODUCT(2) = a(3)*b(1) - a(1)*b(3)
+      CROSS_PRODUCT(3) = a(1)*b(2) - a(2)*b(1)
 
-            RETURN
+      RETURN
       END FUNCTION CROSS_PRODUCT
 
-      FUNCTION mumaterial_gettetvolume(v1,v2,v3,v4)
-            IMPLICIT NONE
-            DOUBLE PRECISION, DIMENSION(3), INTENT(in) :: v1, v2, v3, v4
-            DOUBLE PRECISION :: mumaterial_gettetvolume
+      FUNCTION GET_VOL(v1,v2,v3,v4)
+      IMPLICIT NONE
+      DOUBLE PRECISION, DIMENSION(3), INTENT(in) :: v1, v2, v3, v4
+      DOUBLE PRECISION :: GET_VOL
 
-            mumaterial_gettetvolume = ABS(dot_product(v1-v4,CROSS_PRODUCT(v2-v4,v3-v4)))/6.0
-            RETURN
+      GET_VOL = ABS(DOT_PRODUCT(v1-v4,CROSS_PRODUCT(v2-v4,v3-v4)))/6.0d0
+      RETURN
 
-      END FUNCTION mumaterial_gettetvolume
+      END FUNCTION GET_VOL
 
 
       SUBROUTINE mumaterial_getneighbours(mystart, myend)
@@ -2261,7 +2018,7 @@
 
       H = 0.d0
       DO i = 1, ntet
-            N = GET_DEMAG(tet_P(:,:,:,i), &
+            N = GET_N(tet_P(:,:,:,i), &
                           tet_D(:,:,i), &
                           tet_v(:,:,:,i), &
                           [x, y, z]) 
@@ -2298,7 +2055,7 @@
       H = 0.d0
 
       DO i = 1, ntet
-        N = GET_DEMAG(tet_P(:,:,:,i), &
+        N = GET_N(tet_P(:,:,:,i), &
                       tet_D(:,:,i), &
                       tet_v(:,:,:,i), &
                       [x, y, z]) 
@@ -2323,10 +2080,10 @@
         ! fcn           : getBfld. Function which returns the vacuum magnetic field
         !                 SUBROUTINE FCN(x,y,z,bx,by,bz)
         !-----------------------------------------------------------------------
-  #if defined(MPI_OPT)
+#if defined(MPI_OPT)
         USE mpi
         USE mpi_params
-  #endif
+#endif
         IMPLICIT NONE
         EXTERNAL:: getBfld
         DOUBLE PRECISION, INTENT(in) :: x(:), y(:), z(:)
@@ -2338,9 +2095,9 @@
         npoints = size(x)
         mystart = 1; myend = npoints
   
-  #if defined(MPI_OPT)
+#if defined(MPI_OPT)
         IF (lcomm) CALL MPI_CALC_MYRANGE(comm_world, 1, npoints, mystart, myend)
-  #endif
+#endif
   
         allocate(B_local(3,npoints),B(3,npoints))
         B_local = 0; B = 0
@@ -2350,12 +2107,12 @@
         END DO
   
       
-  #if defined(MPI_OPT)
+#if defined(MPI_OPT)
         IF (lcomm) THEN
           CALL MPI_REDUCE(B_local,B,3*npoints,MPI_DOUBLE_PRECISION,MPI_SUM,0,comm_shar,ierr_mpi)
           IF (shar_rank.EQ.0) CALL MPI_ALLREDUCE( MPI_IN_PLACE,B,3*npoints,MPI_DOUBLE_PRECISION,MPI_SUM,comm_master,ierr_mpi)
         END IF
-  #endif
+#endif
   
         deallocate(B_local)
         
