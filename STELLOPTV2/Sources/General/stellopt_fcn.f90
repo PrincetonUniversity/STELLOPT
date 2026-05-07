@@ -355,6 +355,8 @@
             CASE('vmec2000_old','animec','flow','satire')
             CASE('paravmec','parvmec','vmec2000')
                iflag = 0
+               PRINT *,lfreeb,lcreate_coils
+               IF (lfreeb .and. lcreate_coils) CALL stellopt_coil_to_vac(lscreen,iflag)
                CALL stellopt_run_vmec(lscreen,iflag)
             CASE('vboot')
                if (iflag .lt. -1)  THEN
@@ -455,7 +457,7 @@
 
          ! Coil related parameters (generate coils must come first)
          !IF (lcreate_coilsurf) CALL stellopt_generate_coilsurf(lscreen,iflag)
-         IF (lcreate_coils) CALL stellopt_generate_coils(lscreen,iflag)
+         !IF (lcreate_coils) CALL stellopt_generate_coils(lscreen,iflag)
          IF (lneed_bnormal) THEN
             ctemp_str = 'compute_bnormal'
             CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
