@@ -380,7 +380,7 @@
                          zeta_coil_kts, zeta_coil_kts_min, zeta_coil_kts_max, &
                          nw_coil, nh_coil, width_coil, height_coil, &
                          lfix_rho_coil, lfix_theta_coil, lfix_zeta_coil, lpoincare, &
-                         nu_bnormal, nv_bnormal, &
+                         lload_equil, nu_bnormal, nv_bnormal, &
                          target_bnormal, sigma_bnormal, &
                          target_bnmns, sigma_bnmns, target_bnmnc, sigma_bnmnc,  &
                          target_coil_curvature, sigma_coil_curvature, &
@@ -417,6 +417,7 @@
       noptimizers     = -1
       refit_param     = 0.75
       rho_exp         = 4
+      lload_equil     = .TRUE.
       lcentered_differences = .FALSE.
       lexp_scale      = .FALSE.
       exp_alpha       = 0.0
