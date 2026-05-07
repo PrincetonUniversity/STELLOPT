@@ -184,7 +184,8 @@
       REAL(rprec), DIMENSION(-NMAX_CS:NMAX_CS,0:MMAX_CS) :: ZBS_COILSURF_MAX
 
       ! Variables for defining the coils
-      LOGICAL :: lcreate_coils, lfix_rho_coil, lfix_theta_coil, lfix_zeta_coil, lpoincare
+      LOGICAL :: lcreate_coils, lfix_rho_coil, lfix_theta_coil, &
+        lfix_zeta_coil, lpoincare, lload_equil
       INTEGER :: nw_coil
       INTEGER :: nh_coil
       REAL(rprec) :: width_coil
