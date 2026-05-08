@@ -97,7 +97,7 @@
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
       ier = 0
-      SELECT CASE (TRIM(equil_type))
+      CASE1: SELECT CASE (TRIM(equil_type))
          CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq','vmec_provided')
             ! Read the VMEC output
             CALL read_wout_deallocate
@@ -130,6 +130,7 @@
             wp      = 1.5_rprec*pi2*pi2*SUM(vp_vmec(2:nrad)*presh_vmec(2:nrad))/(nrad-1) ! Old STELLOPT Way
             rbtor   = rbtor_vmec
             Baxis   = 0.5*SUM(3*bmnc_vmec(:,2)-bmnc_vmec(:,3),1) ! Asymmetric part zero at phi=0
+            IF (.not.lload_equil) CONTINUE
             ! May need to create some radial arrays
             IF (ALLOCATED(rho)) DEALLOCATE(rho)
             IF (ALLOCATED(shat)) DEALLOCATE(shat)
@@ -352,7 +353,7 @@
          CASE('siesta')
          CASE('test')
             ! Do nothing
-      END SELECT
+      END SELECT CASE1
       ! Setup the internal STELLOPT arrays
       dex = MINLOC(phi_aux_s(2:),DIM=1)
       IF (dex > 2) CALL setup_prof_spline(phi_spl,dex,phi_aux_s(1:dex),phi_aux_f(1:dex),ier)

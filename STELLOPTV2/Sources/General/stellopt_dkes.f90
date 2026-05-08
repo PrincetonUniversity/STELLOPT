@@ -145,7 +145,13 @@
          WRITE(temp_str,'(i4.4)') ik
          arg1(6) = '_s' // TRIM(temp_str)
          ier_phi = 0 ! We don't read the boozmn or wout file we've done that already
-         CALL dkes_input_prepare_old(arg1,6,dkes_input_file,ier_phi)
+         CALL init_dkes_input
+         IF (lkeep_dkes)THEN
+            CALL dkes_input_prepare_old(arg1,6,dkes_input_file,ier_phi)
+         ELSE
+            CALL dkes_input_prepare_memory(arg1,6,dkes_input_file,ier_phi)
+         ENDIF
+         nvalsb(1) = -bigint-1
          output_file= 'dkesout.' // TRIM(proc_string) // '_s' // TRIM(temp_str)
          opt_file= 'opt_dkes.' // TRIM(proc_string) // '_s' // TRIM(temp_str)       !DAS 2/21/2000  !Probably won't need
          summary_file = 'results.' // TRIM(proc_string) //'_s' // TRIM(temp_str) !record file addition
@@ -154,49 +160,37 @@
          iout     = 30
          iout_opt = 14
          iodata = idata
-         CALL safe_open(iodata, istat, dkes_input_file, 'old', 'formatted')
-         IF (istat .ne. 0) STOP 'Error reading input file in DKES'
-         ioout = iout
-         CALL safe_open(ioout, istat, output_file, 'replace', 'formatted')
-         IF (istat .ne. 0) STOP 'Error writing output file'
-         ioout_opt = iout_opt
-         CALL safe_open(ioout_opt, istat, opt_file, 'replace','formatted')
-         IF (istat .ne. 0) STOP 'Error writing opt_output file'
-         ! Read namelist (datain) input
          lscreen_dkes = lscreen
-         nvalsb(1) = -bigint-1
-         idisk = 1
-         lfout = 0
-         ibbi = 1
-         borbi = 0
-         READ (iodata, nml=dkes_indata, iostat=istat)
-         IF (istat .ne. 0) STOP 'Error reading dkes_indata NAMELIST in DKES'
-         CLOSE (iodata,STATUS='DELETE')
+         IF (lkeep_dkes) THEN
+            CALL safe_open(iodata, istat, dkes_input_file, 'old', 'formatted')
+            IF (istat .ne. 0) STOP 'Error reading input file in DKES'
+            ioout = iout
+            CALL safe_open(ioout, istat, output_file, 'replace', 'formatted')
+            IF (istat .ne. 0) STOP 'Error writing output file'
+            ioout_opt = iout_opt
+            CALL safe_open(ioout_opt, istat, opt_file, 'replace','formatted')
+            IF (istat .ne. 0) STOP 'Error writing opt_output file'
+            ! Read namelist (datain) input
+            READ (iodata, nml=dkes_indata, iostat=istat)
+            IF (istat .ne. 0) STOP 'Error reading dkes_indata NAMELIST in DKES'
+            CLOSE (iodata)
+            WRITE(6,*) meshtz; CALL FLUSH(6)
+         ENDIF
          ! Recompute ntorb, mpolb for new style input where
          ! borbi is input with actual index value, borbi(n,m)
-         IF (nvalsb(1) <= -bigint) THEN
-            nmax = -bigint;  mmax = -bigint
-            DO n = -ntorbd, ntorbd
-               DO m = 0, mpolbd
-                  IF (borbi(n,m) .ne. zero) THEN
-                     nmax = max (nmax, abs(n))
-                     mmax = max (mmax, abs(m))
-                  END IF
-               END DO
+         ! Note that nvalsb(1) is always < -bigint due to init above
+         nmax = -bigint;  mmax = -bigint
+         DO n = -ntorbd, ntorbd
+            DO m = 0, mpolbd
+               IF (borbi(n,m) .ne. zero) THEN
+                  nmax = max (nmax, abs(n))
+                  mmax = max (mmax, abs(m))
+               END IF
             END DO
-            ! User MAY input smaller values if he does not want to use entire array         
-            ntorb = min (abs(ntorb), nmax)
-            mpolb = min (abs(mpolb-1), mmax)
-         ELSE 
-            IF (ntorb > ntorbd) THEN
-               WRITE (ioout, 45) ntorb, ntorbd
-               STOP ' ntorb > ntorbd in DKES input'
-            END IF
-            IF (mpolb < 2) THEN
-               WRITE (ioout, 20) mpolb
-               STOP ' mpolb < 2 in DKES input'
-            ENDIF
-         END IF
+         END DO
+         ! User MAY input smaller values if he does not want to use entire array
+         ntorb = min (abs(ntorb), nmax)
+         mpolb = min (abs(mpolb-1), mmax)
          IF (nzperiod .le. 0) nzperiod = 1
          IF (ipmb<0 .or. ipmb>2) ipmb = 0
          meshtz = MAX(0,meshtz)
@@ -210,7 +204,7 @@
          CALL ftconv
          CALL lcalc
          CALL second0 (tcpu1); tcpui = tcpu1 - tcpu0
-         CALL header
+         IF (lkeep_dkes) CALL header
          CALL second0 (tcpu0); tcput = zero
          ! Here things get a bit screwy
          ! DKES allows for an array of nu/v and E/v to be evaluated
@@ -223,7 +217,7 @@
             irun = ir
             efield1 = efield(irun)
             cmul1 = cmul(irun)
-            if(ir .eq. 1) then
+            if ((ir .eq. 1).and.(lkeep_dkes)) then
                call safe_open(itab_out, istat, summary_file,'unknown', &
               'formatted')
                write(itab_out,'("*",/,"cmul",a1,"efield",a1,"weov",a1,"wtov", &
@@ -231,11 +225,11 @@
                                   & a1,"scal11",a1,"scal13",a1,"scal33",a1,"max_residual", &
                                   & a1,"chip",a1,"psip",a1,"btheta",a1,"bzeta",a1,"vp")') &
                      tb,tb,tb,tb,tb,tb,tb,tb,tb,tb,tb,tb,tb,tb,tb,tb,tb,tb
-            else if(ir .gt. 1) then
+            else if ((ir .gt. 1).and.(lkeep_dkes)) then
                open(itab_out,file=summary_file,status='unknown',position='append',form='formatted')
             endif
             CALL cescale (srces0)
-            WRITE (ioout, 950) dashes, cmul1, efield1, weov, wtov, wcyclo, vthermi
+            IF (lkeep_dkes) WRITE (ioout, 950) dashes, cmul1, efield1, weov, wtov, wcyclo, vthermi
             IF (ipmb < 2) THEN
                iswpm = 1
                CALL blk5d (blk1, blk2, blk3, blk4, blk5, blk6, blk7, f0p1, f0p2, srces0)
@@ -261,12 +255,14 @@
             ! This is a trick to get the arrays corretly sorted
             DKES_rad_dex = ik
             IF (.not. lfirst_pass) lscreen_dkes = .FALSE.
-            CALL dkes_printout (f0p1, f0m1, f0p2, f0m2, srces0, .TRUE.)
+            CALL dkes_printout (f0p1, f0m1, f0p2, f0m2, srces0, lkeep_dkes)
             DKES_rad_dex = ik_dkes(ik)
             ! End trick
             CALL second0 (tcpu1); tcpu = tcpu1 - tcpu0; tcpu0 = tcpu1; tcput = tcput + tcpu; tcpua = tcput/irun
-            WRITE (ioout, 1100) tcpu
-            CLOSE(unit=itab_out)
+            IF (lkeep_dkes) THEN
+               WRITE (ioout, 1100) tcpu
+               CLOSE(unit=itab_out)
+            END IF
          END DO
          !IF (lfout .ne. 0) CALL wrout (f0p1, f0m1, f0p2, f0m2, srces0)  ! We don't need to do this
          CALL free_mndim
@@ -276,9 +272,6 @@
          IF (lkeep_dkes) THEN
             CLOSE(unit=ioout)
             CLOSE(unit=ioout_opt)
-         ELSE
-            CLOSE(unit=ioout,STATUS='DELETE')
-            CLOSE(unit=ioout_opt,STATUS='DELETE')
          ENDIF
          lfirst_pass = .FALSE.
       END DO
@@ -310,11 +303,6 @@
       IF (lscreen) WRITE(6,'(a)') ' -----------------  DKES CALCULATION (DONE) ----------------'
       IF (myworkid .ne. master) THEN
          CALL read_wout_deallocate
-         IF (.not. lkeep_dkes) THEN
-            call safe_open(itab_out, istat, summary_file,'unknown', &
-              'formatted')
-            CLOSE(unit=itab_out,STATUS='DELETE')
-         ENDIF
       END IF
 !DEC$ ELSE
       IF (lscreen) WRITE(6,'(a)') ' !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
