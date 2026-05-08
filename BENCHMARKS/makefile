@@ -362,9 +362,9 @@ test_stellopt_tok_vboot_sfincs:
 	@echo ""
 
 test_stellopt_coil:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.COIL_TEST
-	@cd $(STELLOPT_TEST_DIR)/COIL_TEST; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.COIL_TEST; rm -f *_opt*
-	@cd $(STELLOPT_TEST_DIR) && ./compare.py --file COIL_TEST
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.COIL_OPT
+	@cd $(STELLOPT_TEST_DIR)/COIL_OPT; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.COIL_OPT; rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR) && ./compare.py --file COIL_OPT
 	@echo ""
 
 test_stellopt_availenergy:

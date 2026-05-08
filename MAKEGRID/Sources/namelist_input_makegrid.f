@@ -19,7 +19,7 @@
 !   L o c a l   V a r i a b l e s
 !-----------------------------------------------
       
-      CHARACTER(LEN=100), INTENT(IN) :: arg1
+      CHARACTER(LEN=*), INTENT(IN) :: arg1
       INTEGER :: ferror
       INTEGER, PARAMETER :: iou_nli=12
 

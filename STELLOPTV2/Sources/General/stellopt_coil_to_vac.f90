@@ -11,11 +11,11 @@
 !-----------------------------------------------------------------------
       USE stellopt_runtime, ONLY: proc_string, id_string
       USE stellopt_vars, ONLY: equil_type, lcreate_coils
-      USE write_mgrid, only: mgrid_ext, lstell_sym, kp
+      USE write_mgrid, only: mgrid_ext, lstell_sym
       USE makegrid_global, only: task, lscreen_mgrid => lscreen
       USE vmec_input, ONLY:  lfreeb, nfp, ntor, mpol, rbc, zbs, &
                               INIT_AXIS_MIDPOINT, raxis_cc, zaxis_cs
-      USE read_wout_mod, ONLY: mnmax, ns, xm, xn, rmnc, zmns, isigng
+      USE read_wout_mod, ONLY: mnmax, ns, xm, xn, rmnc, zmns
       IMPLICIT NONE
       
 !-----------------------------------------------------------------------
@@ -74,17 +74,19 @@
       xn = xn * nfp
       ! Now generate the coil
       IF (lcreate_coils) CALL stellopt_generate_coils(lscreen,iflag)
+      ! Now deallocate VMEC arrays
+      IF (ALLOCATED(xm)) DEALLOCATE(xm)
+      IF (ALLOCATED(xn)) DEALLOCATE(xn)
+      IF (ALLOCATED(rmnc)) DEALLOCATE(rmnc)
+      IF (ALLOCATED(zmns)) DEALLOCATE(zmns)
       ! Read MGRID namelist from input.EXT if first time through
       IF (lfirst_pass) CALL namelist_input_makegrid('input.'//TRIM(id_string))
-      ! First run VMEC in fixed boundary
-      !lfreeb = .FALSE.
-      !CALL stellopt_run_vmec(lscreen,iflag)
       ! Generate the MGRID
       task='MGRID'
       mgrid_ext=TRIM(proc_string)
       lscreen_mgrid = lscreen
-      kp = nfp
-      CALL task_mgrid()
+      CALL stellopt_paraexe('write_mgrid',proc_string,lscreen)
+      !CALL task_mgrid()
       ! Reset free boundary
       lfreeb = .TRUE.
       lfirst_pass = .FALSE.

@@ -355,7 +355,6 @@
             CASE('vmec2000_old','animec','flow','satire')
             CASE('paravmec','parvmec','vmec2000')
                iflag = 0
-               PRINT *,lfreeb,lcreate_coils
                IF (lfreeb .and. lcreate_coils) CALL stellopt_coil_to_vac(lscreen,iflag)
                CALL stellopt_run_vmec(lscreen,iflag)
             CASE('vboot')
