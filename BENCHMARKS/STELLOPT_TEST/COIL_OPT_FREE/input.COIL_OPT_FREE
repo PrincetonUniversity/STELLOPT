@@ -20,7 +20,7 @@
 !----- Free Boundary Parameters -----
   LFREEB = T
   EXTCUR = 5*-1.0E6 1.0E3 1.0E3 1.0E3
-  MGRID_FILE = './mgrid_COIL_TEST.nc'
+  MGRID_FILE = './mgrid_COIL_OPT_FREE.nc'
 !----- Pressure Parameters -----
   GAMMA =    0.000000000000E+000
   BLOAT =    1.000000000000E+000

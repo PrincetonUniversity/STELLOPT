@@ -440,7 +440,7 @@ stellopt_cleanup_dir:
 	@cd $(SUBDIR); rm -f answers* auto* beams3d* b_norm_eq_* b_norm_init_* b_norm_final_* bnorm.* boot_fit.* boozmn* checkpoint_* \
 		coilopt_params.* coils.* coil_spline*.out curv* dcon* deltamn.* diagno_flux.* diagno_bth.* diagno_seg.* \
 		dkes* dprof* fevals* field* fort.* gade* gist* eigenvalues* input.*_min input.*.***** input_dkes.* jacobian.* jprof.* \
-		jxb* jBbs* LMsave* log_gene.* map.* map_plane.* mgrid_*.nc mercier* mom* neo* nrg* opt* parameters_* \
+		jxb* jBbs* LMsave* log_gene.* map.* map_plane.* mgrid_*_opt*.nc mgrid_*.*****.nc mercier* mom* neo* nrg* opt* parameters_* \
 		parvmecinfo* results* rhomn* RZ* stellopt.* stellopt_mpi tprof* wout* temp_input.* terpsichore_eq.* terpsichore_16.* \
 		terpsichore_17.* terpsichore_19.* terpsichore_22.* terpsichore_23.* threed1.* tv_out_* txport* xvec.* uv_* \
 		var_* vsp*
