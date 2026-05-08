@@ -456,7 +456,7 @@
 
          ! Coil related parameters (generate coils must come first)
          !IF (lcreate_coilsurf) CALL stellopt_generate_coilsurf(lscreen,iflag)
-         !IF (lcreate_coils) CALL stellopt_generate_coils(lscreen,iflag)
+         IF (.not.lfreeb .and. lcreate_coils)  CALL stellopt_generate_coils(lscreen,iflag)
          IF (lneed_bnormal) THEN
             ctemp_str = 'compute_bnormal'
             CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
