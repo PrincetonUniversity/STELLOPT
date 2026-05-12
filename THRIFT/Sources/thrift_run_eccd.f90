@@ -44,7 +44,6 @@
       ! We linearly interpolate PECRH_AUX_F at the current time
       power_beam = 0.0_rprec
       mytime = THRIFT_T(mytimestep)
-      PRINT *, 'ngyrotrons=', ngyrotrons
       DO n=1,ngyrotrons
          fact = 0.0_rprec
          DO i = 1,SIZE(PECRH_AUX_T,2)-1
