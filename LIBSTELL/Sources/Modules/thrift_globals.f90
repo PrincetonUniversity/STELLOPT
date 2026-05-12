@@ -23,7 +23,9 @@
 
       ! Moved from thrift_vars (For ECCD in general)
       INTEGER, PARAMETER :: ntime_ecrh = 200
-      REAL(rprec), DIMENSION(ntime_ecrh) :: PECRH_AUX_T, PECRH_AUX_F
+      INTEGER :: ngyrotrons
+      ! REAL(rprec), DIMENSION(ntime_ecrh) :: PECRH_AUX_T, PECRH_AUX_F
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: PECRH_AUX_T, PECRH_AUX_F
       REAL(rprec) :: ecrh_rc, ecrh_w
 
       ! Moved from thrift_vars (for TRAVIS)

@@ -34,7 +34,7 @@
                               targetposition_ecrh, rbeam_ecrh, &
                               rfocus_ecrh, nra_ecrh, nphi_ecrh, &
                               freq_ecrh, power_ecrh, &
-                              pecrh_aux_t, pecrh_aux_f, ecrh_rc, ecrh_w, &
+                              ecrh_rc, ecrh_w, &
                               dkes_k, dkes_Erstar, dkes_Nustar, &
                               etapar_type, save_DKES_coeffs, &
                               solve_plasma_equations, &
@@ -78,8 +78,6 @@
       ! For BOOTSJ
       boot_factor        = 1
       ! For ecrh simple model
-      pecrh_aux_t     = 1E6
-      pecrh_aux_f     = 0
       ecrh_rc         = 0.3
       ecrh_w          = 0.175
       ! TRAVIS vars
@@ -95,6 +93,7 @@
       rfocus_ecrh = 0
       nra_ecrh = 0
       nphi_ecrh = 8
+      power_ecrh = 1.0
       ! DKES Vars
       dkes_k = -1
       dkes_Erstar = 1E10

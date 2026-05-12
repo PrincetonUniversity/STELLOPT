@@ -12,13 +12,14 @@
       USE thrift_equil
       USE thrift_vars
       USE thrift_funcs
+      USE thrift_globals, ONLY: ngyrotrons
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
 !        Rc, w       Model profile coefficients
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER :: i, ier, i1,i2
+      INTEGER :: i, ier, i1, i2, n
       INTEGER :: bcs0(2)
       REAL(rprec) :: Rc, w, Ieccd, Inorm, vp, dPhidrho, temp, &
                      s_val, rho_val, mytime, fact
@@ -34,32 +35,30 @@
          RETURN
       END IF
 
-      ! PECRH_AUX_T is an array with default entries: 1E6
+      ! NOTE:
+      ! PECRH_AUX_T and PECRH_AUX_F are defined in thrift_init
+      ! They are read from the thrift_profiles file. If file doesn't have them, then they are set to:
+      ! PECRH_AUX_T = THRIFT_T
+      ! PECRH_AUX_F = 1.0
+
+      ! We linearly interpolate PECRH_AUX_F at the current time
       mytime = THRIFT_T(mytimestep)
-      i1 = COUNT(PECRH_AUX_T - mytime < 1E-6)
-      i2 = i1+1
-      
-      ! If i==0, simply use POWER_ECRH
-      IF(i1==0) THEN
-         fact = 1.0
-      ELSEIF(i1>0) THEN
-         ! if aux_t(i1) <= mytime <= aux_t(i2), make linear interpolation
-         IF( (PECRH_AUX_T(i1) .LE. mytime) .AND. (PECRH_AUX_T(i2) .GE. mytime) ) THEN
-            fact = ( PECRH_AUX_F(i2)      - PECRH_AUX_F(i1) ) &
-                 * ( mytime - PECRH_AUX_T(i1) ) &
-                 / ( PECRH_AUX_T(i2)      - PECRH_AUX_T(i1) ) &
-                 + PECRH_AUX_F(i1)
-         ELSE
-            STOP 'HOW DID YOU END UP HERE?'
-         END IF
-      END IF
+      DO n=1,ngyrotrons
+         fact = 0.0_rprec
+         DO i = 1,ntimesteps-1
+            IF ( (mytime .GE. PECRH_AUX_T(n,i)) .and. (mytime .LE. PECRH_AUX_T(n,i+1)) ) THEN
+               w = ( mytime - PECRH_AUX_T(n,i) ) / ( PECRH_AUX_T(n,i+1) - PECRH_AUX_T(n,i) )
+               fact = (1.0_rprec-w)*PECRH_AUX_F(n,i) + w*PECRH_AUX_F(n,i+1)
+               EXIT
+            ENDIF
+         END DO
+         power_ecrh(n) = fact * power_ecrh(n)
+      END DO
 
-      POWER_ECRH = fact * POWER_ECRH
-
-      IF( MAXVAL(POWER_ECRH) < 1E-6 ) THEN
-         THRIFT_JECCD(:,mytimestep) = 0
-         RETURN
-      END IF  
+      IF( SUM(power_ecrh) < 1E-6 ) THEN
+            THRIFT_JECCD(:,mytimestep) = 0
+            RETURN
+      END IF 
 
       SELECT CASE(TRIM(eccd_type))
          CASE ('model','offaxis','test','simple')

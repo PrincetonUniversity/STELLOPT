@@ -253,6 +253,8 @@
                !s = THRIFT_RHO(i)*THRIFT_RHO(i)
                !CALL get_equil_Bav(s,Bav,Bsqav,istat)
                THRIFT_JECCD(i,mytimestep) = Jbb(i)
+               THRIFT_DPECRHDV(i,mytimestep) = dPdV(i)
+               THRIFT_PECRH(i,mytimestep) = Pabs(i)
             END DO
          END IF
 
