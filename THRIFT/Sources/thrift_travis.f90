@@ -204,7 +204,7 @@
                !CALL Disable_Output_f77
 
                ! Run BEAM
-               CALL run_ECRH_Beam_f77m(i,freq_ecrh(i)*1E-9,wmode_ecrh(i),power_ecrh(i)*1E-6)
+               CALL run_ECRH_Beam_f77m(i,freq_ecrh(i)*1E-9,wmode_ecrh(i),power_beam(i)*1E-6)
 
             END DO
 

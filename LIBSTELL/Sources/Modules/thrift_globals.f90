@@ -32,7 +32,7 @@
       INTEGER, PARAMETER :: nsys   = 16
       INTEGER :: nra_ecrh, nphi_ecrh
       INTEGER, DIMENSION(nsys)     :: wmode_ecrh
-      REAL(rprec), DIMENSION(nsys) :: freq_ecrh, power_ecrh
+      REAL(rprec), DIMENSION(nsys) :: freq_ecrh, power_ecrh, power_beam
       REAL(rprec), DIMENSION(nsys,3)     :: antennaposition_ecrh, &
                  targetposition_ecrh, rbeam_ecrh, rfocus_ecrh
 

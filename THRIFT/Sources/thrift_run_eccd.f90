@@ -12,7 +12,7 @@
       USE thrift_equil
       USE thrift_vars
       USE thrift_funcs
-      USE thrift_globals, ONLY: ngyrotrons
+      USE thrift_globals, ONLY: ngyrotrons, power_beam
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
@@ -42,23 +42,26 @@
       ! PECRH_AUX_F = 1.0
 
       ! We linearly interpolate PECRH_AUX_F at the current time
+      power_beam = 0.0_rprec
       mytime = THRIFT_T(mytimestep)
+      PRINT *, 'ngyrotrons=', ngyrotrons
       DO n=1,ngyrotrons
          fact = 0.0_rprec
-         DO i = 1,ntimesteps-1
+         DO i = 1,SIZE(PECRH_AUX_T,2)-1
             IF ( (mytime .GE. PECRH_AUX_T(n,i)) .and. (mytime .LE. PECRH_AUX_T(n,i+1)) ) THEN
                w = ( mytime - PECRH_AUX_T(n,i) ) / ( PECRH_AUX_T(n,i+1) - PECRH_AUX_T(n,i) )
                fact = (1.0_rprec-w)*PECRH_AUX_F(n,i) + w*PECRH_AUX_F(n,i+1)
+               FLUSH(6)
                EXIT
             ENDIF
          END DO
-         power_ecrh(n) = fact * power_ecrh(n)
+         power_beam(n) = fact * power_ecrh(n)
       END DO
 
-      IF( SUM(power_ecrh) < 1E-6 ) THEN
+      IF( SUM(power_beam) < 1E-6 ) THEN
             THRIFT_JECCD(:,mytimestep) = 0
             RETURN
-      END IF 
+      END IF
 
       SELECT CASE(TRIM(eccd_type))
          CASE ('model','offaxis','test','simple')
@@ -69,7 +72,7 @@
             Rc = ecrh_rc
             w  = ecrh_w
 
-            Ieccd = POWER_ECRH(1)
+            Ieccd = power_beam(1)
 
             ! From Wolfram
             Inorm = 0.5*w*( SQRT(pi)*Rc*( ERF((1-Rc)/w) + ERF(Rc/w) )+w*( EXP(-Rc**2/w**2) - EXP(-(Rc-1)**2/w**2) ))
