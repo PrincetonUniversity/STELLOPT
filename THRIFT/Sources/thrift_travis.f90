@@ -86,6 +86,8 @@
          CALL MPI_BCAST(ne_prof,nprof_travis,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
          CALL MPI_BCAST(te_prof,nprof_travis,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
          CALL MPI_BCAST(z_prof,nprof_travis,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+         ! Broadcast power_beam (computed by master in thrift_run_eccd)
+         CALL MPI_BCAST(power_beam,ngyrotrons,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
 #endif            
          ! Setup Beams
          antennaCoordType     = antennatype_ecrh(1:4)
