@@ -23,6 +23,7 @@
       INTEGER :: bcs0(2)
       REAL(rprec) :: Rc, w, Ieccd, Inorm, vp, dPhidrho, temp, &
                      s_val, rho_val, mytime, fact
+      REAL(rprec), PARAMETER :: eps=1.0E-10_rprec
       REAL(rprec), DIMENSION(:), ALLOCATABLE ::  j_temp
       TYPE(EZspline1_r8) :: j_spl
 !----------------------------------------------------------------------
@@ -46,11 +47,15 @@
       mytime = THRIFT_T(mytimestep)
       DO n=1,ngyrotrons
          fact = 0.0_rprec
+         ! Take into account case where length(PECRH(AUX_T))=1 (occurs when running with ntimesteps=1 and AUX_T=THRIFT_T)
+         IF(SIZE(PECRH_AUX_T,2) .EQ. 1) THEN
+            IF( ABS(mytime-PECRH_AUX_T(n,1)) .LT. eps) fact = PECRH_AUX_F(n,1)
+         END IF
+         !
          DO i = 1,SIZE(PECRH_AUX_T,2)-1
             IF ( (mytime .GE. PECRH_AUX_T(n,i)) .and. (mytime .LE. PECRH_AUX_T(n,i+1)) ) THEN
                w = ( mytime - PECRH_AUX_T(n,i) ) / ( PECRH_AUX_T(n,i+1) - PECRH_AUX_T(n,i) )
                fact = (1.0_rprec-w)*PECRH_AUX_F(n,i) + w*PECRH_AUX_F(n,i+1)
-               FLUSH(6)
                EXIT
             ENDIF
          END DO
