@@ -185,7 +185,7 @@
 
       ! Variables for defining the coils
       LOGICAL :: lcreate_coils, lfix_rho_coil, lfix_theta_coil, &
-        lfix_zeta_coil, lpoincare, lload_equil
+        lfix_zeta_coil, lpoincare
       INTEGER :: nw_coil
       INTEGER :: nh_coil
       REAL(rprec) :: width_coil
