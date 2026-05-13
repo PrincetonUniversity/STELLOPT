@@ -59,7 +59,7 @@
                EXIT
             ENDIF
          END DO
-         power_beam(n) = fact * power_ecrh(n)
+         power_beam(n) = fact
       END DO
 
       IF( SUM(power_beam) < 1E-6 ) THEN

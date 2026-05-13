@@ -398,7 +398,7 @@
             CALL open_hdf5(TRIM(prof_string),fid,ier,LCREATE=.false.)
             IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,TRIM(prof_string),ier)
             !
-            IF( dataset_exists(fid,'PECRH_AUX_T') .AND. dataset_exists(fid,'PECRH_AUX_F') ) THEN
+            IF( TRIM(power_type) .EQ. 'read_from_file' ) THEN
                CALL read_scalar_hdf5(fid,'ecrh_ntimesteps',ier,INTVAR=ntimesteps_ecrh)
                IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ecrh_ntimesteps',ier)
                CALL read_scalar_hdf5(fid,'ecrh_ngyrotrons',ier,INTVAR=ngyrotrons)
@@ -420,14 +420,19 @@
                IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'PECRH_AUX_F',ier)
                !
                CALL close_hdf5(fid,ier)   
-            ELSE
+            ELSE IF( TRIM(power_type) .EQ. 'read_from_namelist') THEN
+               ! When power read from namelist, assumes the same power at all times
                ntimesteps_ecrh = ntimesteps
                ngyrotrons = nbeams
                ALLOCATE(PECRH_AUX_T(ngyrotrons,ntimesteps_ecrh),PECRH_AUX_F(ngyrotrons,ntimesteps_ecrh))
                DO i=1,ngyrotrons
                   PECRH_AUX_T(i,:) = THRIFT_T
-                  PECRH_AUX_F(i,:) = 1.0_rprec
+                  PECRH_AUX_F(i,:) = power_ecrh(i)
                END DO
+            ELSE
+               WRITE(6,*) '  power_type MUST BE read_from_file OR read_from_namelist '
+               FLUSH(6)
+               STOP
             END IF
          END IF
          ! CALL barrier??

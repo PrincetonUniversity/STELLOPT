@@ -27,7 +27,7 @@
       NAMELIST /thrift_input/ nparallel_runs,bootstrap_type,mboz,nboz, &
                               nrho, tstart, tend, ntimesteps, n_eq, jtol, &
                               picard_factor, npicard, lverbj, boot_factor, &
-                              eccd_type, &
+                              eccd_type, power_type, &
                               vessel_ecrh, mirror_ecrh, wmode_ecrh, &
                               targettype_ecrh, antennatype_ecrh, &
                               antennaposition_ecrh, &
@@ -59,6 +59,7 @@
       bootstrap_type     = 'bootsj'
       etapar_type        = 'sauter'
       eccd_type          = ''
+      power_type         = ''
       nparallel_runs     = 1
       mboz               = 32
       nboz               = 16
@@ -160,6 +161,7 @@
       CALL tolower(bootstrap_type)
       CALL tolower(etapar_type)
       CALL tolower(eccd_type)
+      CALL tolower(power_type)
       leccd = eccd_type .ne. ''
       nsj = nrho
       nruns_dkes = COUNT(dkes_k>0)*COUNT(dkes_Erstar<1E10)*COUNT(dkes_Nustar<1E10)

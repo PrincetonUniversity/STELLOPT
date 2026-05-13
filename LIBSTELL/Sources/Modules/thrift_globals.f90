@@ -49,7 +49,7 @@
       INTEGER :: nparallel_runs, mboz, nboz
       CHARACTER(256) :: bootstrap_type, eccd_type, vessel_ecrh, &
                         mirror_ecrh, targettype_ecrh, antennatype_ecrh, &
-                        etapar_type
+                        etapar_type, power_type
 
       ! Plasma solver
       LOGICAL :: solve_plasma_equations, beurskens_ions, add_NEO, &
