@@ -136,10 +136,10 @@ class THRIFT():
                 # Arrays
                 for temp in ['THRIFT_ALPHA1','THRIFT_ALPHA2','THRIFT_ALPHA3','THRIFT_ALPHA4','THRIFT_AMINOR',\
        			    'THRIFT_BAV','THRIFT_BETATOT','THRIFT_BSQAV','THRIFT_BVAV','THRIFT_COEFF_A','THRIFT_COEFF_B','THRIFT_COEFF_BP',\
-				    'THRIFT_COEFF_C','THRIFT_COEFF_CP','THRIFT_COEFF_D','THRIFT_COEFF_DP','THRIFT_EPARB','THRIFT_ER','THRIFT_ETAPARA','THRIFT_GNEO',\
+				    'THRIFT_COEFF_C','THRIFT_COEFF_CP','THRIFT_COEFF_D','THRIFT_COEFF_DP','THRIFT_DPECRHDV','THRIFT_EPARB','THRIFT_ER','THRIFT_ETAPARA','THRIFT_GNEO',\
                     'THRIFT_I','THRIFT_IBOOT','THRIFT_IECCD','THRIFT_INBCD','THRIFT_IOHMIC','THRIFT_IOTA','THRIFT_IPLASMA','THRIFT_ISOURCE',\
 				    'THRIFT_J','THRIFT_JBOOT','THRIFT_JECCD','THRIFT_JNBCD','THRIFT_JOHMIC','THRIFT_JPLASMA','THRIFT_JSOURCE',\
-				    'THRIFT_MATLD','THRIFT_MATMD','THRIFT_MATRHS','THRIFT_MATUD','THRIFT_P','THRIFT_PHIEDGE','THRIFT_PPRIME',\
+				    'THRIFT_MATLD','THRIFT_MATMD','THRIFT_MATRHS','THRIFT_MATUD','THRIFT_P','THRIFT_PECRH','THRIFT_PHIEDGE','THRIFT_PPRIME',\
 				    'THRIFT_QNEO','THRIFT_RMAJOR','THRIFT_S11','THRIFT_S12','THRIFT_T', 'THRIFT_UGRID','THRIFT_VP',\
                     'THRIFT_DENS', 'THRIFT_TEMP', 'THRIFT_PRESS']:
                     if temp in f:
@@ -199,9 +199,9 @@ class THRIFT():
             for it,time in enumerate(times):
                 try:
                     # ax.plot(np.sqrt(self.THRIFT_S),plot_var[it,:],label=f't={time}s')
-                    ax.plot(np.sqrt(self.THRIFT_S),plot_var[it,:],label=f't={time:.1f}s'+r', $\beta=$'+f'{self.THRIFT_BETATOT[idx[it]]*100:.2f}%')   
+                    ax.plot(np.sqrt(self.THRIFT_S),plot_var[it,:],label=f't={time:.2f}s'+r', $\beta=$'+f'{self.THRIFT_BETATOT[idx[it]]*100:.2f}%')   
                 except:
-                    ax.plot(np.sqrt(self.THRIFT_SNOB),plot_var[it,:],label=f't={time}s')
+                    ax.plot(np.sqrt(self.THRIFT_SNOB),plot_var[it,:],label=f't={time:.2f}s')
                 ax.set_xlabel('r/a') 
                 ax.set_title(var)   
             ax.grid()    
