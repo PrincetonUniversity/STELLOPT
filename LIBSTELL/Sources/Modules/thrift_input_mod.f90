@@ -45,7 +45,7 @@
                               Dn_ions, chi_all, N0_init_ions, T0_init_all, &
                               stiffness_beurskens, aLT_critical_beurskens, &
                               alpha_beurskens, frac_alpha_heating, alpha_chi_external, &
-                              tau_fast_alphas, mass_ref_species
+                              tau_fast_alphas, mass_ref_species, save_subiterations
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -76,6 +76,7 @@
       lnbcd              = .FALSE.
       lohmic             = .FALSE.
       lverbj             = .FALSE.
+      save_subiterations = .FALSE.
       ! For BOOTSJ
       boot_factor        = 1
       ! For ecrh simple model

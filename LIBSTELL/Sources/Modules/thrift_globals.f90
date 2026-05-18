@@ -17,7 +17,7 @@
       IMPLICIT NONE
 
       ! Moved from thrift_vars
-      LOGICAL ::  lverbj, leccd, lnbcd, lohmic
+      LOGICAL ::  lverbj, leccd, lnbcd, lohmic, save_subiterations
       INTEGER ::  nrho, ntimesteps, n_eq, npicard, nsj
       REAL(rprec) :: tstart, tend, jtol, picard_factor, boot_factor
 

@@ -12,13 +12,14 @@
       USE thrift_equil
       USE thrift_vars
       USE thrift_funcs
+      USE safe_open_mod
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       LOGICAL :: lfirst_pass
-      INTEGER :: i, ier
+      INTEGER :: i, ier, myunit
       REAL(rprec) :: alpha, rho, s, stime, etime, time_vmec, time_bootstrap, &
       time_pressure, stime_total, etime_total
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: deltaj, jold
@@ -221,6 +222,17 @@
                   progress_str = TRIM(progress_str)//" "//temp_prog_str
                 WRITE(6,*) progress_str
             END IF
+
+            ! Save THRIFT_J, THRIFT_JBOOT and THRIFT_JECCD in txt file
+            IF(save_subiterations) THEN
+                  CALL safe_open(myunit,ier,"thrift_vars_"//TRIM(proc_string),"unknown","formatted")
+                  WRITE(myunit,'(4A20)') 'r/a', 'THRIFT_J', 'THRIFT_JBOOT', 'THRIFT_JECCD'
+                  DO i=1,nsj
+                        WRITE(myunit,'(4ES20.10)') SQRT(THRIFT_S(i)), THRIFT_J(i,mytimestep), THRIFT_JBOOT(i,mytimestep), THRIFT_JECCD(i,mytimestep)
+                  END DO
+                  CALL safe_close(myunit)
+            END IF
+
             ! Turn off screen output after one run
             lscreen_subcodes = .FALSE.
 

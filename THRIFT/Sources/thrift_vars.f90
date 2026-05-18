@@ -17,7 +17,7 @@ MODULE thrift_vars
         antennaposition_ecrh, targetposition_ecrh, rbeam_ecrh, &
         rfocus_ecrh, DKES_NS_MAX, DKES_NSTAR_MAX, nruns_dkes, &
         DKES_rundex, DKES_K, dkes_Erstar, dkes_Nustar, nsj, leccd, &
-        lnbcd, lohmic
+        lnbcd, lohmic, save_subiterations
     !-------------------------------------------------------------------
     !     Module Variables
     !          leccd            Calc Elec. Cyclo. Current Drive
