@@ -1111,6 +1111,115 @@ class THRIFT():
             
         return t_solver, I_solution
     
+    def plot_thrift_vars_subiterations(self,folder, plot_var):
+        """
+        Plots arrays from files named:
+
+            thrift_vars*.xxx_yyy
+
+        where:
+            xxx = iteration number
+            yyy = subiteration number
+
+        Parameters
+        ----------
+        folder : str
+            Path to folder containing the files.
+
+        plot_var : str
+            One of:
+                'THRIFT_J'
+                'THRIFT_JBOOT'
+                'THRIFT_JECCD'
+        """
+        import re
+        import os
+        import glob
+        allowed_vars = ['THRIFT_J', 'THRIFT_JBOOT', 'THRIFT_JECCD']
+
+        if plot_var not in allowed_vars:
+            raise ValueError(
+                f"plot_var must be one of {allowed_vars}"
+            )
+
+        # Column mapping
+        col_map = {
+            'THRIFT_J': 1,
+            'THRIFT_JBOOT': 2,
+            'THRIFT_JECCD': 3
+        }
+
+        # Regex for extracting iteration/subiteration
+        pattern = re.compile(r'.*\.(\d+)_(\d+)$')
+
+        # Find files
+        files = glob.glob(os.path.join(folder, 'thrift_vars*.*_*'))
+
+        if len(files) == 0:
+            raise ValueError(f'No matching files found in {folder}')
+
+        # Organize files by iteration
+        iterations = {}
+
+        for f in files:
+
+            basename = os.path.basename(f)
+
+            match = pattern.match(basename)
+
+            if match is None:
+                continue
+
+            iteration = int(match.group(1))
+            subiteration = int(match.group(2))
+
+            if iteration not in iterations:
+                iterations[iteration] = []
+
+            iterations[iteration].append((subiteration, f))
+
+        # Sort iterations
+        sorted_iterations = sorted(iterations.keys())
+
+        # Create one figure per iteration
+        for iteration in sorted_iterations:
+
+            _, ax = plt.subplots(figsize=(11,8))
+            _, ax2 = plt.subplots(figsize=(11,8))
+
+            # Sort subiterations
+            subiter_files = sorted(iterations[iteration],
+                                key=lambda x: x[0])
+
+            data_all = []
+            for subiteration, filepath in subiter_files:
+
+                # Load data
+                data = np.loadtxt(filepath, skiprows=1)
+
+                roa = data[:,0]
+                y = data[:, col_map[plot_var]]
+
+                ax.plot(roa,y,label=f'{subiteration:03d}')
+                data_all.append(y)
+                
+            ax.set_xlabel('r/a')
+            ax.set_ylabel(plot_var)
+            ax.set_title(f'{plot_var}, it={iteration}')
+            ax.legend()
+            ax.grid(True)
+            #
+            data_all = np.array(data_all)
+            ax2.plot(data_all,'.-',markersize=10,linewidth=2.5,label=roa)
+            # ax2.plot(data_all[:,0:-1:20],'.-',markersize=10,linewidth=2.5,label=roa[0:-1:20])
+            ax2.set_xlabel('nsubiter')
+            ax2.set_ylabel(plot_var)
+            ax2.set_title(f'{plot_var}, it={iteration}')
+            ax2.legend()
+            ax2.grid(True)
+            
+        plt.show()
+    
 # THRIFT Class
 class THRIFT_plasma_solver():
     """" Class for working with plasma solver implemented in THRIFT
