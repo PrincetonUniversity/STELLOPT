@@ -45,7 +45,8 @@
                               Dn_ions, chi_all, N0_init_ions, T0_init_all, &
                               stiffness_beurskens, aLT_critical_beurskens, &
                               alpha_beurskens, frac_alpha_heating, alpha_chi_external, &
-                              tau_fast_alphas, mass_ref_species, save_subiterations
+                              tau_fast_alphas, mass_ref_species, save_subiterations, &
+                              Er_root_type
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -77,6 +78,7 @@
       lohmic             = .FALSE.
       lverbj             = .FALSE.
       save_subiterations = .FALSE.
+      Er_root_type       = 'ion_root'
       ! For BOOTSJ
       boot_factor        = 1
       ! For ecrh simple model
@@ -163,6 +165,7 @@
       CALL tolower(etapar_type)
       CALL tolower(eccd_type)
       CALL tolower(power_type)
+      CALL tolower(Er_root_type)
       leccd = eccd_type .ne. ''
       nsj = nrho
       nruns_dkes = COUNT(dkes_k>0)*COUNT(dkes_Erstar<1E10)*COUNT(dkes_Nustar<1E10)
@@ -188,6 +191,7 @@
       WRITE(iunit_out,outint) 'NPARALLEL_RUNS',nparallel_runs
       WRITE(iunit_out,outstr) 'BOOTSTRAP_TYPE',bootstrap_type
       WRITE(iunit_out,outstr) 'ETAPAR_TYPE',etapar_type
+      WRITE(iunit_out,outstr) 'ER_ROOT_TYPE',Er_root_type
       WRITE(iunit_out,outflt) 'JTOL',jtol
       WRITE(iunit_out,outint) 'NPICARD',npicard
       WRITE(iunit_out,outflt) 'PICARD_FACTOR',picard_factor
