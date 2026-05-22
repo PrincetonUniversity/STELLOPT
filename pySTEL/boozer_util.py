@@ -19,14 +19,16 @@ if __name__=="__main__":
 		help="Equilibrium surface to plot.", default = None)
 	parser.add_argument("--bootsj", dest="lbootsj", action='store_true',
 		help="Output a bootsj file.", default = False)
+	parser.add_argument("--save", dest="lsave", action='store_true',
+		help="Save the plots with ext names.", default = False)
 	boozmn_data = BOOZER()
 	args = parser.parse_args()
 	if args.booz_ext:
-		try:
-			boozmn_data.read_boozer(args.booz_ext)
-		except:
-			print(f'Could not file boozmn file: {args.booz_ext}')
-			sys.exit(-1)
+		#try:
+		boozmn_data.read_boozer(args.booz_ext)
+		#except:
+		#	print(f'Could not file boozmn file: {args.booz_ext}')
+		#	sys.exit(-1)
 		if args.lplot:
 			if not args.sval:
 				sval = int(0.25*boozmn_data.ns_b)
@@ -38,6 +40,7 @@ if __name__=="__main__":
 			boozmn_data.plotBmnSpectrum(sval,ax=ax1)
 			boozmn_data.plotBsurf(sval,ax=ax2)
 			pyplot.show()
+			if (args.lsave): fig.savefig(f'boozmn_{args.booz_ext}_s{sval+1:03d}.png', dpi=fig.dpi)
 		if args.lbootsj:
 			filename = 'in_bootsj.'+args.booz_ext
 			f = open(filename,'w')
