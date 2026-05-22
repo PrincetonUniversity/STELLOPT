@@ -18,6 +18,8 @@ if __name__=="__main__":
 		help="Print the boostrap current.", default = False)
 	parser.add_argument("--print_potential", dest="lprint_potential", action='store_true',
 		help="Print the electrostatic potential.", default = False)
+	parser.add_argument("--print_profiles", dest="lprint_profiles", action='store_true',
+		help="Print the plasma profiles.", default = False)
 	parser.add_argument("--time", dest="timestamp",
 		help="Provide a timestamp.", default = None, type=float)
 	parser.add_argument("--save", dest="lsave", action='store_true',
@@ -159,4 +161,15 @@ if __name__=="__main__":
 				print(f"  POT_AUX_S = "+temp)
 				temp = ' '.join(format(k, '20.10E') for k in pot)
 				print(f"  POT_AUX_F = "+temp)
+			if (args.lprint_profiles and loutput):
+				s,ne = thrift_data.get_density_prof(species=0,time=args.timestamp)
+				temp = ' '.join(format(k, '8.5f') for k in s)
+				print(f"  NE_AUX_S = "+temp)
+				temp = ' '.join(format(k, '20.10E') for k in ne)
+				print(f"  NE_AUX_F = "+temp)
+				s,te = thrift_data.get_temperature_prof(species=0,time=args.timestamp)
+				temp = ' '.join(format(k, '8.5f') for k in s)
+				print(f"  TE_AUX_S = "+temp)
+				temp = ' '.join(format(k, '20.10E') for k in te)
+				print(f"  TE_AUX_F = "+temp)
 	sys.exit(0)
