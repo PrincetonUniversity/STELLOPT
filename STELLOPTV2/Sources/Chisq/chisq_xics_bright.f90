@@ -57,6 +57,7 @@
       ELSE
          DO ik = 1, nprof
             IF (sigma(ik) < bigno) THEN
+               lload_equil = .TRUE.
                mtargets = mtargets + 1
                IF (niter == -2) target_dex(mtargets) = jtarget_xics_bright
             END IF

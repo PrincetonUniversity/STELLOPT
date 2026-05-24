@@ -417,7 +417,7 @@
       noptimizers     = -1
       refit_param     = 0.75
       rho_exp         = 4
-      lload_equil     = .TRUE.
+      lload_equil     = .FALSE.
       lcentered_differences = .FALSE.
       lexp_scale      = .FALSE.
       exp_alpha       = 0.0

@@ -77,6 +77,7 @@
          END DO
       ELSE
          IF (sigma < bigno) THEN
+            lload_equil = .TRUE.
             DO i =1, nzeta_pts
                mtargets = mtargets + 1
                IF (niter == -2) target_dex(mtargets)=jtarget_curvature
