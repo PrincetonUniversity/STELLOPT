@@ -8,6 +8,7 @@
       SUBROUTINE stellopt_write_auxfiles
       USE stellopt_runtime
       USE stellopt_input_mod
+      USE equil_vals, ONLY: nrad
       USE equil_utils, ONLY: move_txtfile, copy_txtfile, copy_boozer_file
       USE beams3d_runtime, ONLY: id_string_beams => id_string, lverb_beams => lverb
       
@@ -32,8 +33,9 @@
 !----------------------------------------------------------------------
       ier = 0
       IF (ANY(sigma_txport < bigno)) THEN
-         DO ik = 1, 256
-            DO ialpha = 1, 256
+         DO ik = 1, nrad
+            IF (sigma_txport(ik) >= bigno) CYCLE
+            DO ialpha = 1, nalpha_txport
                WRITE(temp_str,'(2(A,I3.3))') '_',ik,'_',ialpha
                CALL move_txtfile('gist_genet_'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'gist_genet_'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
                CALL move_txtfile('curv_stellopt_'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'curv_stellopt_'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
@@ -47,8 +49,9 @@
       INQUIRE(FILE='parameters',EXIST=lfile_found)
       IF (lfile_found .AND. ANY(sigma_txport < bigno) .AND. (txport_proxy == 'gene_parallel')) THEN
          CALL move_txtfile('log_gene.'//TRIM(proc_string_old),'log_gene.'//TRIM(proc_string))
-         DO ik = 1, 256
-            DO ialpha = 1, 256
+         DO ik = 1, nrad
+            IF (sigma_txport(ik) >= bigno) CYCLE
+            DO ialpha = 1, nalpha_txport
                CALL move_txtfile('gist_'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'gist_'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
                CALL move_txtfile('eigenvalues_'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'eigenvalues_'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
                CALL move_txtfile('parameters_'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'parameters_'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
@@ -76,18 +79,18 @@
       CALL move_txtfile('bnorm_harm.'//TRIM(proc_string_old),'bnorm_harm.'//TRIM(proc_string))
       CALL move_txtfile('coil_curvature.'//TRIM(proc_string_old),'coil_curvature.'//TRIM(proc_string))
       CALL copy_boozer_file(TRIM(proc_string_old),TRIM(proc_string))
-      DO ik = 1, nsd
-         WRITE(temp_str,'(A,I3.3)') '_s',ik
-         CALL move_txtfile('input_dkes.'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'input_dkes.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
-         CALL move_txtfile('dkesout.'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'dkesout.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
-         CALL move_txtfile('opt_dkes.'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'opt_dkes.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
-         CALL move_txtfile('results.'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'results.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
-      END DO
+      IF (lkeep_dkes) THEN
+         DO ik = 1, nsd
+            WRITE(temp_str,'(A,I3.3)') '_s',ik
+            CALL move_txtfile('input_dkes.'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'input_dkes.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
+            CALL move_txtfile('dkesout.'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'dkesout.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
+            CALL move_txtfile('opt_dkes.'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'opt_dkes.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
+            CALL move_txtfile('results.'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'results.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
+         END DO
+      END IF
       IF (ANY(sigma_orbit .lt. bigno)) THEN
          lverb_beams = .FALSE.
-!         id_string_beams = TRIM(proc_string_old)
          CALL beams3d_read(TRIM(proc_string_old))
-!         id_string_beams = TRIM(proc_string)
          CALL beams3d_write('GRID_INIT')
          CALL beams3d_write('TRAJECTORY_FULL')
          CALL beams3d_write('DIAG')

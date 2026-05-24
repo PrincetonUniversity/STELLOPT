@@ -149,6 +149,8 @@ stellopt_write_header.o : \
 stellopt_write_auxfiles.o : \
       stellopt_runtime.o \
       equil_utils.o \
+      equil_vals.o \
+      $(BEAMS3D_DIR)/$(LOCTYPE)/beams3d_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_input_mod.o 
 
 stellopt_write_eqfile.o : \

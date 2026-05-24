@@ -130,7 +130,6 @@
             wp      = 1.5_rprec*pi2*pi2*SUM(vp_vmec(2:nrad)*presh_vmec(2:nrad))/(nrad-1) ! Old STELLOPT Way
             rbtor   = rbtor_vmec
             Baxis   = 0.5*SUM(3*bmnc_vmec(:,2)-bmnc_vmec(:,3),1) ! Asymmetric part zero at phi=0
-            IF (.not.lload_equil) CONTINUE
             ! May need to create some radial arrays
             IF (ALLOCATED(rho)) DEALLOCATE(rho)
             IF (ALLOCATED(shat)) DEALLOCATE(shat)
@@ -159,6 +158,9 @@
                mach0 = SQRT(machsq_vmec)
                CALL setup_prof_spline(omega_spl, ns_vmec, shat, omega_vmec, iflag)
             END IF
+
+            ! Skip loading the equilibrium into stel_tools if not needed
+            IF (.not.lload_equil) EXIT CASE1
 
             ! Get the realspace R and Z and metric elements
             nu = 8 * mpol_vmec + 1

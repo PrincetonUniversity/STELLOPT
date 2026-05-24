@@ -46,10 +46,18 @@ c ----------------------------------------------------------------------
       ELSE
          call bn_read_vmecf90(extension)
       END IF
+      ! Allocate arrays
       call bn_alloc
+      ! Compute Fourier Transform helpers
       call bn_precal
+      ! Compute B_u B_v
       call bn_bfield_parallel
+      ! Compute X,Y,Z
+      ! Compute dX/dU,dY/dU,dZ/dU
+      ! Compute dX/dV,dY/dV,dZ/dV
+      ! Compute djx,djy,djz
       call bn_surface
+      !Comput vector potential
       call bn_vecpot
       call bn_fouri(bnfou,bnfou_c)
 

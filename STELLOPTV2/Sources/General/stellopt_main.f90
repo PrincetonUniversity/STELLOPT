@@ -62,7 +62,6 @@
       pi = 4.0 * ATAN(1.0)
       pi2 = 8.0 * ATAN(1.0)
       mu0 = 16.0E-7 * ATAN(1.0)
-      lneed_output = .false.
       lrestart = .false.
       ltriangulate = .false.
       lno_restart = .false.

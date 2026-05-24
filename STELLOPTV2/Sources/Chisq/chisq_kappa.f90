@@ -86,6 +86,7 @@
          IF (iflag == 1) WRITE(iunit_out,'(4ES22.12E3)') target,sigma,kappa,phi_kappa
       ELSE
          IF (sigma < bigno) THEN
+            lload_equil = .TRUE.
             mtargets = mtargets + 1
             IF (niter == -2) target_dex(mtargets)=jtarget_kappa
          END IF

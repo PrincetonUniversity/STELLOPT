@@ -55,9 +55,11 @@
          END DO
       ELSE
          DO ik = 1, nsd
-            IF (sigma(ik) >= bigno) CYCLE
-            mtargets = mtargets + 1
-            IF (niter == -2) target_dex(mtargets)=jtarget_magwell
+            IF (sigma(ik) < bigno) THEN
+               lload_equil = .TRUE.
+               mtargets = mtargets + 1
+               IF (niter == -2) target_dex(mtargets)=jtarget_magwell
+            END IF
          END DO
       END IF
       RETURN
