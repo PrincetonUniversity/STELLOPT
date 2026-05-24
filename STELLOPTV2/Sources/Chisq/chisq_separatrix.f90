@@ -74,9 +74,11 @@
       ELSE
          DO v = 1, nv_max
             DO u = 1, nu_max
-               IF (sigma_separatrix(u,v) >= bigno) CYCLE
-               mtargets = mtargets + 1
-               IF (niter == -2) target_dex(mtargets)=jtarget_separatrix
+               IF (sigma_separatrix(u,v) < bigno) THEN
+                  lload_equil = .TRUE.
+                  mtargets = mtargets + 1
+                  IF (niter == -2) target_dex(mtargets)=jtarget_separatrix
+               END IF
             END DO
          END DO
       END IF

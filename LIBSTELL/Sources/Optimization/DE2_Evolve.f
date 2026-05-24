@@ -212,6 +212,26 @@
      1               ierr_mpi)
       IF (ierr_mpi .ne. 0) CALL mpi_stel_abort(ierr_mpi)
 !DEC$ ENDIF
+
+      ! Check to make sure FNORM_MIN < 1E12
+      IF (fnorm_min >= 1.0E12) THEN
+         IF (myid == master) THEN
+            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            WRITE(6,*) '!!   ERROR: FNORM >=1E12, adjust sigmas.      '
+            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         END IF
+         CALL FLUSH(6)
+         IF (ALLOCATED(fnorm_array)) DEALLOCATE(fnorm_array)
+         IF (ALLOCATED(temp_fvec)) DEALLOCATE(temp_fvec)
+         IF (ALLOCATED(x_temp)) DEALLOCATE(x_temp)
+         IF (ALLOCATED(x_array)) DEALLOCATE(x_array)
+         IF (ALLOCATED(fval_array)) DEALLOCATE(fval_array)
+         IF (ALLOCATED(x_new)) DEALLOCATE(x_new)
+         IF (ALLOCATED(fnorm_new)) DEALLOCATE(fnorm_new)
+         IF (ALLOCATED(x_best)) DEALLOCATE(x_best)
+         RETURN
+      ENDIF
+
       
       ! Evaluate the Population if necessary
       IF (lrestart) THEN
