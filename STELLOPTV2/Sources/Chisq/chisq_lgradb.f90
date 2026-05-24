@@ -59,6 +59,7 @@
          END DO
       ELSE
          IF (sigma < bigno) THEN
+            lload_equil = .TRUE.
             DO u = 1, nu_local
                DO v = 1, nv_local
                   mtargets = mtargets + 1

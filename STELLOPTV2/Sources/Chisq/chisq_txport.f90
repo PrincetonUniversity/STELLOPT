@@ -91,11 +91,13 @@
       ELSE
          IF (alpha_end_txport > pi2/(2*nfp_vmec)) alpha_end_txport = pi2/(2*nfp_vmec)
          DO ik = 1, nsd
-            IF (sigma(ik) >= bigno) CYCLE
-            DO ip = 1, np
-               mtargets = mtargets + 1
-               IF (niter == -2) target_dex(mtargets)=jtarget_txport
-            END DO
+            IF (sigma(ik) < bigno) THEN
+               lload_equil = .TRUE.
+               DO ip = 1, np
+                  mtargets = mtargets + 1
+                  IF (niter == -2) target_dex(mtargets)=jtarget_txport
+               END DO
+            END IF
          END DO
 !DEC$ IF DEFINED (AEOPT)
          iunit=12
