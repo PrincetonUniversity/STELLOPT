@@ -516,6 +516,9 @@ class LIBSTELL():
 		module_name = self.s1+'beams3d_globals_'+self.s2
 		out_data = self.get_module_vars(module_name,intVar=intList,intLen=intLen,realVar=realList,realLen=realLen,ldefined_size_arrays=True)
 		out_data['ni_aux_f'] = np.reshape(out_data['ni_aux_f'],(maxproflen,nion))
+		out_data['r_beams'] = np.reshape(out_data['r_beams'],(2,maxbeams))
+		out_data['phi_beams'] = np.reshape(out_data['phi_beams'],(2,maxbeams))
+		out_data['z_beams'] = np.reshape(out_data['z_beams'],(2,maxbeams))
 		return out_data
 
 	def write_beams3d_input(self,filename,out_dict=None):
