@@ -964,13 +964,20 @@ class MyApp(QMainWindow):
 			wout_files = sorted([k for k in files if 'wout' in k])
 			self.wout_files = sorted([k for k in wout_files if '_opt' not in k])
 		# Handle Bnorm
-		if any('bnorm' in mystring for mystring in files):
+		if any('bnorm_' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- B-Normal -----')
 			self.ui.ComboBoxOPTplot_type.addItem('B-Normal (Plasma)')
 			self.ui.ComboBoxOPTplot_type.addItem('B-Normal (Coil)')
 			self.ui.ComboBoxOPTplot_type.addItem('B-Normal (Total)')
 			bnormal_file = sorted([k for k in files if 'bnorm_real.' in k])
 			self.bnormal_file = sorted([k for k in bnormal_file if '_opt' not in k])
+		# Handle Bnorm Harmoinics
+		if any('bnorm_harm' in mystring for mystring in files):
+			self.ui.ComboBoxOPTplot_type.addItem('----- B-Normal (Harmonics) -----')
+			self.ui.ComboBoxOPTplot_type.addItem('Bmn-Normal (cos)')
+			self.ui.ComboBoxOPTplot_type.addItem('Bmn-Normal (sin)')
+			bnormalmn_file = sorted([k for k in files if 'bnorm_harm.' in k])
+			self.bnormalmn_file = sorted([k for k in bnormalmn_file if '_opt' not in k])
 		# Handle Baxis
 		if any('baxis_' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- B-AXIS -----')
@@ -1104,6 +1111,37 @@ class MyApp(QMainWindow):
 				self.ax2.set_ylabel(r'$\theta$ [rad]')
 				self.ax2.set_xlabel(r'$\zeta$ [rad]')
 				self.ax2.set_title('B-Normal (Total)')
+				_plt.colorbar(hmesh,label=r'$B_{normal}$ [T]',ax=self.ax2)
+				self.canvas2.draw()
+			elif plot_name in ['Bmn-Normal (cos)', 'Bmn-Normal (sin)']:
+				self.fig2.clf()
+				self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
+				self.stel_data.read_stellopt_bnorm_harm(test_file)
+				mnmax = int(max(self.stel_data.bnorm_harm[0,:]))
+				m = int(max(self.stel_data.bnorm_harm[1,:]))
+				n = int(max(self.stel_data.bnorm_harm[2,:]))
+				bc = np.zeros((2*n+1,m+1))
+				bs = np.zeros((2*n+1,m+1))
+				v = np.zeros((2*n+1,m+1))
+				u = np.zeros((2*n+1,m+1))
+				for mn in range(mnmax):
+					m1=int(self.stel_data.bnorm_harm[1,mn])
+					n1=int(self.stel_data.bnorm_harm[2,mn])
+					u[n1+n,m1] = m1
+					v[n1+n,m1] = n1
+					bc[n1+n,m1] = self.stel_data.bnorm_harm[3,mn]
+					bs[n1+n,m1] = self.stel_data.bnorm_harm[4,mn]
+				for n1 in range(-n,n):
+					u[n1+n,0] = 0
+					v[n1+n,0] = n1 
+				if '(cos)' in plot_name:
+					hmesh=self.ax2.pcolormesh(v,u,bc,cmap='jet')
+					self.ax2.set_title('B-Normal Total (cos)')
+				else:
+					hmesh=self.ax2.pcolormesh(v,u,bs,cmap='jet')
+					self.ax2.set_title('B-Normal Total (sin)')
+				self.ax2.set_ylabel(r'Poloidal modes (m)')
+				self.ax2.set_xlabel(r'Toroidal modes (n)')
 				_plt.colorbar(hmesh,label=r'$B_{normal}$ [T]',ax=self.ax2)
 				self.canvas2.draw()
 			elif plot_name in ['B-Axis']:
@@ -2068,18 +2106,16 @@ class MyApp(QMainWindow):
 			for item in file_list:
 				self.ui.ComboBoxOPTplot_iter.addItem(item)
 			self.UpdateIterFile()
-		elif (plot_name == 'B-Normal (Plasma)'):
+		elif (plot_name == 'B-Normal (Plasma)') or \
+			(plot_name == 'B-Normal (Coil)') or \
+			(plot_name == 'B-Normal (Total)'):
 			file_list = sorted(glob.glob("bnorm_real.*"))
 			for item in file_list:
 				self.ui.ComboBoxOPTplot_iter.addItem(item)
 			self.UpdateIterFile()
-		elif (plot_name == 'B-Normal (Coil)'):
-			file_list = sorted(glob.glob("bnorm_real.*"))
-			for item in file_list:
-				self.ui.ComboBoxOPTplot_iter.addItem(item)
-			self.UpdateIterFile()
-		elif (plot_name == 'B-Normal (Total)'):
-			file_list = sorted(glob.glob("bnorm_real.*"))
+		elif (plot_name == 'Bmn-Normal (cos)') or \
+			(plot_name == 'Bmn-Normal (sin)'):
+			file_list = sorted(glob.glob("bnorm_harm.*"))
 			for item in file_list:
 				self.ui.ComboBoxOPTplot_iter.addItem(item)
 			self.UpdateIterFile()
