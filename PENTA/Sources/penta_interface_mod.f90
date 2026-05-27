@@ -47,7 +47,8 @@ MODULE PENTA_INTERFACE_MOD
    LOGICAL, DIMENSION(:), ALLOCATABLE :: root_type
    CHARACTER(LEN=10) :: Method
    CHARACTER(LEN=100) :: arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, &
-      arg9, coeff_ext, run_ident, pprof_char, fpos, fstatus, str_num
+      arg9, coeff_ext, run_ident, pprof_char, fpos, fstatus, str_num, &
+      Er_root_type
 
 !-----------------------------------------------------------------------
 !     Module Namelists
@@ -57,7 +58,7 @@ MODULE PENTA_INTERFACE_MOD
       read_U2_file, Add_Spitzer_to_D33, num_Er_test, numKsteps, &
       kord_pprof, keord, kcord, Kmin, Kmax, epsabs, epsrel, Method, &
       flux_cap, output_QoT_vs_Er, use_beam, Er_min_Vcm, Er_max_Vcm, &
-      save_all_ambipolar_roots, save_fluxes_vs_Er
+      save_all_ambipolar_roots, save_fluxes_vs_Er, Er_root_type
 
 !-----------------------------------------------------------------------
 !     SUBROUTINES
@@ -94,6 +95,7 @@ MODULE PENTA_INTERFACE_MOD
       num_ion_species   = 1
       Z_ion_init        = 1.0
       miomp_init        = 1.0
+      Er_root_type      = 'ion_root'
       RETURN
    END SUBROUTINE init_penta_input
 
@@ -247,6 +249,7 @@ MODULE PENTA_INTERFACE_MOD
          CALL FLUSH(6)
          STOP
       END IF
+      CALL tolower(Er_root_type)
       CLOSE(iunit)
       RETURN
    END SUBROUTINE read_penta_run_params_namelist
@@ -278,6 +281,7 @@ MODULE PENTA_INTERFACE_MOD
       WRITE(iunit,outdbl) 'EPSABS',epsabs
       WRITE(iunit,outdbl) 'EPSREL',epsrel
       WRITE(iunit,outstr) 'METHOD',TRIM(method)
+      WRITE(iunit,outstr) 'ER_ROOT_TYPE',TRIM(Er_root_type)
       WRITE(iunit,'(A)') '/'
    END SUBROUTINE write_run_params_nml
 

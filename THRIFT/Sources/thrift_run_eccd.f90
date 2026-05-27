@@ -12,16 +12,18 @@
       USE thrift_equil
       USE thrift_vars
       USE thrift_funcs
+      USE thrift_globals, ONLY: ngyrotrons, power_beam
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
 !        Rc, w       Model profile coefficients
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER :: i, ier, i1,i2
+      INTEGER :: i, ier, i1, i2, n
       INTEGER :: bcs0(2)
       REAL(rprec) :: Rc, w, Ieccd, Inorm, vp, dPhidrho, temp, &
                      s_val, rho_val, mytime, fact
+      REAL(rprec), PARAMETER :: eps=1.0E-10_rprec
       REAL(rprec), DIMENSION(:), ALLOCATABLE ::  j_temp
       TYPE(EZspline1_r8) :: j_spl
 !----------------------------------------------------------------------
@@ -34,32 +36,36 @@
          RETURN
       END IF
 
-      ! PECRH_AUX_T is an array with default entries: 1E6
+      ! NOTE:
+      ! PECRH_AUX_T and PECRH_AUX_F are defined in thrift_init
+      ! They are read from the thrift_profiles file. If file doesn't have them, then they are set to:
+      ! PECRH_AUX_T = THRIFT_T
+      ! PECRH_AUX_F = 1.0
+
+      ! We linearly interpolate PECRH_AUX_F at the current time
+      power_beam = 0.0_rprec
       mytime = THRIFT_T(mytimestep)
-      i1 = COUNT(PECRH_AUX_T - mytime < 1E-6)
-      i2 = i1+1
-      
-      ! If i==0, simply use POWER_ECRH
-      IF(i1==0) THEN
-         fact = 1.0
-      ELSEIF(i1>0) THEN
-         ! if aux_t(i1) <= mytime <= aux_t(i2), make linear interpolation
-         IF( (PECRH_AUX_T(i1) .LE. mytime) .AND. (PECRH_AUX_T(i2) .GE. mytime) ) THEN
-            fact = ( PECRH_AUX_F(i2)      - PECRH_AUX_F(i1) ) &
-                 * ( mytime - PECRH_AUX_T(i1) ) &
-                 / ( PECRH_AUX_T(i2)      - PECRH_AUX_T(i1) ) &
-                 + PECRH_AUX_F(i1)
-         ELSE
-            STOP 'HOW DID YOU END UP HERE?'
+      DO n=1,ngyrotrons
+         fact = 0.0_rprec
+         ! Take into account case where length(PECRH(AUX_T))=1 (occurs when running with ntimesteps=1 and AUX_T=THRIFT_T)
+         IF(SIZE(PECRH_AUX_T,2) .EQ. 1) THEN
+            IF( ABS(mytime-PECRH_AUX_T(n,1)) .LT. eps) fact = PECRH_AUX_F(n,1)
          END IF
+         !
+         DO i = 1,SIZE(PECRH_AUX_T,2)-1
+            IF ( (mytime .GE. PECRH_AUX_T(n,i)) .and. (mytime .LE. PECRH_AUX_T(n,i+1)) ) THEN
+               w = ( mytime - PECRH_AUX_T(n,i) ) / ( PECRH_AUX_T(n,i+1) - PECRH_AUX_T(n,i) )
+               fact = (1.0_rprec-w)*PECRH_AUX_F(n,i) + w*PECRH_AUX_F(n,i+1)
+               EXIT
+            ENDIF
+         END DO
+         power_beam(n) = fact
+      END DO
+
+      IF( SUM(power_beam) < 1E-6 ) THEN
+            THRIFT_JECCD(:,mytimestep) = 0
+            RETURN
       END IF
-
-      POWER_ECRH = fact * POWER_ECRH
-
-      IF( MAXVAL(POWER_ECRH) < 1E-6 ) THEN
-         THRIFT_JECCD(:,mytimestep) = 0
-         RETURN
-      END IF  
 
       SELECT CASE(TRIM(eccd_type))
          CASE ('model','offaxis','test','simple')
@@ -70,7 +76,7 @@
             Rc = ecrh_rc
             w  = ecrh_w
 
-            Ieccd = POWER_ECRH(1)
+            Ieccd = power_beam(1)
 
             ! From Wolfram
             Inorm = 0.5*w*( SQRT(pi)*Rc*( ERF((1-Rc)/w) + ERF(Rc/w) )+w*( EXP(-Rc**2/w**2) - EXP(-(Rc-1)**2/w**2) ))
