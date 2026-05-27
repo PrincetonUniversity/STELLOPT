@@ -509,13 +509,16 @@ class LIBSTELL():
 		realList.extend(['ne_aux_s', 'te_aux_s', 'ti_aux_s', \
 						 'ne_aux_f', 'te_aux_f', 'ti_aux_f', \
 						 'pot_aux_s', 'pot_aux_f', 'zeff_aux_s', \
-						 'zeff_aux_f'])
-		realLen.extend([(maxproflen,1)]*10)
+						 'zeff_aux_f','omeg_aux_s','omeg_aux_f'])
+		realLen.extend([(maxproflen,1)]*12)
 		realList.extend(['ni_aux_s', 'ni_aux_f', 'ni_aux_m'])
 		realLen.extend([(maxproflen,1),(nion,maxproflen),(nion,1)])
 		module_name = self.s1+'beams3d_globals_'+self.s2
 		out_data = self.get_module_vars(module_name,intVar=intList,intLen=intLen,realVar=realList,realLen=realLen,ldefined_size_arrays=True)
 		out_data['ni_aux_f'] = np.reshape(out_data['ni_aux_f'],(maxproflen,nion))
+		out_data['r_beams'] = np.reshape(out_data['r_beams'],(2,maxbeams))
+		out_data['phi_beams'] = np.reshape(out_data['phi_beams'],(2,maxbeams))
+		out_data['z_beams'] = np.reshape(out_data['z_beams'],(2,maxbeams))
 		return out_data
 
 	def write_beams3d_input(self,filename,out_dict=None):
