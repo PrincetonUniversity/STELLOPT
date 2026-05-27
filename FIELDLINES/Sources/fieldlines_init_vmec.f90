@@ -71,7 +71,7 @@
          CALL read_wout_file(TRIM(id_string),ier)
          IF (ier /= 0) CALL handle_err(VMEC_WOUT_ERR,'beams3d_init_vmec',ier)
       END IF
-      
+
 #if defined(MPI_OPT)
       ! We do this to avoid multiple opens of wout file
       CALL MPI_BCAST(ns,1,MPI_INTEGER, master, MPI_COMM_FIELDLINES,ierr_mpi)
@@ -146,10 +146,10 @@
                             'EZspline_setup/fieldlines_init_vmec',ier)
          ! Default to constant pressure
          PRES_G = presf(ns)
-      END IF 
+      END IF
 
       IF (luse_vc) THEN
-         nu = 8 * mpol + 1 
+         nu = 8 * mpol + 1
          nu = 2 ** CEILING(log(DBLE(nu))/log(2.0_rprec))
          nv = 8 * ntor + 1
          nv = 2 ** CEILING(log(DBLE(nv))/log(2.0_rprec))
@@ -179,7 +179,7 @@
          IF (lnyquist) THEN
             xm_temp = xm_nyq
             xn_temp = -xn_nyq/nfp  ! Because init_virtual_casing uses (mu+nv) not (mu-nv*nfp)
-            IF(lverb) WRITE(6,'(A)')        '   NYQUIST DETECTED IN WOUT FILE!'            
+            IF(lverb) WRITE(6,'(A)')        '   NYQUIST DETECTED IN WOUT FILE!'
             DO u = 1,mnmax_temp
                DO v = 1, mnmax
                   IF ((xm(v) .eq. xm_nyq(u)) .and. (xn(v) .eq. xn_nyq(u))) THEN
@@ -246,7 +246,7 @@
          adapt_rel = vc_adapt_tol
          DEALLOCATE(xm_temp,xn_temp)
       END IF
-      
+
       IF (lverb) THEN
          IF (.not.lplasma_only) CALL virtual_casing_info(6)
          WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Plasma Field Calculation [',0,']%'
@@ -257,13 +257,14 @@
       CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL,1, nr*nphi*nz, mystart, myend)
 
 
-      sflx = 0.0
+
       IF (lafield_only) THEN
          DO s = mystart, myend
             i = MOD(s-1,nr)+1
             j = MOD(s-1,nr*nphi)
             j = FLOOR(REAL(j) / REAL(nr))+1
             k = CEILING(REAL(s) / REAL(nr*nphi))
+            sflx = 0.0
             CALL GetAcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
                          br, bphi, bz, SFLX=sflx,info=ier)
             IF (ier == 0 .and. bphi /= 0 .and. sflx<=1) THEN
@@ -306,6 +307,7 @@
             j = MOD(s-1,nr*nphi)
             j = FLOOR(REAL(j) / REAL(nr))+1
             k = CEILING(REAL(s) / REAL(nr*nphi))
+            sflx = 0.0
             ! The GetBcyl Routine returns -3 if cyl2flx thinks s>1
             ! however, if cyl2flx fails to converge then s may be
             ! greater than 1 but cyl2flux won't throw the -3 code.
@@ -364,11 +366,11 @@
                END IF
             END DO
          END IF
-      
+
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
 #endif
-      
+
       ! Free variables
       IF (luse_vc) CALL free_virtual_casing(MPI_COMM_FIELDLINES)
       IF (myworkid == master) THEN
@@ -383,7 +385,7 @@
       END IF
 
       IF (EZspline_allocated(p_spl)) CALL EZspline_free(p_spl,ier)
-      
+
       IF (lverb) THEN
          CALL backspace_out(6,36)
          CALL FLUSH(6)
@@ -391,8 +393,8 @@
          CALL FLUSH(6)
          CALL backspace_out(6,36)
          CALL FLUSH(6)
-      END IF    
-      
+      END IF
+
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_vmec',ierr_mpi)
@@ -403,5 +405,5 @@
 #endif
 !-----------------------------------------------------------------------
 !     End Subroutine
-!-----------------------------------------------------------------------    
+!-----------------------------------------------------------------------
       END SUBROUTINE fieldlines_init_vmec
