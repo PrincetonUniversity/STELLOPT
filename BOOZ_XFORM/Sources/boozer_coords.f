@@ -31,10 +31,7 @@ c       ntor_nyq     number of zeta harmonics from vmec (no. zeta modes = 2*ntor
 c       mboz         number of boozer theta harmonics
 c       nboz         number of boozer zeta harmonics
 c
-!     NOTE: The one-time Boozer-grid initialization that formerly lived
-!     inside this routine (guarded by `IF (jsurf .eq. 0)`) has been
-!     moved to boozer_setup so that the per-surface work can be
-!     distributed across MPI ranks. Callers must invoke boozer_setup
+!     NOTE: Callers must invoke boozer_setup
 !     once before the first call to boozer_coords.
 
 !
@@ -43,30 +40,30 @@ c
       ier_arr = 0
       IF (ALLOCATED(r12)) DEALLOCATE(r12);
       ALLOCATE(r12(nunv),stat=ier_arr(1))
-      IF (ALLOCATED(z12)) DEALLOCATE(z12); 
+      IF (ALLOCATED(z12)) DEALLOCATE(z12);
       ALLOCATE(z12(nunv),stat=ier_arr(2))
-      IF (ALLOCATED(r1)) DEALLOCATE(r1); 
+      IF (ALLOCATED(r1)) DEALLOCATE(r1);
       ALLOCATE(r1(nunv),stat=ier_arr(3))
       IF (ALLOCATED(rodd)) DEALLOCATE(rodd);
       ALLOCATE(rodd(nunv),stat=ier_arr(4))
-      IF (ALLOCATED(z1)) DEALLOCATE(z1); 
+      IF (ALLOCATED(z1)) DEALLOCATE(z1);
       ALLOCATE(z1(nunv),stat=ier_arr(5))
       IF (ALLOCATED(zodd)) DEALLOCATE(zodd);
       ALLOCATE(zodd(nunv),stat=ier_arr(6))
-      IF (ALLOCATED(lt)) DEALLOCATE(lt); 
+      IF (ALLOCATED(lt)) DEALLOCATE(lt);
       ALLOCATE(lt(nunv),stat=ier_arr(7))
-      IF (ALLOCATED(lz)) DEALLOCATE(lz); 
+      IF (ALLOCATED(lz)) DEALLOCATE(lz);
       ALLOCATE(lz(nunv),stat=ier_arr(8))
-      IF (ALLOCATED(p1)) DEALLOCATE(p1); 
+      IF (ALLOCATED(p1)) DEALLOCATE(p1);
       ALLOCATE(p1(nunv),stat=ier_arr(9))
-      IF (ALLOCATED(q1)) DEALLOCATE(q1); 
+      IF (ALLOCATED(q1)) DEALLOCATE(q1);
       ALLOCATE(q1(nunv),stat=ier_arr(10))
-      IF (ALLOCATED(xjac)) DEALLOCATE(xjac); 
+      IF (ALLOCATED(xjac)) DEALLOCATE(xjac);
       ALLOCATE(xjac(nunv),stat=ier_arr(11))
       IF(ANY(ier_arr .ne. 0))STOP 'Allocation error #1 in boozer_coords'
-      
-!      ALLOCATE (r12(nunv), z12(nunv), r1(nunv), rodd(nunv), z1(nunv), 
-!     1          zodd(nunv), lt(nunv), lz(nunv), p1(nunv), q1(nunv), 
+
+!      ALLOCATE (r12(nunv), z12(nunv), r1(nunv), rodd(nunv), z1(nunv),
+!     1          zodd(nunv), lt(nunv), lz(nunv), p1(nunv), q1(nunv),
 !     2          xjac(nunv), stat=istat1 )
 !      IF (istat1 .ne. 0) STOP 'Allocation error #1 in boozer_coords'
 
@@ -77,9 +74,9 @@ c
 !     Theta-Booz = Theta-VMEC + Lambda + Iota*p
 !     Zeta-Booz  = Zeta-VMEC  + p
 !
-      CALL transpmn (pmns, bsubumnc(1,jrad), bsubvmnc(1,jrad), 
-     1               pmnc, bsubumns(1,jrad), bsubvmns(1,jrad), 
-     2               xm_nyq, xn_nyq, gpsi, ipsi, mnmax_nyq, jrad, 
+      CALL transpmn (pmns, bsubumnc(1,jrad), bsubvmnc(1,jrad),
+     1               pmnc, bsubumns(1,jrad), bsubvmns(1,jrad),
+     2               xm_nyq, xn_nyq, gpsi, ipsi, mnmax_nyq, jrad,
      3               lasym_b)
 
 !
@@ -94,7 +91,7 @@ c
       ALLOCATE(wt(nunv),stat=ier_arr(2))
       IF (ALLOCATED(wz)) DEALLOCATE(wz);
       ALLOCATE(wz(nunv),stat=ier_arr(3))
-      IF (ALLOCATED(wp)) DEALLOCATE(wp); 
+      IF (ALLOCATED(wp)) DEALLOCATE(wp);
       ALLOCATE(wp(nunv),stat=ier_arr(4))
       IF(ANY(ier_arr .ne. 0))STOP 'Allocation error #2 in boozer_coords'
       !ALLOCATE (lam(nunv), wt(nunv), wz(nunv), wp(nunv), stat=istat1)
@@ -104,19 +101,19 @@ c
 !     OF R,Z, LAMDA IN REAL SPACE (VMEC) COORDINATES
 !
       nparity = 0
-      CALL vcoords_rz (rmnc, zmns, lmns, rmns, zmnc, lmnc, xm, xn, 
-     1   ntorsum, ns, jrad, mnmax, r1, z1, lt, lz, lam, sfull, 
+      CALL vcoords_rz (rmnc, zmns, lmns, rmns, zmnc, lmnc, xm, xn,
+     1   ntorsum, ns, jrad, mnmax, r1, z1, lt, lz, lam, sfull,
      2   nparity, nunv, nfp, lasym_b)
 
       nparity = 1
-      CALL vcoords_rz (rmnc, zmns, lmns, rmns, zmnc, lmnc, xm, xn, 
-     1   ntorsum, ns, jrad, mnmax, rodd, zodd, lt, lz, lam, sfull, 
+      CALL vcoords_rz (rmnc, zmns, lmns, rmns, zmnc, lmnc, xm, xn,
+     1   ntorsum, ns, jrad, mnmax, rodd, zodd, lt, lz, lam, sfull,
      2   nparity, nunv, nfp, lasym_b)
 
 !     COMPUTE "SOURCE" PART OF TRANSFORMATION FUNCTION p==wp (RIGHT-SIDE OF EQ.10), ITS DERIVATIVES,
-!     AND |B| ALL IN VMEC COORDINATES 
-      CALL vcoords_w (bmodmnc(1,jrad), bmodmns(1,jrad), pmns, pmnc, 
-     1                xm_nyq, xn_nyq, jrad, mnmax_nyq, bmod_b, wt, 
+!     AND |B| ALL IN VMEC COORDINATES
+      CALL vcoords_w (bmodmnc(1,jrad), bmodmns(1,jrad), pmns, pmnc,
+     1                xm_nyq, xn_nyq, jrad, mnmax_nyq, bmod_b, wt,
      2                wz, wp, nunv, nfp, lasym_b)
 
 !
@@ -132,9 +129,9 @@ c
 !     COMPUTE R12, Z12 ON RADIAL HALF-GRID (IN ORIGINAL VMEC COORDINATES)
 !
       nrep = 1
-      CALL booz_rzhalf(r1, z1, rodd, zodd, r12, z12, ohs, 
+      CALL booz_rzhalf(r1, z1, rodd, zodd, r12, z12, ohs,
      1                 jrad, nunv, nrep)
-! 
+!
 !     Store VMEC-Space fixed point values for |B| for checking accuracy later
 !
       nv2_b = nv_boz/2+1               !Index of v=pi (for non-axisymetry)
@@ -150,13 +147,13 @@ c
 !     COMPUTE BOOZER-SPACE FOURIER COEFFICIENTS FOR R,Z,P, AND |B|
 !
       ier_arr = 0
-      IF (ALLOCATED(cosmm)) DEALLOCATE(cosmm); 
+      IF (ALLOCATED(cosmm)) DEALLOCATE(cosmm);
       ALLOCATE(cosmm(nunv,0:mboz),stat=ier_arr(1))
-      IF (ALLOCATED(sinmm)) DEALLOCATE(sinmm); 
+      IF (ALLOCATED(sinmm)) DEALLOCATE(sinmm);
       ALLOCATE(sinmm(nunv,0:mboz),stat=ier_arr(2))
-      IF (ALLOCATED(cosnn)) DEALLOCATE(cosnn); 
+      IF (ALLOCATED(cosnn)) DEALLOCATE(cosnn);
       ALLOCATE(cosnn(nunv,0:nboz),stat=ier_arr(3))
-      IF (ALLOCATED(sinnn)) DEALLOCATE(sinnn); 
+      IF (ALLOCATED(sinnn)) DEALLOCATE(sinnn);
       ALLOCATE(sinnn(nunv,0:nboz),stat=ier_arr(4))
       IF(ANY(ier_arr .ne. 0))STOP 'Allocation error #3 in boozer_coords'
 !      ALLOCATE (cosmm(nunv,0:mboz), sinmm(nunv,0:mboz),
@@ -165,8 +162,8 @@ c
 
       CALL boozer (thgrd, ztgrd, bmod_b, r12, z12, xmb, xnb,
      1   bmncb(1,jsurf), rmncb(1,jsurf), zmnsb(1,jsurf),
-     2   pmnsb(1,jsurf), gmncb(1,jsurf), bmnsb(1,jsurf), 
-     3   rmnsb(1,jsurf), zmncb(1,jsurf), pmncb(1,jsurf), 
+     2   pmnsb(1,jsurf), gmncb(1,jsurf), bmnsb(1,jsurf),
+     3   rmnsb(1,jsurf), zmncb(1,jsurf), pmncb(1,jsurf),
      4   gmnsb(1,jsurf), scl, p1, q1, xjac,
      5   cosmm, sinmm, cosnn, sinnn, mnboz, nunv, mboz, nboz,
      6   nfp, nu2_b, nv_boz, jacfac)
@@ -190,7 +187,7 @@ c
 !     COMPUTE BOOZER-SPACE MOD-B FOR GENERAL CASE (LASYM = TRUE, CAN'T USE
 !     FIXED-POINT SYMMETRY ANYMORE)
 !
-      CALL modbooz(bmncb(1,jsurf), bmnsb(1,jsurf), 
+      CALL modbooz(bmncb(1,jsurf), bmnsb(1,jsurf),
      1   bmodb, xmb, xnb, u_b, v_b, cosmm, sinmm, cosnn, sinnn,
      2   mnboz, mboz, nboz, nfp, lasym_b)
 
@@ -213,19 +210,19 @@ c
          ALLOCATE(zodd(nunv), stat=ier_arr(4))
          IF (ANY(ier_arr.ne.0))
      1        STOP 'Allocation error #3 in boozer_coords'
-!         ALLOCATE (r1(nunv), rodd(nunv), z1(nunv), zodd(nunv), 
+!         ALLOCATE (r1(nunv), rodd(nunv), z1(nunv), zodd(nunv),
 !     1          stat=istat1 )
 !         IF (istat1 .ne. 0) STOP 'Allocation error #3 in boozer_coords'
 
-         CALL vcoords_rzb (rmncb, zmnsb, rmnsb, zmncb, xmb, xnb, 
+         CALL vcoords_rzb (rmncb, zmnsb, rmnsb, zmncb, xmb, xnb,
      1                  cosmm, sinmm, cosnn, sinnn, mboz, nboz,
      2                  mnboz, jsurf, ns, r1, z1, nunv, nfp, lasym_b)
 
          nrep = 2                 !1 for vmec, 2 for booz
-         CALL booz_rzhalf(r1, z1, rodd, zodd, r12, z12, ohs, 
+         CALL booz_rzhalf(r1, z1, rodd, zodd, r12, z12, ohs,
      1                 jrad, nunv, nrep)
 
-         DEALLOCATE (cosmm, sinmm, cosnn, sinnn, 
+         DEALLOCATE (cosmm, sinmm, cosnn, sinnn,
      1            r1, rodd, z1, zodd, r12, z12, stat=istat1)
          IF (istat1 .ne. 0) STOP 'Deallocation error in boozer_coords'
       END IF
