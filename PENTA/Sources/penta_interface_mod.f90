@@ -793,18 +793,8 @@ MODULE PENTA_INTERFACE_MOD
       INTEGER :: istat
       CHARACTER(LEN=256) :: local_ext
       istat = 0
-      ! Set write status
-      ! IF (i_append == 0) THEN
-         fstatus = "unknown"
-         fpos = "SEQUENTIAL"
-      ! ELSEIF (i_append == 1) THEN
-      !    fstatus = "old"
-      !    fpos = "append"
-      ! ELSE
-      !    Write(6,'(A)') 'PENTA: Bad value for i_append (0 or 1 expected)'
-      !    CALL FLUSH(6)
-      !    STOP 'Error: Exiting, i_append error in penta.f90'
-      ! END IF
+      fstatus = "unknown"
+      fpos = "SEQUENTIAL"
 
       ! Create local extension
       IF (PRESENT(file_ext)) THEN
@@ -812,8 +802,6 @@ MODULE PENTA_INTERFACE_MOD
       ELSE
          local_ext = ''
       END IF
-      ! Open files
-      !Open(unit=iu_flux_out, file="fluxes_vs_roa", position=Trim(Adjustl(fpos)),status=Trim(Adjustl(fstatus)))
 
       IF(save_all_ambipolar_roots) THEN
          CALL safe_open(iu_flux_out, istat, "fluxes_vs_roa"//TRIM(local_ext), &
@@ -826,69 +814,6 @@ MODULE PENTA_INTERFACE_MOD
             Trim(Adjustl(fstatus)), 'formatted',&
             access_in=Trim(Adjustl(fpos)))
       END IF
-
-
-      ! CALL safe_open(iu_pprof_out, istat, "plasma_profiles_check"//TRIM(local_ext), &
-      !    Trim(Adjustl(fstatus)), 'formatted',&
-      !    access_in=Trim(Adjustl(fpos)))
-      ! CALL safe_open(iu_fvEr_out, istat, "fluxes_vs_Er"//TRIM(local_ext), &
-      !    Trim(Adjustl(fstatus)), 'formatted',&
-      !    access_in=Trim(Adjustl(fpos)))
-      ! CALL safe_open(iu_flows_out, istat, "flows_vs_roa"//TRIM(local_ext), &
-      !    Trim(Adjustl(fstatus)), 'formatted',&
-      !    access_in=Trim(Adjustl(fpos)))
-      ! CALL safe_open(iu_flowvEr_out, istat, "flows_vs_Er"//TRIM(local_ext), &
-      !    Trim(Adjustl(fstatus)), 'formatted',&
-      !    access_in=Trim(Adjustl(fpos)))
-      ! CALL safe_open(iu_Jprl_out, istat, "Jprl_vs_roa"//TRIM(local_ext), &
-      !    Trim(Adjustl(fstatus)), 'formatted',&
-      !    access_in=Trim(Adjustl(fpos)))
-      ! CALL safe_open(iu_contraflows_out, istat, "ucontra_vs_roa"//TRIM(local_ext), &
-      !    Trim(Adjustl(fstatus)), 'formatted',&
-      !    access_in=Trim(Adjustl(fpos)))
-      ! IF (method == 'SN') &
-      !    CALL safe_open(iu_sigmas_out, istat, "sigmas_vs_roa"//TRIM(local_ext), &
-      !       Trim(Adjustl(fstatus)), 'formatted',&
-      !       access_in=Trim(Adjustl(fpos)))
-      ! IF (output_QoT_vs_Er) THEN
-      !    CALL safe_open(iu_QoTvEr_out, istat, "QoTs_vs_Er"//TRIM(local_ext), &
-      !       Trim(Adjustl(fstatus)), 'formatted',&
-      !       access_in=Trim(Adjustl(fpos)))
-      !    Write(iu_QoTvEr_out,'("*",/,"r/a   Er[V/cm]   Q_e/T_e [m**-2s**-1] ",&
-      !                          "   Q_i/T_i [m**-2s**-1]")')
-      ! END IF
-
-
-      ! WRITE Headers
-      ! IF (i_append == 0) THEN
-      !    ! Fluxes vs r/a
-      !    Write(iu_flux_out,'("*",/,"r/a    Er[V/cm]    e<a>Er/kTe    ",  &
-      !       "Gamma_e [m**-2s**-1]   Q_e/T_e [m**-2s**-1]     ",         &
-      !       "Gamma_i [m**-2s**-1]   Q_i/T_i [m**-2s**-1]")')
-         
-         ! ! Flows vs r/a
-         ! Write(iu_flows_out,'("*",/,"r/a   Er[V/cm]    e<a>Er/kTe    ",  &
-         !    " <B*u_||ke>/<B**2> [m/sT]   <B*u_||ki>/<B**2> [m/sT]")')
-         ! ! Plasma profile check
-         ! Write(iu_pprof_out,'("*",/,"r/a    Te [eV]   ne [m**-3]     ",  & 
-         !    "dnedr [m**-4]   dTedr [eV/m]  Ti [eV]   ni [m**-3]     ",  &
-         !    "dnidr [m**-4]   dTidr [eV/m]")')
-         ! Write(iu_Jprl_out,'("*",/,"r/a    Er [V/cm]    e<a>Er/kTe    ",  &
-         !    "Jprl_e [A/m**2]    Jprli [A/m**2]    Jprl [A/m**2]    J_BS [A/m**2]")')
-         ! Write(iu_contraflows_out,'("*",/,"r/a    Er [V/cm]    e<a>Er/kTe    ",  &
-         !    "<ue^pol_contra> [1/s]     <ue^tor_contra> [1/s]       ",  &
-         !    " <ui^pol_contra> [1/s]     <ui^tor_contra> [1/s]")')
-         ! ! Sigmas vs r/a
-         ! IF (Method == 'SN') &
-         !    Write(iu_sigmas_out,'("*",/,"r/a   Er[V/cm]    sigma_par [1/Ohm.m]    ",  &
-         !       " sigma_par_Spitzer [1/Ohm.m]")')
-         ! ! Legend for fluxes vs Er 
-         ! Write(iu_fvEr_out,'("*",/,"r/a   Er[V/cm]   Gamma_e [m**-2s**-1] ",&
-         !    "   Gamma_i [m**-2s**-1]")')
-         ! ! Legend for flows vs Er
-         ! Write(iu_flowvEr_out,'("*",/,"r/a   Er[V/cm]  ", &
-         !    "    <B*u_||ke>/<B**2> [m/sT]  <B*u_||ki>/<B**2> [m/sT]")')
-      !END IF
 
       RETURN
    END SUBROUTINE penta_open_output
@@ -903,14 +828,6 @@ MODULE PENTA_INTERFACE_MOD
                             num_species,Smax,lmat)
       ! Fit radial transport coefficients specific to different methods
       SELECT CASE (Method)
-         CASE ('T', 'MBT')
-            cmesh = Spread(cmul,2,num_e)
-            ! Calculate the D11 coefficient minus the P-S contribution  (Dex)
-            ! Also, do not allow for negative coefficients
-            CALL fit_coeffs(cmul,efield,num_c,num_e, &
-               Max(D11_mat-(2._rknd/3._rknd)*cmesh*U2,0._rknd), &
-               log_interp,kcord,keord,xt_c,xt_e,Dspl_Dex,     &
-               cmin,cmax,emin,emax)
          CASE ('SN')
             ! Calculate fits to D31*/D33*  (Drat)
             CALL fit_coeffs(cmul,efield,num_c,num_e, &
@@ -934,11 +851,8 @@ MODULE PENTA_INTERFACE_MOD
                Max(D11_mat-(2._rknd/3._rknd)*cmesh*U2+D31_mat*D31_mat/D33_mat, &
                0._rknd),log_interp,kcord,keord,xt_c,xt_e,Dspl_Dex,     &
                cmin,cmax,emin,emax)
-        CASE ('DKES')
-        CASE DEFAULT
-          WRITE(6,'(3a)') ' Error: ''', Trim(Adjustl(Method)), &
-            ''' is not a valid Method'
-          STOP 'Error: Exiting, method select error in penta.f90 (2)'
+        CASE DEFAULT 
+          STOP 'Error: Can only use SN method!'
       ENDSELECT
       RETURN
    END SUBROUTINE penta_fit_rad_trans
@@ -972,6 +886,7 @@ MODULE PENTA_INTERFACE_MOD
       USE penta_functions_mod
       USE PENTA_subroutines, ONLY: form_xvec
       IMPLICIT NONE
+      LOGICAL :: is_open
 
       Call penta_allocate_fluxes_vs_Er
 
@@ -1013,22 +928,6 @@ MODULE PENTA_INTERFACE_MOD
 
          ! Select the appropriate algorithm and calculate the flows and fluxes
          SELECT CASE (Method)
-            Case ('T', 'MBT')
-               ! Calculate array of parallel flow moments
-               Flows = calc_flows_T(num_species,Smax,abs_Er,Temps,dens,vths,charges,   &
-                 masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,   &
-                 cmax,emin,emax,xt_c,xt_e,Dspl_D31,Dspl_logD33,num_c,num_e,kcord,      &
-                 keord,Avec,Bsq,lmat,J_BS)
-               Gammas = calc_fluxes_MBT(num_species,Smax,abs_Er,Temps,dens,vths,       &
-                 charges,masses,dTdrs,dndrs,loglambda,use_quanc8,Kmin,Kmax,numKsteps,  &
-                 log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_logD11,Dspl_D31,        &
-                 Dspl_Dex,num_c,num_e,kcord,keord,Avec,lmat,Flows,U2,B0,flux_cap)   
-               If ( output_QoT_vs_Er .EQV. .true. ) Then
-                  QoTs = calc_QoTs_MBT(num_species,Smax,abs_Er,Temps,dens,vths,charges, &
-                   masses,dTdrs,dndrs,loglambda,use_quanc8,Kmin,Kmax,numKsteps,        &
-                   log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_logD11,Dspl_D31,      &
-                   Dspl_Dex,num_c,num_e,kcord,keord,Avec,lmat,Flows,U2,B0,flux_cap)   
-               Endif    
             Case ('SN')                    
                Flows = calc_flows_SN(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
                   masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,log_interp,       &
@@ -1046,48 +945,20 @@ MODULE PENTA_INTERFACE_MOD
                      Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,lmat,Flows,U2,dTdrs,      &
                      dndrs,flux_cap,L_A1,L_A2,L_A3,R_n,R_T,R_Er)  
                Endif    
-            Case ('DKES')
-               Flows = calc_flows_DKES(num_species,Smax,abs_Er,Temps,dens,vths,charges,&
-                  masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,  &
-                  cmax,emin,emax,xt_c,xt_e,Dspl_D31,Dspl_logD33,num_c,num_e,kcord,     &
-                  keord,Avec,J_BS)
-               Gammas = calc_fluxes_DKES(num_species,abs_Er,Temps,dens,vths,charges,   &
-                  masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,cmax, &
-                  emin,emax,xt_c,xt_e,Dspl_logD11,Dspl_D31,num_c,num_e,kcord,keord,     &
-                  Avec,B0)   
-               If ( output_QoT_vs_Er .EQV. .true. ) Then
-                  QoTs = calc_QoTs_DKES(num_species,abs_Er,Temps,dens,vths,charges,     &
-                     masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,    &
-                     cmax,emin,emax,xt_c,xt_e,Dspl_logD11,Dspl_D31,num_c,num_e,kcord,    &
-                     keord,Avec,B0)  
-               Endif
             Case Default
-               Write(6,'(3a)') ' Error: ''', Trim(Adjustl(Method)), &
-              ''' is not a valid Method'
-               Stop 'Error: Exiting, method select error in penta.f90 (3)'
+               Stop 'Can only use SN method!'
          END SELECT
 
          Gamma_e_vs_Er(ie)   = Gammas(1)
          Gamma_i_vs_Er(ie,:) = Gammas(2:num_species)
 
          ! Write fluxes vs Er
-         IF(save_fluxes_vs_Er) THEN
+         INQUIRE(unit=iu_fvEr_out, opened=is_open)
+         IF(save_fluxes_vs_Er .AND. is_open) THEN
             Write(str_num,*) num_ion_species + 2  ! Convert num to string
             Write(iu_fvEr_out,'(f7.4,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
                roa_surf,Er_test/100._rknd,Gamma_e_vs_Er(ie),Gamma_i_vs_Er(ie,:)
          END IF
-
-         ! If ( output_QoT_vs_Er .EQV. .true. ) Then
-         !    QoT_e_vs_Er(ie)   = QoTs(1)
-         !    QoT_i_vs_Er(ie,:) = QoTs(2:num_species)
-         !    Write(iu_QoTvEr_out,'(f7.4,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
-         !       roa_surf,Er_test/100._rknd,QoT_e_vs_Er(ie),QoT_i_vs_Er(ie,:)
-         ! Endif
-
-         ! ! Write flows vs Er
-         ! Write(str_num,*) (Smax+1)*num_species + 2  ! Convert num to string
-         ! Write(iu_flowvEr_out,'(f7.4,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
-         !  roa_surf,Er_test/100._rknd,Flows
 
       Enddo !efield loop
       RETURN
@@ -1189,27 +1060,6 @@ MODULE PENTA_INTERFACE_MOD
 
          ! Select the appropriate algorithm and calculate the flows and fluxes
          SELECT CASE (Method)
-            Case ('T', 'MBT')
-               ! Calculate array of parallel flow moments 
-                 ! Note: Flow methods are the same for T and MBT
-               Flows_ambi(:,iroot) = calc_flows_T(num_species,Smax,abs_Er,Temps,dens, &
-                 vths,charges,masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,     &
-                 log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_D31,Dspl_logD33,num_c, &
-                 num_e,kcord,keord,Avec,Bsq,lmat,J_BS)
-               ! Calculate array of radial particle fluxes
-               Gammas_ambi(:,iroot) = calc_fluxes_MBT(num_species,Smax,abs_Er,Temps,  &
-                 dens,vths,charges,masses,dTdrs,dndrs,loglambda,use_quanc8,Kmin,Kmax, &
-                 numKsteps,log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_logD11,      &
-                 Dspl_D31,Dspl_Dex,num_c,num_e,kcord,keord,Avec,lmat,                 &
-                 Flows_ambi(:,iroot),U2,B0,flux_cap)   
-               ! Calculate array of radial energy fluxes
-               QoTs_ambi(:,iroot) = calc_QoTs_MBT(num_species,Smax,abs_Er,Temps,dens, &
-                 vths,charges,masses,dTdrs,dndrs,loglambda,use_quanc8,Kmin,Kmax,      &
-                 numKsteps,log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_logD11,      &
-                 Dspl_D31,Dspl_Dex,num_c,num_e,kcord,keord,Avec,lmat,                 &
-                 Flows_ambi(:,iroot),U2,B0,flux_cap)
-
-               J_BS_ambi(iroot) = J_BS
             Case ('SN')
                ! Calculate array of parallel flow moments
                                                        
@@ -1243,28 +1093,8 @@ MODULE PENTA_INTERFACE_MOD
                R_n_ambi(iroot,:,:) = R_n
                R_T_ambi(iroot,:,:) = R_T
                R_Er_ambi(iroot,:,:) = R_Er
-            Case ('DKES')
-               ! Calculate array of parallel flow moments 
-               Flows_ambi(:,iroot) = calc_flows_DKES(num_species,Smax,abs_Er,Temps,   &
-                 dens,vths,charges,masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,&
-                 log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_D31,Dspl_logD33,num_c, &
-                 num_e,kcord,keord,Avec,J_BS)
-               ! Calculate array of radial particle fluxes
-               Gammas_ambi(:,iroot) = calc_fluxes_DKES(num_species,abs_Er,Temps,dens, &
-                 vths,charges,masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,        &
-                 log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_logD11,Dspl_D31,num_c, &
-                 num_e,kcord,keord,Avec,B0)  
-               ! Calculate array of radial energy fluxes
-               QoTs_ambi(:,iroot) = calc_QoTs_DKES(num_species,abs_Er,Temps,dens,     &
-                 vths,charges,masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,        &
-                 log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_logD11,Dspl_D31,num_c, &
-                 num_e,kcord,keord,Avec,B0)
-               
-               J_BS_ambi(iroot) = J_BS                
             Case Default
-               Write(*,'(3a)') ' Error: ''', Trim(Adjustl(Method)), &
-                  ''' is not a valid Method'
-               Stop 'Error: Exiting, method select error in penta.f90 (4)'
+               Stop 'Can only use SN method!'
          ENDSELECT
 
          ! Calculate parallel current density
@@ -1289,54 +1119,24 @@ MODULE PENTA_INTERFACE_MOD
       USE pprof_pass
       USE vmec_var_pass
       IMPLICIT NONE
+      LOGICAL :: is_open
       LOGICAL, INTENT(IN) :: lscreen
       ! First write output files
       ! Loop over ambipolar Er for writing output files
-      Do iroot = 1_iknd, num_roots
-
-         Er_test = Er_roots(iroot)
-         eaEr_o_kTe = arad*Er_test/Te
-
-         ! Write fluxes to file "fluxes_vs_roa"
-         IF(save_all_ambipolar_roots) THEN
+      INQUIRE(unit=iu_flux_out, opened=is_open)
+      IF(save_all_ambipolar_roots .AND. is_open) THEN
+         Do iroot = 1_iknd, num_roots
+            Er_test = Er_roots(iroot)
+            eaEr_o_kTe = arad*Er_test/Te
+            ! Write fluxes to file "fluxes_vs_roa"
             Write(str_num,*) 2*num_species + 3
             Write(iu_flux_out,'(f7.3,' // Trim(Adjustl(str_num)) // '(" ",e15.7),' // 'i4)') &
             roa_surf,Er_test/100._rknd,J_BS_ambi(iroot),Gammas_ambi(1,iroot),  &
             QoTs_ambi(1,iroot),Gammas_ambi(2:num_species,iroot),  &
             QoTs_ambi(2:num_species,iroot), 1.0_rknd/sigma_par_ambi(iroot), &
             merge(1_iknd,0_iknd, root_type(iroot))
-         ENDIF
-
-      !    ! Write flows to file "flows_vs_roa"
-      !    Write(str_num,*) (Smax+1)*num_species + 2
-      !    Write(iu_flows_out,'(f7.3,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
-      !     roa_surf,Er_test/100._rknd,eaEr_o_kTe,Flows_ambi(:,iroot)
-
-      !    ! Write current densities to file "Jprl_vs_roa"
-      !    Write(str_num,*) num_species + 4 
-      !    Write(iu_Jprl_out,'(f7.3,' // trim(adjustl(str_num)) // '(" ",e15.7))')  & 
-      !     roa_surf,Er_test/100._rknd,eaEr_o_kTe,Jprl_parts(:,iroot),Jprl_ambi(iroot),J_BS_ambi(iroot)
-
-      !    ! Write contravariant flows to file "ucontra_vs_roa"
-      !    Write(str_num,*) 2*num_species + 2
-      !    Write(iu_contraflows_out,'(f7.3,' // trim(adjustl(str_num))//'(" ",e15.7))') & 
-      !     roa_surf,Er_test/100._rknd,eaEr_o_kTe,upol(1,iroot),utor(1,iroot),         &
-      !     upol(2:num_species,iroot),utor(2:num_species,iroot)
-
-      !    ! Write sigmas to file "sigmas_vs_roa"
-      !    If( Method == 'SN') then
-      !     Write(str_num,*) 3
-      !     Write(iu_sigmas_out,'(f7.3,' // trim(adjustl(str_num)) // '(" ",e15.7))') &
-      !       roa_surf,Er_test/100._rknd,sigma_par_ambi(iroot),sigma_par_Spitzer_ambi(iroot)
-      !    Endif
-      EndDo ! Ambipolar root loop
-
-      ! ! Write plasma profile information to "plasma_profiles_check"
-      ! Write(str_num,*) 4*num_species
-      ! Write(iu_pprof_out,'(f7.3,' // trim(adjustl(str_num)) // '(" ",e15.7))') & 
-      !   roa_surf,Te,ne,dnedr,dTedr,Ti,ni,dnidr,dTidr
-
-      ! QQ write file with number of roots per surface!
+         EndDo ! Ambipolar root loop
+      END IF
 
       ! Write screen output
       IF (lscreen) THEN
@@ -1349,16 +1149,9 @@ MODULE PENTA_INTERFACE_MOD
       CALL penta_deallocate_species
       CALL penta_deallocate_dkescoeff
 
-      ! Close files (MAYBE SHOULD PUT AN if TO CHECK WHETHER THE FILES WERE OPEN? OR NOT NEEDED?)
       ! Close output files
       Close(iu_flux_out)
-      ! Close(iu_pprof_out)
       Close(iu_fvEr_out)
-      ! Close(iu_QoTvEr_out)
-      ! Close(iu_flows_out)
-      ! Close(iu_flowvEr_out)
-      ! Close(iu_Jprl_out)
-      ! Close(iu_contraflows_out)
    END SUBROUTINE penta_run_5_cleanup
 
    SUBROUTINE penta_merge_ambipolar_files(ns_dkes,proc_string,mytime)
