@@ -244,7 +244,7 @@ C-----------------------------------------------
 
       CALL second0(t2)
 
-      IF (lscreen) PRINT 120, t2-t1
+      IF (myid .eq. master) PRINT 120, t2-t1
  120  FORMAT(/,' TIME IN BOOZER TRANSFORM CODE:',1pe12.2,' SEC')
 
  2000 CONTINUE

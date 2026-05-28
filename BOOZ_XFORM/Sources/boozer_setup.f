@@ -1,6 +1,7 @@
       SUBROUTINE boozer_setup
       USE booz_params
       USE booz_persistent
+      USE mpi_params, ONLY: myid, master
       IMPLICIT NONE
 C-----------------------------------------------
 !
@@ -25,7 +26,10 @@ C-----------------------------------------------
 
       CALL foranl (nu3_b, nv_boz, nfp, nunv, lasym_b)
 
-      IF (lscreen) WRITE(6, 50) mboz-1, -nboz, nboz, nu_boz, nv_boz
+      IF (lscreen .AND. myid .eq. master) THEN
+      	WRITE(6, 50) mboz-1, -nboz, nboz, nu_boz, nv_boz
+      END IF
+      
   50  FORMAT('  0 <= mboz <= ',i4,3x,i4,' <= nboz <= ',i4,/,
      1       '  nu_boz = ',i5,' nv_boz = ',i5,//,
      2       13x,'OUTBOARD (u=0)',14x,'JS',10x,'INBOARD (u=pi)'
