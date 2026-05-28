@@ -185,7 +185,7 @@
 
             WRITE(temp_str,'(i4.4)') k
             WRITE(temp1_str,'(i3.3)') mytimestep
-            CALL PENTA_OPEN_OUTPUT(TRIM(temp1_str) // '_k' // TRIM(temp_str))
+            IF(look_for_ambipolar) CALL PENTA_OPEN_OUTPUT(TRIM(temp1_str) // '_k' // TRIM(temp_str))
 
             ! Only search new ambipolar Er solution if look_for_ambipolar = true
             ! If not, take the current THRIFT_ER solution
