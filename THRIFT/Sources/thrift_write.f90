@@ -184,6 +184,12 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_PRESS',ier)
          CALL write_var_hdf5(fid,'THRIFT_FAST_ALPHAS_DENS',nsj,ntimesteps,ier,DBLVAR=THRIFT_FAST_ALPHAS_DENS,ATT='Density of fast alphas [m^-3]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_FAST_ALPHAS_DENS',ier)
+         ! ECRH power
+         CALL write_var_hdf5(fid,'THRIFT_DPECRHDV',nsj,ntimesteps,ier,DBLVAR=THRIFT_DPECRHDV,ATT='TRAVIS ECRH power deposition, dP/dV [W/m^3]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_DPECRHDV',ier)
+         CALL write_var_hdf5(fid,'THRIFT_PECRH',nsj,ntimesteps,ier,DBLVAR=THRIFT_PECRH,ATT='TRAVIS ECRH power [W]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'THRIFT_PECRH',ier)
+         !
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'thrift_'//TRIM(id_string)//'.h5',ier)
 #else

@@ -62,7 +62,7 @@
 !DEC$ IF DEFINED (NEO_OPT)
       IF (lscreen) WRITE(6,'(a)') ' ---------------------  NEOCLASSICAL TRANSPORT CALCULATION  ------------------'
       SELECT CASE(TRIM(equil_type))
-         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
+         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq','vmec_provided')
 !DEC$ IF DEFINED (MPI_OPT)
             CALL BCAST_NEOIN_INPUT(master,MPI_COMM_MYWORLD,ierr_mpi)
             CALL MPI_COMM_SIZE( MPI_COMM_MYWORLD, numprocs_local, ierr_mpi )
@@ -480,6 +480,9 @@
                  CLOSE(w_u9)
                END IF
             END IF
+            ! Do this so we always use boozer spectrum.
+            max_m_mode = 0
+            max_n_mode = 0
             CALL neo_dealloc
             no_fluxs = 0  ! For next pass through
             IF (lscreen) WRITE(6,'(A)')           '------------------------------------------------------------------'

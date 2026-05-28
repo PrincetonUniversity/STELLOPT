@@ -71,7 +71,7 @@ c-----------------------------------------------
 
       TWOPI = 8*atan(1._dp)
       ep_mu = 1._dp
-      device = "qas"
+      device = "qos"
       J_star_opt = 0
       if (device .eq. "qas") J_star_opt = 0
       PI = TWOPI/2

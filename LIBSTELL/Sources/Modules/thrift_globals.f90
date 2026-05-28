@@ -17,20 +17,22 @@
       IMPLICIT NONE
 
       ! Moved from thrift_vars
-      LOGICAL ::  lverbj, leccd, lnbcd, lohmic
+      LOGICAL ::  lverbj, leccd, lnbcd, lohmic, save_subiterations
       INTEGER ::  nrho, ntimesteps, n_eq, npicard, nsj
       REAL(rprec) :: tstart, tend, jtol, picard_factor, boot_factor
 
       ! Moved from thrift_vars (For ECCD in general)
       INTEGER, PARAMETER :: ntime_ecrh = 200
-      REAL(rprec), DIMENSION(ntime_ecrh) :: PECRH_AUX_T, PECRH_AUX_F
+      INTEGER :: ngyrotrons
+      ! REAL(rprec), DIMENSION(ntime_ecrh) :: PECRH_AUX_T, PECRH_AUX_F
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: PECRH_AUX_T, PECRH_AUX_F
       REAL(rprec) :: ecrh_rc, ecrh_w
 
       ! Moved from thrift_vars (for TRAVIS)
       INTEGER, PARAMETER :: nsys   = 16
       INTEGER :: nra_ecrh, nphi_ecrh
       INTEGER, DIMENSION(nsys)     :: wmode_ecrh
-      REAL(rprec), DIMENSION(nsys) :: freq_ecrh, power_ecrh
+      REAL(rprec), DIMENSION(nsys) :: freq_ecrh, power_ecrh, power_beam
       REAL(rprec), DIMENSION(nsys,3)     :: antennaposition_ecrh, &
                  targetposition_ecrh, rbeam_ecrh, rfocus_ecrh
 
@@ -47,7 +49,7 @@
       INTEGER :: nparallel_runs, mboz, nboz
       CHARACTER(256) :: bootstrap_type, eccd_type, vessel_ecrh, &
                         mirror_ecrh, targettype_ecrh, antennatype_ecrh, &
-                        etapar_type
+                        etapar_type, power_type
 
       ! Plasma solver
       LOGICAL :: solve_plasma_equations, beurskens_ions, add_NEO, &

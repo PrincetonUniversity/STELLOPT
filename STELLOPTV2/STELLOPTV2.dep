@@ -1,5 +1,14 @@
 # Microsoft Developer Studio Generated Dependency File, included by STELLOPT.mak
 
+stellopt_penta.o : \
+      stellopt_runtime.o  \
+      equil_utils.o  \
+      equil_vals.o  \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      $(LIB_DIR)/$(LOCTYPE)/read_boozer_mod.o \
+      $(PENTA_DIR)/$(LOCTYPE)/penta_interface_mod.o
+
+
 stellopt_run_vmec.o : \
       stellopt_runtime.o  \
       equil_utils.o  \
@@ -140,6 +149,8 @@ stellopt_write_header.o : \
 stellopt_write_auxfiles.o : \
       stellopt_runtime.o \
       equil_utils.o \
+      equil_vals.o \
+      $(BEAMS3D_DIR)/$(LOCTYPE)/beams3d_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_input_mod.o 
 
 stellopt_write_eqfile.o : \
@@ -608,6 +619,20 @@ chisq_vphi.o : \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
       equil_utils.o 
+      
+
+chisq_penta_er.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      equil_vals.o \
+      $(PENTA_DIR/$(LOCTYPE)/penta_interface_mod.o
+      
+
+chisq_penta_j.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
+      equil_vals.o \
+      $(PENTA_DIR/$(LOCTYPE)/penta_interface_mod.o
       
 
 chisq_phiedge.o : \

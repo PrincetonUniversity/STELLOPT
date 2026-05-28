@@ -22,6 +22,8 @@
 !DEC$ IF DEFINED (AEOPT)
       USE trapped_avail_energy_mod, ONLY: write_avail_energy_nml
 !DEC$ ENDIF
+      USE penta_interface_mod, ONLY: write_ion_params_nml ,&
+                                     write_run_params_nml
       
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
@@ -53,7 +55,7 @@
       END IF
       CALL safe_open(iunit_out,ier,TRIM('input.'//TRIM(proc_string)),'unknown','formatted')
          SELECT CASE(TRIM(equil_type))
-            CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
+            CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq','vmec_provided')
                CALL RESCALE_BOUNDARY ! Necssary for output file to have correct RBC/ZBS
                CALL write_indata_namelist(iunit_out,ier)
             CASE('test')
@@ -71,6 +73,10 @@
 !DEC$ IF DEFINED (AEOPT)
       IF (ANY(sigma_txport < bigno)) CALL write_avail_energy_nml(iunit_out,ier)
 !DEC$ ENDIF
+      IF (ANY(lneed_penta)) THEN
+         CALL write_ion_params_nml(iunit_out)
+         CALL write_run_params_nml(iunit_out)
+      ENDIF
       WRITE(iunit_out,'(A)') '&END'
       CLOSE(iunit_out)
 

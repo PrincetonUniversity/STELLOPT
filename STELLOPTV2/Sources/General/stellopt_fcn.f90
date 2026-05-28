@@ -403,6 +403,11 @@
                   CALL stellopt_prof_to_vmec(proc_string,iflag)
                   iflag = 0
                END IF
+            CASE('vmec_provided')
+               CALL read_wout_deallocate
+               CALL read_wout_file(TRIM(id_string),iflag)
+               CALL write_wout_file('wout_'//TRIM(proc_string)//'.nc',iflag)
+               CALL stellopt_prof_to_vmec(proc_string,iflag)
             CASE('spec')
             CASE('test')
                !Do Nothing
@@ -463,7 +468,12 @@
 !DEC$ ENDIF
 !DEC$ IF DEFINED (DKES_OPT)
          ctemp_str = 'dkes'
-         IF ( lneed_dkes .and. (iflag>=0)) THEN
+         IF ( ANY(lneed_dkes) .and. (iflag>=0)) THEN
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+            iflag = ier_paraexe
+         END IF
+         ctemp_str = 'penta'
+         IF ( ANY(lneed_penta) .and. (iflag>=0)) THEN
             CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
             iflag = ier_paraexe
          END IF

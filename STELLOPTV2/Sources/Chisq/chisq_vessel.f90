@@ -73,6 +73,7 @@
          IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3)') target,sigma,vals(mtargets)
       ELSE
          IF (sigma < bigno) THEN
+            lload_equil = .TRUE.
             mtargets = mtargets + 1
             IF (niter == -1) CALL vessel_load_txt(TRIM(vessel_string),iflag)
             IF (niter == -2) target_dex(mtargets) = jtarget_vessel

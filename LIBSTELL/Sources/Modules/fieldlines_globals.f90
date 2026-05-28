@@ -39,6 +39,7 @@
       INTEGER :: mumaterial_niter, mumaterial_nneighbor, mumaterial_lamthresh
       REAL(rprec) :: mumaterial_tol, mumaterial_lambda, mumaterial_lamfactor, &
                      mumaterial_padfactor, mumaterial_convcheck
+      REAL(rprec) :: mumaterial_scale
 
 
       CONTAINS

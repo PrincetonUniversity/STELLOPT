@@ -5,6 +5,8 @@
 !-----------------------------------------------------------------------------
 Module PENTA_subroutines
   Implicit None
+
+  LOGICAL :: lscreen_penta = .TRUE.
 Contains
   
 
@@ -99,7 +101,7 @@ EndDo
 
 ! Check for zero or even number of roots
 If ( num_roots == 0_iknd ) Then
-  Write(*,*) 'No roots found in search range'
+  IF (lscreen_penta) Write(*,*) 'No roots found in search range'
   If (Present(flag_roots)) Then
     flag_roots=1 ! Need to increase Er-search range
     Return
@@ -111,7 +113,7 @@ ElseIf ( Mod(num_roots,2_iknd) == 0_iknd) Then
     flag_roots=1 ! Need to increase Er-search range
     Return
   Else
-    Write(*,*) 'Even number of roots found, choosing first root only.'
+    IF (lscreen_penta) Write(*,*) 'Even number of roots found, choosing first root only.'
     num_roots = 1_iknd
   EndIf
 Endif

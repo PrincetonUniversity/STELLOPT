@@ -47,7 +47,8 @@ MODULE PENTA_INTERFACE_MOD
    LOGICAL, DIMENSION(:), ALLOCATABLE :: root_type
    CHARACTER(LEN=10) :: Method
    CHARACTER(LEN=100) :: arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, &
-      arg9, coeff_ext, run_ident, pprof_char, fpos, fstatus, str_num
+      arg9, coeff_ext, run_ident, pprof_char, fpos, fstatus, str_num, &
+      Er_root_type
 
 !-----------------------------------------------------------------------
 !     Module Namelists
@@ -57,7 +58,7 @@ MODULE PENTA_INTERFACE_MOD
       read_U2_file, Add_Spitzer_to_D33, num_Er_test, numKsteps, &
       kord_pprof, keord, kcord, Kmin, Kmax, epsabs, epsrel, Method, &
       flux_cap, output_QoT_vs_Er, use_beam, Er_min_Vcm, Er_max_Vcm, &
-      save_all_ambipolar_roots, save_fluxes_vs_Er
+      save_all_ambipolar_roots, save_fluxes_vs_Er, Er_root_type
 
 !-----------------------------------------------------------------------
 !     SUBROUTINES
@@ -91,8 +92,53 @@ MODULE PENTA_INTERFACE_MOD
       Er_max_Vcm           =  250.0_rknd
       save_all_ambipolar_roots = .FALSE.
       save_fluxes_vs_Er = .FALSE.
+      num_ion_species   = 1
+      Z_ion_init        = 1.0
+      miomp_init        = 1.0
+      Er_root_type      = 'ion_root'
       RETURN
    END SUBROUTINE init_penta_input
+
+   SUBROUTINE bcast_penta_input(main_thread, mpi_communicator,ierr_mpi)
+      USE mpi_inc
+      IMPLICIT NONE
+      INTEGER, INTENT(in) :: main_thread
+      INTEGER, INTENT(inout) :: mpi_communicator
+      INTEGER, INTENT(out) :: ierr_mpi
+      ierr_mpi = 0
+#if defined(MPI_OPT)
+      CALL MPI_BCAST(num_ion_species,          1, MPI_INTEGER,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(num_species,              1, MPI_INTEGER,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(Z_ion_init,     NUM_ION_MAX, MPI_DOUBLE_PRECISION, main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(miomp_init,     NUM_ION_MAX, MPI_DOUBLE_PRECISION, main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(input_is_Er,              1, MPI_LOGICAL,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(log_interp,               1, MPI_LOGICAL,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(use_quanc8,               1, MPI_LOGICAL,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(read_U2_file,             1, MPI_LOGICAL,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(flux_cap,                 1, MPI_LOGICAL,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(output_QoT_vs_Er,         1, MPI_LOGICAL,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(Add_Spitzer_to_D33,       1, MPI_LOGICAL,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(use_beam,                 1, MPI_LOGICAL,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(save_all_ambipolar_roots, 1, MPI_LOGICAL,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(save_fluxes_vs_Er,        1, MPI_LOGICAL,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(num_Er_test,              1, MPI_INTEGER,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(numKsteps,                1, MPI_INTEGER,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(kord_pprof,               1, MPI_INTEGER,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(keord,                    1, MPI_INTEGER,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(kcord,                    1, MPI_INTEGER,          main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(Kmin,                     1, MPI_DOUBLE_PRECISION, main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(Kmax,                     1, MPI_DOUBLE_PRECISION, main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(epsabs,                   1, MPI_DOUBLE_PRECISION, main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(epsrel,                   1, MPI_DOUBLE_PRECISION, main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(sigma_par,                1, MPI_DOUBLE_PRECISION, main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(sigma_par_Spitzer,        1, MPI_DOUBLE_PRECISION, main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(J_BS,                     1, MPI_DOUBLE_PRECISION, main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(Er_min_Vcm,               1, MPI_DOUBLE_PRECISION, main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(Er_max_Vcm,               1, MPI_DOUBLE_PRECISION, main_thread, mpi_communicator, ierr_mpi)
+      CALL MPI_BCAST(method,                  10, MPI_CHARACTER,        main_thread, mpi_communicator, ierr_mpi)
+#endif
+      RETURN
+   END SUBROUTINE bcast_penta_input
 
    SUBROUTINE penta_set_ion_params(num_ion_in, Z_ion_in, miomp_in)
       IMPLICIT NONE
@@ -146,11 +192,11 @@ MODULE PENTA_INTERFACE_MOD
       CHARACTER(LEN=*), PARAMETER :: outint  = "(2X,A,1X,'=',1X,I0)"
       INTEGER(iknd) :: k
       WRITE(iunit,'(A)') '&ION_PARAMS'
-      WRITE(iunit,'(A)') '----------------------------------------------------------------'
+      !WRITE(iunit,'(A)') '!----------------------------------------------------------------'
       WRITE(iunit,outint) 'NUM_ION_SPECIES',num_ion_species
       WRITE(iunit,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'Z_ION_INIT',(Z_ion_init(k), k=1,num_ion_species)
       WRITE(iunit,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'MIOMP_INIT',(miomp_init(k), k=1,num_ion_species)
-      WRITE(iunit,'(A)') '/\n'
+      WRITE(iunit,'(A)') '/'
    END SUBROUTINE write_ion_params_nml
 
    SUBROUTINE write_ion_params_namelist_byfile(filename)
@@ -203,6 +249,7 @@ MODULE PENTA_INTERFACE_MOD
          CALL FLUSH(6)
          STOP
       END IF
+      CALL tolower(Er_root_type)
       CLOSE(iunit)
       RETURN
    END SUBROUTINE read_penta_run_params_namelist
@@ -233,8 +280,9 @@ MODULE PENTA_INTERFACE_MOD
       WRITE(iunit,outdbl) 'KMAX',kmax
       WRITE(iunit,outdbl) 'EPSABS',epsabs
       WRITE(iunit,outdbl) 'EPSREL',epsrel
-      WRITE(iunit,outstr) 'METHOD',method
-      WRITE(iunit,'(A)') '/\n'
+      WRITE(iunit,outstr) 'METHOD',TRIM(method)
+      WRITE(iunit,outstr) 'ER_ROOT_TYPE',TRIM(Er_root_type)
+      WRITE(iunit,'(A)') '/'
    END SUBROUTINE write_run_params_nml
 
    SUBROUTINE write_run_params_namelist_byfile(filename)
@@ -683,8 +731,11 @@ MODULE PENTA_INTERFACE_MOD
    END SUBROUTINE penta_fit_DXX_coef
 
    SUBROUTINE penta_screen_info
+      USE PENTA_subroutines, ONLY: lscreen_penta
       IMPLICIT NONE
+      lscreen_penta = .FALSE.
       If ( i_append == 0 ) Then
+         lscreen_penta = .TRUE.
          WRITE(6,'(A)') ""
          WRITE(6,'(A)') "Welcome to PENTA3, please note the following settings:"
          WRITE(6,'(A)')
@@ -1065,10 +1116,12 @@ MODULE PENTA_INTERFACE_MOD
             Er_min = Er_min - 50.0_rknd
             Er_max = Er_max + 50.0_rknd
             num_Er_test = num_Er_test + additional_roots
-            WRITE(6,'(A,F7.2,A,F7.2,A,F7.2,A,F7.2,A)') '[Er_min,Er_max] changed from [', Er_min+50.0_rknd, ',', Er_max-50.0_rknd, &
+            IF ( i_append == 0 ) THEN
+               WRITE(6,'(A,F7.2,A,F7.2,A,F7.2,A,F7.2,A)') '[Er_min,Er_max] changed from [', Er_min+50.0_rknd, ',', Er_max-50.0_rknd, &
                                  '] to [', Er_min, ',', Er_max, ']'
-            WRITE(6,'(A,I4,A,I4)') 'num_Er_test increased from ', num_Er_test-additional_roots, ' to ', num_Er_test
-            WRITE(6,'(A)') ' '
+               WRITE(6,'(A,I4,A,I4)') 'num_Er_test increased from ', num_Er_test-additional_roots, ' to ', num_Er_test
+               WRITE(6,'(A)') ' '
+            END IF
             CALL PENTA_RUN_2_EFIELD
          Elseif( flag_roots==2 ) THEN
             ! case where numEr must increase
@@ -1428,24 +1481,16 @@ MODULE PENTA_INTERFACE_MOD
 
    END SUBROUTINE penta_merge_fluxes_vs_Er_files
 
-   SUBROUTINE root_analysis
+   SUBROUTINE root_analysis(which_root)
       ! The array root_type indicates if the ambipolar root is set or not with .TRUE. or .FALSE.
 
       IMPLICIT NONE
 
+      CHARACTER(len=*), INTENT(IN) :: which_root
       INTEGER(iknd) :: i, j, idx_ion_root, idx_electron_root, one, zero, idx_closest_to_zero, selected_idx
       REAL(rknd), DIMENSION(num_Er_test) :: Jr
       REAL(rknd) :: temp_sum, electron_root, ion_root, integral, Er_closest_to_zero, best_neg
       LOGICAL :: cond_A, cond_B
-
-      ! DEPRECATED: Maxwell construction criterium
-      ! Do i=1, num_Er_test
-      !    temp_sum = 0.0
-      !    Do j=1, num_ion_species
-      !       temp_sum = temp_sum + Z_ion(j)*Gamma_i_vs_Er(i,j)
-      !    End Do
-      !    Jr(i) = temp_sum - Gamma_e_vs_Er(i)
-      ! End Do
 
       IF( mod(num_roots,2) == 0) THEN
          STOP 'ERROR: an even number of roots was found. This is non-physical...'
@@ -1459,23 +1504,15 @@ MODULE PENTA_INTERFACE_MOD
       IF( num_roots ==1 ) THEN
          root_type(1) = .TRUE.
       ELSE IF(num_roots==3) THEN
-         ! pick root that corresponds to lowest Er (ion root)
-         root_type(1) = .TRUE. !Er_roots are ordered
-
-         ! ! DEPRECATED: Maxwell construction criterium
-         ! electron_root = MAXVAL(Er_roots(1:num_roots),1)
-         ! ion_root = MINVAL(Er_roots(1:num_roots),1)
-         ! ! Find the index in Er_test_vals closest to electron_root and ion_root
-         ! idx_electron_root = MINLOC( ABS(Er_test_vals-electron_root), 1 )
-         ! idx_ion_root = MINLOC( ABS(Er_test_vals-ion_root), 1 )
-         ! ! Compute integrals
-         ! integral = SUM( Jr(idx_ion_root:idx_electron_root)*(Er_test_vals(2)-Er_test_vals(1)) )
-         ! ! Set root type
-         ! IF(integral>0) THEN
-         !    root_type(1) = .TRUE.
-         ! ELSE
-         !    root_type(3) = .TRUE.
-         ! ENDIF
+         
+         !Er_roots are ordered
+         IF(trim(adjustl(which_root)) == 'ion_root') THEN
+            root_type(1) = .TRUE. 
+         ELSE IF(trim(adjustl(which_root)) == 'electron_root') THEN
+            root_type(3) = .TRUE.
+         ELSE
+            STOP 'Only ion_root and electron_root are possible which_root'
+         END IF
          
       ELSE IF(num_roots==5) THEN
          ! There are 2 possibilities:

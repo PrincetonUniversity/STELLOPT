@@ -1,19 +1,19 @@
 !-----------------------------------------------------------------------
-!     Subroutine:    chisq_magwell
-!     Authors:       S. Lazerson (lazerson@pppl.gov)
-!     Date:          07/05/2017
-!     Description:   This subroutine calculates the magnetic well
-!                    parameter as outline at:
-!                    https://fusion.gat.com/pubs-ext/ComPlasmaPhys/A22135.pdf
-!                    Here W > 0 implies stability
+!     Subroutine:    chisq_penta_er
+!     Authors:       S. Lazerson (samuel.lazerson@gauss-fusion.com)
+!                    A. Coelho (antonio.coelho@gauss-fusion.com)
+!     Date:          03/23/2026
+!     Description:   Targeting of Er using PENTA code
 !-----------------------------------------------------------------------
-      SUBROUTINE chisq_magwell(target,sigma,niter,iflag)
+      SUBROUTINE chisq_penta_er(target,sigma,niter,iflag)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
       USE stellopt_runtime
-      USE equil_utils
       USE stellopt_targets
+      USE equil_vals, ONLY: ER_PENTA
+      USE penta_interface_mod, ONLY: read_penta_ion_params_namelist, &
+         read_penta_run_params_namelist, init_penta_input
       
 !-----------------------------------------------------------------------
 !     Input/Output Variables
@@ -29,41 +29,45 @@
 !     Local Variables
 !
 !-----------------------------------------------------------------------
-      INTEGER     :: ik, ier
-      REAL(rprec) :: modb, Bsqav, dBsqav, p, pp, W, Vp,temp1, temp2, &
-                     rhosqav, V, Bav
+      INTEGER :: ik, ij, ii, istat
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
-      ik = COUNT(sigma < bigno)
-      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'MAGWELL ',ik,7
-      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  MAGWELL  <B**2>  P  dP/drho k'
+      ! Print Header
+      IF (iflag == 1) THEN
+         ik   = COUNT(target_dex == jtarget_penta_er)
+         WRITE(iunit_out,'(A,2(2X,I3.3))') 'PENTA_ER ', ik, 4
+         WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VAL  K'
+      END IF
       IF (niter >= 0) THEN
+         ii = 1
          DO ik = 1, nsd
             IF (sigma(ik) >= bigno) CYCLE
-            CALL get_equil_Bav(shat(ik),Bav,Bsqav,ier,dBsqav) ! stel_tools (rho)
-            CALL get_equil_volume(shat(ik),V,ier,Vp)
-            CALL get_equil_p(shat(ik),p,ier,pp)
-            W = V*(2*mu0*pp/Vp+dBsqav)/Bsqav
-            ! Output value
             mtargets = mtargets + 1
             targets(mtargets) = target(ik)
             sigmas(mtargets)  = sigma(ik)
-            vals(mtargets)    = W
-            IF (iflag == 1) WRITE(iunit_out,'(6ES22.12E3,2X,I3.3)') target(ik),sigma(ik),W, Bsqav, p, pp, ik
+            vals(mtargets)    = ER_PENTA(ii)
+            IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3,2X,I3.3)') target(ik),sigma(ik),vals(mtargets),ik
+            IF (iflag == 1) CALL FLUSH(iunit_out)
+            ii = ii + 1
          END DO
       ELSE
-         DO ik = 1, nsd
-            IF (sigma(ik) < bigno) THEN
-               lload_equil = .TRUE.
-               mtargets = mtargets + 1
-               IF (niter == -2) target_dex(mtargets)=jtarget_magwell
-            END IF
+         DO ii = 1, nsd
+            IF (sigma(ii) >= bigno) CYCLE
+            lbooz(ii) = .TRUE.
+            lneed_dkes(ii) = .TRUE.
+            lneed_penta(ii) = .TRUE.
+            mtargets = mtargets + 1
+            IF (niter == -2) target_dex(mtargets)=jtarget_penta_er
          END DO
+         istat = 0
+         CALL init_penta_input
+         CALL read_penta_ion_params_namelist("input."//TRIM(id_string),istat)
+         CALL read_penta_run_params_namelist("input."//TRIM(id_string),istat)
       END IF
       RETURN
 !----------------------------------------------------------------------
 !     END SUBROUTINE
 !----------------------------------------------------------------------
-      END SUBROUTINE chisq_magwell
+      END SUBROUTINE chisq_penta_er

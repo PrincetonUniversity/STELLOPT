@@ -36,7 +36,7 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       LOGICAL        :: ltst
-      INTEGER        :: ier, i, iunit, ntimesteps_restart, ns_restart, k
+      INTEGER        :: ier, i, iunit, ntimesteps_restart, ns_restart, k, ntimesteps_ecrh, nbeams
       CHARACTER(256) :: tstr1,tstr2
       REAL(rprec)    :: dt, tend_restart
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: temp2d
@@ -148,6 +148,10 @@
       CALL mpialloc(UGRID_RESTART,   nsj, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_ugrid_restart)
       CALL mpialloc(J_RESTART,       nsj, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_j_restart)
 
+      ! ECCD power (saved when using TRAVIS)
+      CALL mpialloc(THRIFT_DPECRHDV,  nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_dpecrhdv)
+      CALL mpialloc(THRIFT_PECRH,  nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_pecrh)
+      
       ! Read the Bootstrap input
       CALL tolower(bootstrap_type)
       SELECT CASE (TRIM(bootstrap_type))
@@ -380,6 +384,64 @@
         FORALL(i = 1:nrho) THRIFT_RHO(i) = DBLE(i-0.5)/DBLE(nrho) ! (half) rho grid
         FORALL(i = 1:nsj)  THRIFT_S(i)   = DBLE(i-1)/DBLE(nsj-1)  ! (full)  s  grid
         FORALL(i = 1:ntimesteps) THRIFT_T(i) = tstart + (i-1)*dt  !       time grid
+      END IF
+
+      ! Read PECRH_AUX_T and PECRH_AUX_F in case they exist in profiles file
+      IF(leccd) THEN
+         IF (myid_sharmem == master) THEN
+            !
+            nbeams = 0
+            DO i = 1,nsys
+               IF (ANY(antennaposition_ecrh(i,:) .ne. 0)) nbeams = nbeams + 1
+            END DO
+            !
+            CALL open_hdf5(TRIM(prof_string),fid,ier,LCREATE=.false.)
+            IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,TRIM(prof_string),ier)
+            !
+            IF( TRIM(power_type) .EQ. 'read_from_file' ) THEN
+               CALL read_scalar_hdf5(fid,'ecrh_ntimesteps',ier,INTVAR=ntimesteps_ecrh)
+               IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ecrh_ntimesteps',ier)
+               CALL read_scalar_hdf5(fid,'ecrh_ngyrotrons',ier,INTVAR=ngyrotrons)
+               IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ecrh_ngyrotrons',ier)
+               !
+               ! Let's check that nygrotrons is the same as number of antennas in input file
+               IF(nbeams .ne. ngyrotrons) THEN
+                  WRITE(6,*) '!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
+                  WRITE(6,*) '  Number of gyrotrons in profiles file different from number of beams in input file '
+                  WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+                  STOP
+               END IF
+               !
+               ALLOCATE(PECRH_AUX_T(ngyrotrons,ntimesteps_ecrh),PECRH_AUX_F(ngyrotrons,ntimesteps_ecrh))
+               !
+               CALL read_var_hdf5(fid,'PECRH_AUX_T',ngyrotrons,ntimesteps_ecrh,ier,DBLVAR=PECRH_AUX_T)
+               IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'PECRH_AUX_T',ier)
+               CALL read_var_hdf5(fid,'PECRH_AUX_F',ngyrotrons,ntimesteps_ecrh,ier,DBLVAR=PECRH_AUX_F)
+               IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'PECRH_AUX_F',ier)
+               !
+               CALL close_hdf5(fid,ier)   
+            ELSE IF( TRIM(power_type) .EQ. 'read_from_namelist') THEN
+               ! When power read from namelist, assumes the same power at all times
+               ntimesteps_ecrh = ntimesteps
+               ngyrotrons = nbeams
+               ALLOCATE(PECRH_AUX_T(ngyrotrons,ntimesteps_ecrh),PECRH_AUX_F(ngyrotrons,ntimesteps_ecrh))
+               DO i=1,ngyrotrons
+                  PECRH_AUX_T(i,:) = THRIFT_T
+                  PECRH_AUX_F(i,:) = power_ecrh(i)
+               END DO
+            ELSE
+               WRITE(6,*) '  power_type MUST BE read_from_file OR read_from_namelist '
+               FLUSH(6)
+               STOP
+            END IF
+         END IF
+         ! CALL barrier??
+         CALL MPI_BCAST(ntimesteps_ecrh,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+         CALL MPI_BCAST(ngyrotrons,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+         IF( .NOT. ALLOCATED(PECRH_AUX_T)) ALLOCATE(PECRH_AUX_T(ngyrotrons,ntimesteps_ecrh))
+         IF( .NOT. ALLOCATED(PECRH_AUX_F)) ALLOCATE(PECRH_AUX_F(ngyrotrons,ntimesteps_ecrh))
+         CALL MPI_BCAST(PECRH_AUX_T,ngyrotrons*ntimesteps_ecrh,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+         CALL MPI_BCAST(PECRH_AUX_F,ngyrotrons*ntimesteps_ecrh,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
       END IF
 
       ! Extra variables (used in debugging process)

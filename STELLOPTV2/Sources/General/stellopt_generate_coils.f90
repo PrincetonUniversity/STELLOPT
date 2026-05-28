@@ -11,7 +11,8 @@
 !-----------------------------------------------------------------------
       USE stellopt_vars, ONLY: ncoils_max, nknots_coils_max, &
             rho_coil_kts, theta_coil_kts, zeta_coil_kts, &
-            nw_coil, nh_coil, width_coil, height_coil
+            nw_coil, nh_coil, width_coil, height_coil, &
+            coil_type
       USE stellopt_runtime, ONLY: proc_string
       USE read_wout_mod, ONLY: mnmax, ns, xm, xn, rmnc, zmns, isigng
       USE vmec_input, ONLY: extcur
@@ -40,14 +41,14 @@
       !-----------------------------------------------------------------
       !     Compute helpers
       !-----------------------------------------------------------------
+      n = 0
       DO i = 1, ncoils_max
          DO k = 1, nknots_coils_max
-            IF (rho_coil_kts(i,k)>0) n=k
+            IF (rho_coil_kts(i,k)>0) n=MAX(k,n)
          ENDDO
       ENDDO
       !n = MAXVAL(MAXLOC(rho_coil_kts,DIM=2,BACK=.TRUE.))
       numcoilgroups = COUNT(ANY(rho_coil_kts>0,DIM=2))
-      k=1
 
       !-----------------------------------------------------------------
       !     Screen Output
@@ -66,10 +67,11 @@
       !-----------------------------------------------------------------
       !     Load Splines
       !-----------------------------------------------------------------
-      CALL init_spline_coils(nscoil, numcoilgroups, n, n+k, &
+      CALL init_spline_coils(nscoil, numcoilgroups, n, &
                               rho_coil_kts(1:numcoilgroups,1:n), &
                               theta_coil_kts(1:numcoilgroups,1:n), &
-                              zeta_coil_kts(1:numcoilgroups,1:n))
+                              zeta_coil_kts(1:numcoilgroups,1:n),&
+                              coil_type(1:numcoilgroups))
       !-----------------------------------------------------------------
       !     Load Boundary
       !-----------------------------------------------------------------
@@ -80,7 +82,7 @@
       !-----------------------------------------------------------------
       !     Create coils
       !-----------------------------------------------------------------
-      CALL spline_to_coils(isigng)
+      CALL spline_to_coils(numcoilgroups,coil_type(1:numcoilgroups),isigng)
 
       !-----------------------------------------------------------------
       !     Set the Current

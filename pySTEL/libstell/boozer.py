@@ -40,7 +40,7 @@ class BOOZER(FourierRep):
 		nmax = int(max(np.squeeze(self.ixn_b))/self.nfp_b)
 		# Get mn00
 		self.mn00 = None; self.mn01 = None; self.mn10 = None
-		for mn in range(self.mnmax):
+		for mn in range(self.mnboz_b):
 			if self.ixm_b[mn]==0 and self.ixn_b[mn]==0:
 				self.mn00 = mn
 			if self.ixm_b[mn]==0 and self.ixn_b[mn]==self.nfp_b:

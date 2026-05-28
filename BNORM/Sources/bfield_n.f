@@ -37,7 +37,7 @@ c-----------------------------------------------------------------
 !
 !     NOTE: nescin has been modified from original format: np added to front end
 !
-      nu=64; nv=64; mf=48; nf=16; md=48; nd=16;
+      nu=64; nv=64; mf=48; nf=16; md=48; nd=36;
 !      nu=64; nv=64; mf=12; nf=12; md=18; nd=18;
 
 !

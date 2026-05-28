@@ -136,10 +136,10 @@ class THRIFT():
                 # Arrays
                 for temp in ['THRIFT_ALPHA1','THRIFT_ALPHA2','THRIFT_ALPHA3','THRIFT_ALPHA4','THRIFT_AMINOR',\
        			    'THRIFT_BAV','THRIFT_BETATOT','THRIFT_BSQAV','THRIFT_BVAV','THRIFT_COEFF_A','THRIFT_COEFF_B','THRIFT_COEFF_BP',\
-				    'THRIFT_COEFF_C','THRIFT_COEFF_CP','THRIFT_COEFF_D','THRIFT_COEFF_DP','THRIFT_EPARB','THRIFT_ER','THRIFT_ETAPARA','THRIFT_GNEO',\
+				    'THRIFT_COEFF_C','THRIFT_COEFF_CP','THRIFT_COEFF_D','THRIFT_COEFF_DP','THRIFT_DPECRHDV','THRIFT_EPARB','THRIFT_ER','THRIFT_ETAPARA','THRIFT_GNEO',\
                     'THRIFT_I','THRIFT_IBOOT','THRIFT_IECCD','THRIFT_INBCD','THRIFT_IOHMIC','THRIFT_IOTA','THRIFT_IPLASMA','THRIFT_ISOURCE',\
 				    'THRIFT_J','THRIFT_JBOOT','THRIFT_JECCD','THRIFT_JNBCD','THRIFT_JOHMIC','THRIFT_JPLASMA','THRIFT_JSOURCE',\
-				    'THRIFT_MATLD','THRIFT_MATMD','THRIFT_MATRHS','THRIFT_MATUD','THRIFT_P','THRIFT_PHIEDGE','THRIFT_PPRIME',\
+				    'THRIFT_MATLD','THRIFT_MATMD','THRIFT_MATRHS','THRIFT_MATUD','THRIFT_P','THRIFT_PECRH','THRIFT_PHIEDGE','THRIFT_PPRIME',\
 				    'THRIFT_QNEO','THRIFT_RMAJOR','THRIFT_S11','THRIFT_S12','THRIFT_T', 'THRIFT_UGRID','THRIFT_VP',\
                     'THRIFT_DENS', 'THRIFT_TEMP', 'THRIFT_PRESS']:
                     if temp in f:
@@ -711,9 +711,73 @@ class THRIFT():
         if type(time) == type(None):
             t0 = self.THRIFT_T[-1]
         else:
-            t0 = time
+            t0 = max(time,self.THRIFT_T[-1])
         ftemp = RegularGridInterpolator((self.THRIFT_T,self.THRIFT_S),self.THRIFT_I)
         return float(ftemp([t0,1.0])[0])
+
+    def get_temperature_prof(self,species=0,time=None,ns=64):
+        """ Returns a species temperature array
+
+        This subroutine returns the species tempterature.
+
+        Parameters
+        ----------
+        species : int (optional)
+            Species to return. (default: 0 - electrons)
+        time : float (optional)
+            Time at which to evaluate profile. (default: last timestamp)
+        ns : int (optional)
+            Number of points to use in evaluation (default: 64)
+        Returns
+        ----------
+        sflx : ndarray
+            Array of knots in normalized toroidal flux (s)
+        T : ndarray
+            Array of values of temperature [eV]
+        """
+        import numpy as np
+        from scipy.interpolate import RegularGridInterpolator
+        if type(time) == type(None):
+            t0 = self.THRIFT_T[-1]
+        else:
+            t0 = max(time,self.THRIFT_T[-1])
+        sflx = np.linspace(0,1.0,ns)
+        tval = np.ones_like(sflx)*t0
+        x    = np.vstack((tval,sflx))
+        ftemp = RegularGridInterpolator((self.THRIFT_T,self.THRIFT_S),np.squeeze(self.THRIFT_TEMP[:,:,species]))
+        return sflx,ftemp(x.T)
+
+    def get_density_prof(self,species=0,time=None,ns=64):
+        """ Returns a species density array
+
+        This subroutine returns the species density.
+
+        Parameters
+        ----------
+        species : int (optional)
+            Species to return. (default: 0 - electrons)
+        time : float (optional)
+            Time at which to evaluate profile. (default: last timestamp)
+        ns : int (optional)
+            Number of points to use in evaluation (default: 64)
+        Returns
+        ----------
+        sflx : ndarray
+            Array of knots in normalized toroidal flux (s)
+        N : ndarray
+            Array of values of density [m^-3]
+        """
+        import numpy as np
+        from scipy.interpolate import RegularGridInterpolator
+        if type(time) == type(None):
+            t0 = self.THRIFT_T[-1]
+        else:
+            t0 = max(time,self.THRIFT_T[-1])
+        sflx = np.linspace(0,1.0,ns)
+        tval = np.ones_like(sflx)*t0
+        x    = np.vstack((tval,sflx))
+        ftemp = RegularGridInterpolator((self.THRIFT_T,self.THRIFT_S),np.squeeze(self.THRIFT_DENS[:,:,species]))
+        return sflx,ftemp(x.T)
 
     def get_j_prof(self,time=None,ns=64):
         """ Returns a current profile array
@@ -742,7 +806,7 @@ class THRIFT():
         if type(time) == type(None):
             t0 = self.THRIFT_T[-1]
         else:
-            t0 = time
+            t0 = max(time,self.THRIFT_T[-1])
         sflx = np.linspace(0,1.0,ns)
         tval = np.ones_like(sflx)*t0
         x    = np.vstack((tval,sflx))
@@ -769,18 +833,14 @@ class THRIFT():
         if type(time) == type(None):
             t0 = self.THRIFT_T[-1]
         else:
-            t0 = time
+            t0 = max(time,self.THRIFT_T[-1])
         ftemp = RegularGridInterpolator((self.THRIFT_T,self.THRIFT_S),self.THRIFT_IBOOT)
         return float(ftemp([t0,1.0])[0])
 
     def get_jboot_prof(self,time=None,ns=64):
-        """ Returns a current profile array
+        """ Returns the bootstrap current density
 
-        This subroutine returns the total bootstrap current density
-        array in a 2D array where the first dimension are the points
-        in s and the second dimension is the current density in kA/m^2.
-        The user may provide a timeslice or number of points in an 
-        array.
+        This subroutine returns the bootstrap current density [A/m^2].
 
         Parameters
         ----------
@@ -800,11 +860,41 @@ class THRIFT():
         if type(time) == type(None):
             t0 = self.THRIFT_T[-1]
         else:
-            t0 = time
+            t0 = max(time,self.THRIFT_T[-1])
         sflx = np.linspace(0,1.0,ns)
         tval = np.ones_like(sflx)*t0
         x    = np.vstack((tval,sflx))
         ftemp = RegularGridInterpolator((self.THRIFT_T,self.THRIFT_S),self.THRIFT_JBOOT)
+        return sflx,ftemp(x.T)
+
+    def get_jsource_prof(self,time=None,ns=64):
+        """ Returns the source current density
+
+        This subroutine returns the source current density [A/m^2].
+
+        Parameters
+        ----------
+        time : float (optional)
+            Time at which to evaluate profile. (default: last timestamp)
+        ns : int (optional)
+            Number of points to use in evaluation (default: 64)
+        Returns
+        ----------
+        sflx : ndarray
+            Array of knots in normalized toroidal flux (s)
+        jboot : ndarray
+            Array of values of source current [A/m^2]
+        """
+        import numpy as np
+        from scipy.interpolate import RegularGridInterpolator
+        if type(time) == type(None):
+            t0 = self.THRIFT_T[-1]
+        else:
+            t0 = max(time,self.THRIFT_T[-1])
+        sflx = np.linspace(0,1.0,ns)
+        tval = np.ones_like(sflx)*t0
+        x    = np.vstack((tval,sflx))
+        ftemp = RegularGridInterpolator((self.THRIFT_T,self.THRIFT_S),self.THRIFT_JSOURCE)
         return sflx,ftemp(x.T)
 
     def get_iota_prof(self,time=None,ns=64):
@@ -834,7 +924,7 @@ class THRIFT():
         if type(time) == type(None):
             t0 = self.THRIFT_T[-1]
         else:
-            t0 = time
+            t0 = max(time,self.THRIFT_T[-1])
         sflx = np.linspace(0,1.0,ns)
         tval = np.ones_like(sflx)*t0
         x    = np.vstack((tval,sflx))
@@ -869,7 +959,7 @@ class THRIFT():
         if type(time) == type(None):
             t0 = self.THRIFT_T[-1]
         else:
-            t0 = time
+            t0 = max(time,self.THRIFT_T[-1])
         s,A = self.get_Aminor(time=time,ns=ns)
         s,Er = self.get_er_prof(time=time,ns=ns)
         # Compute the estatic potential
@@ -903,7 +993,7 @@ class THRIFT():
         if type(time) == type(None):
             t0 = self.THRIFT_T[-1]
         else:
-            t0 = time
+            t0 = max(time,self.THRIFT_T[-1])
         sflx = np.linspace(0,1.0,ns)
         tval = np.ones_like(sflx)*t0
         x    = np.vstack((tval,sflx))
@@ -937,7 +1027,7 @@ class THRIFT():
         if type(time) == type(None):
             t0 = self.THRIFT_T[-1]
         else:
-            t0 = time
+            t0 = max(time,self.THRIFT_T[-1])
         sflx = np.linspace(0,1.0,ns)
         tval = np.ones_like(sflx)*t0
         x    = np.vstack((tval,sflx))
@@ -1156,6 +1246,115 @@ class THRIFT():
         hf.create_dataset('ti_prof', data=Ti)
         #
         hf.close()
+    
+    def plot_thrift_vars_subiterations(self,folder, plot_var):
+        """
+        Plots arrays from files named:
+
+            thrift_vars*.xxx_yyy
+
+        where:
+            xxx = iteration number
+            yyy = subiteration number
+
+        Parameters
+        ----------
+        folder : str
+            Path to folder containing the files.
+
+        plot_var : str
+            One of:
+                'THRIFT_J'
+                'THRIFT_JBOOT'
+                'THRIFT_JECCD'
+        """
+        import re
+        import os
+        import glob
+        allowed_vars = ['THRIFT_J', 'THRIFT_JBOOT', 'THRIFT_JECCD']
+
+        if plot_var not in allowed_vars:
+            raise ValueError(
+                f"plot_var must be one of {allowed_vars}"
+            )
+
+        # Column mapping
+        col_map = {
+            'THRIFT_J': 1,
+            'THRIFT_JBOOT': 2,
+            'THRIFT_JECCD': 3
+        }
+
+        # Regex for extracting iteration/subiteration
+        pattern = re.compile(r'.*\.(\d+)_(\d+)$')
+
+        # Find files
+        files = glob.glob(os.path.join(folder, 'thrift_vars*.*_*'))
+
+        if len(files) == 0:
+            raise ValueError(f'No matching files found in {folder}')
+
+        # Organize files by iteration
+        iterations = {}
+
+        for f in files:
+
+            basename = os.path.basename(f)
+
+            match = pattern.match(basename)
+
+            if match is None:
+                continue
+
+            iteration = int(match.group(1))
+            subiteration = int(match.group(2))
+
+            if iteration not in iterations:
+                iterations[iteration] = []
+
+            iterations[iteration].append((subiteration, f))
+
+        # Sort iterations
+        sorted_iterations = sorted(iterations.keys())
+
+        # Create one figure per iteration
+        for iteration in sorted_iterations:
+
+            _, ax = plt.subplots(figsize=(11,8))
+            _, ax2 = plt.subplots(figsize=(11,8))
+
+            # Sort subiterations
+            subiter_files = sorted(iterations[iteration],
+                                key=lambda x: x[0])
+
+            data_all = []
+            for subiteration, filepath in subiter_files:
+
+                # Load data
+                data = np.loadtxt(filepath, skiprows=1)
+
+                roa = data[:,0]
+                y = data[:, col_map[plot_var]]
+
+                ax.plot(roa,y,label=f'{subiteration:03d}')
+                data_all.append(y)
+                
+            ax.set_xlabel('r/a')
+            ax.set_ylabel(plot_var)
+            ax.set_title(f'{plot_var}, it={iteration}')
+            ax.legend()
+            ax.grid(True)
+            #
+            data_all = np.array(data_all)
+            ax2.plot(data_all,'.-',markersize=10,linewidth=2.5,label=roa)
+            # ax2.plot(data_all[:,0:-1:20],'.-',markersize=10,linewidth=2.5,label=roa[0:-1:20])
+            ax2.set_xlabel('nsubiter')
+            ax2.set_ylabel(plot_var)
+            ax2.set_title(f'{plot_var}, it={iteration}')
+            ax2.legend()
+            ax2.grid(True)
+            
+        plt.show()
     
 # THRIFT Class
 class THRIFT_plasma_solver():
