@@ -3584,5 +3584,80 @@ go to 30
 return
 end function zeroin
 
+subroutine calc_integration_arrays(num_species,Temps,dens,vths,charges,masses,loglambda,Kmin,Kmax,numKsteps, &
+  cmin,cmax,emin,emax,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+
+  Use penta_kind_mod                  ! Import rknd, iknd specifications
+  Use penta_math_routines_mod, Only : rlinspace ! Import math routines
+  Use phys_const, Only :  pi, eps0     ! Import physical constants
+
+  implicit none
+
+  ! Input variables
+  Integer(iknd), Intent(in)  :: num_species
+  ! Real(rknd),    Intent(in)  :: abs_Er
+  Real(rknd),    Intent(in)  :: Temps(num_species)
+  Real(rknd),    Intent(in)  :: dens(num_species)
+  Real(rknd),    Intent(in)  :: vths(num_species)
+  Real(rknd),    Intent(in)  :: charges(num_species)
+  Real(rknd),    Intent(in)  :: masses(num_species)
+  Real(rknd),    Intent(in)  :: loglambda
+  Real(rknd),    Intent(in)  :: Kmin
+  Real(rknd),    Intent(in)  :: Kmax
+  Integer(iknd), Intent(in)  :: numKsteps
+  Real(rknd),    Intent(in)  :: cmin,cmax,emin,emax
+  ! Output variables
+  Real(rknd), Intent(out), Dimension(num_species,numKsteps) :: cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix
+  Real(rknd), Intent(out) :: Ka_array(numKsteps)
+  ! Local variables
+  Real(rknd) :: mtest,qtest,nu,vtest!,x,aux,prefactor
+  Real(rknd), Dimension(num_species) :: x,aux,prefactor
+  Integer :: i,j!,k
+
+  Ka_array = 10._rknd**rlinspace(log10(Kmin),log10(Kmax),numKsteps)
+
+
+  !
+  ! DO i=1,num_species
+  !   mtest = masses(i)
+  !   qtest = charges(i)
+  !   DO j=1,numKsteps
+  !     vtest = vths(i) * SQRT(Ka_array(j))
+  !     nu = 0
+  !     DO k=1,num_species
+  !       x = vtest*vtest / (vths(k)*vths(k))
+  !       aux = (1 - 0.5/x) * erf(sqrt(x)) + exp(-x) / sqrt(x*pi)
+  !       prefactor = qtest**2 * charges(k)**2 * loglambda * dens(k) / (mtest**2 * vtest**3 * 4*pi * eps0**2)
+  !       nu = nu + aux*prefactor
+  !     END DO
+  !     cmulK_matrix(i,j) = nu / vtest
+  !     oneOverVa_matrix(i,j) = 1.0_rknd / vtest
+  !   END DO
+  ! END DO
+
+  ! This loop should be slightly faster than the commented one above
+  DO i=1,num_species
+    mtest = masses(i)
+    qtest = charges(i)
+    DO j=1,numKsteps
+      vtest = vths(i) * SQRT(Ka_array(j))
+      x = vtest*vtest / (vths*vths)
+      aux = (1 - 0.5/x) * erf(sqrt(x)) + exp(-x) / sqrt(x*pi)
+      prefactor = qtest*qtest * charges*charges * loglambda * dens / (mtest*mtest * vtest*vtest*vtest * 4*pi * eps0*eps0)
+      nu = SUM(prefactor * aux)
+      cmulK_matrix(i,j) = nu / vtest
+      oneOverVa_matrix(i,j) = 1.0_rknd / vtest
+    END DO
+  END DO
+
+  log_cmulK_matrix = Dlog10(cmulK_matrix)
+
+  ! CLAMP
+  cmulK_matrix = min(max(cmulK_matrix,cmin),cmax)
+  log_cmulK_matrix = min(max(log_cmulK_matrix,cmin),cmax)
+
+end subroutine calc_integration_arrays
+
+
 End Module penta_functions_mod
 !- End of module header -------------------------------------------------------

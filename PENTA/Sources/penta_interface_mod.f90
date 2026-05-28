@@ -49,6 +49,8 @@ MODULE PENTA_INTERFACE_MOD
    CHARACTER(LEN=100) :: arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, &
       arg9, coeff_ext, run_ident, pprof_char, fpos, fstatus, str_num, &
       Er_root_type
+   REAL(rknd), DIMENSION(:),   ALLOCATABLE :: Ka_array
+   REAL(rknd), DIMENSION(:,:), ALLOCATABLE :: cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix
 
 !-----------------------------------------------------------------------
 !     Module Namelists
@@ -856,6 +858,19 @@ MODULE PENTA_INTERFACE_MOD
       ENDSELECT
       RETURN
    END SUBROUTINE penta_fit_rad_trans
+
+   SUBROUTINE penta_set_integration_arrays
+      USE penta_functions_mod
+      IMPLICIT NONE
+
+      IF(.NOT. ALLOCATED(Ka_array)) ALLOCATE(Ka_array(numKsteps))
+      IF(.NOT. ALLOCATED(cmulK_matrix)) ALLOCATE(cmulK_matrix(num_species,numKsteps))
+      IF(.NOT. ALLOCATED(log_cmulK_matrix)) ALLOCATE(log_cmulK_matrix(num_species,numKsteps))
+      IF(.NOT. ALLOCATED(oneOverVa_matrix)) ALLOCATE(oneOverVa_matrix(num_species,numKsteps))
+      CALL calc_integration_arrays(num_species,Temps,dens,vths,charges,masses,loglambda,Kmin,Kmax,numKsteps, &
+                  cmin,cmax,emin,emax,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+
+   END SUBROUTINE penta_set_integration_arrays
 
    SUBROUTINE penta_run_1_init
       IMPLICIT NONE
