@@ -3658,6 +3658,1104 @@ subroutine calc_integration_arrays(num_species,Temps,dens,vths,charges,masses,lo
 
 end subroutine calc_integration_arrays
 
+Function calc_flows_SN_fast(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
+     masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,log_interp,      &
+     cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_DUa,num_c,num_e,kcord, &
+     keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS,L_A1,L_A2,L_A3, &
+     Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix) &
+  Result(Flows)
+  !
+  ! Description: 
+  ! This is a faster version of calc_flows_SN. Should only be used when called from penta_interface_mod
+  ! 
+  ! Author(s): J. Lore 09/09/2010 - 09/23/2011
+  !            A.J. Coelho 05/28/2026
+  !
+  !
+  ! Modules used:
+  Use penta_kind_mod                  ! Import rknd, iknd specifications
+  Use phys_const, Only :  &           ! Import physical constants
+  ! Imported parameters
+  elem_charge, pi
+  Use penta_math_routines_mod, Only : &
+  ! Imported functions
+  Gamma_aux,       &
+  ifactorial,      &
+  idelta,          &
+  FINDInv,inversion_lu                             ! Subroutine to invert square matrix QQ
+  Use vmec_var_pass, Only : &
+  Bsq
+
+  Implicit None
+
+  ! Input/output                      !See above for descriptions
+  Integer(iknd), Intent(in)  :: num_species
+  Integer(iknd), Intent(in)  :: Smax
+  Real(rknd),    Intent(in)  :: abs_Er
+  Real(rknd),    Intent(in)  :: Temps(num_species)
+  Real(rknd),    Intent(in)  :: dens(num_species)
+  Real(rknd),    Intent(in)  :: vths(num_species)
+  Real(rknd),    Intent(in)  :: charges(num_species)
+  Real(rknd),    Intent(in)  :: masses(num_species)
+  Real(rknd),    Intent(in)  :: loglambda
+  Real(rknd),    Intent(in)  :: B0
+  Logical,       Intent(in)  :: use_quanc8
+  Real(rknd),    Intent(in)  :: Kmin
+  Real(rknd),    Intent(in)  :: Kmax
+  Integer(iknd), Intent(in)  :: numKsteps
+  Logical,       Intent(in)  :: log_interp
+  Real(rknd),    Intent(in)  :: cmin
+  Real(rknd),    Intent(in)  :: cmax
+  Real(rknd),    Intent(in)  :: emin
+  Real(rknd),    Intent(in)  :: emax
+  Real(rknd),    Intent(in)  :: xt_c(num_c + kcord)
+  Real(rknd),    Intent(in)  :: xt_e(num_e + keord)
+  Real(rknd),    Intent(in)  :: Dspl_Drat(num_c,num_e)
+  Real(rknd),    Intent(in)  :: Dspl_DUa(num_c,num_e)
+  Integer(iknd), Intent(in)  :: num_c
+  Integer(iknd), Intent(in)  :: num_e
+  Integer(iknd), Intent(in)  :: kcord
+  Integer(iknd), Intent(in)  :: keord
+  Real(rknd),    Intent(in)  :: Avec(num_species*3)
+  Real(rknd),    Intent(in)  :: lmat(num_species*(Smax+1),num_species*(Smax+1))
+  Real(rknd)                 :: Flows(num_species*(Smax+1)),Flows_BS(num_species*(Smax+1))
+  Real(rknd),  Intent(inout) :: sigma_par,sigma_par_Spitzer,J_BS
+  Real(rknd),  Intent(inout) :: L_A1(num_species,num_species,Smax+1)
+  Real(rknd),  Intent(inout) :: L_A2(num_species,num_species,Smax+1)
+  Real(rknd),  Intent(inout) :: L_A3(num_species,num_species,Smax+1)
+  !
+  Real(rknd), Intent(in) :: Ka_array(numKsteps),cmulK_matrix(num_species,numKsteps), &
+                            log_cmulK_matrix(num_species,numKsteps),oneOverVa_matrix(num_species,numKsteps)
+
+  ! Local scalars
+  Integer(iknd) ::  ispec1, jval, ind_A, ind_RHS, kval, & ! Loop indices
+    ind1_LHS1,   &
+    ind1_LHS2, ind2_LHS2, ispec2, &
+    ind1, ind2, jval1, jval2, k
+  Integer(iknd) ::  I               ! Index used for array constructors
+  Integer(iknd) ::  nu_exp          ! Exponent on collision freq. for conv.
+  Integer(iknd) :: inv_err          ! Error flag for inversion
+  Real(rknd)    ::                & ! Primary species (a) paramaters 
+    ma, Ta, vta, qa, na     
+  Real(rknd)    ::  norm_factor     ! Constants (wrt K) for convolution terms
+  Real(rknd)    ::  K_exp           ! Exponent on K for convolution (ignoring 
+                                    !  Maxwellian contribution)
+  Real(rknd)    ::  RHS_1,RHS_2     ! RHS elements of flow equation
+
+  Real(rknd)    ::  LHS_tmp1        ! LHS elements of flow eq.
+  Real(rknd)    :: flow_species, fact_species, Z, N_Z, ln_e ! aux values to compute conductivity
+
+  ! Local arrays 
+  Integer(iknd) :: ikeep(num_species-1)   ! Used to index species 'b' in arrays
+  Real(rknd)    :: qb(num_species-1),  &  ! Paremeters for species 'b' /= 'a'
+    nb(num_species-1), vtb(num_species-1) 
+  Real(rknd)    ::  &                     ! 2D arrays for the LHS of equation sys
+    LHS_mat_1(num_species*(Smax+1),num_species*(Smax+1)), &
+    flow_mat(num_species*(Smax+1),num_species*(Smax+1)),  & ! Flow matrix
+    flow_mat_inv(num_species*(Smax+1),num_species*(Smax+1)) ! Inverted flow matrix
+  Real(rknd)   :: RHS(num_species*(Smax+1)), RHS_BS(num_species*(Smax+1)) ! 1D array for RHS of eq. sys
+
+  Real(rknd)   :: R1(num_species*(Smax+1)), R2(num_species*(Smax+1)), & ! Used to compute transport coeffs
+    R3(num_species*(Smax+1)), my_flow
+
+
+  ! Local parameters                 
+  Integer(iknd), Parameter ::  &
+  iZERO = 0_iknd,      &
+  iONE  = 1_iknd,      &
+  iTWO  = 2_iknd
+
+  Real(rknd), Parameter :: &
+  ZERO      = 0._rknd,  &
+  HALF      = 0.5_rknd, &
+  ONE       = 1._rknd,  &
+  THREEHALF = 1.5_rknd, &
+  FIVEHALF  = 2.5_rknd, &
+  TWO       = 2._rknd 
+
+  !- End of header -------------------------------------------------------------
+
+  LHS_mat_1 = 0._rknd ! Initialize LHS term for summation
+
+  ! Loop over species and calculate the parallel flows
+  Do ispec1 = 1_iknd,num_species
+
+    ! Assign species 'a' parameters
+    ma  = masses(ispec1)
+    qa  = charges(ispec1)
+    Ta  = Temps(ispec1)
+    na  = dens(ispec1)
+    vta = vths(ispec1)
+
+    ! Get indices of all species b =/ a
+    ikeep=(/(I,I=1,ispec1-1), (I,I=ispec1+1,num_species)/)
+
+    ! Assign species 'b' parameters
+    qb  = charges(ikeep)
+    nb  = dens(ikeep)
+    vtb = vths(ikeep)
+
+    ! The 'j' loop defines each equation for the current species in the system
+    Do jval = 0_iknd,Smax
+    
+      ! Define the RHS of the equation system
+
+      ! First RHS term
+      norm_factor = na
+      K_exp = THREEHALF     ! Real
+      nu_exp = iZERO  ! Integer
+
+      RHS_1 = energy_conv_fast(jval,iZERO,numKsteps,abs_Er,num_species,log_interp,   &
+        Dspl_Drat,xt_c,xt_e,cmin,cmax,emin,emax, &
+        num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.false.,.false., &
+        ispec1,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+
+      ! 2nd RHS term
+      K_exp  = FIVEHALF    ! Real
+      RHS_2 = energy_conv_fast(jval,iZERO,numKsteps,abs_Er,num_species,log_interp,   &
+        Dspl_Drat,xt_c,xt_e,cmin,cmax,emin,emax, &
+        num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.false.,.false., &
+        ispec1,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+
+      ! Sum the RHS terms multiplied by the forces
+      ind_A = (ispec1 - 1)*3 + 1
+      ind_RHS = (ispec1 - 1)*(Smax+1)+jval+1
+      RHS(ind_RHS) = -RHS_1*Avec(ind_A) - RHS_2*Avec(ind_A+1) &
+        + idelta(jval,0_iknd)*THREEHALF*qa*na*Avec(ind_A+2)/(ma*vta*B0)
+      RHS_BS(ind_RHS) = -RHS_1*Avec(ind_A) - RHS_2*Avec(ind_A+1)
+
+      R1(ind_RHS) = -RHS_1
+      R2(ind_RHS) = -RHS_2
+      R3(ind_RHS) = idelta(jval,0_iknd)*THREEHALF*qa*na/(ma*vta*B0)
+
+      ! Loop over primary Sonine index (k)
+      Do kval = 0_iknd, Smax
+
+        ! Integrate the first Ua term 
+        norm_factor = na * qa/(Ta*elem_charge)
+        K_exp  = THREEHALF    ! Real
+        nu_exp = iZERO    ! Integer
+  
+        LHS_tmp1 = energy_conv_fast(jval,kval,numKsteps,abs_Er,num_species,log_interp,   &
+          Dspl_DUa,xt_c,xt_e,cmin,cmax,emin,emax, &
+          num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.false.,.false., &
+          ispec1,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+    
+        ! Calculate the entire term multiplied by <U_ak>/<B**2>
+        ind1_LHS1 = ( ispec1 - 1 ) * ( Smax + 1 ) + 1
+
+        LHS_mat_1(ind1_LHS1+jval,ind1_LHS1+kval) = LHS_tmp1
+
+        ! Loop over all species b (including b==a)
+        Do ispec2 = 1,num_species
+
+          ind1_LHS2 = ( ispec1 - 1 ) * ( Smax + 1 ) + jval +1
+          ind2_LHS2 = ( ispec2 - 1 ) * ( Smax + 1 ) + kval +1 
+
+          LHS_mat_1(ind1_LHS2,ind2_LHS2) = LHS_mat_1(ind1_LHS2,ind2_LHS2) - &
+            THREEHALF*qa*lmat(ind1_LHS2,ind2_LHS2)/(ma*vta*Ta*elem_charge)
+  
+        EndDo ! ispec2 loop
+      EndDo ! kval loop
+    EndDo ! jval loop
+  EndDo ! Primary species loop
+
+  ! Form total matrix to solve for flows
+  flow_mat = LHS_mat_1 
+
+  ! Solve system to get flows
+
+  !Call FINDInv(flow_mat,flow_mat_inv,Size(flow_mat,1),inv_err) 
+  Call Inversion_lu(flow_mat,flow_mat_inv,Size(flow_mat,1),inv_err)
+
+  ! Check for Inversion error
+  If ( inv_err /= 0 ) Then
+    Write(*,*) 'Error flag returned during flow_mat inversion:',inv_err
+    Stop 'Error: Exiting on inversion error in function calc_flows_SN'
+  EndIf
+
+  Flows = Matmul(flow_mat_inv,RHS)
+  Flows_BS = Matmul(flow_mat_inv,RHS_BS)
+
+  !compute BS current
+  J_BS = sum( dens*charges*Sqrt(Bsq)*Flows_BS(1:(num_species-1)*(Smax+1)+1:Smax+1) )
+
+  !Compute total parallel conductivity
+  sigma_par = 0.0_rknd
+
+  Do ispec1 = 1,num_species
+    ind1 = (ispec1 - 1)*(Smax+1)+1 ! idx corresponding to j=0 of species ispec
+
+    ! compute flow of species ispec1 by looping over all species
+    flow_species = 0.0_rknd
+    Do ispec2 = 1,num_species
+      fact_species = 3*charges(ispec2)**2 * dens(ispec2) / (masses(ispec2)**2 * vths(ispec2)**3)
+      !pick column of flow_mat_inv that corresponds to j=0 of each species
+      ind2 = (ispec2 - 1)*(Smax+1)+1
+      flow_species = flow_species + flow_mat_inv(ind1,ind2)*fact_species
+    EndDo
+
+    sigma_par = sigma_par + dens(ispec1)*charges(ispec1)*flow_species
+  EndDo
+
+  Z = maxval(abs(charges/charges(1)))
+  N_Z = 0.58 + 0.74 / (0.76+Z)
+  ln_e = 31.3 - log(dsqrt(dens(1))/temps(1))
+  !sigma_Spitzer as given by O. Sauter et al PoP 6 (1999)
+  sigma_par_spitzer = 19012.0_rknd * Temps(1)**1.5_rknd / (Z*N_Z*ln_e)
+
+  ! Compute transport coefficients
+  ind1 = 1
+  Do ispec1 = 1_iknd,num_species
+    Do jval1 = 1_iknd,Smax+1
+
+      ind2 = 1
+    
+      Do ispec2 = 1_iknd,num_species
+
+        L_A1(ispec1,ispec2,jval1) = 0.0_rknd
+        L_A2(ispec1,ispec2,jval1) = 0.0_rknd
+        L_A2(ispec1,ispec2,jval1) = 0.0_rknd
+
+        Do jval2 = 1_iknd,Smax+1
+
+          L_A1(ispec1,ispec2,jval1) = L_A1(ispec1,ispec2,jval1) + flow_mat_inv(ind1,ind2) * R1(ind2)
+          L_A2(ispec1,ispec2,jval1) = L_A2(ispec1,ispec2,jval1) + flow_mat_inv(ind1,ind2) * R2(ind2)
+          L_A3(ispec1,ispec2,jval1) = L_A3(ispec1,ispec2,jval1) + flow_mat_inv(ind1,ind2) * R3(ind2)
+
+          ind2 = ind2+1
+
+        EndDo
+      EndDo
+
+      ind1 = ind1 + 1
+
+    EndDo
+  EndDo
+
+EndFunction calc_flows_SN_fast
+
+Function calc_fluxes_SN_fast(num_species,Smax,abs_Er,Temps,dens,vths,charges,masses,  &
+     loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,cmax,emin,emax,    &
+     xt_c,xt_e,Dspl_Drat,Dspl_Drat2,Dspl_Dex,Dspl_logD11,Dspl_D31,num_c,num_e,   &
+     kcord,keord,Avec,Bsq,lmat,Flows,U2,dTdrs,dndrs,flux_cap,L_A1,L_A2,L_A3,     &
+     L_n,L_T,L_Er, &
+     Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)                 &
+Result(Gammas)
+!
+! Description: 
+! This is a fast version of calc_fluxes_SN. Should only be used when called from penta_interface_mod
+!
+! Author(s): J. Lore 09/10/2010 - 09/23/2011
+!            A.J. Coelho 05/28/2026
+!
+!
+! Modules used:
+Use penta_kind_mod                  ! Import rknd, iknd specifications
+Use phys_const, Only :  &           ! Import physical constants
+! Imported parameters
+elem_charge
+   
+Implicit None
+
+! Input/output                      !See above for descriptions
+Integer(iknd), Intent(in)  :: num_species
+Integer(iknd), Intent(in)  :: Smax
+Real(rknd),    Intent(in)  :: abs_Er
+Real(rknd),    Intent(in)  :: Temps(num_species)
+Real(rknd),    Intent(in)  :: dens(num_species)
+Real(rknd),    Intent(in)  :: vths(num_species)
+Real(rknd),    Intent(in)  :: charges(num_species)
+Real(rknd),    Intent(in)  :: masses(num_species)
+Real(rknd),    Intent(in)  :: loglambda
+Logical,       Intent(in)  :: use_quanc8
+Real(rknd),    Intent(in)  :: Kmin
+Real(rknd),    Intent(in)  :: Kmax
+Integer(iknd), Intent(in)  :: numKsteps
+Logical,       Intent(in)  :: log_interp
+Real(rknd),    Intent(in)  :: cmin
+Real(rknd),    Intent(in)  :: cmax
+Real(rknd),    Intent(in)  :: emin
+Real(rknd),    Intent(in)  :: emax
+Real(rknd),    Intent(in)  :: xt_c(num_c + kcord)
+Real(rknd),    Intent(in)  :: xt_e(num_e + keord)
+Real(rknd),    Intent(in)  :: Dspl_Drat(num_c,num_e)
+Real(rknd),    Intent(in)  :: Dspl_Drat2(num_c,num_e)
+Real(rknd),    Intent(in)  :: Dspl_Dex(num_c,num_e)
+Real(rknd),    Intent(in)  :: Dspl_logD11(num_c,num_e)
+Real(rknd),    Intent(in)  :: Dspl_D31(num_c,num_e)
+Integer(iknd), Intent(in)  :: num_c 
+Integer(iknd), Intent(in)  :: num_e
+Integer(iknd), Intent(in)  :: kcord
+Integer(iknd), Intent(in)  :: keord
+Real(rknd),    Intent(in)  :: Avec(num_species*3)
+Real(rknd),    Intent(in)  :: Bsq
+Real(rknd),    Intent(in)  :: lmat(num_species*(Smax+1),num_species*(Smax+1))
+Real(rknd),    Intent(in)  :: Flows(num_species*(Smax+1))
+Real(rknd),    Intent(in)  :: U2
+Real(rknd),    Intent(in)  :: dTdrs(num_species)
+Real(rknd),    Intent(in)  :: dndrs(num_species)
+Logical,       Intent(in)  :: flux_cap
+Real(rknd)                 :: Gammas(num_species)
+Real(rknd),    Intent(in)  :: L_A1(num_species,num_species,Smax+1)
+Real(rknd),    Intent(in)  :: L_A2(num_species,num_species,Smax+1)
+Real(rknd),    Intent(in)  :: L_A3(num_species,num_species,Smax+1)
+Real(rknd),    Intent(out)  :: L_n(num_species,num_species)
+Real(rknd),    Intent(out)  :: L_T(num_species,num_species)
+Real(rknd),    Intent(out)  :: L_Er(num_species,num_species)
+!
+Real(rknd), Intent(in) :: Ka_array(numKsteps),cmulK_matrix(num_species,numKsteps), &
+                          log_cmulK_matrix(num_species,numKsteps),oneOverVa_matrix(num_species,numKsteps)
+
+! Local Scalars
+Integer(iknd) :: ispec1,kval,   & ! Loop indices
+  ispec2,lmat_ind1,        &
+  lmat_ind2,          &
+  flow_ind1,ind_A
+Integer(iknd) ::  i               ! Index used for array constructors
+Integer(iknd) ::  nu_exp          ! Exponent on collision freq. for conv.
+Real(rknd)    :: dn_betadr,     & ! Species beta parameters (for PS flux)
+  dT_betadr,n_beta,T_beta,      &
+  q_beta     
+Real(rknd)    ::                & ! Primary species (a) paramaters 
+  ma, Ta, vta, qa, na   
+Real(rknd)    :: L11,L12  ! Thermal diffusion coefficients
+Real(rknd)    :: L11_1, L11_2          ! Thermal diffusion coefficients
+Real(rknd)    :: L12_1, L12_2          ! Thermal diffusion coefficients
+Real(rknd)    ::  norm_factor     ! Constants (wrt K) for convolution terms
+Real(rknd)    ::  K_exp           ! Exponent on K for convolution (ignoring 
+                                  !  Maxwellian contribution)
+Real(rknd)    :: lab11,lab12    ! Friction coefficient values for PS flux
+Real(rknd)    :: I_0,I_1          ! Integral factors used in calculating PS flux
+Real(rknd)    :: Gamma_PS_std,    & ! PS fluxes
+  Gamma_PS_flow
+Real(rknd)    :: C_PS1, C_PS2
+
+! Local arrays 
+Integer(iknd) :: ikeep(num_species-1)   ! Used to index species 'b' in arrays
+Real(rknd)    :: Na_1k(Smax+1)          ! QQ
+Real(rknd)    :: qb(num_species-1),  &  ! Paremeters for species 'b' /= 'a'
+  nb(num_species-1), vtb(num_species-1) 
+Real(rknd)    :: Gamma_PS(num_species)
+Real(rknd)    :: mono_flux(num_species)
+Real(rknd)    :: flux_Ua(num_species)
+Real(rknd)    :: n_spec2, T_spec2, q_spec2
+
+! Local parameters                 
+Integer(iknd), Parameter ::  &
+iZERO  = 0_iknd,      &
+iONE   = 1_iknd,      &
+iTWO   = 2_iknd,      &
+iTHREE = 3_iknd
+
+Real(rknd), Parameter :: &
+THREEHALF = 1.5_rknd, &  
+ONE       = 1._rknd,  &
+TWO       = 2._rknd,  &
+FIVEHALF  = 2.5_rknd, &  
+THREE     = 3._rknd,  &
+FIVE      = 5._rknd
+
+!- End of header -------------------------------------------------------------
+
+L_n = 0.0_rknd
+L_T = 0.0_rknd
+L_Er = 0.0_rknd
+
+Do ispec1 = 1_iknd, num_species
+
+  ! Assign species 'a' parameters
+  ma  = masses(ispec1)
+  qa  = charges(ispec1)
+  Ta  = Temps(ispec1)
+  na  = dens(ispec1)
+  vta = vths(ispec1)
+
+  ! Get indices of all species b =/ a
+  ikeep=(/(I,I=1,ispec1-1), (I,I=ispec1+1,num_species)/)
+
+  ! Assign species 'b' parameters
+  qb  = charges(ikeep)
+  nb  = dens(ikeep)
+  vtb = vths(ikeep)  
+
+  ! Integrate the radial diffusion coefficient to get the 
+  !  L11, L12, etc coefficients
+
+  norm_factor = na * vta*vta*vta*ma*ma/(TWO*qa*qa)
+  nu_exp = iZERO  ! Integer
+  If ( flux_cap .EQV. .true. ) Then
+
+    K_exp = THREEHALF
+    L11 = energy_conv_fast(iZERO,iZERO,numKsteps,abs_Er,num_species,log_interp,   &
+       Dspl_Dex,xt_c,xt_e,cmin,cmax,emin,emax, &
+       num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.false.,.false., &
+        ispec1,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+    
+    K_exp = FIVEHALF
+    L12 = energy_conv_fast(iZERO,iZERO,numKsteps,abs_Er,num_species,log_interp,   &
+       Dspl_Dex,xt_c,xt_e,cmin,cmax,emin,emax, &
+       num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.false.,.false., &
+        ispec1,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+
+  Else
+
+    ! K_exp = THREEHALF
+    ! L11_1 = energy_conv(iZERO,iZERO,use_quanc8,Kmin,Kmax,numKsteps,       &
+    !    vta,qa,qb,ma,na,nb,loglambda,abs_Er,num_species,vtb,log_interp,   &
+    !    Dspl_logD11,xt_c,xt_e,cmin,cmax,emin,emax, &
+    !    num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.false.,.true.)
+    ! K_exp = FIVEHALF
+    ! L12_1 = energy_conv(iZERO,iZERO,use_quanc8,Kmin,Kmax,numKsteps,       &
+    !    vta,qa,qb,ma,na,nb,loglambda,abs_Er,num_species,vtb,log_interp,   &
+    !    Dspl_logD11,xt_c,xt_e,cmin,cmax,emin,emax, &
+    !    num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.false.,.true.)
+
+    ! K_exp = THREEHALF
+    ! L11_2 = energy_conv(iZERO,iZERO,use_quanc8,Kmin,Kmax,numKsteps,       &
+    !    vta,qa,qb,ma,na,nb,loglambda,abs_Er,num_species,vtb,log_interp,   &
+    !    Dspl_Drat2,xt_c,xt_e,cmin,cmax,emin,emax, &
+    !    num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.false.,.false.)
+    
+    ! K_exp = FIVEHALF
+    ! L12_2 = energy_conv(iZERO,iZERO,use_quanc8,Kmin,Kmax,numKsteps,       &
+    !    vta,qa,qb,ma,na,nb,loglambda,abs_Er,num_species,vtb,log_interp,   &
+    !    Dspl_Drat2,xt_c,xt_e,cmin,cmax,emin,emax, &
+    !    num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.false.,.false.)
+
+    ! L11 = L11_1 + L11_2
+    ! L12 = L12_1 + L12_2
+
+    STOP 'Why are you not capping flux?'
+  Endif
+
+  ! Loop over primary Sonine index (k)
+  Do kval = 0_iknd,Smax
+
+    ! Integrate radial coefficient to get viscous term
+    norm_factor = na * (ma*vta/qa) * (TWO*Bsq/THREE)
+    nu_exp = iZERO ! Integer
+    K_exp = THREEHALF  ! Real
+    Na_1k(kval+1) = energy_conv_fast(iZERO,kval,numKsteps,abs_Er,num_species,log_interp,   &
+    Dspl_Drat,xt_c,xt_e,cmin,cmax,emin,emax,      &
+    num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.false.,.false., &
+    ispec1,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+  EndDo
+
+  ! Calculate PS fluxes
+  Gamma_PS_std = 0._rknd
+  Do ispec2=1,num_species
+        
+    ! Specific species beta
+    n_beta = dens(ispec2)
+    T_beta = Temps(ispec2)
+    q_beta  = charges(ispec2)
+    dT_betadr = dTdrs(ispec2)
+    dn_betadr = dndrs(ispec2)
+
+    C_PS1 = (n_beta*dT_betadr+T_beta*dn_betadr)*elem_charge/(n_beta*q_beta)
+    C_PS2 = dT_betadr*elem_charge/q_beta
+
+    lmat_ind1 = ( ispec1 - 1 ) * ( Smax + 1 ) + 1
+    lmat_ind2 = ( ispec2 - 1 ) * ( Smax + 1 ) + 1
+    lab11 = lmat(lmat_ind1    , lmat_ind2)
+    lab12 = lmat(lmat_ind1    , lmat_ind2+1)
+
+    Gamma_PS_std = Gamma_PS_std + C_PS1*lab11 - C_PS2*lab12
+
+    ! Add PS contibutions to transport coefficients
+    L_n(ispec1,ispec2) = (U2/qa) * elem_charge*T_beta/(q_beta*n_beta)*lab11
+    L_T(ispec1,ispec2) = (U2/qa) * (lab11-lab12)/q_beta
+
+  EndDo
+
+  ind_A = (ispec1-1)*3+1
+  If ( flux_cap .EQV. .true. ) Then
+    Gamma_PS(ispec1)   = (U2/qa) * Gamma_PS_std
+
+  Else
+    ! norm_factor = na
+    ! nu_exp = iONE ! Integer
+    ! K_exp = ONE  ! Real
+    ! I_0 = energy_conv(iZERO,iZERO,use_quanc8,Kmin,Kmax,numKsteps, &
+    !   vta,qa,qb,ma,na,nb,loglambda,abs_Er,num_species,vtb,log_interp,        &
+    !   Dspl_D31,xt_c,xt_e,cmin,cmax,emin,emax,      &
+    !   num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.true.,.false.)
+
+    ! K_exp = TWO  ! Real
+    ! I_1 = energy_conv(iZERO,iZERO,use_quanc8,Kmin,Kmax,numKsteps, &
+    !   vta,qa,qb,ma,na,nb,loglambda,abs_Er,num_species,vtb,log_interp,        &
+    !   Dspl_D31,xt_c,xt_e,cmin,cmax,emin,emax,      &
+    !   num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.true.,.false.)
+    ! Gamma_PS_flow = (2._rknd/3._rknd)*(ma*Ta*elem_charge/qa)*(I_0*Avec(ind_A) + I_1*Avec(ind_A+1))
+    ! Gamma_PS(ispec1)   = (U2/qa) * (Gamma_PS_std + Gamma_PS_flow)
+
+    ! ! Add PS contibutions to transport coefficients
+    ! L_n(ispec1,ispec1) = L_n(ispec1,ispec1) + (U2/qa)*(2._rknd/3._rknd)*(ma*Ta*elem_charge/qa)*I_0/na
+    ! L_T(ispec1,ispec1) = L_T(ispec1,ispec1) - (U2/qa)*(ma/qa)*I_0 + (U2/qa)*(2._rknd/3._rknd)*(ma/qa)*I_1
+    ! L_Er(ispec1,ispec1) = L_Er(ispec1,ispec1) - (U2/qa)*(2._rknd/3._rknd)*(ma/qa)*I_0*qa
+
+    STOP 'Why are you not capping flux?'
+  Endif
+
+  flow_ind1 = (ispec1-1)*(Smax+1)+1
+
+  mono_flux(ispec1) = - L11*Avec(ind_A) - L12*Avec(ind_A+1)
+  flux_Ua(ispec1) = -Sum(Na_1k*Flows(flow_ind1:flow_ind1+Smax))
+
+  ! Total flux
+  Gammas(ispec1) = flux_Ua(ispec1) + mono_flux(ispec1) + gamma_PS(ispec1)
+
+  ! Add mono-flux contribution to transport coefficients
+  L_n(ispec1,ispec1) = L_n(ispec1,ispec1) - L11/na
+  L_T(ispec1,ispec1) = L_T(ispec1,ispec1) + (THREEHALF*L11-L12) / (elem_charge*Ta)
+  L_Er(ispec1,ispec1) = L_Er(ispec1,ispec1) + (L11*qa) / (elem_charge*Ta)
+
+  ! Add Ua contribution to transport coefficients
+  Do ispec2 = 1,num_species
+    n_spec2 = dens(ispec2)
+    q_spec2 = charges(ispec2)
+    T_spec2 = Temps(ispec2)
+    L_n(ispec1,ispec2) = L_n(ispec1,ispec2) - Sum(Na_1k*L_A1(ispec1,ispec2,:))/n_spec2
+    !
+    L_T(ispec1,ispec2) = L_T(ispec1,ispec2) +  &
+                        THREEHALF*Sum(Na_1k*L_A1(ispec1,ispec2,:))/(elem_charge*T_spec2) - &
+                        Sum(Na_1k*L_A2(ispec1,ispec2,:))/(elem_charge*T_spec2)
+    !
+    L_Er(ispec1,ispec2) = L_Er(ispec1,ispec2) + Sum(Na_1k*L_A1(ispec1,ispec2,:))*q_spec2/(elem_charge*T_spec2)
+  EndDo
+
+EndDo ! Species 1 loop
+
+EndFunction calc_fluxes_SN_fast
+
+Function calc_QoTs_SN_fast(num_species,Smax,abs_Er,Temps,dens,vths,charges,      &
+     masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,       &
+     cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,Dspl_Dex,Dspl_logD11,    &
+     Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,lmat,Flows,U2,dTdrs,      &
+     dndrs,flux_cap,L_A1,L_A2,L_A3,R_n,R_T,R_Er, &
+     Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)                                                        &
+Result(QoTs)
+!
+! Description: 
+! This function is a fast version of calc_QoTs_SN. Should only be used when called from penta_interface_mod
+!
+! Author(s): J. Lore 09/10/2010  - 09/23/2011
+!            A.J. Coelho 05/28/2026
+!
+!
+! Modules used:
+Use penta_kind_mod                  ! Import rknd, iknd specifications
+Use phys_const, Only :  &           ! Import physical constants
+! Imported parameters
+elem_charge
+
+Implicit None
+
+! Input/output                      !See above for descriptions
+Integer(iknd), Intent(in)  :: num_species
+Integer(iknd), Intent(in)  :: Smax
+Real(rknd),    Intent(in)  :: abs_Er
+Real(rknd),    Intent(in)  :: Temps(num_species)
+Real(rknd),    Intent(in)  :: dens(num_species)
+Real(rknd),    Intent(in)  :: vths(num_species)
+Real(rknd),    Intent(in)  :: charges(num_species)
+Real(rknd),    Intent(in)  :: masses(num_species)
+Real(rknd),    Intent(in)  :: loglambda
+Logical,       Intent(in)  :: use_quanc8
+Real(rknd),    Intent(in)  :: Kmin
+Real(rknd),    Intent(in)  :: Kmax
+Integer(iknd), Intent(in)  :: numKsteps
+Logical,       Intent(in)  :: log_interp
+Real(rknd),    Intent(in)  :: cmin
+Real(rknd),    Intent(in)  :: cmax
+Real(rknd),    Intent(in)  :: emin
+Real(rknd),    Intent(in)  :: emax
+Real(rknd),    Intent(in)  :: xt_c(num_c + kcord)
+Real(rknd),    Intent(in)  :: xt_e(num_e + keord)
+Real(rknd),    Intent(in)  :: Dspl_Drat(num_c,num_e)
+Real(rknd),    Intent(in)  :: Dspl_Drat2(num_c,num_e)
+Real(rknd),    Intent(in)  :: Dspl_Dex(num_c,num_e)
+Real(rknd),    Intent(in)  :: Dspl_logD11(num_c,num_e)
+Real(rknd),    Intent(in)  :: Dspl_D31(num_c,num_e)
+Integer(iknd), Intent(in)  :: num_c
+Integer(iknd), Intent(in)  :: num_e
+Integer(iknd), Intent(in)  :: kcord
+Integer(iknd), Intent(in)  :: keord
+Real(rknd),    Intent(in)  :: Avec(num_species*3)
+Real(rknd),    Intent(in)  :: Bsq
+Real(rknd),    Intent(in)  :: lmat(num_species*(Smax+1),num_species*(Smax+1))
+Real(rknd),    Intent(in)  :: Flows(num_species*(Smax+1))
+Real(rknd),    Intent(in)  :: U2
+Real(rknd),    Intent(in)  :: dTdrs(num_species)
+Real(rknd),    Intent(in)  :: dndrs(num_species)
+Logical,       Intent(in)  :: flux_cap
+Real(rknd)                 :: QoTs(num_species)
+Real(rknd),    Intent(in)  :: L_A1(num_species,num_species,Smax+1)
+Real(rknd),    Intent(in)  :: L_A2(num_species,num_species,Smax+1)
+Real(rknd),    Intent(in)  :: L_A3(num_species,num_species,Smax+1)
+Real(rknd),    Intent(out)  :: R_n(num_species,num_species)
+Real(rknd),    Intent(out)  :: R_T(num_species,num_species)
+Real(rknd),    Intent(out)  :: R_Er(num_species,num_species)
+!
+Real(rknd), Intent(in) :: Ka_array(numKsteps),cmulK_matrix(num_species,numKsteps), &
+                          log_cmulK_matrix(num_species,numKsteps),oneOverVa_matrix(num_species,numKsteps)
+
+! Local Scalars
+Integer(iknd) :: ispec1,kval,   & ! Loop indices
+  ispec2,lmat_ind1,        &
+  lmat_ind2,          &
+  flow_ind1,ind_A 
+Integer(iknd) ::  I               ! Index used for array constructors
+Integer(iknd) ::  nu_exp          ! Exponent on collision freq. for conv.
+Real(rknd)    :: dn_betadr,     & ! Species beta parameters (for PS flux)
+  dT_betadr,n_beta,T_beta,      &
+  q_beta     
+Real(rknd)    ::                & ! Primary species (a) paramaters 
+  ma, Ta, vta, qa, na     
+Real(rknd)    :: L21,L22          ! Thermal diffusion coefficients
+Real(rknd)    :: L21_1, L21_2          ! Thermal diffusion coefficients
+Real(rknd)    :: L22_1, L22_2          ! Thermal diffusion coefficients
+Real(rknd)    :: norm_factor      ! Constants (wrt K) for convolution terms
+Real(rknd)    :: K_exp            ! Exponent on K for convolution (ignoring 
+                                  !  Maxwellian contribution)
+Real(rknd)    :: lab21,lab22,   & ! Friction coefficient values for PS flux
+  lab11,lab12      
+Real(rknd)    :: I_1,I_2          ! Integral factors used in calculating PS flux
+Real(rknd)    :: QoT_PS_std,    & ! PS fluxes
+  QoT_PS_flow
+Real(rknd)    :: C_PS1, C_PS2
+
+! Local arrays 
+Integer(iknd) :: ikeep(num_species-1)   ! Used to index species 'b' in arrays
+Real(rknd)    :: Na_2k(Smax+1)          ! QQ
+Real(rknd)    :: qb(num_species-1),  &  ! Paremeters for species 'b' /= 'a'
+  nb(num_species-1), vtb(num_species-1) 
+Real(rknd)    :: QoT_PS(num_species)
+Real(rknd)    :: mono_QoT(num_species)
+Real(rknd)    :: QoT_Ua(num_species)
+Real(rknd)    :: n_spec2, T_spec2, q_spec2
+
+! Local parameters                 
+Integer(iknd), Parameter ::  &
+iZERO  = 0_iknd,      &
+iONE   = 1_iknd,      &
+iTWO   = 2_iknd,      &
+iTHREE = 3_iknd
+
+Real(rknd), Parameter :: &
+ONE       = 1._rknd,  &
+THREEHALF = 1.5_rknd, &  
+TWO       = 2._rknd,  &
+FIVEHALF  = 2.5_rknd, &  
+SEVENHALF  = 3.5_rknd, &  
+THREE     = 3._rknd,  &
+FIVE      = 5._rknd
+
+!- End of header -------------------------------------------------------------
+
+R_n = 0.0_rknd
+R_T = 0.0_rknd
+R_Er = 0.0_rknd
+
+Do ispec1 = 1_iknd, num_species
+
+  ! Assign species 'a' parameters
+  ma  = masses(ispec1)
+  qa  = charges(ispec1)
+  Ta  = Temps(ispec1)
+  na  = dens(ispec1)
+  vta = vths(ispec1)
+
+  ! Get indices of all species b =/ a
+  ikeep=(/(I,I=1,ispec1-1), (I,I=ispec1+1,num_species)/)
+
+  ! Assign species 'b' parameters
+  qb  = charges(ikeep)
+  nb  = dens(ikeep)
+  vtb = vths(ikeep)  
+
+  ! Integrate the radial diffusion coefficient to get the 
+  !  L11, L12, etc coefficients
+
+  norm_factor = na * vta*vta*vta*ma*ma/(TWO*qa*qa)
+  nu_exp = iZERO  ! Integer
+
+  If ( flux_cap .EQV. .true. ) Then
+
+    K_exp = FIVEHALF
+    L21 = energy_conv_fast(iZERO,iZERO,numKsteps,abs_Er,num_species,log_interp,   &
+       Dspl_Dex,xt_c,xt_e,cmin,cmax,emin,emax, &
+       num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.false.,.false., &
+       ispec1,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+    
+    K_exp = SEVENHALF
+    L22 = energy_conv_fast(iZERO,iZERO,numKsteps,abs_Er,num_species,log_interp,   &
+       Dspl_Dex,xt_c,xt_e,cmin,cmax,emin,emax, &
+       num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.false.,.false., &
+       ispec1,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+
+  Else
+
+    ! K_exp = FIVEHALF
+    ! L21_1 = energy_conv(iZERO,iZERO,use_quanc8,Kmin,Kmax,numKsteps,       &
+    !    vta,qa,qb,ma,na,nb,loglambda,abs_Er,num_species,vtb,log_interp,   &
+    !    Dspl_logD11,xt_c,xt_e,cmin,cmax,emin,emax, &
+    !    num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.false.,.true.)
+    ! K_exp = SEVENHALF
+    ! L22_1 = energy_conv(iZERO,iZERO,use_quanc8,Kmin,Kmax,numKsteps,       &
+    !    vta,qa,qb,ma,na,nb,loglambda,abs_Er,num_species,vtb,log_interp,   &
+    !    Dspl_logD11,xt_c,xt_e,cmin,cmax,emin,emax, &
+    !    num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.false.,.true.)
+
+    ! K_exp = FIVEHALF
+    ! L21_2 = energy_conv(iZERO,iZERO,use_quanc8,Kmin,Kmax,numKsteps,       &
+    !    vta,qa,qb,ma,na,nb,loglambda,abs_Er,num_species,vtb,log_interp,   &
+    !    Dspl_Drat2,xt_c,xt_e,cmin,cmax,emin,emax, &
+    !    num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.false.,.false.)
+    
+    ! K_exp = SEVENHALF
+    ! L22_2 = energy_conv(iZERO,iZERO,use_quanc8,Kmin,Kmax,numKsteps,       &
+    !    vta,qa,qb,ma,na,nb,loglambda,abs_Er,num_species,vtb,log_interp,   &
+    !    Dspl_Drat2,xt_c,xt_e,cmin,cmax,emin,emax, &
+    !    num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.false.,.false.)
+
+    ! L21 = L21_1 + L21_2
+    ! L22 = L22_1 + L22_2
+
+    STOP 'Why are you not capping flux?'
+  Endif
+
+
+  ! Loop over primary Sonine index (k)
+  Do kval = 0_iknd,Smax
+
+    ! Integrate QQ
+    norm_factor = na * (ma*vta/qa) * (TWO*Bsq/THREE)
+    nu_exp = iZERO ! Integer
+    K_exp = FIVEHALF  ! Real
+    Na_2k(kval+1) = energy_conv_fast(iZERO,kval,numKsteps,abs_Er,num_species,log_interp,        &
+    Dspl_Drat,xt_c,xt_e,cmin,cmax,emin,emax,   &
+    num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.false.,.false., &
+    ispec1,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+  EndDo
+
+  ! Calculate PS fluxes
+  QoT_PS_std = 0._rknd
+  Do ispec2=1,num_species
+        
+    ! Specific species beta
+    n_beta = dens(ispec2)
+    T_beta = Temps(ispec2)
+    q_beta  = charges(ispec2)
+    dT_betadr = dTdrs(ispec2)
+    dn_betadr = dndrs(ispec2)
+
+    C_PS1 = (n_beta*dT_betadr+T_beta*dn_betadr)*elem_charge/(n_beta*q_beta)
+    C_PS2 = dT_betadr*elem_charge/q_beta
+
+    lmat_ind1 = ( ispec1 - 1 ) * ( Smax + 1 ) + 1
+    lmat_ind2 = ( ispec2 - 1 ) * ( Smax + 1 ) + 1
+    lab11 = lmat(lmat_ind1    , lmat_ind2)
+    lab12 = lmat(lmat_ind1    , lmat_ind2+1)
+    lab21 = lmat(lmat_ind1+1  , lmat_ind2)
+    lab22 = lmat(lmat_ind1+1  , lmat_ind2+1)
+
+    QoT_PS_std = QoT_PS_std + C_PS1*(FIVEHALF*lab11- lab21) - &
+      C_PS2*(FIVEHALF*lab12 - lab22)
+
+    ! Add PS contibutions to transport coefficients
+    R_n(ispec1,ispec2) = (U2/qa) * elem_charge*T_beta/(q_beta*n_beta)*(FIVEHALF*lab11- lab21)
+    R_T(ispec1,ispec2) = (U2/qa) * (FIVEHALF*lab11- lab21 -FIVEHALF*lab12+lab22)/q_beta
+
+  EndDo
+
+
+  ind_A = (ispec1-1)*3+1
+  If ( flux_cap .EQV. .true. ) Then
+    QoT_PS(ispec1)   = (U2/qa) * QoT_PS_std
+  Else
+    ! norm_factor = na
+    ! nu_exp = iONE ! Integer
+    ! K_exp = TWO  ! Real
+    ! I_1 = energy_conv(iZERO,iZERO,use_quanc8,Kmin,Kmax,numKsteps, &
+    !   vta,qa,qb,ma,na,nb,loglambda,abs_Er,num_species,vtb,log_interp,        &
+    !   Dspl_D31,xt_c,xt_e,cmin,cmax,emin,emax,      &
+    !   num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.true.,.false.)
+
+    ! K_exp = THREE  ! Real
+    ! I_2 = energy_conv(iZERO,iZERO,use_quanc8,Kmin,Kmax,numKsteps, &
+    !   vta,qa,qb,ma,na,nb,loglambda,abs_Er,num_species,vtb,log_interp,        &
+    !   Dspl_D31,xt_c,xt_e,cmin,cmax,emin,emax,      &
+    !   num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.true.,.false.)
+    ! QoT_PS_flow = (2._rknd/3._rknd)*(ma*Ta*elem_charge/qa)*(I_1*Avec(ind_A) + I_2*Avec(ind_A+1))
+    ! QoT_PS(ispec1)   = (U2/qa) * (QoT_PS_std + QoT_PS_flow)
+
+    ! ! Add PS contibutions to transport coefficients
+    ! R_n(ispec1,ispec1) = R_n(ispec1,ispec1) + (U2/qa)*(2._rknd/3._rknd)*(ma*Ta*elem_charge/qa)*I_1/na
+    ! R_T(ispec1,ispec1) = R_T(ispec1,ispec1) - (U2/qa)*(ma/qa)*I_1 + (U2/qa)*(2._rknd/3._rknd)*(ma/qa)*I_2
+    ! R_Er(ispec1,ispec1) = R_Er(ispec1,ispec1) - (U2/qa)*(2._rknd/3._rknd)*(ma/qa)*I_1*qa
+    
+    STOP 'Why are you not capping flux?'
+  Endif
+
+
+  flow_ind1 = (ispec1-1)*(Smax+1)+1
+  mono_QoT(ispec1)  = - L21*Avec(ind_A) - L22*Avec(ind_A+1)
+  QoT_Ua(ispec1) = -Sum(Na_2k*Flows(flow_ind1:flow_ind1+Smax))
+
+  ! Total QoT
+  QoTs(ispec1)   = QoT_Ua(ispec1) +mono_QoT(ispec1)+QoT_PS(ispec1)
+
+  ! Add mono-flux contribution to transport coefficients
+  R_n(ispec1,ispec1) = R_n(ispec1,ispec1) - L21/na
+  R_T(ispec1,ispec1) = R_T(ispec1,ispec1) + (THREEHALF*L21-L22) / (elem_charge*Ta)
+  R_Er(ispec1,ispec1) = R_Er(ispec1,ispec1) + (L21*qa) / (elem_charge*Ta)
+
+  ! Add Ua contribution to transport coefficients
+  Do ispec2 = 1,num_species
+    n_spec2 = dens(ispec2)
+    q_spec2 = charges(ispec2)
+    T_spec2 = Temps(ispec2)
+    R_n(ispec1,ispec2) = R_n(ispec1,ispec2) - Sum(Na_2k*L_A1(ispec1,ispec2,:))/n_spec2
+    !
+    R_T(ispec1,ispec2) = R_T(ispec1,ispec2) +  &
+                        THREEHALF*Sum(Na_2k*L_A1(ispec1,ispec2,:))/(elem_charge*T_spec2) - &
+                        Sum(Na_2k*L_A2(ispec1,ispec2,:))/(elem_charge*T_spec2)
+    !
+    R_Er(ispec1,ispec2) = R_Er(ispec1,ispec2) + Sum(Na_2k*L_A1(ispec1,ispec2,:))*q_spec2/(elem_charge*T_spec2)
+  EndDo
+
+EndDo ! Species 1 loop
+
+EndFunction calc_QoTs_SN_fast
+
+Function energy_conv_fast(jval,kval,numKsteps,abs_Er,num_species,log_interp,Dspl,xt_c,xt_e,cmin,     &
+  cmax,emin,emax,nc,ne,kcord,keord,K_exp,nu_exp,norm_factor,Unity_coeff, logopt, &
+  ispecies,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix) &
+  Result(Coeff)
+  !
+  ! Description: 
+  ! This function is a speed-up version of energy_conv. Should only be used when using the _fast versions
+  ! 
+  ! Author(s): J. Lore 7/16/2010 - 09/22/2011
+  !            A.J. Coelho 05/28/2026
+  !
+  ! Modules used:
+  Use penta_kind_mod                    ! Import rknd, iknd specifications
+  Use phys_const, Only : pi             ! Import physical constants
+  Use penta_math_routines_mod, Only : & ! Import math routines
+  ! Imported functions
+  ifactorial, &
+  Gamma_aux,  &
+  rlinspace
+
+  Implicit None
+
+  ! Input/output                      
+  Integer(iknd), Intent(in)  :: jval
+  Integer(iknd), Intent(in)  :: kval
+  Integer(iknd), Intent(in)  :: numKsteps
+  Real(rknd),    Intent(in)  :: abs_Er
+  Integer(iknd), Intent(in)  :: num_species
+  Logical,       Intent(in)  :: log_interp
+  Real(rknd),    Intent(in)  :: Dspl(nc,ne)
+  Real(rknd),    Intent(in)  :: xt_c(nc + kcord)
+  Real(rknd),    Intent(in)  :: xt_e(ne + keord)
+  Real(rknd),    Intent(in)  :: cmin
+  Real(rknd),    Intent(in)  :: cmax
+  Real(rknd),    Intent(in)  :: emin
+  Real(rknd),    Intent(in)  :: emax
+  Integer(iknd), Intent(in)  :: nc
+  Integer(iknd), Intent(in)  :: ne
+  Integer(iknd), Intent(in)  :: kcord
+  Integer(iknd), Intent(in)  :: keord
+  Real(rknd),    Intent(in)  :: K_exp
+  Integer(iknd), Intent(in)  :: nu_exp
+  Real(rknd),    Intent(in)  :: norm_factor
+  Logical,       Intent(in)  :: Unity_coeff
+  Logical,       Intent(in)  :: logopt
+  Real(rknd)                 :: Coeff
+  !
+  Real(rknd), Intent(in) :: Ka_array(numKsteps),cmulK_matrix(num_species,numKsteps), &
+                            log_cmulK_matrix(num_species,numKsteps),oneOverVa_matrix(num_species,numKsteps)
+  Integer(iknd), Intent(in) :: ispecies
+
+
+  ! Local scalars
+  Integer(iknd) :: mtest, iK          ! loop indices
+  Real(rknd) :: Gamma_k, Gamma_m, &   ! Gamma function evals
+    Gamma_j
+  Real(rknd) :: ckm                   ! Temporary var for Sonine generation
+  Real(rknd) :: coeff_tmp             ! Temp. coefficient used in K loop
+  Real(rknd) :: K0, K1
+  ! Local arrays
+  Real(rknd) :: coeffs_k(kval+1)      ! Arrays of Sonine poly coefficients
+  Real(rknd) :: coeffs_j(jval+1)   
+  Real(rknd) :: Kvals(numKsteps)      ! Energy integration values
+
+  !- End of header -------------------------------------------------------------
+
+  ! Determine the coefficients of the Sonine polynomial of order kval
+  !  array is ordered as [K**0 K**1 ... K**kval].
+  Gamma_k = Gamma_aux(kval + 2.5_rknd)
+  Do mtest = 0,kval
+    Gamma_m = Gamma_aux(mtest + 2.5_rknd)
+    ckm = (-1._rknd)**mtest * Gamma_k &
+      / ( Gamma_m * ifactorial( kval - mtest) * ifactorial(mtest) )
+    coeffs_k(mtest+1) = ckm
+  EndDo
+
+  ! Determine the coefficients of the Sonine polynomial of order jval
+  !  array is ordered as [K**0 K**1 ... K**jval].
+  Gamma_j = Gamma_aux(jval + 2.5_rknd)
+  Do mtest = 0,jval
+    Gamma_m = Gamma_aux(mtest + 2.5_rknd)
+    ckm = (-1._rknd)**mtest * Gamma_j &
+      / ( Gamma_m * ifactorial( jval - mtest) * ifactorial(mtest) )
+    coeffs_j(mtest+1) = ckm
+  EndDo
+
+  ! Perform energy integral QQ
+  ! Use rectangular approximation
+
+  !  QQ replace this with vectorized integrand in future
+  Coeff_tmp = 0._rknd
+  Do iK = 1, numKsteps - 1
+    K0 = Ka_array(iK)
+    K1 = Ka_array(iK+1)
+
+    Coeff_tmp =  Coeff_tmp +                                                &
+      intfun_fast(Ka_array(iK),abs_Er,num_species,log_interp,Dspl,xt_c,xt_e,cmin,cmax,emin,emax,nc,ne,kcord,keord,jval,kval,&
+      K_exp,nu_exp,coeffs_j,coeffs_k,Unity_coeff,logopt, &
+      numKsteps,ispecies,iK,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)*(K1-K0)
+  EndDo
+
+  Coeff = 2._rknd * Coeff_tmp * norm_factor / Dsqrt(pi)
+
+EndFunction energy_conv_fast
+
+Function intfun_fast(Ka,abs_Er,num_species,log_interp,Dspl,xt_c,xt_e,cmin,cmax,emin,emax,nc,ne,kcord,keord,juse,kuse,  &
+  K_exp,nu_exp,coeffs_j,coeffs_k,Unity_coeff,logopt, &
+  numKsteps,ispecies,iK,cmulK_arr,log_cmulK_arr,oneOverVa_arr)               &
+Result(integrand)
+!
+! Description: 
+! This function speeds up intfun. Should only be used when called from penta_interface_mod
+! 
+! Author(s): J. Lore 7/19/2010 - 09/10/2010
+!            A.J. Coelho 05/28/2026
+!
+! Modules used:
+Use penta_kind_mod                  ! Import rknd, iknd specifications
+Use bspline, Only : & 
+! Imported functions
+dbs2vl                              ! 2D interpolation
+
+Implicit None
+
+! Input/output                      ! See above for descriptions
+Real(rknd),    Intent(in)  :: Ka
+Real(rknd),    Intent(in)  :: abs_Er
+Integer(iknd), Intent(in)  :: num_species
+Logical,       Intent(in)  :: log_interp
+Real(rknd),    Intent(in)  :: Dspl(nc,ne)
+Real(rknd),    Intent(in)  :: xt_c(nc + kcord)
+Real(rknd),    Intent(in)  :: xt_e(ne + keord)
+Real(rknd),    Intent(in)  :: cmin
+Real(rknd),    Intent(in)  :: cmax
+Real(rknd),    Intent(in)  :: emin
+Real(rknd),    Intent(in)  :: emax
+Integer(iknd), Intent(in)  :: nc
+Integer(iknd), Intent(in)  :: ne
+Integer(iknd), Intent(in)  :: kcord
+Integer(iknd), Intent(in)  :: keord
+Integer(iknd), Intent(in)  :: juse
+Integer(iknd), Intent(in)  :: kuse
+Real(rknd),    Intent(in)  :: K_exp
+Integer(iknd), Intent(in)  :: nu_exp
+Real(rknd), Intent(in)     :: coeffs_j(juse+1)
+Real(rknd), Intent(in)     :: coeffs_k(kuse+1)
+Logical, Intent(in)        :: Unity_coeff
+Logical,       Intent(in)  :: logopt
+Real(rknd)                 :: integrand
+!
+Integer(iknd), Intent(in) :: numKsteps,ispecies,iK
+Real(rknd), Intent(in), Dimension(num_species,numKsteps) :: cmulK_arr,log_cmulK_arr,oneOverVa_arr
+
+! Local scalars
+Real(rknd)    :: efield          ! efield parameter (|Er|/va)
+Real(rknd)    :: enrm            ! normalized efield for interpolation
+Real(rknd)    :: cmul_K          ! Collisionality (nu_a/va)
+Real(rknd)    :: Dstar_val       ! interpolated D* value
+Real(rknd)    :: kfun_tmp1,  &   ! Sonine polynomial evaluations
+  kfun_tmp2, kfun, kfun2
+Integer(iknd) :: mtest    ! loop indices
+
+!- End of header -------------------------------------------------------------
+
+! Set efield parameter (|Er|/va)
+efield = abs_Er * oneOverVa_arr(ispecies,iK)
+
+
+If ( Unity_coeff .EQV. .true. ) Then
+  Dstar_val = 1._rknd
+Else
+  ! Set interpolation point for logarithmic or linear interpolation 
+  If ( log_interp .EQV. .true. ) Then
+    efield = Dlog10(efield)
+    cmul_K = log_cmulK_arr(ispecies,iK)  !Dlog10(cmul_K)
+  Else
+    cmul_K = cmulK_arr(ispecies,iK)
+  EndIf
+
+  ! Check for and handle out of range requests
+  If ( efield < emin ) Then
+    efield = emin
+  ElseIf (efield > emax) Then
+    efield = emax
+  EndIf
+
+  ! ! No need to clamp cmul_K since this was already done in calc_integration_arrays
+  ! If ( cmul_K < cmin ) Then
+  !   cmul_K = cmin
+  ! ElseIf (cmul_K > cmax) Then
+  !   cmul_K = cmax
+  ! EndIf
+
+  ! Define normalized efield for interpolation
+  enrm = (efield - emin)/(emax - emin)
+
+  ! Interpolate coefficient database
+  Dstar_val = dbs2vl(cmul_K,enrm,kcord,keord,xt_c,xt_e,nc,ne,Dspl)
+Endif 
+
+! Calculate the Sonine polynomial product
+kfun_tmp1 = 0._rknd
+Do mtest = 0_iknd, kuse
+  kfun_tmp1 = kfun_tmp1 + coeffs_k(mtest + 1)*Ka**mtest
+EndDo
+
+kfun_tmp2 = 0._rknd
+Do mtest = 0_iknd, juse
+  kfun_tmp2 = kfun_tmp2 + coeffs_j(mtest + 1)*Ka**mtest
+EndDo
+
+kfun = kfun_tmp1*kfun_tmp2
+
+If (logopt .EQV. .true.) Then
+  kfun2 = Dexp(Dstar_val-Ka)
+Else
+  kfun2 = Dexp(-Ka)*Dstar_val
+Endif
+
+If(nu_exp /= 0_iknd) STOP 'nu_exp must be 0, otherwise intfun_fast is broken since we no longer compute nu_perp_a'
+! integrand = kfun * kfun2 * Ka**(K_exp + 0.5_rknd) &
+!   * nu_perp_a**nu_exp
+
+integrand = kfun * kfun2 * Ka**(K_exp + 0.5_rknd)
+
+EndFunction intfun_fast
 
 End Module penta_functions_mod
 !- End of module header -------------------------------------------------------

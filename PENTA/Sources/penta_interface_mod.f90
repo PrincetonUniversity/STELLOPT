@@ -944,22 +944,24 @@ MODULE PENTA_INTERFACE_MOD
          ! Select the appropriate algorithm and calculate the flows and fluxes
          SELECT CASE (Method)
             Case ('SN')                    
-               Flows = calc_flows_SN(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
+               Flows = calc_flows_SN_fast(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
                   masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,log_interp,       &
                   cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_DUa,num_c,num_e,kcord,  &
-                  keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS,L_A1,L_A2,L_A3)                                                
-               Gammas = calc_fluxes_SN(num_species,Smax,abs_Er,Temps,dens,vths,charges,&
+                  keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS,L_A1,L_A2,L_A3, &
+                  Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)                                                
+               Gammas = calc_fluxes_SN_fast(num_species,Smax,abs_Er,Temps,dens,vths,charges,&
                  masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,cmax, &
                  emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,Dspl_Dex,Dspl_logD11,        &
                  Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,lmat,Flows,U2,dTdrs,        &
-                 dndrs,flux_cap,L_A1,L_A2,L_A3,L_n,L_T,L_Er)  
-               If ( output_QoT_vs_Er .EQV. .true. ) Then
-                  QoTs = calc_QoTs_SN(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
-                     masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,    &
-                     cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,Dspl_Dex,Dspl_logD11, &
-                     Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,lmat,Flows,U2,dTdrs,      &
-                     dndrs,flux_cap,L_A1,L_A2,L_A3,R_n,R_T,R_Er)  
-               Endif    
+                 dndrs,flux_cap,L_A1,L_A2,L_A3,L_n,L_T,L_Er, &
+                  Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)  
+               ! If ( output_QoT_vs_Er .EQV. .true. ) Then
+               !    QoTs = calc_QoTs_SN(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
+               !       masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,    &
+               !       cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,Dspl_Dex,Dspl_logD11, &
+               !       Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,lmat,Flows,U2,dTdrs,      &
+               !       dndrs,flux_cap,L_A1,L_A2,L_A3,R_n,R_T,R_Er)  
+               ! Endif    
             Case Default
                Stop 'Can only use SN method!'
          END SELECT
@@ -1076,26 +1078,28 @@ MODULE PENTA_INTERFACE_MOD
          ! Select the appropriate algorithm and calculate the flows and fluxes
          SELECT CASE (Method)
             Case ('SN')
-               ! Calculate array of parallel flow moments
-                                                       
-               Flows_ambi(:,iroot) = calc_flows_SN(num_species,Smax,abs_Er,Temps,dens,&
+               ! Calculate array of parallel flow moments 
+               Flows_ambi(:,iroot) = calc_flows_SN_fast(num_species,Smax,abs_Er,Temps,dens,&
                   vths,charges,masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,    &
                   log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_DUa,num_c,  &
-                  num_e,kcord,keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS,L_A1,L_A2,L_A3)                                                
+                  num_e,kcord,keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS,L_A1,L_A2,L_A3, &
+                  Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)                                               
                ! Calculate array of radial particle fluxes
-               Gammas_ambi(:,iroot) = calc_fluxes_SN(num_species,Smax,abs_Er,Temps,   &
+               Gammas_ambi(:,iroot) = calc_fluxes_SN_fast(num_species,Smax,abs_Er,Temps,   &
                  dens,vths,charges,masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,   &
                  log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,       &
                  Dspl_Dex,Dspl_logD11,Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,      &
                  lmat,Flows_ambi(:,iroot),U2,dTdrs,dndrs,flux_cap,L_A1,L_A2,L_A3,     &
-                 L_n,L_T,L_Er)  
+                 L_n,L_T,L_Er, &
+                 Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix) 
                ! Calculate array of radial energy fluxes
-               QoTs_ambi(:,iroot) = calc_QoTs_SN(num_species,Smax,abs_Er,Temps,dens,  &
+               QoTs_ambi(:,iroot) = calc_QoTs_SN_fast(num_species,Smax,abs_Er,Temps,dens,  &
                  vths,charges,masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,        &
                  log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,       &
                  Dspl_Dex,Dspl_logD11,Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,      &
                  lmat,Flows_ambi(:,iroot),U2,dTdrs,dndrs,flux_cap,L_A1,L_A2,L_A3,     &
-                 R_n,R_T,R_Er)
+                 R_n,R_T,R_Er, &
+                 Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
 
                sigma_par_ambi(iroot) = sigma_par
                sigma_par_Spitzer_ambi(iroot) = sigma_par_Spitzer
@@ -1194,7 +1198,7 @@ MODULE PENTA_INTERFACE_MOD
 
       !write header of merged file
       Write(iunit_merged,'("*",/,"t [s]")')
-      Write(iunit_merged,'(f7.3)') mytime
+      Write(iunit_merged,'(f11.3)') mytime
       Write(iunit_merged,'("r/a    Er[V/cm]    J_BS [Am**-2]    ",  &
             "Gamma_e [m**-2s**-1]   Q_e/T_e [m**-2s**-1]     ",         &
             "Gamma_i [m**-2s**-1]   Q_i/T_i [m**-2s**-1]   etapar [Ohm.m]   root_type")')
@@ -1255,7 +1259,7 @@ MODULE PENTA_INTERFACE_MOD
 
       !write header of merged file
       Write(iunit_merged,'("*",/,"t [s]")')
-      Write(iunit_merged,'(f7.3)') mytime
+      Write(iunit_merged,'(f11.3)') mytime
       Write(iunit_merged,'("*",/,"r/a   Er[V/cm]   Gamma_e [m**-2s**-1] ",&
              "   Gamma_i [m**-2s**-1]")')
 
