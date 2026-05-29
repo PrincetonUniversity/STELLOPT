@@ -51,6 +51,7 @@ MODULE PENTA_INTERFACE_MOD
       Er_root_type
    REAL(rknd), DIMENSION(:),   ALLOCATABLE :: Ka_array
    REAL(rknd), DIMENSION(:,:), ALLOCATABLE :: cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix
+   REAL(rknd), DIMENSION(:,:), ALLOCATABLE :: sonine_poly
 
 !-----------------------------------------------------------------------
 !     Module Namelists
@@ -867,8 +868,9 @@ MODULE PENTA_INTERFACE_MOD
       IF(.NOT. ALLOCATED(cmulK_matrix)) ALLOCATE(cmulK_matrix(num_species,numKsteps))
       IF(.NOT. ALLOCATED(log_cmulK_matrix)) ALLOCATE(log_cmulK_matrix(num_species,numKsteps))
       IF(.NOT. ALLOCATED(oneOverVa_matrix)) ALLOCATE(oneOverVa_matrix(num_species,numKsteps))
-      CALL calc_integration_arrays(num_species,Temps,dens,vths,charges,masses,loglambda,Kmin,Kmax,numKsteps, &
-                  cmin,cmax,emin,emax,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+      IF(.NOT. ALLOCATED(sonine_poly)) ALLOCATE(sonine_poly(0:Smax,numKsteps))
+      CALL calc_integration_arrays(num_species,Smax,Temps,dens,vths,charges,masses,loglambda,Kmin,Kmax,numKsteps, &
+                  cmin,cmax,emin,emax,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)
 
    END SUBROUTINE penta_set_integration_arrays
 
@@ -948,13 +950,13 @@ MODULE PENTA_INTERFACE_MOD
                   masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,log_interp,       &
                   cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_DUa,num_c,num_e,kcord,  &
                   keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS,L_A1,L_A2,L_A3, &
-                  Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)                                                
+                  Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)                                                
                Gammas = calc_fluxes_SN_fast(num_species,Smax,abs_Er,Temps,dens,vths,charges,&
                  masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,cmax, &
                  emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,Dspl_Dex,Dspl_logD11,        &
                  Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,lmat,Flows,U2,dTdrs,        &
                  dndrs,flux_cap,L_A1,L_A2,L_A3,L_n,L_T,L_Er, &
-                  Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)  
+                  Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)  
                ! If ( output_QoT_vs_Er .EQV. .true. ) Then
                !    QoTs = calc_QoTs_SN(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
                !       masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,    &
@@ -1083,7 +1085,7 @@ MODULE PENTA_INTERFACE_MOD
                   vths,charges,masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,    &
                   log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_DUa,num_c,  &
                   num_e,kcord,keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS,L_A1,L_A2,L_A3, &
-                  Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)                                               
+                  Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)                                               
                ! Calculate array of radial particle fluxes
                Gammas_ambi(:,iroot) = calc_fluxes_SN_fast(num_species,Smax,abs_Er,Temps,   &
                  dens,vths,charges,masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,   &
@@ -1091,7 +1093,7 @@ MODULE PENTA_INTERFACE_MOD
                  Dspl_Dex,Dspl_logD11,Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,      &
                  lmat,Flows_ambi(:,iroot),U2,dTdrs,dndrs,flux_cap,L_A1,L_A2,L_A3,     &
                  L_n,L_T,L_Er, &
-                 Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix) 
+                 Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly) 
                ! Calculate array of radial energy fluxes
                QoTs_ambi(:,iroot) = calc_QoTs_SN_fast(num_species,Smax,abs_Er,Temps,dens,  &
                  vths,charges,masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,        &
@@ -1099,7 +1101,7 @@ MODULE PENTA_INTERFACE_MOD
                  Dspl_Dex,Dspl_logD11,Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,      &
                  lmat,Flows_ambi(:,iroot),U2,dTdrs,dndrs,flux_cap,L_A1,L_A2,L_A3,     &
                  R_n,R_T,R_Er, &
-                 Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+                 Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)
 
                sigma_par_ambi(iroot) = sigma_par
                sigma_par_Spitzer_ambi(iroot) = sigma_par_Spitzer

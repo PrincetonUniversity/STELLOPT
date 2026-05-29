@@ -3584,8 +3584,8 @@ go to 30
 return
 end function zeroin
 
-subroutine calc_integration_arrays(num_species,Temps,dens,vths,charges,masses,loglambda,Kmin,Kmax,numKsteps, &
-  cmin,cmax,emin,emax,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+subroutine calc_integration_arrays(num_species,Smax,Temps,dens,vths,charges,masses,loglambda,Kmin,Kmax,numKsteps, &
+  cmin,cmax,emin,emax,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)
 
   Use penta_kind_mod                  ! Import rknd, iknd specifications
   Use penta_math_routines_mod, Only : rlinspace ! Import math routines
@@ -3595,6 +3595,7 @@ subroutine calc_integration_arrays(num_species,Temps,dens,vths,charges,masses,lo
 
   ! Input variables
   Integer(iknd), Intent(in)  :: num_species
+  Integer(iknd), Intent(in)  :: Smax
   ! Real(rknd),    Intent(in)  :: abs_Er
   Real(rknd),    Intent(in)  :: Temps(num_species)
   Real(rknd),    Intent(in)  :: dens(num_species)
@@ -3609,10 +3610,13 @@ subroutine calc_integration_arrays(num_species,Temps,dens,vths,charges,masses,lo
   ! Output variables
   Real(rknd), Intent(out), Dimension(num_species,numKsteps) :: cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix
   Real(rknd), Intent(out) :: Ka_array(numKsteps)
+  Real(rknd), Intent(out), Dimension(0:Smax,numKsteps) :: sonine_poly
   ! Local variables
   Real(rknd) :: mtest,qtest,nu,vtest!,x,aux,prefactor
   Real(rknd), Dimension(num_species) :: x,aux,prefactor
-  Integer :: i,j!,k
+  Integer :: i,j,s,ik
+  Real(rknd), Parameter :: alpha = 1.5
+  Real(rknd) :: Ka,L0,L1,L2
 
   Ka_array = 10._rknd**rlinspace(log10(Kmin),log10(Kmax),numKsteps)
 
@@ -3656,13 +3660,35 @@ subroutine calc_integration_arrays(num_species,Temps,dens,vths,charges,masses,lo
   cmulK_matrix = min(max(cmulK_matrix,cmin),cmax)
   log_cmulK_matrix = min(max(log_cmulK_matrix,cmin),cmax)
 
+  ! Compute Soninine polynomials
+  do ik = 1, numKsteps
+    Ka = Ka_array(ik)
+
+    ! Seed values (analytic)
+    L0 = 1.0d0                          ! L_0^(3/2) = 1
+    L1 = 1.0d0 + alpha - Ka             ! L_1^(3/2) = 1 + alpha - x
+
+    sonine_poly(0, ik) = L0
+    sonine_poly(1, ik) = L1
+
+    ! Three-term recurrence:
+    !   (n+1) L_{n+1} = (2n + alpha + 1 - x) L_n  -  (n + alpha) L_{n-1}
+    do s = 1, Smax
+        L2 = ( (2*s + alpha + 1.0d0 - Ka) * L1  &
+              - (  s + alpha            ) * L0 ) / (s + 1.0d0)
+        sonine_poly(s+1, ik) = L2
+        L0 = L1
+        L1 = L2
+    end do
+  end do
+
 end subroutine calc_integration_arrays
 
 Function calc_flows_SN_fast(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
      masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,log_interp,      &
      cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_DUa,num_c,num_e,kcord, &
      keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS,L_A1,L_A2,L_A3, &
-     Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix) &
+     Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly) &
   Result(Flows)
   !
   ! Description: 
@@ -3725,7 +3751,8 @@ Function calc_flows_SN_fast(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
   Real(rknd),  Intent(inout) :: L_A3(num_species,num_species,Smax+1)
   !
   Real(rknd), Intent(in) :: Ka_array(numKsteps),cmulK_matrix(num_species,numKsteps), &
-                            log_cmulK_matrix(num_species,numKsteps),oneOverVa_matrix(num_species,numKsteps)
+                            log_cmulK_matrix(num_species,numKsteps),oneOverVa_matrix(num_species,numKsteps), &
+                            sonine_poly(0:Smax,numKsteps)
 
   ! Local scalars
   Integer(iknd) ::  ispec1, jval, ind_A, ind_RHS, kval, & ! Loop indices
@@ -3805,17 +3832,17 @@ Function calc_flows_SN_fast(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
       K_exp = THREEHALF     ! Real
       nu_exp = iZERO  ! Integer
 
-      RHS_1 = energy_conv_fast(jval,iZERO,numKsteps,abs_Er,num_species,log_interp,   &
+      RHS_1 = energy_conv_fast(Smax,jval,iZERO,numKsteps,abs_Er,num_species,log_interp,   &
         Dspl_Drat,xt_c,xt_e,cmin,cmax,emin,emax, &
         num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.false.,.false., &
-        ispec1,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+        ispec1,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)
 
       ! 2nd RHS term
       K_exp  = FIVEHALF    ! Real
-      RHS_2 = energy_conv_fast(jval,iZERO,numKsteps,abs_Er,num_species,log_interp,   &
+      RHS_2 = energy_conv_fast(Smax,jval,iZERO,numKsteps,abs_Er,num_species,log_interp,   &
         Dspl_Drat,xt_c,xt_e,cmin,cmax,emin,emax, &
         num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.false.,.false., &
-        ispec1,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+        ispec1,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)
 
       ! Sum the RHS terms multiplied by the forces
       ind_A = (ispec1 - 1)*3 + 1
@@ -3836,10 +3863,10 @@ Function calc_flows_SN_fast(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
         K_exp  = THREEHALF    ! Real
         nu_exp = iZERO    ! Integer
   
-        LHS_tmp1 = energy_conv_fast(jval,kval,numKsteps,abs_Er,num_species,log_interp,   &
+        LHS_tmp1 = energy_conv_fast(Smax,jval,kval,numKsteps,abs_Er,num_species,log_interp,   &
           Dspl_DUa,xt_c,xt_e,cmin,cmax,emin,emax, &
           num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.false.,.false., &
-          ispec1,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+          ispec1,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)
     
         ! Calculate the entire term multiplied by <U_ak>/<B**2>
         ind1_LHS1 = ( ispec1 - 1 ) * ( Smax + 1 ) + 1
@@ -3940,7 +3967,7 @@ Function calc_fluxes_SN_fast(num_species,Smax,abs_Er,Temps,dens,vths,charges,mas
      xt_c,xt_e,Dspl_Drat,Dspl_Drat2,Dspl_Dex,Dspl_logD11,Dspl_D31,num_c,num_e,   &
      kcord,keord,Avec,Bsq,lmat,Flows,U2,dTdrs,dndrs,flux_cap,L_A1,L_A2,L_A3,     &
      L_n,L_T,L_Er, &
-     Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)                 &
+     Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)                 &
 Result(Gammas)
 !
 ! Description: 
@@ -4005,7 +4032,8 @@ Real(rknd),    Intent(out)  :: L_T(num_species,num_species)
 Real(rknd),    Intent(out)  :: L_Er(num_species,num_species)
 !
 Real(rknd), Intent(in) :: Ka_array(numKsteps),cmulK_matrix(num_species,numKsteps), &
-                          log_cmulK_matrix(num_species,numKsteps),oneOverVa_matrix(num_species,numKsteps)
+                          log_cmulK_matrix(num_species,numKsteps),oneOverVa_matrix(num_species,numKsteps), &
+                          sonine_poly(0:Smax,numKsteps)
 
 ! Local Scalars
 Integer(iknd) :: ispec1,kval,   & ! Loop indices
@@ -4087,16 +4115,16 @@ Do ispec1 = 1_iknd, num_species
   If ( flux_cap .EQV. .true. ) Then
 
     K_exp = THREEHALF
-    L11 = energy_conv_fast(iZERO,iZERO,numKsteps,abs_Er,num_species,log_interp,   &
+    L11 = energy_conv_fast(Smax,iZERO,iZERO,numKsteps,abs_Er,num_species,log_interp,   &
        Dspl_Dex,xt_c,xt_e,cmin,cmax,emin,emax, &
        num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.false.,.false., &
-        ispec1,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+        ispec1,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)
     
     K_exp = FIVEHALF
-    L12 = energy_conv_fast(iZERO,iZERO,numKsteps,abs_Er,num_species,log_interp,   &
+    L12 = energy_conv_fast(Smax,iZERO,iZERO,numKsteps,abs_Er,num_species,log_interp,   &
        Dspl_Dex,xt_c,xt_e,cmin,cmax,emin,emax, &
        num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.false.,.false., &
-        ispec1,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+        ispec1,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)
 
   Else
 
@@ -4136,10 +4164,10 @@ Do ispec1 = 1_iknd, num_species
     norm_factor = na * (ma*vta/qa) * (TWO*Bsq/THREE)
     nu_exp = iZERO ! Integer
     K_exp = THREEHALF  ! Real
-    Na_1k(kval+1) = energy_conv_fast(iZERO,kval,numKsteps,abs_Er,num_species,log_interp,   &
+    Na_1k(kval+1) = energy_conv_fast(Smax,iZERO,kval,numKsteps,abs_Er,num_species,log_interp,   &
     Dspl_Drat,xt_c,xt_e,cmin,cmax,emin,emax,      &
     num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.false.,.false., &
-    ispec1,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+    ispec1,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)
   EndDo
 
   ! Calculate PS fluxes
@@ -4234,7 +4262,7 @@ Function calc_QoTs_SN_fast(num_species,Smax,abs_Er,Temps,dens,vths,charges,     
      cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,Dspl_Dex,Dspl_logD11,    &
      Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,lmat,Flows,U2,dTdrs,      &
      dndrs,flux_cap,L_A1,L_A2,L_A3,R_n,R_T,R_Er, &
-     Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)                                                        &
+     Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)                                                        &
 Result(QoTs)
 !
 ! Description: 
@@ -4299,7 +4327,8 @@ Real(rknd),    Intent(out)  :: R_T(num_species,num_species)
 Real(rknd),    Intent(out)  :: R_Er(num_species,num_species)
 !
 Real(rknd), Intent(in) :: Ka_array(numKsteps),cmulK_matrix(num_species,numKsteps), &
-                          log_cmulK_matrix(num_species,numKsteps),oneOverVa_matrix(num_species,numKsteps)
+                          log_cmulK_matrix(num_species,numKsteps),oneOverVa_matrix(num_species,numKsteps), &
+                          sonine_poly(0:Smax,numKsteps)
 
 ! Local Scalars
 Integer(iknd) :: ispec1,kval,   & ! Loop indices
@@ -4384,16 +4413,16 @@ Do ispec1 = 1_iknd, num_species
   If ( flux_cap .EQV. .true. ) Then
 
     K_exp = FIVEHALF
-    L21 = energy_conv_fast(iZERO,iZERO,numKsteps,abs_Er,num_species,log_interp,   &
+    L21 = energy_conv_fast(Smax,iZERO,iZERO,numKsteps,abs_Er,num_species,log_interp,   &
        Dspl_Dex,xt_c,xt_e,cmin,cmax,emin,emax, &
        num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.false.,.false., &
-       ispec1,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+       ispec1,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)
     
     K_exp = SEVENHALF
-    L22 = energy_conv_fast(iZERO,iZERO,numKsteps,abs_Er,num_species,log_interp,   &
+    L22 = energy_conv_fast(Smax,iZERO,iZERO,numKsteps,abs_Er,num_species,log_interp,   &
        Dspl_Dex,xt_c,xt_e,cmin,cmax,emin,emax, &
        num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.false.,.false., &
-       ispec1,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+       ispec1,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)
 
   Else
 
@@ -4434,10 +4463,10 @@ Do ispec1 = 1_iknd, num_species
     norm_factor = na * (ma*vta/qa) * (TWO*Bsq/THREE)
     nu_exp = iZERO ! Integer
     K_exp = FIVEHALF  ! Real
-    Na_2k(kval+1) = energy_conv_fast(iZERO,kval,numKsteps,abs_Er,num_species,log_interp,        &
+    Na_2k(kval+1) = energy_conv_fast(Smax,iZERO,kval,numKsteps,abs_Er,num_species,log_interp,        &
     Dspl_Drat,xt_c,xt_e,cmin,cmax,emin,emax,   &
     num_c,num_e,kcord,keord,K_exp,nu_exp,norm_factor,.false.,.false., &
-    ispec1,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+    ispec1,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)
   EndDo
 
   ! Calculate PS fluxes
@@ -4530,9 +4559,9 @@ EndDo ! Species 1 loop
 
 EndFunction calc_QoTs_SN_fast
 
-Function energy_conv_fast(jval,kval,numKsteps,abs_Er,num_species,log_interp,Dspl,xt_c,xt_e,cmin,     &
+Function energy_conv_fast(Smax,jval,kval,numKsteps,abs_Er,num_species,log_interp,Dspl,xt_c,xt_e,cmin,     &
   cmax,emin,emax,nc,ne,kcord,keord,K_exp,nu_exp,norm_factor,Unity_coeff, logopt, &
-  ispecies,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix) &
+  ispecies,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly) &
   Result(Coeff)
   !
   ! Description: 
@@ -4552,7 +4581,8 @@ Function energy_conv_fast(jval,kval,numKsteps,abs_Er,num_species,log_interp,Dspl
 
   Implicit None
 
-  ! Input/output                      
+  ! Input/output       
+  Integer(iknd), Intent(in)  :: Smax               
   Integer(iknd), Intent(in)  :: jval
   Integer(iknd), Intent(in)  :: kval
   Integer(iknd), Intent(in)  :: numKsteps
@@ -4579,69 +4609,39 @@ Function energy_conv_fast(jval,kval,numKsteps,abs_Er,num_species,log_interp,Dspl
   !
   Real(rknd), Intent(in) :: Ka_array(numKsteps),cmulK_matrix(num_species,numKsteps), &
                             log_cmulK_matrix(num_species,numKsteps),oneOverVa_matrix(num_species,numKsteps)
+  Real(rknd), Intent(in) :: sonine_poly(0:Smax,numKsteps)
   Integer(iknd), Intent(in) :: ispecies
 
-
-  ! Local scalars
-  Integer(iknd) :: mtest, iK          ! loop indices
-  Real(rknd) :: Gamma_k, Gamma_m, &   ! Gamma function evals
-    Gamma_j
-  Real(rknd) :: ckm                   ! Temporary var for Sonine generation
-  Real(rknd) :: coeff_tmp             ! Temp. coefficient used in K loop
+  ! Locals
+  Integer(iknd) :: iK
+  Real(rknd) :: coeff_tmp
   Real(rknd) :: K0, K1
-  ! Local arrays
-  Real(rknd) :: coeffs_k(kval+1)      ! Arrays of Sonine poly coefficients
-  Real(rknd) :: coeffs_j(jval+1)   
-  Real(rknd) :: Kvals(numKsteps)      ! Energy integration values
 
   !- End of header -------------------------------------------------------------
 
-  ! Determine the coefficients of the Sonine polynomial of order kval
-  !  array is ordered as [K**0 K**1 ... K**kval].
-  Gamma_k = Gamma_aux(kval + 2.5_rknd)
-  Do mtest = 0,kval
-    Gamma_m = Gamma_aux(mtest + 2.5_rknd)
-    ckm = (-1._rknd)**mtest * Gamma_k &
-      / ( Gamma_m * ifactorial( kval - mtest) * ifactorial(mtest) )
-    coeffs_k(mtest+1) = ckm
-  EndDo
-
-  ! Determine the coefficients of the Sonine polynomial of order jval
-  !  array is ordered as [K**0 K**1 ... K**jval].
-  Gamma_j = Gamma_aux(jval + 2.5_rknd)
-  Do mtest = 0,jval
-    Gamma_m = Gamma_aux(mtest + 2.5_rknd)
-    ckm = (-1._rknd)**mtest * Gamma_j &
-      / ( Gamma_m * ifactorial( jval - mtest) * ifactorial(mtest) )
-    coeffs_j(mtest+1) = ckm
-  EndDo
-
-  ! Perform energy integral QQ
-  ! Use rectangular approximation
-
-  !  QQ replace this with vectorized integrand in future
+  ! Energy integral with rectangular approximation
   Coeff_tmp = 0._rknd
   Do iK = 1, numKsteps - 1
     K0 = Ka_array(iK)
     K1 = Ka_array(iK+1)
 
     Coeff_tmp =  Coeff_tmp +                                                &
-      intfun_fast(Ka_array(iK),abs_Er,num_species,log_interp,Dspl,xt_c,xt_e,cmin,cmax,emin,emax,nc,ne,kcord,keord,jval,kval,&
-      K_exp,nu_exp,coeffs_j,coeffs_k,Unity_coeff,logopt, &
-      numKsteps,ispecies,iK,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)*(K1-K0)
+      intfun_fast(Smax,Ka_array(iK),abs_Er,num_species,log_interp,Dspl,xt_c,xt_e,cmin,cmax,emin,emax,nc,ne,kcord,keord,jval,kval,&
+      K_exp,nu_exp,Unity_coeff,logopt, &
+      numKsteps,ispecies,iK,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)*(K1-K0)
   EndDo
 
   Coeff = 2._rknd * Coeff_tmp * norm_factor / Dsqrt(pi)
 
 EndFunction energy_conv_fast
 
-Function intfun_fast(Ka,abs_Er,num_species,log_interp,Dspl,xt_c,xt_e,cmin,cmax,emin,emax,nc,ne,kcord,keord,juse,kuse,  &
-  K_exp,nu_exp,coeffs_j,coeffs_k,Unity_coeff,logopt, &
-  numKsteps,ispecies,iK,cmulK_arr,log_cmulK_arr,oneOverVa_arr)               &
+Function intfun_fast(Smax,Ka,abs_Er,num_species,log_interp,Dspl,xt_c,xt_e,cmin,cmax,emin,emax,nc,ne,kcord,keord,juse,kuse,  &
+  K_exp,nu_exp,Unity_coeff,logopt, &
+  numKsteps,ispecies,iK,cmulK_arr,log_cmulK_arr,oneOverVa_arr,sonine_poly)               &
 Result(integrand)
 !
 ! Description: 
-! This function speeds up intfun. Should only be used when called from penta_interface_mod
+! This function speeds up intfun. Should only be used when called from energy_conv_fast
 ! 
 ! Author(s): J. Lore 7/19/2010 - 09/10/2010
 !            A.J. Coelho 05/28/2026
@@ -4655,6 +4655,7 @@ dbs2vl                              ! 2D interpolation
 Implicit None
 
 ! Input/output                      ! See above for descriptions
+Integer(iknd), Intent(in)  :: Smax
 Real(rknd),    Intent(in)  :: Ka
 Real(rknd),    Intent(in)  :: abs_Er
 Integer(iknd), Intent(in)  :: num_species
@@ -4674,23 +4675,20 @@ Integer(iknd), Intent(in)  :: juse
 Integer(iknd), Intent(in)  :: kuse
 Real(rknd),    Intent(in)  :: K_exp
 Integer(iknd), Intent(in)  :: nu_exp
-Real(rknd), Intent(in)     :: coeffs_j(juse+1)
-Real(rknd), Intent(in)     :: coeffs_k(kuse+1)
 Logical, Intent(in)        :: Unity_coeff
 Logical,       Intent(in)  :: logopt
 Real(rknd)                 :: integrand
 !
 Integer(iknd), Intent(in) :: numKsteps,ispecies,iK
 Real(rknd), Intent(in), Dimension(num_species,numKsteps) :: cmulK_arr,log_cmulK_arr,oneOverVa_arr
+Real(rknd), Intent(in) :: sonine_poly(0:Smax,numKsteps)
 
-! Local scalars
+! Locals
 Real(rknd)    :: efield          ! efield parameter (|Er|/va)
 Real(rknd)    :: enrm            ! normalized efield for interpolation
 Real(rknd)    :: cmul_K          ! Collisionality (nu_a/va)
 Real(rknd)    :: Dstar_val       ! interpolated D* value
-Real(rknd)    :: kfun_tmp1,  &   ! Sonine polynomial evaluations
-  kfun_tmp2, kfun, kfun2
-Integer(iknd) :: mtest    ! loop indices
+Real(rknd)    :: kfun, kfun2
 
 !- End of header -------------------------------------------------------------
 
@@ -4731,17 +4729,7 @@ Else
 Endif 
 
 ! Calculate the Sonine polynomial product
-kfun_tmp1 = 0._rknd
-Do mtest = 0_iknd, kuse
-  kfun_tmp1 = kfun_tmp1 + coeffs_k(mtest + 1)*Ka**mtest
-EndDo
-
-kfun_tmp2 = 0._rknd
-Do mtest = 0_iknd, juse
-  kfun_tmp2 = kfun_tmp2 + coeffs_j(mtest + 1)*Ka**mtest
-EndDo
-
-kfun = kfun_tmp1*kfun_tmp2
+kfun = sonine_poly(kuse,iK)*sonine_poly(juse,iK)
 
 If (logopt .EQV. .true.) Then
   kfun2 = Dexp(Dstar_val-Ka)
