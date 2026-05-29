@@ -712,24 +712,54 @@ MODULE PENTA_INTERFACE_MOD
 
    SUBROUTINE penta_fit_DXX_coef
       USE coeff_var_pass
-      USE PENTA_subroutines, ONLY : fit_coeffs
+      USE vmec_var_pass, ONLY: Bsq
+      USE penta_subroutines, ONLY: fit_coeffs_faster
       IMPLICIT NONE
 
       ! Calculate fitting parameters to the D##* coefficients
-      Call fit_coeffs(cmul,efield,num_c,num_e,D11_mat,log_interp, &
+      Call fit_coeffs_faster(cmul,efield,num_c,num_e,D11_mat,log_interp, &
          kcord,keord,xt_c,xt_e,Dspl_D11,cmin,cmax,emin,emax)
-      Call fit_coeffs(cmul,efield,num_c,num_e,D13_mat,log_interp, &
+      Call fit_coeffs_faster(cmul,efield,num_c,num_e,D13_mat,log_interp, &
          kcord,keord,xt_c,xt_e,Dspl_D13,cmin,cmax,emin,emax)
-      Call fit_coeffs(cmul,efield,num_c,num_e,D31_mat,log_interp, &
+      Call fit_coeffs_faster(cmul,efield,num_c,num_e,D31_mat,log_interp, &
          kcord,keord,xt_c,xt_e,Dspl_D31,cmin,cmax,emin,emax)
-      Call fit_coeffs(cmul,efield,num_c,num_e,D33_mat,log_interp, &
+      Call fit_coeffs_faster(cmul,efield,num_c,num_e,D33_mat,log_interp, &
          kcord,keord,xt_c,xt_e,Dspl_D33,cmin,cmax,emin,emax)
 
       ! Fit log(D*) for D11 and D33
-      Call fit_coeffs(cmul,efield,num_c,num_e,LOG(D11_mat),log_interp, &
+      Call fit_coeffs_faster(cmul,efield,num_c,num_e,LOG(D11_mat),log_interp, &
          kcord,keord,xt_c,xt_e,Dspl_logD11,cmin,cmax,emin,emax)
-      Call fit_coeffs(cmul,efield,num_c,num_e,LOG(D33_mat),log_interp, &
+      Call fit_coeffs_faster(cmul,efield,num_c,num_e,LOG(D33_mat),log_interp, &
          kcord,keord,xt_c,xt_e,Dspl_logD33,cmin,cmax,emin,emax)
+
+      ! Fit radial transport coefficients specific to different methods
+      SELECT CASE (Method)
+         CASE ('SN')
+            ! Calculate fits to D31*/D33*  (Drat)
+            CALL fit_coeffs_faster(cmul,efield,num_c,num_e, &
+               D31_mat/D33_mat, &
+               log_interp,kcord,keord,xt_c,xt_e,Dspl_Drat,     &
+               cmin,cmax,emin,emax)
+            ! Calculate fits to (D31*)**2/D33*   (Drat2)
+            CALL fit_coeffs_faster(cmul,efield,num_c,num_e, &
+               D31_mat*D31_mat/D33_mat, &
+               log_interp,kcord,keord,xt_c,xt_e,Dspl_Drat2,     &
+               cmin,cmax,emin,emax)
+            cmesh = Spread(cmul,2,num_e)
+            ! Calculate coefficient for Ua term  (DUa)
+            CALL fit_coeffs_faster(cmul,efield,num_c,num_e, &
+               (2._rknd*Bsq/(3._rknd*D33_mat) - cmesh), &
+               log_interp,kcord,keord,xt_c,xt_e,Dspl_DUa,     &
+               cmin,cmax,emin,emax)
+            ! Calculate coefficient for radial flux  (Capped term)  (Dex)
+            ! Also, do not allow for negative coefficients
+            CALL fit_coeffs_faster(cmul,efield,num_c,num_e, &
+               Max(D11_mat-(2._rknd/3._rknd)*cmesh*U2+D31_mat*D31_mat/D33_mat, &
+               0._rknd),log_interp,kcord,keord,xt_c,xt_e,Dspl_Dex,     &
+               cmin,cmax,emin,emax)
+        CASE DEFAULT 
+          STOP 'Error: Can only use SN method!'
+      ENDSELECT
       RETURN
    END SUBROUTINE penta_fit_DXX_coef
 
@@ -821,44 +851,13 @@ MODULE PENTA_INTERFACE_MOD
       RETURN
    END SUBROUTINE penta_open_output
 
-   SUBROUTINE penta_fit_rad_trans
-      USE coeff_var_pass
-      USE vmec_var_pass
-      USE PENTA_subroutines, ONLY : fit_coeffs, define_friction_coeffs
-      IMPLICIT NONE
+   SUBROUTINE penta_lmat_matrix
+      USE PENTA_subroutines, ONLY : define_friction_coeffs
       ! Define matrix of friction coefficients (lmat)
       Call define_friction_coeffs(masses,charges,vths,Temps,dens,loglambda, &
                             num_species,Smax,lmat)
-      ! Fit radial transport coefficients specific to different methods
-      SELECT CASE (Method)
-         CASE ('SN')
-            ! Calculate fits to D31*/D33*  (Drat)
-            CALL fit_coeffs(cmul,efield,num_c,num_e, &
-               D31_mat/D33_mat, &
-               log_interp,kcord,keord,xt_c,xt_e,Dspl_Drat,     &
-               cmin,cmax,emin,emax)
-            ! Calculate fits to (D31*)**2/D33*   (Drat2)
-            CALL fit_coeffs(cmul,efield,num_c,num_e, &
-               D31_mat*D31_mat/D33_mat, &
-               log_interp,kcord,keord,xt_c,xt_e,Dspl_Drat2,     &
-               cmin,cmax,emin,emax)
-            cmesh = Spread(cmul,2,num_e)
-            ! Calculate coefficient for Ua term  (DUa)
-            CALL fit_coeffs(cmul,efield,num_c,num_e, &
-               (2._rknd*Bsq/(3._rknd*D33_mat) - cmesh), &
-               log_interp,kcord,keord,xt_c,xt_e,Dspl_DUa,     &
-               cmin,cmax,emin,emax)
-            ! Calculate coefficient for radial flux  (Capped term)  (Dex)
-            ! Also, do not allow for negative coefficients
-            CALL fit_coeffs(cmul,efield,num_c,num_e, &
-               Max(D11_mat-(2._rknd/3._rknd)*cmesh*U2+D31_mat*D31_mat/D33_mat, &
-               0._rknd),log_interp,kcord,keord,xt_c,xt_e,Dspl_Dex,     &
-               cmin,cmax,emin,emax)
-        CASE DEFAULT 
-          STOP 'Error: Can only use SN method!'
-      ENDSELECT
       RETURN
-   END SUBROUTINE penta_fit_rad_trans
+   END SUBROUTINE penta_lmat_matrix
 
    SUBROUTINE penta_set_integration_arrays
       USE penta_functions_mod
@@ -873,25 +872,6 @@ MODULE PENTA_INTERFACE_MOD
                   cmin,cmax,emin,emax,Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)
 
    END SUBROUTINE penta_set_integration_arrays
-
-   SUBROUTINE penta_run_1_init
-      IMPLICIT NONE
-      INTEGER :: istat
-      CALL init_penta_input
-      istat = 0
-      CALL read_penta_ion_params_namelist('ion_params',istat)
-      istat = 0
-      CALL read_penta_run_params_namelist('run_params',istat)
-      CALL penta_init_commandline
-      CALL penta_allocate_species
-      CALL penta_read_input_files(.TRUE.,.TRUE.,.TRUE.,.TRUE.,.TRUE.)
-      CALL penta_screen_info
-      CALL penta_allocate_dkescoeff
-      CALL penta_fit_DXX_coef
-      CALL penta_open_output
-      CALL penta_fit_rad_trans
-      RETURN
-   END SUBROUTINE penta_run_1_init
 
    SUBROUTINE penta_run_2_efield
       USE vmec_var_pass

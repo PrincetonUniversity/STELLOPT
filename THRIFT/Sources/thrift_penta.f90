@@ -181,7 +181,7 @@
             CALL PENTA_SCREEN_INFO
             CALL PENTA_ALLOCATE_DKESCOEFF
             CALL PENTA_FIT_DXX_COEF
-            CALL PENTA_FIT_RAD_TRANS
+            CALL PENTA_LMAT_MATRIX
             CALL PENTA_SET_INTEGRATION_ARRAYS
 
             WRITE(temp_str,'(i4.4)') k

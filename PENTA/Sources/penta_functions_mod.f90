@@ -4648,9 +4648,7 @@ Result(integrand)
 !
 ! Modules used:
 Use penta_kind_mod                  ! Import rknd, iknd specifications
-Use bspline, Only : & 
-! Imported functions
-dbs2vl                              ! 2D interpolation
+USE bspline_sub_module, Only : db2val
 
 Implicit None
 
@@ -4689,6 +4687,9 @@ Real(rknd)    :: enrm            ! normalized efield for interpolation
 Real(rknd)    :: cmul_K          ! Collisionality (nu_a/va)
 Real(rknd)    :: Dstar_val       ! interpolated D* value
 Real(rknd)    :: kfun, kfun2
+Integer(iknd) :: ier
+Integer(iknd) :: iZERO  = 0_iknd, iONE  = 1_iknd
+Real(rknd), Allocatable :: work1(:), work0(:)  ! Work arrays for db2val
 
 !- End of header -------------------------------------------------------------
 
@@ -4724,8 +4725,12 @@ Else
   ! Define normalized efield for interpolation
   enrm = (efield - emin)/(emax - emin)
 
-  ! Interpolate coefficient database
-  Dstar_val = dbs2vl(cmul_K,enrm,kcord,keord,xt_c,xt_e,nc,ne,Dspl)
+  ! Use faster B-spline interpolation
+  ALLOCATE(work1(keord),work0(3_iknd*max(kcord,keord)))
+  CALL db2val(xval=cmul_K,yval=enrm,idx=iZERO,idy=iZERO,tx=xt_c,ty=xt_e,nx=nc,ny=ne,kx=kcord,ky=keord,bcoef=Dspl,f=Dstar_val, &
+              iflag=ier,inbvx=iONE,inbvy=iONE,iloy=iONE,w1=work1,w0=work0,extrap=.false.)
+  DEALLOCATE(work1,work0)
+
 Endif 
 
 ! Calculate the Sonine polynomial product

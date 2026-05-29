@@ -489,6 +489,7 @@ Real(rknd),    Intent(out) :: emax
 Real(rknd)   :: ctmp(num_c)
 Real(rknd)   :: etmp(num_e)
 Real(rknd)   :: enrm(num_e)
+Integer(iknd) :: ier
 
 !- End of header -------------------------------------------------------------
 
@@ -526,6 +527,94 @@ Call dbsnak(num_e,enrm,keord,xt_e)    !compute 'not-a-knot' sequence
 Call dbs2in(num_c,ctmp,num_e,enrm,Dstar,num_c,kcord,keord,xt_c,xt_e,Dspl)
 
 EndSubroutine fit_coeffs
+
+Subroutine fit_coeffs_faster(cmul,efield,num_c,num_e,Dstar,log_interp,kcord,keord, &
+ xt_c,xt_e,Dspl,cmin,cmax,emin,emax )
+! Description: 
+!  This subroutine is the same as fit_coeffs, but uses bspline_new which is faster
+! 
+! Author(s): J. Lore 7/2009 - 01/18/2011
+!            A.J. Coelho 05/29/2026
+!
+!
+! Declarations:
+!
+! Modules used:
+Use penta_kind_mod                ! Import rknd, iknd specifications
+Use phys_const, Only :                 &
+  ! Imported Parameters
+  elem_charge                     ! unit charge [C]
+Use pprof_pass                    ! Import plasma profile information
+USE bspline_sub_module, Only : db2ink
+Implicit none
+
+! Local parameters
+Real(rknd), Parameter :: esmall = 1.e-20_rknd ! Substituted for efield=0
+                                              ! if log interp is performed.
+                                              ! This should be smaller than
+                                              ! min(efield).
+
+! Subroutine arguments
+Real(rknd),    Intent(in)  :: cmul(num_c)     ! See above for definitions
+Real(rknd),    Intent(in)  :: efield(num_e)
+Integer(iknd), Intent(in)  :: num_c
+Integer(iknd), Intent(in)  :: num_e
+Real(rknd),    Intent(in)  :: Dstar(num_c,num_e)
+Logical,       Intent(in)  :: log_interp
+Integer(iknd), Intent(in)  :: kcord
+Integer(iknd), Intent(in)  :: keord
+Real(rknd),    Intent(out) :: xt_c(num_c + kcord)
+Real(rknd),    Intent(out) :: xt_e(num_e + keord)
+Real(rknd),    Intent(out) :: Dspl(num_c,num_e)
+Real(rknd),    Intent(out) :: cmin
+Real(rknd),    Intent(out) :: cmax
+Real(rknd),    Intent(out) :: emin
+Real(rknd),    Intent(out) :: emax
+
+! Local arrays
+Real(rknd)   :: ctmp(num_c)
+Real(rknd)   :: etmp(num_e)
+Real(rknd)   :: enrm(num_e)
+Integer(iknd) :: ier
+
+!- End of header -------------------------------------------------------------
+
+ctmp = cmul
+etmp = efield
+
+! Take log. of x-y arrays if necessary
+!  Also check for log(0)
+If ( log_interp .EQV. .true. ) Then
+  Where ( efield == 0._rknd ) etmp = esmall
+  ! Check for very small efield
+  If ( Minval(etmp(2:num_e)) .le. esmall ) Then
+    Write(*,*) 'Minval(efield) is smaller than parameter esmall'
+    Write(*,*) ' after efield = 0. substitution. Decrease esmall'
+    Write(*,*) ' or exclude such small efield values'
+    Write(*,*) 'Minval(efield), esmall =',Minval(etmp),esmall
+    Stop 'Error: Exiting from subroutine fit_coeffs'
+  Endif
+  ctmp = Log10(ctmp)
+  etmp = Log10(etmp)
+EndIf
+
+! Define limits of cmul, efield arrays
+cmin = Minval(ctmp)
+cmax = Maxval(ctmp)
+emin = Minval(etmp)
+emax = Maxval(etmp)
+
+! Define normalized array for efield for spline fitting
+enrm = ( etmp - emin ) / ( emax - emin ) 
+
+! Use faster B-spline interpolation (evaluation is done inside intfun and intfun_fast)
+Call db2ink(x=ctmp,nx=num_c,y=enrm,ny=num_e,fcn=Dstar,kx=kcord,ky=keord,iknot=0,tx=xt_c,ty=xt_e,bcoef=Dspl,iflag=ier)
+If( ier /= 0) Then
+  Print *, 'ERROR IN db2ink, iflag = ', ier
+  Stop
+Endif
+
+EndSubroutine fit_coeffs_faster
 
 
 End Module PENTA_Subroutines
