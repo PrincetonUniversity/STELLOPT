@@ -716,7 +716,7 @@
             FORALL(v=1:nv_local) xv(v) = DBLE(v-1)/DBLE(nv_local-1)
             rreal = zero; rureal = zero; rvreal = zero
             zreal = zero; zureal = zero; zvreal = zero
-            potu = -cut; potv = -cup;
+            potu = cut; potv = cup;
             potx = zero; poty = zero; potz = zero
             CALL mntouv_local(mnmax_surface,nu_local,nv_local,xu,xv,            &
                               rmnc_surface,xm_surface,xn_surface,  &
