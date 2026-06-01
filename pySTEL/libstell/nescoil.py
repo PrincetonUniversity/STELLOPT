@@ -147,8 +147,10 @@ class NESCOIL(FourierRep):
 		pot = self.generatePotential(theta,zeta)
 		nu = len(theta)
 		nv = len(zeta)
-		for j in range(nu): pot[0,j,:] = pot[0,j,:] - self.cut*0.5*theta[j]/np.pi
-		for j in range(nv): pot[0,:,j] = pot[0,:,j] - self.cup*0.5*zeta[j]/np.pi
+		# note that while techincally this should be pot - u and pot - v,
+		# NESCOIL says dpot/dv = dphi/dv + v in surfcur_diag....so we use that
+		for j in range(nu): pot[0,j,:] = pot[0,j,:] + self.cut*0.5*theta[j]/np.pi
+		for j in range(nv): pot[0,:,j] = pot[0,:,j] + self.cup*0.5*zeta[j]/np.pi
 		return pot
 
 
