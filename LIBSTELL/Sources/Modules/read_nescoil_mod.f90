@@ -636,8 +636,8 @@
          ! These normalizations were checked against the surface area
          !     Ip = NFP*CURPOL/MU0
          !     Ip/NFP = CURPOL/MU0 
-         norm   = DBLE(np*curpol) / DBLE(u1*v1)
-         norm_fsub = DBLE(np*curpol) / (pi2*pi2)
+         norm   = -DBLE(np*curpol) / DBLE(u1*v1)
+         norm_fsub = -DBLE(np*curpol) / (pi2*pi2)
          ! These must be consistent with splines below
          nx1    = nu_int;  nx2    = nvp
          x1_min = 0; x2_min = 0
