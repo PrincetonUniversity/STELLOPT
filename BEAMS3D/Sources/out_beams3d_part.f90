@@ -70,7 +70,6 @@ SUBROUTINE out_beams3d_part(t, q)
     IF (lboxsim) THEN
       charge_lines(mytdex,myline) = mycharge_int
       mass_lines(mytdex,myline) = mymass_int
-      reaction_count(myline) = 0
     END IF
     x0 = MOD(q(2), phimax)
     IF (x0 < 0) x0 = x0 + phimax
