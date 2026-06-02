@@ -92,7 +92,9 @@
                                mumaterial_tol, mumaterial_niter, &
                                mumaterial_lambda, mumaterial_lamfactor, &
                                mumaterial_lamthresh, mumaterial_padfactor, &
-                               mumaterial_convcheck, &
+                               mumaterial_convcheck, mumaterial_depth, &
+                               mumaterial_leaf, &
+                               mumaterial_theta_iter, mumaterial_theta_eval, &
                                a5_marker_name, a5_run_name
       
 !-----------------------------------------------------------------------
@@ -217,11 +219,15 @@
       npitch_fida = 0
       t_fida = 0.0
 
-      !MUMATERIAL Defaults
+      !MUMAT Defaults
       mumaterial_tol = 1.0D-5
       mumaterial_niter = 100
       mumaterial_lambda = 0.7
       mumaterial_lamfactor = 0.75
+      mumaterial_theta_iter = 0.33
+      mumaterial_theta_eval = 0.10
+      mumaterial_depth = 10
+      mumaterial_leaf = 4
 
       ! A5 restart stuff
       a5_marker_name = ''
