@@ -21,13 +21,14 @@ $$ \vec{B}\left(\vec{x}\right) = \frac{\mu_0}{4\pi}\int\frac{\vec{j}\times\left(
 where we define the current density by a current potential $$\vec{j} = \hat{n}\times\nabla\Phi$$.
 Which can be separated into secular and non-secular parts
 
-$$\Phi\left(u,v\right) = \sum_{m=0}^M\sum_{n=-N}^N \Phi_{mn} sin\left(2\pi mu+2\pi nv\right) - \frac{I_{pol}}{N_p}v - I_{tor}u$$
+$$\Phi\left(u,v\right) = \sum_{m=0}^M\sum_{n=-N}^N \Phi_{mn} sin\left(2\pi mu+2\pi nv\right) + \frac{I_{pol}}{N_p}v + I_{tor}u$$
 
 Here $$I_{pol}$$ is the total poloidal current per field period of the equilbrium and
 $$I_{tor}$$ is the total toroidal current. Note that the argument to
 sine is not the same as that of [VMEC](VMEC). The plasma surface and 
 current potential surface also use this formulation and not the [VMEC](VMEC)
-one.
+one. Also note that the secular parts have positive sign in NESCOIL,
+which is different from what has been written in the Merkel paper.
 
 The two scalar parts of the potential represent magnetic fields arrising
 from a toroidal field ($$\frac{I_{pol}}{N_p}v$$) and a vertical field
@@ -47,7 +48,7 @@ Git.
 
 ### Input Data Format
 
-The NSCOIL code takes an 'nescin.ext' file as input and optionally a
+The NESCOIL code takes an 'nescin.ext' file as input and optionally a
 similarly named 'bnorm.ext' file (as produced by the [BNORM](BNORM) code).
 If no 'bnorm.ext' file is found then it is assumed that the normal
 plasma field is zero (vacuum condition). The 'nescin' file has the following
@@ -171,7 +172,7 @@ self-documenting text file.
 
 To calculate the potential one simply need evaluate:
 
-$$\Phi\left(u,v\right) = \sum_{m=0}^M\sum_{n=-N}^N \Phi_{mn} sin\left(2\pi mu+2\pi nv\right) - \frac{I_{pol}}{N_p}v - I_{tor}u$$
+$$\Phi\left(u,v\right) = \sum_{m=0}^M\sum_{n=-N}^N \Phi_{mn} sin\left(2\pi mu+2\pi nv\right) + \frac{I_{pol}}{N_p}v + I_{tor}u$$
 
 where $$u$$ and $$v$$ are defined on the unit circle from 0 to 1.
 When cutting coils one simply should calculate contours of constant
