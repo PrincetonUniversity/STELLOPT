@@ -245,7 +245,7 @@ SUBROUTINE beams3d_follow
 
     DEALLOCATE(q)
 
-    ! Calcualte Beam Density
+    ! Calculate Beam Density
 #if defined(MPI_OPT)
     CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
 #endif
@@ -263,6 +263,10 @@ SUBROUTINE beams3d_follow
     ! Fix U_lines
     CALL beams3d_fix_poloidal
 
+    ! Remove false "orbiting" particles
+    IF (lboxsim) THEN
+      WHERE (.NOT. is_active(mystart_save:myend_save)) end_state(mystart_save:myend_save) = -1
+    END IF
     ! First reduce the cumulative arrays over shared memory groups then allreduce between shared memeory groups
 #if defined(MPI_OPT)
     IF (myid_sharmem == master) THEN
@@ -274,6 +278,8 @@ SUBROUTINE beams3d_follow
        CALL MPI_REDUCE(ipower_prof, ipower_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(ndot_prof,     ndot_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
     END IF
+
+    CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
 
     i = MPI_UNDEFINED
     IF (myid_sharmem == master) i = 0

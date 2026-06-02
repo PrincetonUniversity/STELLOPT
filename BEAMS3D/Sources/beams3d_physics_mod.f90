@@ -762,7 +762,6 @@ MODULE beams3d_physics_mod
             ! Update particle
             reaction_count(myline) = reaction_count(myline)+1
             reaction_info = reactions_db(reaction_dex)
-            weight(myline) = weight(myline)/reaction_info%nproducts
 
             mtemp = mass(myline)
             mymass_int = reaction_info%output_A(1)
