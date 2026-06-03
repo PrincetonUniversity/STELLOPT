@@ -745,12 +745,6 @@
             rvreal = pi2*rvreal
             zureal = pi2*zureal
             zvreal = pi2*zvreal
-            !potu   = pi2*potu
-            !potv   = pi2*potv
-
-            ! Add secular pieces
-            !potu = potu - cut
-            !potv = potv - cup 
 
             !==========================================================
             !         CURVILINEAR COORDIANTES
