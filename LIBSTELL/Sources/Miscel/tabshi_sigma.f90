@@ -401,7 +401,7 @@ CONTAINS
         DOUBLE PRECISION :: sigma
         DOUBLE PRECISION, INTENT(in) :: E 
         DOUBLE PRECISION :: Eth, E1
-        DOUBLE PRECISION :: a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12
+        DOUBLE PRECISION :: a1, a2, a3, a4, a5, a6, a7, a8, a9, a10
 
         Eth = 2.25E-3 ! Threshold energy in keV
         E1 = E - Eth
@@ -670,13 +670,29 @@ CONTAINS
         DOUBLE PRECISION :: E ! Energy in keV
         DOUBLE PRECISION :: sigmas_H3p(8)
         DOUBLE PRECISION :: s(4), mat(4,4)
-        DOUBLE PRECISION, PARAMETER :: BR_cd = 0.4d0,  &     ! "Free" branching ratios
-                                    BR_fd = 0.01d0, &
-                                    BR_ge = 0.1d0,  &
-                                    BR_he = 0.05d0
-        DOUBLE PRECISION, PARAMETER :: BR_dd = 1.0d0-BR_cd-BR_fd, & ! Fixed branching ratios
-                                    BR_ee = 1.0d0-BR_ge-BR_he
+        !! Values from Tabet 2008
+        ! Full breakup
+        DOUBLE PRECISION, PARAMETER :: r_e = 0.18d0
+        DOUBLE PRECISION, PARAMETER :: r_g = 0.23d0
+        DOUBLE PRECISION, PARAMETER :: r_h = 0.061d0
+        ! Partial breakup 
+        DOUBLE PRECISION, PARAMETER :: r_c = 0.12d0
+        DOUBLE PRECISION, PARAMETER :: r_f = 0.14d0
+        DOUBLE PRECISION, PARAMETER :: r_d = 0.035d0
+
+        DOUBLE PRECISION :: BR_e, BR_g, BR_h ! Full breakup (3 H)
+        DOUBLE PRECISION :: BR_c, BR_f, BR_d ! Partial breakup (H2 + H)
+
         INTEGER :: IPIV(4), INFO
+
+        ! Normalized 
+        BR_e = r_e/(r_e + r_g + r_h)
+        BR_g = r_g/(r_e + r_g + r_h)
+        BR_h = r_h/(r_e + r_g + r_h)
+
+        BR_c = r_c/(r_c + r_f + r_d)
+        BR_f = r_f/(r_c + r_f + r_d)
+        BR_d = r_d/(r_c + r_f + r_d)
 
         ! Get cross-sections
         s(1)=get_sigma_18(E)
@@ -685,25 +701,29 @@ CONTAINS
         s(4)=get_sigma_21(E)
 
         ! build matrix
-        mat(1,:) = (/ 0d0, 0d0, 1*BR_dd+1*BR_fd, 1*BR_ee+2*BR_ge+3*BR_he/)
-        mat(2,:) = (/ 0d0, 0d0, 1*BR_cd+1*BR_fd, 0d0/)
-        mat(3,:) = (/ 1d0, 3d0, 1*BR_cd, 2*BR_ee+1*BR_ge/)
-        mat(4,:) = (/ 1d0, 0d0, 1*BR_dd, 0d0/)
+        mat(1,:) = (/ 0d0,  0d0,  BR_d + BR_f,        BR_e + 2d0*BR_g + 3d0*BR_h /)  ! H+
+        mat(2,:) = (/ 0d0,  0d0,  BR_c + BR_f,        0d0                        /)  ! H2+
+        mat(3,:) = (/ 1d0,  3d0,  BR_c,               2d0*BR_e + BR_g            /)  ! H
+        mat(4,:) = (/ 1d0,  0d0,  BR_d,               0d0                        /)  ! H2
+    
         
         ! solve
         CALL DGESV(4, 1, mat, 4, IPIV, s, 4, INFO)
         IF (INFO /= 0) THEN
             PRINT *, 'DGESV failed, info = ', info
+            sigmas_H3p = 0d0;
+            RETURN
         END IF
 
-        sigmas_H3p(1) = s(1)        
-        sigmas_H3p(2) = s(2)
-        sigmas_H3p(3) = BR_cd*s(3)
-        sigmas_H3p(4) = BR_dd*s(3)
-        sigmas_H3p(5) = BR_ee*s(4)
-        sigmas_H3p(6) = BR_fd*s(3)
-        sigmas_H3p(7) = BR_ge*s(4)
-        sigmas_H3p(8) = BR_he*s(4)
+        ! Individual cross-sections
+        sigmas_H3p(1) = s(1)          ! a: H2  + H   (neutral)
+        sigmas_H3p(2) = s(2)          ! b: 3H        (neutral)
+        sigmas_H3p(3) = BR_c * s(3)   ! c: H2+ + H
+        sigmas_H3p(4) = BR_d * s(3)   ! d: H2  + H+
+        sigmas_H3p(5) = BR_e * s(4)   ! e: 2H  + H+
+        sigmas_H3p(6) = BR_f * s(3)   ! f: H2+ + H+
+        sigmas_H3p(7) = BR_g * s(4)   ! g: H   + 2H+
+        sigmas_H3p(8) = BR_h * s(4)   ! h: 3H+
 
         RETURN
     END FUNCTION get_sigmas_H3p
