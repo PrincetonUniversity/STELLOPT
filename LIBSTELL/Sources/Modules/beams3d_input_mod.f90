@@ -91,6 +91,7 @@
                                npitch_fida, t_fida, &
                                mumaterial_tol, mumaterial_niter, &
                                mumaterial_lambda, mumaterial_lamfactor, &
+                               mumaterial_lambdamin, mumaterial_lambdamax, &
                                mumaterial_lamthresh, mumaterial_padfactor, &
                                mumaterial_convcheck, mumaterial_depth, &
                                mumaterial_leaf, &
@@ -222,7 +223,9 @@
       !MUMAT Defaults
       mumaterial_tol = 1.0D-5
       mumaterial_niter = 100
-      mumaterial_lambda = 0.7
+      mumaterial_lambda    = 0.70
+      mumaterial_lambdamax = 0.50
+      mumaterial_lambdamin = 0.01
       mumaterial_lamfactor = 0.75
       mumaterial_theta_iter = 0.33
       mumaterial_theta_eval = 0.10

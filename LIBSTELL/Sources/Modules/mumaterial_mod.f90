@@ -63,6 +63,8 @@
       DOUBLE PRECISION, PRIVATE :: eps_max = 1.0d-6 !! Threshold error for convergence
       DOUBLE PRECISION, PRIVATE :: lambdaStart = 0.5d0 !! Initial value of lambda for iterations
       DOUBLE PRECISION, PRIVATE :: lambdaFactor = 0.75d0!! Multiplication factor for lambda
+      DOUBLE PRECISION, PRIVATE :: lambdaMax = 0.50d0 !! Maximum value of lambda
+      DOUBLE PRECISION, PRIVATE :: lambdaMin = 0.01d0 !! Minimum value of lambda
       DOUBLE PRECISION, PRIVATE :: Pconv_min = 95.0d0 !! Minimum volume convergence percentage (%)
       INTEGER, PRIVATE :: lambdaThresh = 10 !! Multiply lambda if error grows this number of times
       INTEGER, PRIVATE :: maxiter = 10000  !!  Max number of iterations
@@ -82,7 +84,7 @@
       DOUBLE PRECISION, POINTER, PRIVATE ::  node_cen(:,:) !! (3,nnode) geometric center of a node
       INTEGER, PRIVATE :: leaf_max_size = 4  !! Maximum allowed number of elements in a leaf
       INTEGER, PRIVATE :: tree_max_depth = 20 !! Maximum allowed depth (takes precendence over max leaf size)
-      DOUBLE PRECISION, PRIVATE :: tree_theta = 0.33d0      !! Aggregate acceptance criterion: node_size/distance_to_node < theta
+      DOUBLE PRECISION, PRIVATE :: tree_theta  = 0.33d0      !! Aggregate acceptance criterion: node_size/distance_to_node < theta
       DOUBLE PRECISION, PRIVATE :: tree_theta2 = 0.33d0**2    !! theta squared
 
       ! Persistent (local) tree info variables
@@ -447,7 +449,7 @@
 
 !------------------------------------------------------------------------------
       SUBROUTINE mumaterial_set_vars(pad_factor,max_error, max_iter, min_conv_perc, &
-        lambda_factor, lambda_start, lambda_threshold, &
+        lambda_factor, lambda_start, lambda_threshold,lambda_max,lambda_min, &
         max_depth, max_leafsize, iter_theta, eval_theta)
 !!------------------------------------------------------------------------------
 !! Sets any user variables.
@@ -457,6 +459,8 @@
       DOUBLE PRECISION, INTENT(in), OPTIONAL :: max_error !! Threshold 
       DOUBLE PRECISION, INTENT(in), OPTIONAL :: lambda_start
       DOUBLE PRECISION, INTENT(in), OPTIONAL :: lambda_factor
+      DOUBLE PRECISION, INTENT(in), OPTIONAL :: lambda_max
+      DOUBLE PRECISION, INTENT(in), OPTIONAL :: lambda_min
       DOUBLE PRECISION, INTENT(in), OPTIONAL :: pad_factor
       DOUBLE PRECISION, INTENT(in), OPTIONAL :: min_conv_perc
       DOUBLE PRECISION, INTENT(in), OPTIONAL :: iter_theta
@@ -473,7 +477,10 @@
 
       IF (PRESENT(lambda_start))      lambdaStart  = lambda_start
       IF (PRESENT(lambda_factor))     lambdaFactor = lambda_factor
-      IF (PRESENT(lambda_threshold))  lambdaThresh = lambda_threshold
+      IF (PRESENT(lambda_threshold))  lambdaThresh = lambda_threshold ! unused
+      IF (PRESENT(lambda_max))        lambdaMax = lambda_max
+      IF (PRESENT(lambda_min))        lambdaMin = lambda_min
+
 
       IF (PRESENT(max_depth))         tree_max_depth = max_depth
       IF (PRESENT(max_leafsize))      leaf_max_size = max_leafsize
@@ -872,56 +879,64 @@
 
       END SUBROUTINE mumaterial_load_serial
 
-!------------------------------------------------------------------------------
-! mumaterial_info: Prints info to iunit
-!------------------------------------------------------------------------------
+
 ! param[in]: iunit. Unit number to print to
 ! param[in]: lnoiter: Whether to do mumat iterations
 !------------------------------------------------------------------------------
       SUBROUTINE mumaterial_info(iunit, lnoiter)
+!!------------------------------------------------------------------------------
+!! Prints mumat info to iunit
+!!------------------------------------------------------------------------------
 
       IMPLICIT NONE
 
       INTEGER, INTENT(IN) :: iunit
-      LOGICAL, INTENT(IN) :: lnoiter
-      INTEGER :: i,k
+      LOGICAL, INTENT(IN) :: lnoiter !! Whether to skip iterations
+      INTEGER :: istate,k
 
       WRITE(iunit,'(A)')           ' ---------- MUMAT MPI ----------'
-      WRITE(iunit,'(3X,A,I7)')     'MPI Nodes    : ',master_size
-      WRITE(iunit,'(3X,A,I7)')     'MPI Threads  : ',world_size
+      WRITE(iunit,'(3X,A,I7)')     '  MPI Nodes    : ',master_size
+      WRITE(iunit,'(3X,A,I7)')     '  MPI Threads  : ',world_size
       WRITE(iunit,'(A)')           ' -----  Magnetic Material  -----'
-      WRITE(iunit,'(3X,A,A)')      'Model Name   : ',TRIM(mesh_name)
-      WRITE(iunit,'(3X,A,A)')      'Date         : ',TRIM(mesh_date)
-      WRITE(iunit,'(3X,A,I7)')     'Vertices     : ',nvertex
-      WRITE(iunit,'(3X,A,I7)')     'Tetrahedrons : ',ntet
-      WRITE(iunit,'(3X,A,I7)')     'State Funcs. : ',nstate
+      WRITE(iunit,'(3X,A,A)')      '  Model Name   : ',TRIM(mesh_name)
+      WRITE(iunit,'(3X,A,A)')      '  Date         : ',TRIM(mesh_date)
+      WRITE(iunit,'(3X,A,I7)')     '  Vertices     : ',nvertex
+      WRITE(iunit,'(3X,A,I7)')     '  Tetrahedrons : ',ntet
+      WRITE(iunit,'(3X,A,I7)')     '  State Funcs. : ',nstate
 
-      DO i = 1, nstate
-        WRITE(iunit,'(6X,A,I3)') 'State Fuction ',i
-        IF (state_type(i)==STATE_HARD) THEN
-          WRITE(iunit,'(9X,A)') 'Type: Hard Magnet'
-          WRITE(iunit,'(9X,A,EN12.3)')    '  Mu   :',constant_mu(i)
-          WRITE(iunit,'(9X,A,EN12.3)')    '  Mu_o :',constant_mu_o(i)
-          WRITE(iunit,'(9X,A,3(EN12.3))') '  Mrem :',Mrem(:,i)
-        ELSEIF (state_type(i)==STATE_SOFT) THEN
-          k = SIZE(stateFunction(i)%H)
-          WRITE(iunit,'(9X,A)')           '  Type : Soft Magnet (H-M)'
-          WRITE(iunit,'(9X,A,I3)')        'NKnots :',k
-          WRITE(iunit,'(9X,A,2(EN12.3))') '     H :',stateFunction(i)%H(1),stateFunction(i)%H(k)
-          WRITE(iunit,'(9X,A,2(EN12.3))') '     M :',stateFunction(i)%M(1),stateFunction(i)%M(k)
-        ELSEIF (state_type(i)==STATE_LINEAR) THEN
-          WRITE(iunit,'(9X,A)') 'Type: Soft Magnet (mu constant)'
-          WRITE(iunit,'(9X,A,EN12.3)')    '    Mu :',constant_mu(i)
-        ELSE
-          WRITE(iunit,'(9X,A,I3)') 'Type: UNKNOWN (ERROR) state_type=',state_type(i)
-        END IF
+      DO istate = 1, nstate
+        SELECT CASE (state_type(istate))
+          CASE (STATE_HARD) 
+            WRITE(iunit,'(6X,I3,A)') istate, '. Hard Magnet'
+            WRITE(iunit,'(9X,A,EN12.3)')    '├ mu   :',constant_mu(istate)
+            WRITE(iunit,'(9X,A,EN12.3)')    '├ mu_o :',constant_mu_o(istate)
+            WRITE(iunit,'(9X,A,3(EN12.3))') '└ Mrem :',Mrem(:,istate)
+          CASE (STATE_SOFT)
+            k = SIZE(stateFunction(istate)%H)
+            WRITE(iunit,'(6X,I3,A)') istate, '. Soft material (M(H))'
+            WRITE(iunit,'(9X,A,I3)')        '├ NKnots:',k
+            WRITE(iunit,'(9X,A,2(EN12.3))') '├──── H :',stateFunction(istate)%H(1),stateFunction(istate)%H(k)
+            WRITE(iunit,'(9X,A,2(EN12.3))') '└──── M :',stateFunction(istate)%M(1),stateFunction(istate)%M(k)
+          CASE (STATE_LINEAR) 
+            WRITE(iunit,'(6X,I3,A)') istate,'. Linear material'
+            WRITE(iunit,'(9X,A,EN12.3)')    '└ mu    :',constant_mu(istate)
+          CASE DEFAULT
+            WRITE(iunit,'(6X,I3,A,I3)') istate,'. UNKNOWN STATE TYPE:',state_type(istate)
+        END SELECT
       END DO
+
       IF (.NOT.lnoiter) THEN
-        WRITE(iunit,'(3X,A,I7)')     'Max Iter.    : ',maxiter
-        WRITE(iunit,'(3X,A,EN12.3)') 'Max Error    : ',eps_max
-        WRITE(iunit,'(3X,A,EN12.3)') 'Lambda start : ',lambdaStart
-        WRITE(iunit,'(3X,A,EN12.3)') 'Converged at : ',Pconv_min
+        WRITE(iunit,'(A)')           ' --------  Iterations  ---------'
+        WRITE(iunit,'(3X,A,I12)')     '  Max iter. #  : ',maxiter
+        WRITE(iunit,'(3X,A,EN12.3)') '  Max error    :',eps_max
+        WRITE(iunit,'(3X,A,F12.6)')   '  Lambda start : ',lambdaStart
+        WRITE(iunit,'(3X,A,F12.6)')   '  Lambda min.  : ',lambdaMin
+        WRITE(iunit,'(3X,A,F12.6)')   '  Lambda max.  : ',lambdaMax
+        WRITE(iunit,'(3X,A,F11.5)')   '  Converged at :  ',Pconv_min
       END IF
+      WRITE(inut,'(A)') ' -------------------------------'
+      FLUSH(iunit)
+
       END SUBROUTINE mumaterial_info
 
      
@@ -962,10 +977,10 @@
 
       ! Finally, run
       IF (.NOT.lskip_loc) THEN
-        IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Beginning Iterations"
+        IF (lverb) WRITE (6,*) "  MUMAT:  Beginning Iterations"
         CALL mumaterial_iterate_M()
       ELSE
-        IF (lverb) WRITE (6,*) "  MUMAT_INIT:  Skipping iterations"
+        IF (lverb) WRITE (6,*) "  MUMAT:  Skipping iterations"
       END IF
 
       END SUBROUTINE mumaterial_run
@@ -1013,7 +1028,7 @@
         CALL MPI_CALC_MYRANGE(comm_world, 1, ntet, mystart, myend)
 #endif
       END IF
-      IF (lverb) WRITE(6,*) "MUMAT_INIT: Calculating tetrahedron quantities"
+      IF (lverb) WRITE(6,*) "  MUMAT_INIT: Calculating tetrahedron quantities"
 
       DO i = mystart, myend
           tet_cen(:,i) = (vertex(:,tet(1,i)) + vertex(:,tet(2,i)) + vertex(:,tet(3,i)) + vertex(:,tet(4,i))) / 4.d0
@@ -1397,7 +1412,7 @@
       INTEGER, ALLOCATABLE :: nsubtrees_per_rank(:)
       INTEGER, ALLOCATABLE :: subtree_order(:)
 
-      IF (lverb) WRITE(6,*) "  SMUMAT_INIT: Building the tree"
+      IF (lverb) WRITE(6,*) "  MUMAT_INIT: Building the tree"
 
       ! Build tree
       CALL mumaterial_build_tree()
@@ -1731,7 +1746,7 @@
       INTEGER, ALLOCATABLE :: cursor(:)
       DOUBLE PRECISION :: wval
     
-      IF (lverb) WRITE(6,*) "MUMAT_INIT: Filling tree interactions"
+      IF (lverb) WRITE(6,*) "  MUMAT_INIT: Filling tree interactions"
       ALLOCATE(work_loc(nleaf_loc))
       ALLOCATE(interact_ptr(nleaf_loc+1), cursor(nleaf_loc))
       
@@ -2269,8 +2284,6 @@
       DOUBLE PRECISION :: r_tiles(3,max_leaf_size_seen), H_tiles(3,max_leaf_size_seen)
 
       DOUBLE PRECISION :: lambda(ntile_loc), lambda_old, lambda_new
-      DOUBLE PRECISION, PARAMETER :: lambda_min = 0.01d0
-      DOUBLE PRECISION, PARAMETER :: lambda_max = 0.50d0
       DOUBLE PRECISION :: M_old(3), M_targ(3), M_new(3), Mnorm, H_targ(3)
       DOUBLE PRECISION :: res(3), res_prev(3,ntile_loc), rM, rM_rel, rMprev_rel(ntile_loc)
       DOUBLE PRECISION :: Vconv, Pconv, Vres, rM_rel_avg
@@ -2305,18 +2318,18 @@
           ntiles_leaf = leaf_size_loc(ileaf_loc)
           leaf_temp = leaf_tile_loc(:,ileaf_loc)
 
-          ! Skip leaf if all done
-          IF (ALL(ldone(leaf_offset_loc(ileaf_loc)+1 : &
-                leaf_offset_loc(ileaf_loc)+ntiles_leaf))) THEN
-            csr_N = csr_N + nN_per_leaf(ileaf_loc) ! Move cursor
-            DO itile_leaf = 1, ntiles_leaf
-              tile = leaf_temp(itile_leaf)
-              itile_loc = leaf_offset_loc(ileaf_loc) + itile_leaf
-              Vres = Vres + tet_vol(tile)*rMprev_rel(itile_loc)
-              Vconv = Vconv + tet_vol(tile)
-            END DO
-            CYCLE
-          END IF
+          ! ! Skip leaf if all done
+          ! IF (ALL(ldone(leaf_offset_loc(ileaf_loc)+1 : &
+          !       leaf_offset_loc(ileaf_loc)+ntiles_leaf))) THEN
+          !   csr_N = csr_N + nN_per_leaf(ileaf_loc) ! Move cursor
+          !   DO itile_leaf = 1, ntiles_leaf
+          !     tile = leaf_temp(itile_leaf)
+          !     itile_loc = leaf_offset_loc(ileaf_loc) + itile_leaf
+          !     Vres = Vres + tet_vol(tile)*rMprev_rel(itile_loc)
+          !     Vconv = Vconv + tet_vol(tile)
+          !   END DO
+          !   CYCLE
+          ! END IF
           ! Get field at each element
           DO itile_leaf = 1, ntiles_leaf
             tile = leaf_temp(itile_leaf) ! global index
@@ -2376,7 +2389,7 @@
             ELSE
               lambda_new = lambda_old
             END IF
-            lambda(itile_loc) = MAX(MIN(lambda_new, lambda_max),lambda_min)
+            lambda(itile_loc) = MAX(MIN(lambda_new, lambdamax),lambdaMin)
 
             ! Update last residuals
             res_prev(:,itile_loc) = res
@@ -3557,25 +3570,23 @@
       INTEGER :: i, istat, iunit
 
       IF (lismaster) THEN
-        WRITE(6,'(A)')           ' -------- MUMAT MAGFILE --------'
-        WRITE(6,'(3X,A,A)')     'FILENAME     : ',filename
 
         iunit = 327; istat = 0
         CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
         IF (istat/= 0) THEN
-              WRITE(6,*) "ISSUE READING MAG; STOPPING"
-              RETURN
+          WRITE(6,'(/,A)') "  WARNING: Could not read magfile!"
+          WRITE(6,'(A,/)') "  WARNING: Defaulting to zero magnetization!"
+          RETURN
         END IF
-        WRITE(6,*) "READING MAGFILE"
         DO i = 1, ntet
-            READ(iunit, *) M(:,i)
+          READ(iunit, *) M(:,i)
         END DO
         CLOSE(iunit)
       END IF
-      ! Broadcast
+
 #if defined(MPI_OPT)
-      IF ((lcomm).AND.(shar_rank.EQ.0)) THEN
-            CALL MPI_Bcast(M,3*ntet,MPI_DOUBLE_PRECISION,0,comm_master,ierr_mpi)
+      IF ((lcomm).AND.(shar_rank.EQ.0)) THEN  ! Broadcast to masters
+        CALL MPI_Bcast(M,3*ntet,MPI_DOUBLE_PRECISION,0,comm_master,ierr_mpi)
       END IF
 #endif
       END SUBROUTINE

@@ -28,7 +28,7 @@
       INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
       REAL(rprec) :: follow_tol, pi2, ne_scale, te_scale, ti_scale, &
                      zeff_scale, fusion_scale, lendt_m, te_col_min, rho_max_dist, &
-                     mumaterial_tol, mumaterial_lambda, mumaterial_lamfactor, &
+                     mumaterial_tol, mumaterial_lambda, mumaterial_lamfactor, mumaterial_lambdamin, mumaterial_lambdamax, &
                      mumaterial_padfactor, mumaterial_convcheck, mumaterial_theta_iter, mumaterial_theta_eval
       REAL(rprec), DIMENSION(MAXBEAMS) :: Adist_beams, Asize_beams, Div_beams, E_beams, mass_beams, &
                                         charge_beams, Zatom_beams, P_beams

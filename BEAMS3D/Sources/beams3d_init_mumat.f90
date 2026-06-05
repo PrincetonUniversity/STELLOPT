@@ -78,25 +78,21 @@
 
       ! Set parameters
       CALL mumaterial_set_vars(max_error=mumaterial_tol, max_iter=mumaterial_niter, lambda_start=mumaterial_lambda, &
+                           lambda_min=mumaterial_lambdamin, lambda_max=mumaterial_lambdamax, &
                            lambda_factor=mumaterial_lamfactor, min_conv_perc=mumaterial_convcheck, &
                            max_depth=INT(mumaterial_depth), max_leafsize=INT(mumaterial_leaf), &
                            iter_theta=mumaterial_theta_iter,eval_theta=mumaterial_theta_eval) 
       ! Load magnetization file
       IF (lmumat_readmag) CALL mumaterial_magfile_read(TRIM(mumat_magfile))
 
-      
-
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_MUSHARE,  ierr_mpi)
 #endif
       
-      IF (lverb) THEN
-         CALL mumaterial_info(6, lmumat_skipiter)
-         WRITE(6,'(A,A)') '   FILE: ',TRIM(mumat_string)
-         CALL FLUSH(6)
-      END IF
+      IF (lverb) CALL mumaterial_info(6, lmumat_skipiter)
 
       ! Create the Splines 
+      IF (lverb) WRITE(6,*) "  BEAMS3D: Creating B-splines"
       IF (lissubmaster) THEN
          bcs1=(/ 0, 0/)
          bcs2=(/-1,-1/)
