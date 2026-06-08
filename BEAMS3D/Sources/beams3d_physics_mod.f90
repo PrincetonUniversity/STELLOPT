@@ -767,6 +767,7 @@ MODULE beams3d_physics_mod
             mymass_int = reaction_info%output_A(1)
             mymass = mymass_int*p_mass
             mass(myline) = mymass
+            myenergy_keV = 0.5d0*mymass*SUM(q(4:6)**2)/(e_charge*1.0d3)
 
             mycharge_int = reaction_info%output_Z(1)
             mycharge = mycharge_int*e_charge
@@ -2483,7 +2484,7 @@ MODULE beams3d_physics_mod
       END SUBROUTINE beams3d_calc_dt
 	  
 !-----------------------------------------------------------------------
-!     MoSubroutine:        beams3d_reaction_sigma
+!     Subroutine:    beams3d_reaction_sigma
 !     Description:   This subroutine determines which neutralizer atomic
 !                    reaction should take place next. Cross-sections are
 !                    calculated using tabshi_db.f90, and then one is
