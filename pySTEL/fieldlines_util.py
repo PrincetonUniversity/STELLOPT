@@ -6,6 +6,7 @@ if __name__=="__main__":
 	import sys
 	from argparse import ArgumentParser
 	import matplotlib.pyplot as pyplot
+	from matplotlib.backends.backend_agg import FigureCanvasAgg
 	from libstell.vmec import VMEC
 	from libstell.fieldlines import FIELDLINES
 	from libstell.plot3D import PLOT3D
@@ -46,6 +47,8 @@ if __name__=="__main__":
 		help="Output a given field line trajectory for a given fieldline.", default = None, type=int)
 	parser.add_argument("--save", dest="lsave", action='store_true',
 		help="Save the plots with ext names.", default = False)
+	parser.add_argument("--background", dest="lbackground", action='store_true',
+		help="Supress rendering window on plot.", default = False)
 	args = parser.parse_args()
 	field_data = FIELDLINES()
 	px = 1/pyplot.rcParams['figure.dpi']
@@ -56,6 +59,7 @@ if __name__=="__main__":
 			print(f'  WALL HITS: {np.sum(field_data.wall_strikes):d}')
 		if type(args.plotphi) is not type(None):
 			fig,ax = pyplot.subplots(1,1,figsize=(1024*px,768*px))
+			if args.lbackground: canvas = FigureCanvasAgg(fig)
 			phi0 = field_data.PHI_lines[0,args.plotphi]
 			field_data.plot_poincare(phi0,args.nskip,ax=ax)
 			if args.vmec_ext:
@@ -68,10 +72,11 @@ if __name__=="__main__":
 				z = vmec_wout.sfunct(theta,phi,vmec_wout.zmns,vmec_wout.xm,vmec_wout.xn)
 				j = vmec_wout.ns-1
 				ax.plot(r[j,:,0],z[j,:,0],'r')
-			pyplot.show()
+			if not args.lbackground:pyplot.show()
 			if (args.lsave): fig.savefig(f'poincare_phi{args.plotphi:03d}_{args.fieldlines_ext}.png', dpi=fig.dpi)
 		if args.lplot:
 			fig,(ax1,ax2,ax3) = pyplot.subplots(1,3,sharey=True,figsize=(1024*px,512*px))
+			if args.lbackground: canvas = FigureCanvasAgg(fig)
 			pyplot.subplots_adjust(hspace=0.1,wspace=0.15)
 			phi0 = 0
 			field_data.plot_poincare(phi0,args.nskip,ax=ax1)
@@ -91,32 +96,33 @@ if __name__=="__main__":
 				ax1.plot(r[j,:,0],z[j,:,0],'r')
 				ax2.plot(r[j,:,1],z[j,:,1],'r')
 				ax3.plot(r[j,:,2],z[j,:,2],'r')
-			pyplot.show()
+			if not args.lbackground:pyplot.show()
 			if (args.lsave): fig.savefig(f'poincare_{args.fieldlines_ext}.png', dpi=fig.dpi)
 		if args.poinc3d:
 			plt3d = PLOT3D()
 			field_data.plot_poincare3D(args.poinc3d,plot3D=plt3d,pointsize=0.1)
-			plt3d.render()
+			plt3d.render(args.lbackground)
 			if (args.lsave): plt3d.saveImage(f'poinc3d_{args.fieldlines_ext}.png')
 		if args.k3d:
 			plt3d = PLOT3D()
 			field_data.plot_cloud(args.k3d,plot3D=plt3d,pointsize=0.1)
-			plt3d.render()
+			plt3d.render(args.lbackground)
 			if (args.lsave): plt3d.saveImage(f'poinc_cloud_{args.fieldlines_ext}.png')
 		if args.i3d:
 			plt3d = PLOT3D()
 			field_data.plot_index3d(args.i3d,plot3D=plt3d,pointsize=0.1)
-			plt3d.render()
+			plt3d.render(args.lbackground)
 			if (args.lsave): plt3d.saveImage(f'poinc3d_{args.i3d:03d}_{args.fieldlines_ext}.png')
 		if args.heatfactor:
 			plt3d = PLOT3D()
 			fact = args.heatfactor/field_data.nlines
 			field_data.plot_heatflux(factor=args.heatfactor/field_data.nlines,colormap=args.colormap,plot3D=plt3d)
 			plt3d.colorbar(title=rf'Q [W/$m^2$]')
-			plt3d.render()
+			plt3d.render(args.lbackground)
 			if (args.lsave): plt3d.saveImage(f'heatflux3d_{args.fieldlines_ext}.png')
 		if type(args.brz_index_phi) is not type(None):
 			fig,ax = pyplot.subplots(2,2,sharey=True,figsize=(1024*px,768*px))
+			if args.lbackground: canvas = FigureCanvasAgg(fig)
 			j = args.brz_index_phi
 			x = np.squeeze(field_data.raxis)
 			y = np.squeeze(field_data.zaxis)
@@ -133,10 +139,11 @@ if __name__=="__main__":
 			h3=ax[1,1].pcolormesh(x,y,np.squeeze(b[:,j,:]).T,cmap=args.colormap,shading='gouraud')
 			ax[1,1].set_xlabel('R [m]'); ax[1,1].set_ylabel('Z [m]'); 
 			h3.set_clim(vmin=0.0,vmax=10.0); fig.colorbar(h3,label=r'$|B|$ [T]')
-			pyplot.show()
+			if not args.lbackground:pyplot.show()
 			if (args.lsave): fig.savefig(f'brz_{args.brz_index_phi:0.3d}_{args.fieldlines_ext}.png', dpi=fig.dpi)
 		if type(args.brphi_index_phi) is not type(None):
 			fig,ax = pyplot.subplots(2,2,sharey=True,figsize=(1024*px,768*px))
+			if args.lbackground: canvas = FigureCanvasAgg(fig)
 			j = args.brphi_index_phi
 			x = np.squeeze(field_data.raxis)
 			y = np.squeeze(field_data.phiaxis)
@@ -153,10 +160,11 @@ if __name__=="__main__":
 			h3=ax[1,1].pcolormesh(x,y,np.squeeze(b[:,:,j]).T,cmap=args.colormap,shading='gouraud')
 			ax[1,1].set_xlabel('R [m]'); ax[1,1].set_ylabel(r'$\phi$ [rad]'); 
 			h3.set_clim(vmin=0.0,vmax=10.0); fig.colorbar(h3,label=r'$|B|$ [T]')
-			pyplot.show()
+			if not args.lbackground:pyplot.show()
 			if (args.lsave): fig.savefig(f'brphi_{args.brphi_index_phi:0.3d}_{args.fieldlines_ext}.png', dpi=fig.dpi)
 		if args.lplot_baxis:
 			fig,ax = pyplot.subplots(1,1,figsize=(1024*px,768*px))
+			if args.lbackground: canvas = FigureCanvasAgg(fig)
 			phi = np.rad2deg(field_data.PHI_lines[0,:-2])
 			high = np.rad2deg(field_data.phiaxis[-1]/2.0)
 			low  = -high
@@ -165,7 +173,7 @@ if __name__=="__main__":
 			ax.set_title('|B| along magnetic axis')
 			ax.set_xlabel(r'Toroidal Angle $\phi$ [$^o$]')
 			ax.set_ylabel('|B| [T]')
-			pyplot.show()
+			if not args.lbackground:pyplot.show()
 			if (args.lsave): fig.savefig(f'baxis_{args.fieldlines_ext}.png', dpi=fig.dpi)
 		if type(args.asc_phi) is not type(None):
 			field_data.write_asc([np.deg2rad(args.asc_phi)],nskip=args.nskip,filename=f'poincare_{args.fieldlines_ext}_phi_{int(args.asc_phi):03d}.asc')

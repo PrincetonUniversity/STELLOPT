@@ -19,7 +19,7 @@ _FONTSIZE_ = 24
 
 # VMEC Class
 class PLOT3D():
-	"""Class for working with wall files
+	"""Class for working with 3D VTK renderings
 
 	"""
 	def __init__(self,lwindow=True):
@@ -879,13 +879,22 @@ class PLOT3D():
 
 		return hud
 
-	def render(self):
+	def render(self,lnowindow=False):
 		"""Render the window
 
 		This routine renders the window.
+
+		Parameters
+		----------
+		lnowindow : boolean (optional)
+			Renders in background (default: False)
 		"""
+		if lnowindow: 
+			self.render_window.SetOffScreenRendering(1)
+			if hasattr(self.render_window, "SetConnectContextToNSView"):
+				self.render_window.SetConnectContextToNSView(False)
 		self.render_window.Render()
-		self.render_window_interactor.Start()
+		if not lnowindow: self.render_window_interactor.Start()
 
 	def clear_scene(self):
 		"""Clear the scene of objects
