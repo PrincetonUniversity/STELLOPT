@@ -58,6 +58,7 @@
       REAL(rprec) :: dt_plasma_solver, tol_plasma_solver, dt_Er_ambipolar
       REAL(rprec) :: stiffness_beurskens, aLT_critical_beurskens, alpha_beurskens, &
                      alpha_chi_external, tau_fast_alphas, mass_ref_species
+      REAL(rprec) :: dt_plasma_write
       INTEGER :: max_subiter_plasma_solver, Nr_plasma_solver
       REAL(rprec), DIMENSION(nions_max+1) :: chi_all, T0_init_all, frac_alpha_heating
       REAL(rprec), DIMENSION(nions_max) :: Dn_ions, N0_init_ions

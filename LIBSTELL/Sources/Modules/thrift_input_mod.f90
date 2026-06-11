@@ -45,7 +45,8 @@
                               Dn_ions, chi_all, N0_init_ions, T0_init_all, &
                               stiffness_beurskens, aLT_critical_beurskens, &
                               alpha_beurskens, frac_alpha_heating, alpha_chi_external, &
-                              tau_fast_alphas, mass_ref_species, dt_Er_ambipolar, save_subiterations
+                              tau_fast_alphas, mass_ref_species, dt_Er_ambipolar, &
+                              dt_plasma_write, save_subiterations
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -125,6 +126,7 @@
       tau_fast_alphas = 0.5
       mass_ref_species = 1.6726219E-27
       dt_Er_ambipolar = 5E-2
+      dt_plasma_write = 1E-1
       RETURN
       END SUBROUTINE init_thrift_input
       
