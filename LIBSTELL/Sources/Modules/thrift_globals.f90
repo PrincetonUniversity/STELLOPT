@@ -62,6 +62,7 @@
       INTEGER :: max_subiter_plasma_solver, Nr_plasma_solver
       REAL(rprec), DIMENSION(nions_max+1) :: chi_all, T0_init_all, frac_alpha_heating
       REAL(rprec), DIMENSION(nions_max) :: Dn_ions, N0_init_ions
+      CHARACTER(LEN=50) :: init_profiles_type
 
       CONTAINS
 

@@ -44,6 +44,10 @@ MODULE thrift_plasma_solver_mod
     INTEGER, PRIVATE :: subiter
     CHARACTER(len=20), DIMENSION(:), ALLOCATABLE :: list_of_species
     LOGICAL :: look_for_ambipolar = .TRUE.
+    ! Init (when initial profiles read from file)
+    INTEGER :: nrho_init
+    REAL(rprec), DIMENSION(:),   ALLOCATABLE, PRIVATE :: rhoaxis_init
+    REAL(rprec), DIMENSION(:,:), ALLOCATABLE, PRIVATE :: DENS_INIT, TEMP_INIT
 
 !-----------------------------------------------------------------------
 !     Input Namelists
@@ -393,6 +397,22 @@ MODULE thrift_plasma_solver_mod
             ENDIF
 
             DEALLOCATE(raxis_source,taxis_source,S_energy,S_particle)
+
+            IF(TRIM(init_profiles_type)=='read_from_file') THEN
+                CALL read_scalar_hdf5(fid,'nrho_init',ier,INTVAR=nrho_init)
+                IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nrho_init',ier)
+                !
+                ALLOCATE(rhoaxis_init(nrho_init),DENS_INIT(num_species,nrho_init),TEMP_INIT(num_species,nrho_init))
+                !
+                CALL read_var_hdf5(fid,'rhoaxis_init',nrho_init,ier,DBLVAR=rhoaxis_init)
+                IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'rhoaxis_init',ier)
+                !
+                CALL read_var_hdf5(fid,'N_init',num_species,nrho_init,ier,DBLVAR=DENS_INIT)
+                IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'N_init',ier)
+                !
+                CALL read_var_hdf5(fid,'T_init',num_species,nrho_init,ier,DBLVAR=TEMP_INIT)
+                IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'T_init',ier)
+            END IF
         END IF
 
         ! Broadcast nrho_source, nt_source, nion_prof
@@ -894,8 +914,14 @@ MODULE thrift_plasma_solver_mod
         IMPLICIT NONE
         INTEGER :: i, j, ier, Nr_restart, k
         INTEGER :: bcs0(2)
-        TYPE(EZspline1_r8) :: spline_restart
+        TYPE(EZspline1_r8) :: spline_restart, spline_init
         bcs0=(/ 0, 0/)
+
+        ! Make checks
+        IF( trim(init_profiles_type) == 'read_from_file' .AND. lrestart_from_file) THEN
+            STOP 'Cannot use init profiles from file and restart at same time!'
+        END IF
+        !
         IF(lrestart_from_file) THEN
             ! Interpolate DENS_RESTART and TEMP_RESTART into plasma_solver grid
             Nr_restart = SIZE(DENS_RESTART, DIM=2)
@@ -924,7 +950,24 @@ MODULE thrift_plasma_solver_mod
             CALL EZspline_interp(spline_restart,Nr_plasma_solver,rho_plasma_grid,N_fast_alphas(1,:),ier)
             !
             CALL EZspline_free(spline_restart,ier)
-        ELSE
+        ELSEIF(trim(init_profiles_type) == 'read_from_file' ) THEN
+            CALL EZspline_init(spline_init,nrho_init,bcs0,ier)
+            IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'init: init spline',ier)
+            spline_init%x1 = rhoaxis_init
+            spline_init%isHermite = 1
+            !
+            DO i=1,nion_prof+1
+                CALL EZspline_setup(spline_init,DENS_INIT(i,:),ier,EXACT_DIM=.true.)
+                IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'setup: init spline dens',ier)
+                CALL EZspline_interp(spline_init,Nr_plasma_solver,rho_plasma_grid,plasma_N(i,:),ier)
+                !
+                CALL EZspline_setup(spline_init,TEMP_INIT(i,:),ier,EXACT_DIM=.true.)
+                IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'setup: init spline temp',ier)
+                CALL EZspline_interp(spline_init,Nr_plasma_solver,rho_plasma_grid,plasma_T(i,:),ier)
+            END DO
+            CALL EZspline_free(spline_init,ier)
+            IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'free: init spline',ier)
+        ELSEIF(trim(init_profiles_type) == 'default' ) THEN
             ! ions: ni = N0_init on axis, 0.8*N0_init on edge, and quadratic decay
             DO i=1,nion_prof
                 plasma_N(1+i,:) = N0_init_ions(i) * (0.8_rprec + 0.2_rprec*(1.0_rprec-rho_plasma_grid*rho_plasma_grid))
@@ -938,6 +981,8 @@ MODULE thrift_plasma_solver_mod
             DO i=1,num_species
                 plasma_T(i,:) = T0_init_all(i) * (0.8_rprec + 0.2_rprec*(1.0_rprec-rho_plasma_grid*rho_plasma_grid))
             END DO
+        ELSE
+            STOP '!! No valid init_profiles type !!'
         END IF
         plasma_P = plasma_N * plasma_T * e_charge    
         RETURN

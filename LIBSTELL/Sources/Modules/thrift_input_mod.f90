@@ -46,7 +46,7 @@
                               stiffness_beurskens, aLT_critical_beurskens, &
                               alpha_beurskens, frac_alpha_heating, alpha_chi_external, &
                               tau_fast_alphas, mass_ref_species, dt_Er_ambipolar, &
-                              dt_plasma_write, save_subiterations
+                              dt_plasma_write, save_subiterations, init_profiles_type
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -127,6 +127,7 @@
       mass_ref_species = 1.6726219E-27
       dt_Er_ambipolar = 5E-2
       dt_plasma_write = 1E-1
+      init_profiles_type = 'default'
       RETURN
       END SUBROUTINE init_thrift_input
       
