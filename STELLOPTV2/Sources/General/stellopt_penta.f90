@@ -267,7 +267,8 @@
       CALL PENTA_SCREEN_INFO
       CALL PENTA_ALLOCATE_DKESCOEFF
       CALL PENTA_FIT_DXX_COEF
-      CALL PENTA_FIT_RAD_TRANS
+      CALL PENTA_LMAT_MATRIX
+      CALL PENTA_SET_INTEGRATION_ARRAYS
 
       ! Technically speaking proc_string contains the unique name of this equilibrium 
       WRITE(temp_str,'(A,A,i4.4)') TRIM(proc_string),'_k',ii
