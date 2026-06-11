@@ -2614,7 +2614,7 @@
 
     !put k knots at each endpoint
     !(shift right endpoints slightly -- see pg 350 of reference)
-    rnot = x(n) + 0.1_wp*( x(n)-x(n-1_ip) )
+    rnot = x(n) + 0.001_wp*( x(n)-x(n-1_ip) )
     do j=1_ip,k
         t(j)   = x(1_ip)
         npj    = n + j
