@@ -117,12 +117,22 @@
                WRITE(6,*) '            M: ',mtargets
             CASE('pso')
                WRITE(6,*) '    OPTIMIZER: Particle Swarm'
-               WRITE(6,'(A,2X,1ES12.4)') '         FTOL: ',ftol
-               WRITE(6,'(A,2X,1ES12.4)') '         XTOL: ',xtol
+               WRITE(6,'(A,2X,1ES12.4)') '          FTOL: ',ftol
+               WRITE(6,'(A,2X,1ES12.4)') '          XTOL: ',xtol
                WRITE(6,'(A,2X,1I5)')     '     NFUNC_MAX: ',nfunc_max
                WRITE(6,'(A,2X,1ES12.4)') 'Cognitive Coef: ',epsfcn
                WRITE(6,'(A,2X,1ES12.4)') '   Social Coef: ',gtol
                WRITE(6,'(A,2X,1ES12.4)') '       Inertia: ',factor
+               WRITE(6,'(A,2X,1I5)')     '          NPOP: ',npopulation
+            CASE('sa')
+               WRITE(6,*) '    OPTIMIZER: Simulated Annealing'
+               WRITE(6,'(A,2X,1ES12.4)') '          FTOL: ',ftol
+               WRITE(6,'(A,2X,1ES12.4)') '          XTOL: ',xtol
+               WRITE(6,'(A,2X,1I5)')     '     NFUNC_MAX: ',nfunc_max
+               WRITE(6,'(A,2X,1ES12.4)') ' Initial Temp.: ',factor
+               WRITE(6,'(A,2X,1ES12.4)') '  Cooling Rate: ',epsfcn
+               WRITE(6,'(A,2X,1ES12.4)') '   Pert. strat: ',mode
+               WRITE(6,'(A,2X,1ES12.4)') '   Cool. strat: ',cr_strategy
                WRITE(6,'(A,2X,1I5)')     '          NPOP: ',npopulation
             CASE('rocket')
                WRITE(6,*) '    OPTIMIZER: Rocket'
@@ -244,6 +254,12 @@
                             iunit_restart,lrestart)
             CLOSE(iunit)
             CLOSE(iunit_restart)
+         CASE('sa')
+            ALLOCATE(fvec(mtargets))
+            CALL DE2_Evolve(stellopt_fcn,m,nvars,npopulation,&
+                            vars_min,vars_max,vars,fvec,nfunc_max,&
+                            factor,epsfcn,mode,cr_strategy,iunit,&
+                            iunit_restart,lrestart)
          CASE('map')
             ldeleteopt = .FALSE.
             lskip_min = .true.

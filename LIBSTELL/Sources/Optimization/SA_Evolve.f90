@@ -21,11 +21,11 @@ SUBROUTINE SA_Evolve(fcn, m, n, NP, XCmin, XCmax, x, fvec, &
     INTEGER, INTENT(IN) :: m, n, NP
     INTEGER, INTENT(INOUT) :: maxfev
     REAL(8), INTENT(IN) :: XCmin(n), XCmax(n)
-    REAL(8), INTENT(INOUT) :: x(n, NP), fvec(m, NP)
+    REAL(8), INTENT(INOUT) :: x(n), fvec(m)
     REAL(8), INTENT(IN) :: F_XC         ! SA Use: Initial Temperature (T0)
     REAL(8), INTENT(IN) :: CR_XC        ! SA Use: Cooling Rate (e.g., 0.95)
-    INTEGER, INTENT(IN) :: strategy     ! SA Use: Perturbation strategy
-    INTEGER, INTENT(IN) :: CR_strategy  ! SA Use: Cooling schedule strategy
+    INTEGER, INTENT(IN) :: strategy     ! SA Use: Perturbation strategy (not used)
+    INTEGER, INTENT(IN) :: CR_strategy  ! SA Use: Cooling schedule strategy (not used)
     INTEGER, INTENT(IN) :: iWRITE
     INTEGER, INTENT(IN) :: iRESTART
     LOGICAL, INTENT(IN) :: lrestart
@@ -33,7 +33,7 @@ SUBROUTINE SA_Evolve(fcn, m, n, NP, XCmin, XCmax, x, fvec, &
     ! --- Local Variables ---
     INTEGER :: i, j, fev
     REAL(8) :: T
-    REAL(8), ALLOCATABLE :: x_new(:,:), fvec_new(:,:)
+    REAL(8), ALLOCATABLE :: x_new(:,:), fvec_new(:,:), x_old(:,:), fvec_old(:,:)
     REAL(8), ALLOCATABLE :: cost_old(:), cost_new(:)
     REAL(8) :: rand_val, delta_cost, step_amp
     
@@ -52,6 +52,8 @@ SUBROUTINE SA_Evolve(fcn, m, n, NP, XCmin, XCmax, x, fvec, &
     ! --- Memory Allocation ---
     ALLOCATE(x_new(n, NP))
     ALLOCATE(fvec_new(m, NP))
+    ALLOCATE(x_old(n, NP))
+    ALLOCATE(fvec_old(m, NP))
     ALLOCATE(cost_old(NP))
     ALLOCATE(cost_new(NP))
 
@@ -61,14 +63,14 @@ SUBROUTINE SA_Evolve(fcn, m, n, NP, XCmin, XCmax, x, fvec, &
     ! --- Initial Evaluation ---
     ! If not restarting, evaluate the starting states
     IF (.NOT. lrestart) THEN
-        CALL eval_x_queued(fcn, m, n, NP, x, fvec)
+        CALL eval_x_queued(fcn, m, n, NP, x_old, fvec_old)
         fev = fev + NP
     END IF
 
     ! Compute initial costs. Assuming a least-squares formulation 
     ! standard to STELLOPT (Sum of squared residuals).
     DO i = 1, NP
-        cost_old(i) = SUM(fvec(:, i)**2)
+        cost_old(i) = SUM(fvec_old(:, i)**2)
     END DO
 
     ! --- Main Annealing Loop ---
@@ -84,7 +86,7 @@ SUBROUTINE SA_Evolve(fcn, m, n, NP, XCmin, XCmax, x, fvec, &
                 
                 ! Random step in [-1, 1], scaled by parameter bounds and step_amp
                 ! Base max step size is set to 10% of the domain bounds
-                x_new(j, i) = x(j, i) + (2.0d0 * rand_val - 1.0d0) * &
+                x_new(j, i) = x_old(j, i) + (2.0d0 * rand_val - 1.0d0) * &
                               (XCmax(j) - XCmin(j)) * 0.1d0 * step_amp
                 
                 ! Enforce rigid boundary constraints
@@ -104,8 +106,8 @@ SUBROUTINE SA_Evolve(fcn, m, n, NP, XCmin, XCmax, x, fvec, &
 
             IF (delta_cost < 0.0d0) THEN
                 ! Downhill move: Always accept improvements
-                x(:, i) = x_new(:, i)
-                fvec(:, i) = fvec_new(:, i)
+                x_old(:, i) = x_new(:, i)
+                fvec_old(:, i) = fvec_new(:, i)
                 cost_old(i) = cost_new(i)
             ELSE
                 ! Uphill move: Accept worse solutions probabilistically
@@ -114,8 +116,8 @@ SUBROUTINE SA_Evolve(fcn, m, n, NP, XCmin, XCmax, x, fvec, &
                 ! Gatecheck to prevent floating point underflow in EXP
                 IF ((-delta_cost / T) > -50.0d0) THEN
                     IF (EXP(-delta_cost / T) > rand_val) THEN
-                        x(:, i) = x_new(:, i)
-                        fvec(:, i) = fvec_new(:, i)
+                        x_old(:, i) = x_new(:, i)
+                        fvec_old(:, i) = fvec_new(:, i)
                         cost_old(i) = cost_new(i)
                     END IF
                 END IF
