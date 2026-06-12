@@ -1689,7 +1689,7 @@ class THRIFT_plasma_solver():
         saved_class.r_grid = self.r_grid[sl,:]
         saved_class.dVdr = self.dVdr[sl,:]
         
-        for attr1,attr2 in zip(('N','T','Dp','cp','Dn','cn'),('plasma_N','plasma_T','Dp_total','cp_total','Dn_total','cn_total')):
+        for attr1,attr2 in zip(('N','T','Dp','cp','Dn','cn','Dn_NEO','Dp_NEO','cp_NEO','cn_NEO','Q_NEO_complet'),('plasma_N','plasma_T','Dp_total','cp_total','Dn_total','cn_total','Dn_NEO','Dp_NEO','cp_NEO','cn_NEO','Q_NEO_complet')):
             setattr(saved_class, attr1, {})
             for ispecies,species in enumerate(self.list_of_species):
                 getattr(saved_class, attr1)[species] = getattr(self, attr2)[ispecies,sl,:]
@@ -1699,7 +1699,11 @@ class THRIFT_plasma_solver():
         saved_class.explicit_energy_sources   = defaultdict(dict)
         saved_class.explicit_particle_sources = defaultdict(dict)
         saved_class.Q_total = defaultdict(dict)
-        saved_class.G_total = defaultdict(dict)
+        saved_class.Gamma_total = defaultdict(dict)
+        saved_class.Q_NEO = defaultdict(dict)
+        saved_class.Gamma_NEO = defaultdict(dict)
+        saved_class.Q_turb = defaultdict(dict)
+        saved_class.Gamma_turb = defaultdict(dict)
 
         saved_class.explicit_energy_sources['electrons']['Bremsstrahlung'] = -self.S_radiated_power[sl,:]
         
@@ -1718,7 +1722,13 @@ class THRIFT_plasma_solver():
             dndr = akima_derivative(r_grid,n_r,axis=1)
             #
             saved_class.Q_total[species] = -self.Dp_total[ispecies,sl,:]*dpdr + self.cp_total[ispecies,sl,:]*p_r
-            saved_class.G_total[species] = -self.Dn_total[ispecies,sl,:]*dndr + self.cn_total[ispecies,sl,:]*n_r
+            saved_class.Gamma_total[species] = -self.Dn_total[ispecies,sl,:]*dndr + self.cn_total[ispecies,sl,:]*n_r
+            #
+            saved_class.Q_NEO[species] = -self.Dp_NEO[ispecies,sl,:]*dpdr + self.cp_NEO[ispecies,sl,:]*p_r
+            saved_class.Gamma_NEO[species] = -self.Dn_NEO[ispecies,sl,:]*dndr + self.cn_NEO[ispecies,sl,:]*n_r
+            #
+            saved_class.Q_turb[species] = saved_class.Q_total[species] - saved_class.Q_NEO[species]
+            saved_class.Gamma_turb[species] = saved_class.Gamma_total[species] - saved_class.Gamma_NEO[species]
             
         if(thrift_class is not None):
             saved_class.aminor = thrift_class.get_vars('THRIFT_AMINOR',time=saved_class.time)[:,-1]
