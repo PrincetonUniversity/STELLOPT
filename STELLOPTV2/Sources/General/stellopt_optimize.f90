@@ -131,8 +131,8 @@
                WRITE(6,'(A,2X,1I5)')     '     NFUNC_MAX: ',nfunc_max
                WRITE(6,'(A,2X,1ES12.4)') ' Initial Temp.: ',factor
                WRITE(6,'(A,2X,1ES12.4)') '  Cooling Rate: ',epsfcn
-               WRITE(6,'(A,2X,1ES12.4)') '   Pert. strat: ',mode
-               WRITE(6,'(A,2X,1ES12.4)') '   Cool. strat: ',cr_strategy
+               !WRITE(6,'(A,2X,1I5)')     '   Pert. strat: ',mode
+               !WRITE(6,'(A,2X,1I5)')     '   Cool. strat: ',cr_strategy
                WRITE(6,'(A,2X,1I5)')     '          NPOP: ',npopulation
             CASE('rocket')
                WRITE(6,*) '    OPTIMIZER: Rocket'
@@ -255,11 +255,26 @@
             CLOSE(iunit)
             CLOSE(iunit_restart)
          CASE('sa')
+            npop           = npopulation ! Population Size (10*nvars is good)
+            iunit          = 27          ! Eventually we want to reinstate this with iunit=6
+            iunit_restart  = 28
+            IF (myid == master) THEN
+               !CALL safe_open(iunit,info,TRIM('sa_data.'//TRIM(id_string)),'unknown','formatted',ACCESS_IN='APPEND')
+               INQUIRE(FILE=TRIM('sa_restart.'//TRIM(id_string)),EXIST=lfile_exists)
+               IF (lfile_exists) THEN
+                  CALL safe_open(iunit_restart,info,TRIM('sa_restart.'//TRIM(id_string)),'old','formatted')
+               !ELSE
+               !   CALL safe_open(iunit_restart,info,TRIM('sa_restart.'//TRIM(id_string)),'unknown','formatted')
+               END IF
+            END IF
+            m        = mtargets
             ALLOCATE(fvec(mtargets))
-            CALL DE2_Evolve(stellopt_fcn,m,nvars,npopulation,&
+            CALL SA_Evolve(stellopt_fcn,m,nvars,npopulation,&
                             vars_min,vars_max,vars,fvec,nfunc_max,&
                             factor,epsfcn,mode,cr_strategy,iunit,&
                             iunit_restart,lrestart)
+            !CLOSE(iunit)
+            CLOSE(iunit_restart)
          CASE('map')
             ldeleteopt = .FALSE.
             lskip_min = .true.
