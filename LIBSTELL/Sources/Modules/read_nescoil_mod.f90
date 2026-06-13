@@ -636,8 +636,8 @@
          ! These normalizations were checked against the surface area
          !     Ip = NFP*CURPOL/MU0
          !     Ip/NFP = CURPOL/MU0 
-         norm   = DBLE(np*curpol) / DBLE(u1*v1)
-         norm_fsub = DBLE(np*curpol) / (pi2*pi2)
+         norm   = -DBLE(np*curpol) / DBLE(u1*v1)
+         norm_fsub = -DBLE(np*curpol) / (pi2*pi2)
          ! These must be consistent with splines below
          nx1    = nu_int;  nx2    = nvp
          x1_min = 0; x2_min = 0
@@ -716,7 +716,7 @@
             FORALL(v=1:nv_local) xv(v) = DBLE(v-1)/DBLE(nv_local-1)
             rreal = zero; rureal = zero; rvreal = zero
             zreal = zero; zureal = zero; zvreal = zero
-            potu = -cut; potv = -cup;
+            potu = cut; potv = cup;
             potx = zero; poty = zero; potz = zero
             CALL mntouv_local(mnmax_surface,nu_local,nv_local,xu,xv,            &
                               rmnc_surface,xm_surface,xn_surface,  &
@@ -745,12 +745,6 @@
             rvreal = pi2*rvreal
             zureal = pi2*zureal
             zvreal = pi2*zvreal
-            !potu   = pi2*potu
-            !potv   = pi2*potv
-
-            ! Add secular pieces
-            !potu = potu - cut
-            !potv = potv - cup 
 
             !==========================================================
             !         CURVILINEAR COORDIANTES

@@ -9,6 +9,7 @@ if __name__=="__main__":
 	from libstell.bnorm import BNORM
 	from libstell.plot3D import PLOT3D
 	import matplotlib.pyplot as pyplot
+	from matplotlib.backends.backend_agg import FigureCanvasAgg
 	import numpy as np
 	parser = ArgumentParser(description= 
 		'''Provides class for accessing nescoil files''')
@@ -28,13 +29,16 @@ if __name__=="__main__":
 		help="Add camera HUD to 3D plots.", default = False)
 	parser.add_argument("--save", dest="lsave", action='store_true',
 		help="Save the plots with ext names.", default = False)
+	parser.add_argument("--background", dest="lbackground", action='store_true',
+		help="Supress rendering window on plot.", default = False)
 	args = parser.parse_args()
 	nescout = NESCOIL()
 	if args.nescout_file: 
 		nescout.read_nescout(args.nescout_file)
 		ext_txt = args.nescout_file.split('.',1)[1]
 		if args.lcut_coils:
-			coil = nescout.cutcoils(args.ncoil,lplot=args.lplot,npts=256)
+			#coil = nescout.cutcoils(args.ncoil,lplot=args.lplot,npts=256)
+			coil = nescout.cutcoils(args.ncoil,lplot=False,npts=256)
 			coil_txt = args.nescout_file.split('.',1)
 			coil.rescalecoils(256)
 			coil.write_coils_file(f'coils.{ext_txt}')
@@ -43,7 +47,7 @@ if __name__=="__main__":
 				coil.plotcoilsHalfFP(plot3D=plt3d)
 				if args.lhud: plt3d.addCameraHUD()
 				plt3d.setCamera(pos=[-2.543,-19.896,-2.512],focus=[8.068,-6.088,-1.409],camup=[0,0,1])
-				plt3d.render()
+				plt3d.render(args.lbackground)
 				if (args.lsave): 
 					plt3d.saveImage(f'nescoil_coils_{ext_txt}.png')
 		elif args.lcut_helical_coils:
@@ -54,24 +58,25 @@ if __name__=="__main__":
 			if args.lplot_3d: 
 				plt3d = PLOT3D()
 				coil.plotcoils(plot3D=plt3d)
-				plt3d.render()
+				plt3d.render(args.lbackground)
 				if (args.lsave): plt3d.saveImage(f'nescoil_coils_{ext_txt}.png')
 		else:
 			if args.lplot: 
 				px = 1/pyplot.rcParams['figure.dpi']
 				fig=pyplot.figure(figsize=(1024*px,768*px))
+				if args.lbackground: canvas = FigureCanvasAgg(fig)
 				ax=fig.add_subplot(121)
 				pyplot.subplots_adjust(hspace=0.4,wspace=0.3)
 				nescout.plotpotential(ax=ax,cmap='Greens')
 				ax=fig.add_subplot(122)
-				nescout.plottotalpotential(ax=ax,cmap='Greens')
-				pyplot.show()
+				nescout.plottotalpotential(ax=ax,nlevels=args.ncoil,cmap='Greens')
+				if not args.lbackground:pyplot.show()
 				if (args.lsave): fig.savefig(f'nescoil_potential_{ext_txt}.png', dpi=fig.dpi)
 			if args.lplot_3d: 
 				plt3d = PLOT3D()
 				nescout.plotsurfaces(plot3D=plt3d)
 				if args.lhud: plt3d.addCameraHUD()
-				plt3d.render()
+				plt3d.render(args.lbackground)
 				if (args.lsave): plt3d.saveImage(f'nescoil_surfaces_{ext_txt}.png')
 
 	sys.exit(0)
