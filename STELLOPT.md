@@ -41,7 +41,8 @@ The sigma here represents the tolerance of the target value. The goal of
 the code is to minimize the total chi-squared value.
 STELLOPT natively provides a few optimization algorithms: a modified
 [Levenberg-Marquardt algorithm](http://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm),
-[genetic algorithm](http://en.wikipedia.org/wiki/Genetic_algorithm), and
+[genetic algorithm](http://en.wikipedia.org/wiki/Genetic_algorithm), 
+[simulated annealing](https://en.wikipedia.org/wiki/Simulated_annealing), and
 [differential evolution](http://en.wikipedia.org/wiki/Differential_evolution).
 Over 30 more optimization algorithms are available if you
 build STELLOPT with the [MANGO library](https://hiddensymmetries.github.io/mango/),

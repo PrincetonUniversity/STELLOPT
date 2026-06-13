@@ -162,6 +162,18 @@ the gade_restart.ext file from your previous run. Then when you execute
 STELLOPT, include the -restart flag on the command line to tell the
 system that this is a restart.
 
+### Simulated Annealing (SA)
+
+The simulated annealing algorithm is a newly developed algorithm which
+makes use of the Metropolis-Hastings Acceptance Criterion. For general
+details please see: [Wikipedia - Simulated Annealing](https://en.wikipedia.org/wiki/Simulated_annealing)
+
+| NFUNC_MAX | Number of iterations in simluated annealing algorithm. |
+| FACTOR | Initial temperature |
+| EPSFCN | Cooling rate (0.95 is a good choice) |
+| NPOPULATION | Total number of members in the population.|
+| NOPTIMIZERS | Number of parallel function evaluations being evaluated.|
+
 ### PSO
 
 The particle swarm optimization algorithm is based on that found on 
