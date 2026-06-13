@@ -691,6 +691,10 @@ GENERIC_Evolve.o : \
       
 
 SA_Evolve.o : 
+      mpi_inc.o \
+      mpi_params.o \
+      safe_open_mod.o \
+      gade_mod.o
       
 
 MAP_PLANE.o : \
