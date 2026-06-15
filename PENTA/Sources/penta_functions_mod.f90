@@ -3673,7 +3673,7 @@ subroutine calc_integration_arrays(num_species,Smax,Temps,dens,vths,charges,mass
 
     ! Three-term recurrence:
     !   (n+1) L_{n+1} = (2n + alpha + 1 - x) L_n  -  (n + alpha) L_{n-1}
-    do s = 1, Smax
+    do s = 1, Smax-1
         L2 = ( (2*s + alpha + 1.0d0 - Ka) * L1  &
               - (  s + alpha            ) * L0 ) / (s + 1.0d0)
         sonine_poly(s+1, ik) = L2
