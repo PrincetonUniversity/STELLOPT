@@ -15,6 +15,8 @@
       USE safe_open_mod, ONLY: safe_open
       USE mpi_params
       USE mpi_inc
+      USE vmec_utils, ONLY: cyl2flx_ftol, cyl2flx_damp_floor, &
+                            cyl2flx_niter
 
 !-----------------------------------------------------------------------
 !     Module Variables
@@ -26,7 +28,7 @@
       REAL(rprec) :: temp
       ! These are helpers for backwards compatibility all values here
       ! will be ignored elsewhere in the code.
-      REAL(rprec) :: plasma_zavg ! 
+      REAL(rprec) :: plasma_zavg !
 !-----------------------------------------------------------------------
 !     Input Namelists
 !         &beams3d_input
@@ -49,6 +51,11 @@
 !            follow_tol     Tollerance for fieldline following (LSODE and NAG)
 !            vc_adapt_tol   Tollerance for adaptive integration using Virtual casing
 !                           (note set to negative value to use non-adaptive integration)
+!            cyl2flx_ftol       Convergence tol on the RELATIVE residual of the
+!                               (R,Z)->(s,u) inverse map; achieved match ~ sqrt(ftol).
+!            cyl2flx_damp_floor Minimum Newton-step damping factor in newt2d
+!                               (only active far from the solution). Default 0.1.
+!            cyl2flx_niter      Per-restart iteration cap in newt2d. Default 50.
 !            int_type       Field line integration method
 !                           'NAG','LSODE','RKH68'
 !            plasma_mass    Mean plasma mass in [kg]
@@ -78,7 +85,7 @@
                                zeff_scale, P_beams, &
                                plasma_zavg, plasma_mass, plasma_Zmean, &
                                therm_factor, fusion_scale, &
-                               nrho_dist, ntheta_dist, & 
+                               nrho_dist, ntheta_dist, &
                                nzeta_dist, nphi_dist, nvpara_dist, nvperp_dist, &
                                partvmax, rho_max_dist, lendt_m, te_col_min, &
                                B_kick_min, B_kick_max, freq_kick, E_kick,&
@@ -93,8 +100,10 @@
                                mumaterial_lambda, mumaterial_lamfactor, &
                                mumaterial_lamthresh, mumaterial_padfactor, &
                                mumaterial_convcheck, &
+                               cyl2flx_ftol, cyl2flx_damp_floor, &
+                               cyl2flx_niter, &
                                a5_marker_name, a5_run_name
-      
+
 !-----------------------------------------------------------------------
 !     Subroutines
 !         init_beams3d_input:   Initializes the namelist
@@ -160,7 +169,7 @@
       POT_AUX_S = -1
       POT_AUX_F = -1
       OMEG_AUX_S = -1
-      OMEG_AUX_F = 0      
+      OMEG_AUX_F = 0
       NI_AUX_S = -1
       NI_AUX_F = 0
       NI_AUX_Z = 0
@@ -170,6 +179,9 @@
       npoinc = 1
       follow_tol   = 1.0D-9
       vc_adapt_tol = 1.0D-5
+      cyl2flx_ftol       = 1.0D-16
+      cyl2flx_damp_floor = 0.1D0
+      cyl2flx_niter      = 50
       int_type = "LSODE"
       ldebug = .false.
       ne_scale = 1.0
@@ -229,7 +241,7 @@
 
       RETURN
       END SUBROUTINE init_beams3d_input
-      
+
       SUBROUTINE read_beams3d_input(filename, istat)
          IMPLICIT NONE
          CHARACTER(*), INTENT(in) :: filename
@@ -282,7 +294,7 @@
          TI_AUX_F = TI_AUX_F*ti_scale
          ZEFF_AUX_F = ZEFF_AUX_F*zeff_scale
          lbeam = .true.; lkick = .false.; lgcsim = .true.
-         
+
          IF (r_start_in(1) /= -1.0) lbeam = .false.
          IF (lfusion .or. lrestart_particles) lbeam = .false.
          IF (lbbnbi) lbeam = .true.
@@ -341,7 +353,7 @@
          DO ik = 1, MAXPROFLEN
             IF (OMEG_AUX_S(ik) >= 0.0) nomeg = nomeg+1
          END DO
-         IF (nomeg > 0)  s_max_omeg = OMEG_AUX_S(nomeg)         
+         IF (nomeg > 0)  s_max_omeg = OMEG_AUX_S(nomeg)
          ! Handle multiple ion species
          IF (ANY(NI_AUX_S >0)) THEN
             nzeff = 0
@@ -376,7 +388,7 @@
             NI_AUX_F(1,:) = 0.5*NE_AUX_F
             NI_AUX_F(2,:) = 0.5*NE_AUX_F
             NI_AUX_M(1) = 3.3435837724E-27;   NI_AUX_Z(1) = 1
-            NI_AUX_M(2) = 5.008267217094E-27; NI_AUX_Z(2) = 1 
+            NI_AUX_M(2) = 5.008267217094E-27; NI_AUX_Z(2) = 1
             ! Now calc Zeff(1)
             DO ik = 1, nzeff
                ZEFF_AUX_S(ik) = NI_AUX_S(ik)
@@ -463,6 +475,9 @@
       WRITE(iunit_out,outflt) 'PHIMIN',phimin
       WRITE(iunit_out,outflt) 'PHIMAX',phimax
       WRITE(iunit_out,outflt) 'VC_ADAPT_TOL',vc_adapt_tol
+      WRITE(iunit_out,outflt) 'CYL2FLX_FTOL',cyl2flx_ftol
+      WRITE(iunit_out,outflt) 'CYL2FLX_DAMP_FLOOR',cyl2flx_damp_floor
+      WRITE(iunit_out,outint) 'CYL2FLX_NITER',cyl2flx_niter
       WRITE(iunit_out,'(A)') '!---------- Marker Tracking Parameters ------------'
       WRITE(iunit_out,outstr) 'INT_TYPE',TRIM(int_type)
       WRITE(iunit_out,outflt) 'FOLLOW_TOL',follow_tol
@@ -530,7 +545,7 @@
       IF (ik > 0) THEN
          WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'OMEG_AUX_S',(omeg_aux_s(n), n=1,ik)
          WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'OMEG_AUX_F',(omeg_aux_f(n), n=1,ik)
-      END IF      
+      END IF
       ik = COUNT(pot_aux_s >= 0)
       IF (ik > 0) THEN
          WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'POT_AUX_S',(pot_aux_s(n), n=1,ik)
@@ -593,7 +608,7 @@
       CHARACTER(LEN=*), INTENT(in) :: filename
       INTEGER :: iunit, istat
       LOGICAL :: lexists
-      
+
       iunit = 100
       istat = 0
       INQUIRE(FILE=TRIM(filename),exist=lexists)
@@ -612,7 +627,7 @@
       SUBROUTINE BCAST_BEAMS3D_INPUT(local_master,comm,istat)
       USE mpi_inc
       IMPLICIT NONE
-      
+
       INTEGER, INTENT(inout) :: comm
       INTEGER, INTENT(in)    :: local_master
       INTEGER, INTENT(inout) :: istat
@@ -642,6 +657,9 @@
       CALL MPI_BCAST(phimin,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(phimax,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(vc_adapt_tol,1,MPI_REAL8, local_master, comm,istat)
+      CALL MPI_BCAST(cyl2flx_ftol,1,MPI_REAL8, local_master, comm,istat)
+      CALL MPI_BCAST(cyl2flx_damp_floor,1,MPI_REAL8, local_master,comm,istat)
+      CALL MPI_BCAST(cyl2flx_niter,1,MPI_INTEGER, local_master, comm,istat)
       CALL MPI_BCAST(plasma_mass,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(lendt_m,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(rho_fullorbit,1,MPI_REAL8, local_master, comm,istat)

@@ -47,6 +47,7 @@
       REAL :: br_vc, bphi_vc, bz_vc, xaxis_vc, yaxis_vc, zaxis_vc,&
               bx_vc, by_vc
       REAL(rprec) :: br, bphi, bz, sflx, uflx, xaxis, yaxis
+      REAL(rprec) :: sflx_seed, uflx_seed
       DOUBLE PRECISION, ALLOCATABLE :: mfact(:,:)
       DOUBLE PRECISION, ALLOCATABLE :: rmnc_temp(:,:),zmns_temp(:,:),&
                            bumnc_temp(:,:),bvmnc_temp(:,:),&
@@ -61,6 +62,7 @@
 
       ! Divide up Work
       mylocalid = myworkid
+      cyl2flx_rank = myworkid   ! per-rank id for -DDEBUG_CYL2FLX logging
       numprocs_local = 1
 #if defined(MPI_OPT)
       CALL MPI_COMM_DUP( MPI_COMM_SHARMEM, MPI_COMM_LOCAL, ierr_mpi)
@@ -75,7 +77,6 @@
          CALL read_wout_file(TRIM(id_string),ier)
          IF (ier /= 0) CALL handle_err(VMEC_WOUT_ERR,'beams3d_init_vmec',ier)
       END IF
-      
 #if defined(MPI_OPT)
       ! We do this to avoid multiple opens of wout file
       CALL MPI_BCAST(ns,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
@@ -196,7 +197,7 @@
 
       ! Initialize Virtual Casing
       IF (luse_vc) THEN
-         nu = 8 * mpol + 1 
+         nu = 8 * mpol + 1
          nu = 2 ** CEILING(log(DBLE(nu))/log(2.0_rprec))
          nv = 8 * ntor + 1
          nv = 2 ** CEILING(log(DBLE(nv))/log(2.0_rprec))
@@ -288,17 +289,17 @@
          DEALLOCATE(mfact)
          DEALLOCATE(rmnc_temp,zmns_temp)
          DEALLOCATE(bumnc_temp,bvmnc_temp)
-         
+
          adapt_tol = 0.0
          adapt_rel = vc_adapt_tol
          DEALLOCATE(xm_temp,xn_temp)
       END IF
-      
+
       IF (lverb) THEN
          IF (luse_vc) CALL virtual_casing_info(6)
          CALL FLUSH(6)
       END IF
-      
+
       ! Break up the Work
       CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL, 1, nr*nphi*nz, mystart, myend)
 
@@ -321,12 +322,19 @@
          WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Plasma Field Lookup [',0,']%'
       END IF
       CALL FLUSH(6)
+      ! Warm-start seed for the inverse map: carry the last successfully
+      ! converged INTERIOR (s<=1) solution as the initial guess for the
+      ! next point, and fall back to the axis after any failure/outside
+      ! point so a bad guess is never propagated. Initialized to axis.
+      sflx_seed = 0.001; uflx_seed = 0.0
       DO s = mystart, myend
          i = MOD(s-1,nr)+1
          j = MOD(s-1,nr*nphi)
          j = FLOOR(REAL(j) / REAL(nr))+1
          k = CEILING(REAL(s) / REAL(nr*nphi))
-         sflx = MAX(0.001,MIN(0.999,sflx))
+         ! Seed this solve from the last good neighbour
+         sflx = MAX(0.001,MIN(0.999,sflx_seed))
+         uflx = uflx_seed
          CALL GetBcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
                       br, bphi, bz, SFLX=sflx,UFLX=uflx,info=ier)
          !PRINT *,i,j,k,raxis_g(i),phiaxis(j),zaxis_g(k), br, bphi, bz, sflx,uflx,ier
@@ -352,6 +360,13 @@
             END IF
          ELSE IF (ier == -1) THEN
             S_ARR(i,j,k) = -1
+         END IF
+         ! Update the warm-start seed: keep a converged interior solution,
+         ! otherwise reset to the axis for the next point.
+         IF (ier .eq. 0 .and. sflx .le. 1.0) THEN
+            sflx_seed = sflx; uflx_seed = uflx
+         ELSE
+            sflx_seed = 0.001; uflx_seed = 0.0
          END IF
          IF (MOD(s,nr) == 0) THEN
             IF (lverb) THEN
@@ -432,7 +447,7 @@
          ENDIF
          CALL FLUSH(6)
       END DO
-      
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! Set S==-1 values to default
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -442,7 +457,7 @@
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
 #endif
-      
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! Evaluate the profile quantities on the background grid
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -526,11 +541,11 @@
             CALL FLUSH(6)
          END DO
       END IF
-      
+
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
 #endif
-      
+
       ! Free variables
       IF (luse_vc) CALL free_virtual_casing(MPI_COMM_BEAMS)
 
@@ -557,11 +572,11 @@
          IF (lasym) DEALLOCATE(rmns,zmnc,lmnc,bsupumns,bsupvmns)
          DEALLOCATE(rzl_local)
       END IF
-      
+
       IF (lverb) THEN
          WRITE(6,*)
          CALL FLUSH(6)
-      END IF    
+      END IF
 
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
@@ -573,5 +588,5 @@
       RETURN
 !-----------------------------------------------------------------------
 !     End Subroutine
-!-----------------------------------------------------------------------    
+!-----------------------------------------------------------------------
       END SUBROUTINE beams3d_init_vmec
