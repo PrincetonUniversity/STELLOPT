@@ -139,7 +139,6 @@ C-----------------------------------------------
 !
       IF (info_loc.eq.-1 .and. (fmin .le. fmin_acceptable)) info_loc = 0
 
-
       IF (PRESENT(info)) info = info_loc
 !
 !     Always report the solved flux coordinate back to the caller, even
