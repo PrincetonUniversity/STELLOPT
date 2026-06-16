@@ -304,6 +304,9 @@
          ! External Particle Source
          CALL write_var_hdf5(fid,'S_particle_ext',num_species,Nt_write,Nr_plasma_solver,ier,DBLVAR=S_particle_ext(:,write_idx,:),ATT='External Particle Source [part/(s.m^3)]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'S_particle_ext',ier)
+         ! Electric Field
+         CALL write_var_hdf5(fid,'plasma_Er',Nt_write,Nr_plasma_solver,ier,DBLVAR=plasma_Er(write_idx,:),ATT='Radial Electric Field [V/n]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'plasma_Er',ier)
          ! Close file
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'plasma_solver_'//TRIM(id_string)//'.h5',ier)

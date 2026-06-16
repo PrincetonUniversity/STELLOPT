@@ -19,7 +19,8 @@
       USE mpi_inc
       USE thrift_plasma_solver_mod, ONLY: Dn_NEO,cn_NEO,Dp_NEO,cp_NEO,&
       rho_plasma_grid,Nr_plasma_solver,mytimestep_plasma_solver,&
-      G_NEO_complet,Q_NEO_complet,Nt_total_plasma_solver,look_for_ambipolar
+      G_NEO_complet,Q_NEO_complet,Nt_total_plasma_solver,look_for_ambipolar,&
+      plasma_Er
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
 !        lscreen       Screen output
@@ -362,6 +363,7 @@
                   ALLOCATE(Dn_temp(nion_prof+1,ns_dkes+2),cn_temp(nion_prof+1,ns_dkes+2))
                   ALLOCATE(Dp_temp(nion_prof+1,ns_dkes+2),cp_temp(nion_prof+1,ns_dkes+2))
                   ALLOCATE(GNEO_temp(nion_prof+1,ns_dkes+2),QNEO_temp(nion_prof+1,ns_dkes+2))
+                  ALLOCATE(Er_temp(ns_dkes+2))
                   !
                   rho_temp(1)        = 0.0
                   rho_temp(2:ns_dkes+1) = rho_k
@@ -390,6 +392,18 @@
                   QNEO_temp(:,2:ns_dkes+1) = QNEO_PENTA
                   QNEO_temp(:,1)           = QNEO_temp(:,2) - (QNEO_temp(:,3)-QNEO_temp(:,2)) * rho_temp(2) / (rho_temp(3)-rho_temp(2))
                   QNEO_temp(:,ns_dkes+2)   = QNEO_PENTA(:,ns_dkes-1) + (QNEO_PENTA(:,ns_dkes)-QNEO_PENTA(:,ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
+                  !
+                  Er_temp(2:ns_dkes+1)   = Er_PENTA
+                  Er_temp(1)             = Er_temp(2) - (Er_temp(3)-Er_temp(2)) * rho_temp(2) / (rho_temp(3)-rho_temp(2))
+                  Er_temp(ns_dkes+2)     = Er_PENTA(ns_dkes-1) + (Er_PENTA(ns_dkes)-Er_PENTA(ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
+                  
+                  !Er
+                  CALL EZspline_init(Er_spl,ns_dkes+2,bcs0,ier)
+                  Er_spl%x1        = rho_temp
+                  Er_spl%isHermite = 1
+                  CALL EZspline_setup(Er_spl,Er_temp,ier,EXACT_DIM=.true.)
+                  CALL EZspline_interp(Er_spl,Nr_plasma_solver,rho_plasma_grid,plasma_Er(mytimestep_plasma_solver,:),ier)
+                  CALL EZspline_free(Er_spl,ier)
 
                   ! Spline of Dn,cn,Dp,cp; computation at plasma grid
                   DO jspecies=1,(nion_prof+1)
@@ -441,7 +455,7 @@
                         CALL EZspline_free(QNEO_spl,ier)
                   END DO
                   !
-                  DEALLOCATE(rho_temp,Dn_temp,cn_temp,Dp_temp,cp_temp,GNEO_temp,QNEO_temp)
+                  DEALLOCATE(rho_temp,Dn_temp,cn_temp,Dp_temp,cp_temp,GNEO_temp,QNEO_temp,Er_temp)
             END IF
 
             DEALLOCATE(rho_k,iota,phip,chip,btheta,bzeta,bsq,vp,EparB)

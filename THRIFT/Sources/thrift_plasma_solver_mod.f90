@@ -26,7 +26,7 @@ MODULE thrift_plasma_solver_mod
     IMPLICIT NONE
     REAL(rprec) :: drho_plasma_solver, dr_plasma_solver
     REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_plasma_grid, time_plasma_grid
-    REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: r_plasma_grid, N_fast_alphas
+    REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: r_plasma_grid, N_fast_alphas, plasma_Er
     INTEGER :: ilogplasma, num_species
     REAL(rprec), DIMENSION(:,:), ALLOCATABLE, PRIVATE :: plasma_N, plasma_T, plasma_P
     REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: plasma_N_keep, plasma_T_keep, &
@@ -94,6 +94,7 @@ MODULE thrift_plasma_solver_mod
         IF( .NOT. ALLOCATED(S_alpha_power)) ALLOCATE(S_alpha_power(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
         IF( .NOT. ALLOCATED(S_radiated_power)) ALLOCATE(S_radiated_power(Nt_total_plasma_solver,Nr_plasma_solver))
         IF( .NOT. ALLOCATED(dVdr_keep)) ALLOCATE(dVdr_keep(Nt_total_plasma_solver,Nr_plasma_solver))
+        IF( .NOT. ALLOCATED(plasma_Er)) ALLOCATE(plasma_Er(Nt_total_plasma_solver,Nr_plasma_solver))
         ! These arrays are filled in thrift_penta with the total NEO fluxes. They include the inter-species diffusion coeffs
         ! which are neglected when computing the Dn_NEO and cn_NEO coeffs used by the transport solver
         IF( .NOT. ALLOCATED(G_NEO_complet)) ALLOCATE(G_NEO_complet(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
