@@ -43,7 +43,7 @@
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: D11, D13, D33
       TYPE(EZspline1_r8) :: EparB_spl, J_spl, eta_spl, Er_spl, GNEO_spl, QNEO_spl
       TYPE(EZspline1_r8) :: Dn_spl, cn_spl, Dp_spl, cp_spl
-      INTEGER :: bcs0(2)
+      INTEGER :: bcs0(2)=(/ 0, 0/)
       CHARACTER(LEN=32) :: temp_str, temp1_str
 !-----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -296,7 +296,6 @@
                   QNEO_temp(:,ns_dkes+2)   = QNEO_PENTA(:,ns_dkes-1) + (QNEO_PENTA(:,ns_dkes)-QNEO_PENTA(:,ns_dkes-1)) * (1-rho_k(ns_dkes-1)) / (rho_k(ns_dkes)-rho_k(ns_dkes-1))
 
                   ! Splines
-                  bcs0=(/ 0, 0/)
                   !JBS
                   CALL EZspline_init(J_spl,ns_dkes+2,bcs0,ier)
                   J_spl%x1        = rho_temp
