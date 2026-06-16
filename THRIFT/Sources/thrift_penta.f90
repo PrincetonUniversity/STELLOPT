@@ -196,7 +196,7 @@
                   irho =  MINLOC(ABS(SQRT(THRIFT_S) - rho_k(k)), dim=1)
                   ! Need to define num_roots and set Er_roots
                   num_roots = 1
-                  Er_roots(1) = THRIFT_ER(irho,mytimestep)
+                  Er_roots(1) = THRIFT_ER(irho,mytimestep-1)
             ELSE
                   ! Now the basic steps
                   CALL PENTA_RUN_2_EFIELD
