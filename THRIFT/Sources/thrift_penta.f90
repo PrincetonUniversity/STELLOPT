@@ -158,6 +158,7 @@
       CALL MPI_BCAST(mytimestep,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
       ! Plasma solver quantities
       CALL MPI_BCAST(look_for_ambipolar,1,MPI_LOGICAL,master,MPI_COMM_MYWORLD,ierr_mpi)
+      CALL MPI_BCAST(solve_plasma_equations,1,MPI_LOGICAL,master,MPI_COMM_MYWORLD,ierr_mpi)
       CALL MPI_BCAST(mytimestep_plasma_solver,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)           
 #endif
 
