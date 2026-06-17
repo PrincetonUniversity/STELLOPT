@@ -66,8 +66,11 @@
                                   mumaterial_tol, mumaterial_niter, &
                                   mumaterial_nneighbor, &
                                   mumaterial_lambda, mumaterial_lamfactor, &
+                                  mumaterial_lambdamin, mumaterial_lambdamax, &
                                   mumaterial_lamthresh, mumaterial_padfactor, &
-                                  mumaterial_convcheck
+                                  mumaterial_convcheck, mumaterial_depth, &
+                                  mumaterial_leaf, &
+                                  mumaterial_theta_iter, mumaterial_theta_eval
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -115,9 +118,16 @@
       mumaterial_niter = 100
       mumaterial_lamthresh = 10
       mumaterial_lambda = 0.7D+00
+      mumaterial_lambdamax = 0.50
+      mumaterial_lambdamin = 0.01
       mumaterial_lamfactor = 0.75D+00
       mumaterial_padfactor = 1.0D+00
       mumaterial_convcheck = 99.0D+00
+      mumaterial_theta_iter = 0.33
+      mumaterial_theta_eval = 0.10
+      mumaterial_depth = 10
+      mumaterial_leaf = 4
+
 
       int_type = "NAG"
       IF (TRIM(filename) == "") RETURN

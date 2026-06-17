@@ -934,7 +934,7 @@
         WRITE(iunit,'(3X,A,F12.6)')   '  Lambda max.  : ',lambdaMax
         WRITE(iunit,'(3X,A,F11.5)')   '  Converged at :  ',Pconv_min
       END IF
-      WRITE(inut,'(A)') ' -------------------------------'
+      WRITE(iunit,'(A)') ' -------------------------------'
       FLUSH(iunit)
 
       END SUBROUTINE mumaterial_info
