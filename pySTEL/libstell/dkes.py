@@ -1397,7 +1397,7 @@ class DKES:
             
         return Gamma,QoverT,time_dict
     
-    def get_neocassical_transport_coefficients(self,Er_Vcm,plasma_class,Smax):
+    def get_neoclassical_transport_coefficients(self,Er_Vcm,plasma_class,Smax):
         # computes the neoclassical 'self' transport coefficients, such that:
         # Gamma_NEO = -Dn * dn/dr + cn * n
         # Q_NEO = -Dp * dp/dr + cp * p
