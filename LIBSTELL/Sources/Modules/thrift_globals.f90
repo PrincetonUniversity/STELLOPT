@@ -64,6 +64,9 @@
       REAL(rprec), DIMENSION(nions_max) :: Dn_ions, N0_init_ions
       CHARACTER(LEN=50) :: init_profiles_type
 
+      ! Used in thrift_penta
+      LOGICAL :: look_for_ambipolar, update_thrift_vars, update_transport_vars
+
       CONTAINS
 
       ! These expose the global variables through ctypes

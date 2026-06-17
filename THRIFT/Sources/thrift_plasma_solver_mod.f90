@@ -43,7 +43,6 @@ MODULE thrift_plasma_solver_mod
     TYPE(EZspline2_r8), DIMENSION(:), ALLOCATABLE, PRIVATE :: chi_normalized_splines
     INTEGER, PRIVATE :: subiter
     CHARACTER(len=20), DIMENSION(:), ALLOCATABLE :: list_of_species
-    LOGICAL :: look_for_ambipolar = .TRUE.
     ! Init (when initial profiles read from file)
     INTEGER :: nrho_init
     REAL(rprec), DIMENSION(:),   ALLOCATABLE, PRIVATE :: rhoaxis_init
@@ -195,15 +194,16 @@ MODULE thrift_plasma_solver_mod
                     k_prev = int( (time_plasma_grid(mytimestep_plasma_solver-1) - time_plasma_grid(1)) / dt_Er_ambipolar)
                     k_now  = int( (time_plasma_grid(mytimestep_plasma_solver)   - time_plasma_grid(1)) / dt_Er_ambipolar)
                     IF(k_now > k_prev) THEN
-                        look_for_ambipolar = .true.
+                        look_for_ambipolar = .TRUE.
+                        update_thrift_vars = .FALSE.
+                        update_transport_vars = .TRUE.
                     ELSE
-                        look_for_ambipolar = .false.
+                        look_for_ambipolar = .FALSE.
+                        update_thrift_vars = .FALSE.
+                        update_transport_vars = .TRUE.
                     END IF
                     CALL thrift_paraexe('penta',proc_string,lscreen_subcodes)
-                    IF (ier /= 0) STOP 'Error running PENTA inside plasma solver'
-                    ! Restore look_for_ambipolar so that if code leaves to thrift_evolve after this plasma iteration
-                    ! then the ambipolar solution is computed
-                    look_for_ambipolar = .true.
+                    ! IF (ier /= 0) STOP 'Error running PENTA inside plasma solver'
                 END IF
   
                 DO i=1,nion_prof
