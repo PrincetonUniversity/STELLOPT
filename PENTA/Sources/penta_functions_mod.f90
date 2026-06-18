@@ -4654,7 +4654,7 @@ Result(integrand)
 !
 ! Modules used:
 Use penta_kind_mod                  ! Import rknd, iknd specifications
-USE bspline_sub_module, Only : db2val,db2val_bilinear
+USE bspline_sub_module, Only : db2eval_optimized !db2val,db2val_bilinear
 
 Implicit None
 
@@ -4733,9 +4733,12 @@ Else
   ! Use faster B-spline interpolation
   ! CALL db2val(xval=cmul_K,yval=enrm,idx=iZERO,idy=iZERO,tx=xt_c,ty=xt_e,nx=nc,ny=ne,kx=kcord,ky=keord,bcoef=Dspl,f=Dstar_val, &
               ! iflag=ier,inbvx=iONE,inbvy=iONE,iloy=iONE,w1=work1,w0=work0,extrap=.false.)
-  CALL db2val_bilinear(xval=cmul_K,yval=enrm,tx=xt_c,ty=xt_e,nx=nc,ny=ne,bcoef=Dspl,f=Dstar_val, &
-              inbvx=inbvx_hint,inbvy=inbvy_hint,iflag=ier)
-  IF(ier/=0)  STOP 'Error in db2val_bilinear inside intfun_fast'
+  ! CALL db2val_bilinear(xval=cmul_K,yval=enrm,tx=xt_c,ty=xt_e,nx=nc,ny=ne,bcoef=Dspl,f=Dstar_val, &
+  !             inbvx=inbvx_hint,inbvy=inbvy_hint,iflag=ier)
+  ! IF(ier/=0)  STOP 'Error in db2val_bilinear inside intfun_fast'
+  CALL db2eval_optimized(xval=cmul_K,yval=enrm,tx=xt_c,ty=xt_e,nx=nc,ny=ne,kx=kcord,ky=keord,bcoef=Dspl,f=Dstar_val, &
+                inbvx=inbvx_hint,inbvy=inbvy_hint,iflag=ier)
+  IF(ier/=0)  STOP 'Error in db2val_optimized inside intfun_fast'
 
 Endif 
 
