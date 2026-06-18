@@ -12,6 +12,9 @@ Module penta_functions_mod
 ! 
 ! Author(s): J. Lore 05/25/2010 - 09/23/2011
 !
+  USE penta_kind_mod
+  Implicit None
+  REAL(rknd), DIMENSION(:), ALLOCATABLE :: work0,work1
 Contains
 
 !-----------------------------------------------------------------------------
@@ -4689,7 +4692,6 @@ Real(rknd)    :: Dstar_val       ! interpolated D* value
 Real(rknd)    :: kfun, kfun2
 Integer(iknd) :: ier
 Integer(iknd) :: iZERO  = 0_iknd, iONE  = 1_iknd
-Real(rknd), Allocatable :: work1(:), work0(:)  ! Work arrays for db2val
 
 !- End of header -------------------------------------------------------------
 
@@ -4726,10 +4728,8 @@ Else
   enrm = (efield - emin)/(emax - emin)
 
   ! Use faster B-spline interpolation
-  ALLOCATE(work1(keord),work0(3_iknd*max(kcord,keord)))
   CALL db2val(xval=cmul_K,yval=enrm,idx=iZERO,idy=iZERO,tx=xt_c,ty=xt_e,nx=nc,ny=ne,kx=kcord,ky=keord,bcoef=Dspl,f=Dstar_val, &
               iflag=ier,inbvx=iONE,inbvy=iONE,iloy=iONE,w1=work1,w0=work0,extrap=.false.)
-  DEALLOCATE(work1,work0)
 
 Endif 
 

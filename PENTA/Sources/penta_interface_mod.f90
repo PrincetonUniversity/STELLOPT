@@ -505,6 +505,7 @@ MODULE PENTA_INTERFACE_MOD
    END SUBROUTINE penta_allocate_fluxes_vs_Er
 
    SUBROUTINE penta_deallocate_dkescoeff
+      USE penta_functions_mod, ONLY: work0,work1
       IMPLICIT NONE
       IF (ALLOCATED(xt_c)) DEALLOCATE(xt_c)
       IF (ALLOCATED(xt_e)) DEALLOCATE(xt_e)
@@ -519,6 +520,8 @@ MODULE PENTA_INTERFACE_MOD
       IF (ALLOCATED(Dspl_logD11)) DEALLOCATE(Dspl_logD11)
       IF (ALLOCATED(Dspl_logD33)) DEALLOCATE(Dspl_logD33)
       IF (ALLOCATED(cmesh)) DEALLOCATE(cmesh)
+      IF (ALLOCATED(work0)) DEALLOCATE(work0)
+      IF (ALLOCATED(work1)) DEALLOCATE(work1)
       RETURN
    END SUBROUTINE penta_deallocate_dkescoeff
 
@@ -714,6 +717,7 @@ MODULE PENTA_INTERFACE_MOD
       USE coeff_var_pass
       USE vmec_var_pass, ONLY: Bsq
       USE penta_subroutines, ONLY: fit_coeffs_faster
+      USE penta_functions_mod, ONLY: work0, work1
       IMPLICIT NONE
 
       ! Calculate fitting parameters to the D##* coefficients
@@ -760,6 +764,11 @@ MODULE PENTA_INTERFACE_MOD
         CASE DEFAULT 
           STOP 'Error: Can only use SN method!'
       ENDSELECT
+
+      ! These are the work arrays used by db2val in intfun_fast
+      IF( .NOT. ALLOCATED(work1)) ALLOCATE(work1(keord))
+      IF( .NOT. ALLOCATED(work0)) ALLOCATE(work0(3_iknd*max(kcord,keord)))
+
       RETURN
    END SUBROUTINE penta_fit_DXX_coef
 
