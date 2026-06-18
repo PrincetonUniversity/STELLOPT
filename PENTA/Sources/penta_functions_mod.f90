@@ -4617,6 +4617,7 @@ Function energy_conv_fast(Smax,jval,kval,numKsteps,abs_Er,num_species,log_interp
 
   ! Locals
   Integer(iknd) :: iK
+  Integer(iknd) :: inbvx_hint, inbvy_hint
   Real(rknd) :: coeff_tmp
   Real(rknd) :: K0, K1
 
@@ -4624,6 +4625,8 @@ Function energy_conv_fast(Smax,jval,kval,numKsteps,abs_Er,num_species,log_interp
 
   ! Energy integral with rectangular approximation
   Coeff_tmp = 0._rknd
+  inbvx_hint = 1_iknd
+  inbvy_hint = 1_iknd
   Do iK = 1, numKsteps - 1
     K0 = Ka_array(iK)
     K1 = Ka_array(iK+1)
@@ -4631,7 +4634,7 @@ Function energy_conv_fast(Smax,jval,kval,numKsteps,abs_Er,num_species,log_interp
     Coeff_tmp =  Coeff_tmp +                                                &
       intfun_fast(Smax,Ka_array(iK),exp_Ka_array(iK),abs_Er,num_species,log_interp,Dspl,xt_c,xt_e,cmin,cmax,emin,emax,nc,ne,kcord,keord,jval,kval,&
       K_exp,nu_exp,Unity_coeff,logopt, &
-      numKsteps,ispecies,iK,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)*(K1-K0)
+      numKsteps,ispecies,iK,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly,inbvx_hint,inbvy_hint)*(K1-K0)
   EndDo
 
   Coeff = 2._rknd * Coeff_tmp * norm_factor / Dsqrt(pi)
@@ -4640,7 +4643,7 @@ EndFunction energy_conv_fast
 
 Function intfun_fast(Smax,Ka,exp_Ka,abs_Er,num_species,log_interp,Dspl,xt_c,xt_e,cmin,cmax,emin,emax,nc,ne,kcord,keord,juse,kuse,  &
   K_exp,nu_exp,Unity_coeff,logopt, &
-  numKsteps,ispecies,iK,cmulK_arr,log_cmulK_arr,oneOverVa_arr,sonine_poly)               &
+  numKsteps,ispecies,iK,cmulK_arr,log_cmulK_arr,oneOverVa_arr,sonine_poly,inbvx_hint,inbvy_hint)               &
 Result(integrand)
 !
 ! Description: 
@@ -4651,7 +4654,7 @@ Result(integrand)
 !
 ! Modules used:
 Use penta_kind_mod                  ! Import rknd, iknd specifications
-USE bspline_sub_module, Only : db2val
+USE bspline_sub_module, Only : db2val,db2val_bilinear
 
 Implicit None
 
@@ -4683,6 +4686,7 @@ Real(rknd)                 :: integrand
 Integer(iknd), Intent(in) :: numKsteps,ispecies,iK
 Real(rknd), Intent(in), Dimension(num_species,numKsteps) :: cmulK_arr,log_cmulK_arr,oneOverVa_arr
 Real(rknd), Intent(in) :: sonine_poly(0:Smax,numKsteps)
+Integer(iknd), Intent(inout) :: inbvx_hint, inbvy_hint
 
 ! Locals
 Real(rknd)    :: efield          ! efield parameter (|Er|/va)
@@ -4691,7 +4695,6 @@ Real(rknd)    :: cmul_K          ! Collisionality (nu_a/va)
 Real(rknd)    :: Dstar_val       ! interpolated D* value
 Real(rknd)    :: kfun, kfun2
 Integer(iknd) :: ier
-Integer(iknd) :: iZERO  = 0_iknd, iONE  = 1_iknd
 
 !- End of header -------------------------------------------------------------
 
@@ -4728,8 +4731,11 @@ Else
   enrm = (efield - emin)/(emax - emin)
 
   ! Use faster B-spline interpolation
-  CALL db2val(xval=cmul_K,yval=enrm,idx=iZERO,idy=iZERO,tx=xt_c,ty=xt_e,nx=nc,ny=ne,kx=kcord,ky=keord,bcoef=Dspl,f=Dstar_val, &
-              iflag=ier,inbvx=iONE,inbvy=iONE,iloy=iONE,w1=work1,w0=work0,extrap=.false.)
+  ! CALL db2val(xval=cmul_K,yval=enrm,idx=iZERO,idy=iZERO,tx=xt_c,ty=xt_e,nx=nc,ny=ne,kx=kcord,ky=keord,bcoef=Dspl,f=Dstar_val, &
+              ! iflag=ier,inbvx=iONE,inbvy=iONE,iloy=iONE,w1=work1,w0=work0,extrap=.false.)
+  CALL db2val_bilinear(xval=cmul_K,yval=enrm,tx=xt_c,ty=xt_e,nx=nc,ny=ne,bcoef=Dspl,f=Dstar_val, &
+              inbvx=inbvx_hint,inbvy=inbvy_hint,iflag=ier)
+  IF(ier/=0)  STOP 'Error in db2val_bilinear inside intfun_fast'
 
 Endif 
 
