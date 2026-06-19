@@ -52,6 +52,14 @@ MODULE PENTA_INTERFACE_MOD
    REAL(rknd), DIMENSION(:),   ALLOCATABLE :: Ka_array, exp_Ka_array
    REAL(rknd), DIMENSION(:,:), ALLOCATABLE :: cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix
    REAL(rknd), DIMENSION(:,:), ALLOCATABLE :: sonine_poly
+   ! Precomputed K-space weight arrays updated each time abs_Er changes via penta_set_energy_weights
+   REAL(rknd), DIMENSION(:,:), ALLOCATABLE :: &
+      energy_weights_Drat_K15, &  ! Dspl_Drat, K_exp=1.5: flows RHS1 + fluxes Na_1k
+      energy_weights_Drat_K25, &  ! Dspl_Drat, K_exp=2.5: flows RHS2 + QoTs Na_2k
+      energy_weights_DUa_K15,  &  ! Dspl_DUa,  K_exp=1.5: flows LHS
+      energy_weights_Dex_K15,  &  ! Dspl_Dex,  K_exp=1.5: fluxes L11
+      energy_weights_Dex_K25,  &  ! Dspl_Dex,  K_exp=2.5: fluxes L12 + QoTs L21
+      energy_weights_Dex_K35      ! Dspl_Dex,  K_exp=3.5: QoTs L22
 
 !-----------------------------------------------------------------------
 !     Module Namelists
@@ -522,6 +530,18 @@ MODULE PENTA_INTERFACE_MOD
       IF (ALLOCATED(cmesh)) DEALLOCATE(cmesh)
       IF (ALLOCATED(work0)) DEALLOCATE(work0)
       IF (ALLOCATED(work1)) DEALLOCATE(work1)
+      IF (ALLOCATED(energy_weights_Drat_K15)) DEALLOCATE(energy_weights_Drat_K15)
+      IF (ALLOCATED(energy_weights_Drat_K25)) DEALLOCATE(energy_weights_Drat_K25)
+      IF (ALLOCATED(energy_weights_DUa_K15))  DEALLOCATE(energy_weights_DUa_K15)
+      IF (ALLOCATED(energy_weights_Dex_K15))  DEALLOCATE(energy_weights_Dex_K15)
+      IF (ALLOCATED(energy_weights_Dex_K25))  DEALLOCATE(energy_weights_Dex_K25)
+      IF (ALLOCATED(energy_weights_Dex_K35))  DEALLOCATE(energy_weights_Dex_K35)
+      IF (ALLOCATED(Ka_array))           DEALLOCATE(Ka_array)
+      IF (ALLOCATED(exp_Ka_array))       DEALLOCATE(exp_Ka_array)
+      IF (ALLOCATED(cmulK_matrix))       DEALLOCATE(cmulK_matrix)
+      IF (ALLOCATED(log_cmulK_matrix))   DEALLOCATE(log_cmulK_matrix)
+      IF (ALLOCATED(oneOverVa_matrix))   DEALLOCATE(oneOverVa_matrix)
+      IF (ALLOCATED(sonine_poly))        DEALLOCATE(sonine_poly)
       RETURN
    END SUBROUTINE penta_deallocate_dkescoeff
 
@@ -878,10 +898,49 @@ MODULE PENTA_INTERFACE_MOD
       IF(.NOT. ALLOCATED(log_cmulK_matrix)) ALLOCATE(log_cmulK_matrix(num_species,numKsteps))
       IF(.NOT. ALLOCATED(oneOverVa_matrix)) ALLOCATE(oneOverVa_matrix(num_species,numKsteps))
       IF(.NOT. ALLOCATED(sonine_poly)) ALLOCATE(sonine_poly(0:Smax,numKsteps))
+      IF(.NOT. ALLOCATED(energy_weights_Drat_K15)) ALLOCATE(energy_weights_Drat_K15(num_species,numKsteps))
+      IF(.NOT. ALLOCATED(energy_weights_Drat_K25)) ALLOCATE(energy_weights_Drat_K25(num_species,numKsteps))
+      IF(.NOT. ALLOCATED(energy_weights_DUa_K15))  ALLOCATE(energy_weights_DUa_K15(num_species,numKsteps))
+      IF(.NOT. ALLOCATED(energy_weights_Dex_K15))  ALLOCATE(energy_weights_Dex_K15(num_species,numKsteps))
+      IF(.NOT. ALLOCATED(energy_weights_Dex_K25))  ALLOCATE(energy_weights_Dex_K25(num_species,numKsteps))
+      IF(.NOT. ALLOCATED(energy_weights_Dex_K35))  ALLOCATE(energy_weights_Dex_K35(num_species,numKsteps))
       CALL calc_integration_arrays(num_species,Smax,Temps,dens,vths,charges,masses,loglambda,Kmin,Kmax,numKsteps, &
                   cmin,cmax,emin,emax,Ka_array,exp_Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)
 
    END SUBROUTINE penta_set_integration_arrays
+
+   SUBROUTINE penta_set_energy_weights
+      USE penta_functions_mod, ONLY : compute_energy_weights
+      USE coeff_var_pass, ONLY: num_c, num_e
+      IMPLICIT NONE
+      INTEGER(iknd) :: ispec
+      DO ispec = 1, num_species
+         energy_weights_Drat_K15(ispec,:) = compute_energy_weights(1.5_rknd,ispec,numKsteps,abs_Er, &
+            num_species,log_interp,Dspl_Drat,xt_c,xt_e,cmin,cmax,emin,emax,num_c,num_e,kcord,keord, &
+            Ka_array,exp_Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+            !
+         energy_weights_Drat_K25(ispec,:) = compute_energy_weights(2.5_rknd,ispec,numKsteps,abs_Er, &
+            num_species,log_interp,Dspl_Drat,xt_c,xt_e,cmin,cmax,emin,emax,num_c,num_e,kcord,keord, &
+            Ka_array,exp_Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+            !
+         energy_weights_DUa_K15(ispec,:)  = compute_energy_weights(1.5_rknd,ispec,numKsteps,abs_Er, &
+            num_species,log_interp,Dspl_DUa,xt_c,xt_e,cmin,cmax,emin,emax,num_c,num_e,kcord,keord, &
+            Ka_array,exp_Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+            !
+         energy_weights_Dex_K15(ispec,:)  = compute_energy_weights(1.5_rknd,ispec,numKsteps,abs_Er, &
+            num_species,log_interp,Dspl_Dex,xt_c,xt_e,cmin,cmax,emin,emax,num_c,num_e,kcord,keord, &
+            Ka_array,exp_Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+            !
+         energy_weights_Dex_K25(ispec,:)  = compute_energy_weights(2.5_rknd,ispec,numKsteps,abs_Er, &
+            num_species,log_interp,Dspl_Dex,xt_c,xt_e,cmin,cmax,emin,emax,num_c,num_e,kcord,keord, &
+            Ka_array,exp_Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+            !
+         energy_weights_Dex_K35(ispec,:)  = compute_energy_weights(3.5_rknd,ispec,numKsteps,abs_Er, &
+            num_species,log_interp,Dspl_Dex,xt_c,xt_e,cmin,cmax,emin,emax,num_c,num_e,kcord,keord, &
+            Ka_array,exp_Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix)
+      END DO
+      RETURN
+   END SUBROUTINE penta_set_energy_weights
 
    SUBROUTINE penta_run_2_efield
       USE vmec_var_pass
@@ -933,20 +992,29 @@ MODULE PENTA_INTERFACE_MOD
                beam_force/(Temps(ispec1)*elem_charge*dens(ispec1))
          Enddo
 
+         ! Precompute energy weight arrays for this Er value
+         CALL penta_set_energy_weights
+
          ! Select the appropriate algorithm and calculate the flows and fluxes
          SELECT CASE (Method)
             Case ('SN')                    
-               Flows = calc_flows_SN_fast(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
-                  masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,log_interp,       &
-                  cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_DUa,num_c,num_e,kcord,  &
-                  keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS,L_A1,L_A2,L_A3, &
-                  Ka_array,exp_Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)                                                
-               Gammas = calc_fluxes_SN_fast(num_species,Smax,abs_Er,Temps,dens,vths,charges,&
-                 masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,cmax, &
-                 emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,Dspl_Dex,Dspl_logD11,        &
-                 Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,lmat,Flows,U2,dTdrs,        &
-                 dndrs,flux_cap,L_A1,L_A2,L_A3,L_n,L_T,L_Er, &
-                  Ka_array,exp_Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)  
+               ! Flows = calc_flows_SN_fast(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
+               !    masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,log_interp,       &
+               !    cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_DUa,num_c,num_e,kcord,  &
+               !    keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS,L_A1,L_A2,L_A3, &
+               !    Ka_array,exp_Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)    
+               Flows = calc_flows_SN_interface(num_species,Smax,numKsteps,Temps,dens,vths,charges,  &
+                  masses,loglambda,B0,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS,L_A1,L_A2,L_A3, &
+                  sonine_poly,energy_weights_Drat_K15,energy_weights_Drat_K25,energy_weights_DUa_K15)                                            
+               ! Gammas = calc_fluxes_SN_fast(num_species,Smax,abs_Er,Temps,dens,vths,charges,&
+               !   masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,cmax, &
+               !   emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,Dspl_Dex,Dspl_logD11,        &
+               !   Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,lmat,Flows,U2,dTdrs,        &
+               !   dndrs,flux_cap,L_A1,L_A2,L_A3,L_n,L_T,L_Er, &
+               !    Ka_array,exp_Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)  
+               Gammas = calc_fluxes_SN_interface(num_species,Smax,numKsteps,Temps,dens,vths,charges,  &
+                  masses,loglambda,Bsq,lmat,Flows,U2,dTdrs,dndrs,flux_cap,Avec,L_A1,L_A2,L_A3,   &
+                  L_n,L_T,L_Er,sonine_poly,energy_weights_Drat_K15,energy_weights_Dex_K15,energy_weights_Dex_K25)
                ! If ( output_QoT_vs_Er .EQV. .true. ) Then
                !    QoTs = calc_QoTs_SN(num_species,Smax,abs_Er,Temps,dens,vths,charges,  &
                !       masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,log_interp,cmin,    &
@@ -1067,31 +1135,46 @@ MODULE PENTA_INTERFACE_MOD
                * B0/(Temps(ispec1)*elem_charge*Sqrt(Bsq))
          Enddo
 
+         ! Precompute energy weight arrays for this Er value
+         CALL penta_set_energy_weights
+
          ! Select the appropriate algorithm and calculate the flows and fluxes
          SELECT CASE (Method)
             Case ('SN')
                ! Calculate array of parallel flow moments 
-               Flows_ambi(:,iroot) = calc_flows_SN_fast(num_species,Smax,abs_Er,Temps,dens,&
-                  vths,charges,masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,    &
-                  log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_DUa,num_c,  &
-                  num_e,kcord,keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS,L_A1,L_A2,L_A3, &
-                  Ka_array,exp_Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)                                               
+               ! Flows_ambi(:,iroot) = calc_flows_SN_fast(num_species,Smax,abs_Er,Temps,dens,&
+               !    vths,charges,masses,loglambda,B0,use_quanc8,Kmin,Kmax,numKsteps,    &
+               !    log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_DUa,num_c,  &
+               !    num_e,kcord,keord,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS,L_A1,L_A2,L_A3, &
+               !    Ka_array,exp_Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)     
+               Flows_ambi(:,iroot) = calc_flows_SN_interface(num_species,Smax,numKsteps,Temps,dens,  &
+                  vths,charges,masses,loglambda,B0,Avec,lmat,sigma_par,sigma_par_Spitzer,J_BS,   &
+                  L_A1,L_A2,L_A3,sonine_poly,energy_weights_Drat_K15,energy_weights_Drat_K25,    &
+                  energy_weights_DUa_K15)                                          
                ! Calculate array of radial particle fluxes
-               Gammas_ambi(:,iroot) = calc_fluxes_SN_fast(num_species,Smax,abs_Er,Temps,   &
-                 dens,vths,charges,masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,   &
-                 log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,       &
-                 Dspl_Dex,Dspl_logD11,Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,      &
-                 lmat,Flows_ambi(:,iroot),U2,dTdrs,dndrs,flux_cap,L_A1,L_A2,L_A3,     &
-                 L_n,L_T,L_Er, &
-                 Ka_array,exp_Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly) 
+               ! Gammas_ambi(:,iroot) = calc_fluxes_SN_fast(num_species,Smax,abs_Er,Temps,   &
+               !   dens,vths,charges,masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,   &
+               !   log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,       &
+               !   Dspl_Dex,Dspl_logD11,Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,      &
+               !   lmat,Flows_ambi(:,iroot),U2,dTdrs,dndrs,flux_cap,L_A1,L_A2,L_A3,     &
+               !   L_n,L_T,L_Er, &
+               !   Ka_array,exp_Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly) 
+               Gammas_ambi(:,iroot) = calc_fluxes_SN_interface(num_species,Smax,numKsteps,Temps,dens,&
+                  vths,charges,masses,loglambda,Bsq,lmat,Flows_ambi(:,iroot),U2,dTdrs,dndrs,     &
+                  flux_cap,Avec,L_A1,L_A2,L_A3,L_n,L_T,L_Er,sonine_poly,                         &
+                  energy_weights_Drat_K15,energy_weights_Dex_K15,energy_weights_Dex_K25)
                ! Calculate array of radial energy fluxes
-               QoTs_ambi(:,iroot) = calc_QoTs_SN_fast(num_species,Smax,abs_Er,Temps,dens,  &
-                 vths,charges,masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,        &
-                 log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,       &
-                 Dspl_Dex,Dspl_logD11,Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,      &
-                 lmat,Flows_ambi(:,iroot),U2,dTdrs,dndrs,flux_cap,L_A1,L_A2,L_A3,     &
-                 R_n,R_T,R_Er, &
-                 Ka_array,exp_Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)
+               ! QoTs_ambi(:,iroot) = calc_QoTs_SN_fast(num_species,Smax,abs_Er,Temps,dens,  &
+               !   vths,charges,masses,loglambda,use_quanc8,Kmin,Kmax,numKsteps,        &
+               !   log_interp,cmin,cmax,emin,emax,xt_c,xt_e,Dspl_Drat,Dspl_Drat2,       &
+               !   Dspl_Dex,Dspl_logD11,Dspl_D31,num_c,num_e,kcord,keord,Avec,Bsq,      &
+               !   lmat,Flows_ambi(:,iroot),U2,dTdrs,dndrs,flux_cap,L_A1,L_A2,L_A3,     &
+               !   R_n,R_T,R_Er, &
+               !   Ka_array,exp_Ka_array,cmulK_matrix,log_cmulK_matrix,oneOverVa_matrix,sonine_poly)
+               QoTs_ambi(:,iroot) = calc_QoTs_SN_interface(num_species,Smax,numKsteps,Temps,dens,    &
+                  vths,charges,masses,loglambda,Bsq,lmat,Flows_ambi(:,iroot),U2,dTdrs,dndrs,     &
+                  flux_cap,Avec,L_A1,L_A2,L_A3,R_n,R_T,R_Er,sonine_poly,                         &
+                  energy_weights_Drat_K25,energy_weights_Dex_K25,energy_weights_Dex_K35)
 
                sigma_par_ambi(iroot) = sigma_par
                sigma_par_Spitzer_ambi(iroot) = sigma_par_Spitzer
