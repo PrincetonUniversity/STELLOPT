@@ -33,7 +33,7 @@
 !     Local Variables
 !-----------------------------------------------------------------------
       INTEGER :: ns_dkes, k, ier, j, i, ncstar, nestar, mystart, myend, &
-                 mysurf, root_max_Er, jspecies, irho
+                 mysurf, root_max_Er, jspecies, irho, it_prev
       REAL(rprec) :: s, rho, mytime
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_k, iota, phip, chip, btheta, bzeta, bsq, vp, &
                         te, ne, dtedrho, dnedrho, EparB, JBS_PENTA, etapar_PENTA, Er_PENTA, rho_temp, J_temp, eta_temp, Er_temp
@@ -42,6 +42,7 @@
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: Dp_PENTA, cp_PENTA, Dp_temp, cp_temp
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: ni,ti, dtidrho, dnidrho
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: D11, D13, D33
+      REAL(rprec) :: saved_ambipolar_Er(Nr_plasma_solver)
       TYPE(EZspline1_r8) :: EparB_spl, J_spl, eta_spl, Er_spl, GNEO_spl, QNEO_spl
       TYPE(EZspline1_r8) :: Dn_spl, cn_spl, Dp_spl, cp_spl
       INTEGER :: bcs0(2)=(/ 0, 0/)
@@ -132,6 +133,10 @@
             END DO
             !
             CALL EZspline_free(EparB_spl,ier)    
+            ! Get electric field of prev iteration. To use when look_for_ambipolar = .false.
+            ! This is required because only master knows about plasma_Er
+            it_prev = max(1, mytimestep_plasma_solver - 1)
+            saved_ambipolar_Er  = plasma_Er(it_prev,:)
       END IF
             
 #if defined(MPI_OPT)
@@ -159,7 +164,8 @@
       CALL MPI_BCAST(mytimestep,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
       ! Plasma solver quantities
       CALL MPI_BCAST(solve_plasma_equations,1,MPI_LOGICAL,master,MPI_COMM_MYWORLD,ierr_mpi)
-      CALL MPI_BCAST(mytimestep_plasma_solver,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)           
+      CALL MPI_BCAST(mytimestep_plasma_solver,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+      CALL MPI_BCAST(saved_ambipolar_Er,Nr_plasma_solver,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)        
       ! thrift_globals
       CALL MPI_BCAST(look_for_ambipolar,1,MPI_LOGICAL,master,MPI_COMM_MYWORLD,ierr_mpi)
 #endif
@@ -192,13 +198,13 @@
             IF(look_for_ambipolar) CALL PENTA_OPEN_OUTPUT(TRIM(temp1_str) // '_k' // TRIM(temp_str))
 
             ! Only search new ambipolar Er solution if look_for_ambipolar = true
-            ! If not, take the previous THRIFT_ER solution
+            ! If not, take the previous plasma_Er (stored above in saved_ambipolar_Er)
             IF(solve_plasma_equations .AND. .NOT. look_for_ambipolar) THEN
-                  ! Get Er value from THRIFT
-                  irho =  MINLOC(ABS(SQRT(THRIFT_S) - rho_k(k)), dim=1)
+                  ! Get closest rho
+                  irho =  MINLOC(ABS(rho_plasma_grid - rho_k(k)), dim=1)
                   ! Need to define num_roots and set Er_roots
                   num_roots = 1
-                  Er_roots(1) = THRIFT_ER(irho,mytimestep-1)
+                  Er_roots(1) = saved_ambipolar_Er(irho)
             ELSE
                   ! Now the basic steps
                   CALL PENTA_RUN_2_EFIELD
