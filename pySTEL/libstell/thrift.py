@@ -1469,7 +1469,7 @@ class THRIFT_plasma_solver():
             with h5py.File(file,'r') as f:
                 for temp in ['r_plasma_grid','plasma_N','plasma_T','N_fast_alphas','Dn_NEO','cn_NEO','Dp_NEO',\
                              'cp_NEO','G_NEO_complet','Q_NEO_complet','Dp_total','cp_total','Dn_total','cn_total',\
-                             'S_radiated_power','S_alpha_power','S_energy_ext','S_particle_ext','dVdr']:
+                             'S_radiated_power','S_alpha_power','S_energy_ext','S_particle_ext','dVdr','plasma_Er']:
                     try:
                         data = np.array(f[temp][:,:,:])
                     except:
@@ -1688,6 +1688,8 @@ class THRIFT_plasma_solver():
         
         saved_class.r_grid = self.r_grid[sl,:]
         saved_class.dVdr = self.dVdr[sl,:]
+        
+        saved_class.Er = self.plasma_Er[sl,:]
         
         for attr1,attr2 in zip(('N','T','Dp','cp','Dn','cn','Dn_NEO','Dp_NEO','cp_NEO','cn_NEO','Q_NEO_complet'),('plasma_N','plasma_T','Dp_total','cp_total','Dn_total','cn_total','Dn_NEO','Dp_NEO','cp_NEO','cn_NEO','Q_NEO_complet')):
             setattr(saved_class, attr1, {})
