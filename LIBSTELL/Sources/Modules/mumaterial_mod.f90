@@ -137,8 +137,9 @@
       INTEGER, PARAMETER, PRIVATE :: INTERACT_LEAF = 1 !! Treat this interaction as a leaf.
       INTEGER, PARAMETER, PRIVATE :: INTERACT_NODE = 0 !! Treat this interaction as an aggregate (internal) node.
       INTEGER, PARAMETER, PRIVATE :: EVAL_IN_SPACE = -1 !! This evaluation is NOT taking place at an element
-      DOUBLE PRECISION, PARAMETER, PRIVATE :: WORK_TILE = 64.0d0
-      DOUBLE PRECISION, PARAMETER, PRIVATE :: WORK_NODE = 1.0d0
+      DOUBLE PRECISION, PARAMETER, PRIVATE :: WORK_EVAL = 100.0d0
+      DOUBLE PRECISION, PARAMETER, PRIVATE :: WORK_NODE = 4.0d0
+      DOUBLE PRECISION, PARAMETER, PRIVATE :: WORK_TILE = 1.0d0
 
       ! Magnetization synchronization
       INTEGER, PRIVATE :: ntile_shar
@@ -4301,9 +4302,9 @@
         IF (leaf_size(inode) > 0) THEN
           counter = counter + 1
           IF (leval) THEN
-            work = work + leaf_size(inode)*WORK_TILE
+            work = work + leaf_size(inode)*WORK_EVAL
           ELSE
-            work = work + WORK_NODE !! Simple MATMUL
+            work = work + WORK_TILE !! Simple MATMUL
           END IF
         END IF
         RETURN
