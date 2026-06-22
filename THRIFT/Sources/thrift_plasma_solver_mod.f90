@@ -61,7 +61,7 @@ MODULE thrift_plasma_solver_mod
     PRIVATE :: write_header_plasma_solver_logfile, &
     write_to_plasma_solver_logfile, update_pressure_and_temperature, &
     get_LHS_density_ions, solve_tridiagonal_system, &
-    solve_sparse_nontridiag_system
+    solve_sparse_nontridiag_system, solve_banded
     
     CONTAINS
 
@@ -218,7 +218,7 @@ MODULE thrift_plasma_solver_mod
 
                 CALL get_LHS_pressure(LHS_pressure)
                 CALL get_RHS_pressure(RHS_pressure)
-                CALL solve_sparse_nontridiag_system(LHS_pressure,RHS_pressure,pressure_total)
+                CALL solve_banded(LHS_pressure,RHS_pressure,pressure_total)  ! CALL solve_sparse_nontridiag_system(LHS_pressure,RHS_pressure,pressure_total)
 
                 ! update 'plasma_P' and 'plasma_T' with 'pressure_total' and 'plasma_N'
                 CALL update_pressure_and_temperature(pressure_total)
@@ -1032,6 +1032,64 @@ MODULE thrift_plasma_solver_mod
         DEALLOCATE(ipiv)
         RETURN
     END SUBROUTINE solve_sparse_nontridiag_system
+
+    SUBROUTINE solve_banded(LHS_matrix,RHS_vec,result)
+        ! LHS_matrix and RHS_vec are in species-major ordering:
+        !   [(is1,r1),(is1,r2),...,(is2,r1),...].
+        ! Internally, unknowns are permuted to point-major ordering:
+        !   [(r1,is1),(r1,is2),...,(r2,is1),...],
+        ! under which the matrix is banded with kl=ku=num_species:
+        !   transport terms connect (ir,is)↔(ir±1,is), offset=num_species;
+        !   heat exchange couples (ir,is1)↔(ir,is2), offset<=num_species-1.
+        ! This lets DGBSV replace DGESV at O(N·Ns²) instead of O(N³).
+        IMPLICIT NONE
+        REAL(rprec), DIMENSION(:,:), INTENT(IN)    :: LHS_matrix
+        REAL(rprec), DIMENSION(:),   INTENT(IN)    :: RHS_vec
+        REAL(rprec), DIMENSION(:),   INTENT(INOUT) :: result
+        INTEGER :: ier, N, kl, ku, ldab, k, l, j, p, ir_k, is_k, ir_l, is_l
+        INTEGER, DIMENSION(:),   ALLOCATABLE :: ipiv
+        REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: AB
+        REAL(rprec), DIMENSION(:),   ALLOCATABLE :: RHS_pm
+
+        N    = Nr_plasma_solver * num_species
+        kl   = num_species
+        ku   = num_species
+        ldab = 2*kl + ku + 1
+
+        ALLOCATE(AB(ldab,N), RHS_pm(N), ipiv(N))
+        AB = 0.0_rprec
+
+        ! Permute LHS and RHS from species-major to point-major; extract band.
+        DO k = 1, N
+            ir_k      = (k-1)/num_species + 1
+            is_k      = MOD(k-1, num_species) + 1
+            j         = (is_k-1)*Nr_plasma_solver + ir_k
+            RHS_pm(k) = RHS_vec(j)
+            DO l = MAX(1, k-kl), MIN(N, k+ku)
+                ir_l           = (l-1)/num_species + 1
+                is_l           = MOD(l-1, num_species) + 1
+                p              = (is_l-1)*Nr_plasma_solver + ir_l
+                AB(kl+ku+1+k-l, l) = LHS_matrix(j,p)
+            END DO
+        END DO
+
+        CALL DGBSV(N, kl, ku, 1, AB, ldab, ipiv, RHS_pm, N, ier)
+        IF(ier/=0) CALL handle_err(THRIFT_SOLVER_ERR,'Pressure_Solver',mytimestep_plasma_solver)
+
+        ! Permute solution back to species-major
+        DO k = 1, N
+            ir_k     = (k-1)/num_species + 1
+            is_k     = MOD(k-1, num_species) + 1
+            j        = (is_k-1)*Nr_plasma_solver + ir_k
+            result(j) = RHS_pm(k)
+        END DO
+
+        IF(ANY(ISNAN(result)))  CALL handle_err(THRIFT_NAN_ERR,'Pressure_Solver',mytimestep_plasma_solver)
+        IF(ANY(result < 0.0_rprec)) STOP 'Negative values found on pressure. Exiting program...'
+
+        DEALLOCATE(AB, RHS_pm, ipiv)
+        RETURN
+    END SUBROUTINE solve_banded
 
     SUBROUTINE get_collisional_heat_exchange_matrix(LHS_heat_exchange_matrix)
         USE collision_operators
