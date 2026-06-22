@@ -761,7 +761,7 @@ MODULE thrift_plasma_solver_mod
             LHS_pressure(row,row) = one
         END DO
 
-        DEALLOCATE(Dp,cp,Vp,LHS_coll_heat_exchange,dndr,chi_beurskens)
+        DEALLOCATE(Dp,cp,Vp,LHS_coll_heat_exchange,dndr,chi_beurskens,chi_external)
 
         RETURN
     END SUBROUTINE
