@@ -1039,7 +1039,7 @@ MODULE thrift_plasma_solver_mod
         REAL(rprec), DIMENSION(:,:), INTENT(INOUT) :: LHS_heat_exchange_matrix
         REAL(rprec), DIMENSION(:), ALLOCATABLE :: mass_all, Z_all
         REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: W_s1_s2, aux_B
-        INTEGER :: is1, is2, j, p, ir1, ir2, ir
+        INTEGER :: is1, is2, j, p, ir
         REAL(rprec) :: m1,n1,T1,m2,n2,T2,clog,const,vth_s1_sqr,vth_s2_sqr
         REAL(rprec) :: den, gamma, Z1, Z2
 
@@ -1103,18 +1103,13 @@ MODULE thrift_plasma_solver_mod
         END DO
         
         ! Fill LHS matrix
-        j=1
         DO is1=1,num_species
-            DO ir1=1,Nr_plasma_solver
-                p=1
-                DO is2=1,num_species
-                    DO ir2=1,Nr_plasma_solver
-                        ! Note the minus sign; this is to have it LHS
-                        IF(ir1 .EQ. ir2) LHS_heat_exchange_matrix(j,p) = -W_s1_s2(is1,is2,ir2)
-                        p = p+1
-                    END DO
+            DO is2=1,num_species
+                DO ir=1,Nr_plasma_solver
+                    j = (is1-1)*Nr_plasma_solver + ir
+                    p = (is2-1)*Nr_plasma_solver + ir
+                    LHS_heat_exchange_matrix(j,p) = -W_s1_s2(is1,is2,ir)
                 END DO
-                j = j+1
             END DO
         END DO
 
