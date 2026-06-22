@@ -261,6 +261,9 @@
          ! Zions
          CALL write_var_hdf5(fid,'Zions',nion_prof,ier,INTVAR=Zatom_prof,ATT='Ions charge number [-]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Zions',ier)
+         ! List of Species
+         CALL write_var_hdf5(fid,'list_of_species',nion_prof+1,ier,STRVAR=list_of_species,ATT='List of Species',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'list_of_species',ier)
          ! Time arrays
          CALL write_var_hdf5(fid,'time_plasma_grid',Nt_write,ier,DBLVAR=time_plasma_grid(write_idx),ATT='Time grid [s]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'time_plasma_grid',ier)
