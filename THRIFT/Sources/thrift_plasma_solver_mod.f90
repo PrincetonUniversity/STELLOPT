@@ -41,6 +41,7 @@ MODULE thrift_plasma_solver_mod
     TYPE(EZspline1_r8), DIMENSION(:), ALLOCATABLE, PRIVATE :: N_splines, T_splines
     TYPE(EZspline1_r8), PRIVATE :: P_spline, fast_alphas_spl
     TYPE(EZspline2_r8), DIMENSION(:), ALLOCATABLE, PRIVATE :: chi_normalized_splines
+    TYPE(EZspline1_r8) :: Er_spline
     INTEGER, PRIVATE :: subiter
     CHARACTER(len=20), DIMENSION(:), ALLOCATABLE :: list_of_species
     ! Init (when initial profiles read from file)
@@ -491,6 +492,11 @@ MODULE thrift_plasma_solver_mod
         IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'init: plasma splines',ier)
         fast_alphas_spl%x1 = rho_plasma_grid
         fast_alphas_spl%isHermite = 1
+        !
+        CALL EZspline_init(Er_spline,Nr_plasma_solver,bcs0,ier)
+        IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'init: Er spline',ier)
+        Er_spline%x1 = rho_plasma_grid
+        Er_spline%isHermite = 1
 
         IF (lverb) WRITE(6,*) 'Splines Allocated!'
 
@@ -898,6 +904,9 @@ MODULE thrift_plasma_solver_mod
         ! Fast Alphas Density
         CALL EZspline_setup(fast_alphas_spl,N_fast_alphas(mytimestep_plasma_solver,:),ier,EXACT_DIM=.true.)
 
+        ! Er
+        CALL EZspline_setup(Er_spline,plasma_Er(mytimestep_plasma_solver,:),ier,EXACT_DIM=.true.)
+        
         RETURN
 
     END SUBROUTINE update_splines

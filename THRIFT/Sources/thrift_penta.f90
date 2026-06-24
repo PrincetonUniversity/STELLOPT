@@ -19,7 +19,7 @@
       USE mpi_inc
       USE thrift_plasma_solver_mod, ONLY: Dn_NEO,cn_NEO,Dp_NEO,cp_NEO,&
       rho_plasma_grid,Nr_plasma_solver,mytimestep_plasma_solver,&
-      G_NEO_complet,Q_NEO_complet,Nt_total_plasma_solver,plasma_Er
+      G_NEO_complet,Q_NEO_complet,Nt_total_plasma_solver,plasma_Er,Er_spline
       USE thrift_globals, ONLY: look_for_ambipolar,update_thrift_vars,update_transport_vars
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
@@ -42,7 +42,6 @@
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: Dp_PENTA, cp_PENTA, Dp_temp, cp_temp
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: ni,ti, dtidrho, dnidrho
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: D11, D13, D33
-      REAL(rprec) :: saved_ambipolar_Er(Nr_plasma_solver)
       TYPE(EZspline1_r8) :: EparB_spl, J_spl, eta_spl, Er_spl, GNEO_spl, QNEO_spl
       TYPE(EZspline1_r8) :: Dn_spl, cn_spl, Dp_spl, cp_spl
       INTEGER :: bcs0(2)=(/ 0, 0/)
@@ -133,10 +132,6 @@
             END DO
             !
             CALL EZspline_free(EparB_spl,ier)    
-            ! Get electric field of prev iteration. To use when look_for_ambipolar = .false.
-            ! This is required because only master knows about plasma_Er
-            it_prev = max(1, mytimestep_plasma_solver - 1)
-            saved_ambipolar_Er  = plasma_Er(it_prev,:)
       END IF
             
 #if defined(MPI_OPT)
@@ -164,8 +159,7 @@
       CALL MPI_BCAST(mytimestep,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
       ! Plasma solver quantities
       CALL MPI_BCAST(solve_plasma_equations,1,MPI_LOGICAL,master,MPI_COMM_MYWORLD,ierr_mpi)
-      CALL MPI_BCAST(mytimestep_plasma_solver,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
-      CALL MPI_BCAST(saved_ambipolar_Er,Nr_plasma_solver,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)        
+      CALL MPI_BCAST(mytimestep_plasma_solver,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)       
       ! thrift_globals
       CALL MPI_BCAST(look_for_ambipolar,1,MPI_LOGICAL,master,MPI_COMM_MYWORLD,ierr_mpi)
 #endif
@@ -198,13 +192,11 @@
             IF(look_for_ambipolar) CALL PENTA_OPEN_OUTPUT(TRIM(temp1_str) // '_k' // TRIM(temp_str))
 
             ! Only search new ambipolar Er solution if look_for_ambipolar = true
-            ! If not, take the previous plasma_Er (stored above in saved_ambipolar_Er)
+            ! If not, take the previous plasma_Er (stored in Er_spline)
             IF(solve_plasma_equations .AND. .NOT. look_for_ambipolar) THEN
-                  ! Get closest rho
-                  irho =  MINLOC(ABS(rho_plasma_grid - rho_k(k)), dim=1)
                   ! Need to define num_roots and set Er_roots
                   num_roots = 1
-                  Er_roots(1) = saved_ambipolar_Er(irho)
+                  CALL EZspline_interp(Er_spline,rho_k(k),Er_roots(1),ier)
             ELSE
                   ! Now the basic steps
                   CALL PENTA_RUN_2_EFIELD
@@ -277,6 +269,18 @@
                   IF(save_fluxes_vs_Er) CALL PENTA_MERGE_FLUXES_VS_ER_FILES(ns_dkes,temp1_str,mytime)
             END IF
 
+            IF(solve_plasma_equations) THEN
+                  ! plasma_Er updates only when look_for_ambipolar is True
+                  ! otherwise, can simply store that of previous iter
+                  IF(look_for_ambipolar) THEN
+                        CALL interpolate_from_PENTA(nrho_penta=ns_dkes, rho_penta=rho_k, y_penta=Er_PENTA,\
+                                          nrho_out=Nr_plasma_solver, rho_out=rho_plasma_grid, y_out=plasma_Er(mytimestep_plasma_solver,:),\
+                                          isHermite=1, useLog=.FALSE.)
+                  ELSE
+                        plasma_Er(mytimestep_plasma_solver,:) = plasma_Er(mytimestep_plasma_solver-1,:)
+                  END IF
+            END IF
+
             IF(update_thrift_vars) THEN
                   CALL interpolate_from_PENTA(nrho_penta=ns_dkes, rho_penta=rho_k, y_penta=JBS_PENTA,\
                                           nrho_out=nsj, rho_out=SQRT(THRIFT_S), y_out=THRIFT_JBOOT(:,mytimestep),\
@@ -304,9 +308,6 @@
             END IF
             
             IF(solve_plasma_equations .AND. update_transport_vars) THEN
-                  CALL interpolate_from_PENTA(nrho_penta=ns_dkes, rho_penta=rho_k, y_penta=Er_PENTA,\
-                                        nrho_out=Nr_plasma_solver, rho_out=rho_plasma_grid, y_out=plasma_Er(mytimestep_plasma_solver,:),\
-                                        isHermite=1, useLog=.FALSE.)
                   DO jspecies=1,(nion_prof+1)
                         !
                         CALL interpolate_from_PENTA(nrho_penta=ns_dkes, rho_penta=rho_k, y_penta=GNEO_PENTA(jspecies,:),\
