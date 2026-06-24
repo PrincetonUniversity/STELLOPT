@@ -1097,15 +1097,15 @@ class THRIFT():
 
         return outname
     
-    def solve_time_dependent_current_equation_fixed_profiles(self,t_select,dt,L_inductance,edge_factor=None,tend=None):
-        """ Solves the time dependent current diffusion equation with profiles at t_select 
+    def solve_time_dependent_current_equation(self,L_inductance,edge_factor=None,add_neglected_terms=False):
+        """ Solves the time dependent current diffusion equation. Profiles are time-dependent
             
             Equation is written in the conservative form:
-            dI/dt = (S11/phia^2) * d/ds[ D(s)*dI/ds + P(s)*I ] + F(s)
+            dI/dt = (S11/phia^2) * d/ds[ D(s,t)*dI/ds + P(s,t)*I ] + F(s)
             where:
             D(s) = etapar*V' * <B2>/mu0
             P(s) = etapar*V' * p'
-            F(s) = -S11/phia^2 * d/ds[etapar*V' * phia/mu0 * <JNI*B>]
+            F(s) = -S11/phia^2 * d/ds[etapar*V' * phia/mu0 * <JNI*B>]  +  phia/mu0 * [dS12/dt + iota*dS11/dt]
             
             We solve this time-dependent PDE using an implicit backward Euler time scheme:
             (I_new - I_old)/dt = L*I_new + F
@@ -1115,91 +1115,137 @@ class THRIFT():
         mu0 = 4*np.pi*1e-7
         
         # Define time array
-        t_init = 0.0
-        if(tend is None):
-            tend = self.THRIFT_T[-1]
-        Nt = round(1+(tend-t_init)/dt)
-        t_solver = np.linspace(t_init, tend, num=Nt)
-        
-        it_select = np.argmin(np.abs(self.THRIFT_T-t_select))
-        
-        J_SOURCE = self.THRIFT_JSOURCE[it_select,:].copy() # copy to avoid modifying original array
-        if(edge_factor is not None):
-            J_SOURCE[-1] *= edge_factor 
-        
-        phia = self.THRIFT_PHIEDGE[it_select]
-        #
-        aux1 = self.THRIFT_S11[it_select,:]/phia**2
-        aux2 = self.THRIFT_ETAPARA[it_select,:]*self.THRIFT_VP[it_select,:]
-        aux3 = aux2 * (phia/mu0) * J_SOURCE *self.THRIFT_BAV[it_select,:]
-        #
-        D = aux2 * self.THRIFT_BSQAV[it_select,:]/mu0
-        P = aux2 * self.THRIFT_PPRIME[it_select,:]
-        F = -aux1 * np.gradient(aux3,self.THRIFT_S)
-        #
-        # rmaj = self.THRIFT_RMAJOR[it_select,-1]
-        # amin = self.THRIFT_AMINOR[it_select,-1]
-        # L_inductance = mu0*rmaj*(np.log(8*rmaj/amin)-2) # mu0 R (log(8R/a)-2)
-        
-        # Assemble L operator
-        Dminus = 0.5 * (D[0:-2] + D[1:-1])
-        Dplus  = 0.5 * (D[1:-1] + D[2:])
-        #
-        Pminus = 0.5 * (P[0:-2] + P[1:-1])
-        Pplus  = 0.5 * (P[1:-1] + P[2:])
+        t_solver = self.THRIFT_T
+        Nt = len(t_solver)
         #
         Ns = len(self.THRIFT_S)
         ds = self.THRIFT_S[1] - self.THRIFT_S[0]
+        
+        J_SOURCE = self.THRIFT_JSOURCE.copy() # copy to avoid modifying original array
+        if(edge_factor is not None):
+            J_SOURCE[:,-1] *= edge_factor 
+        
+        phia = self.THRIFT_PHIEDGE
         #
-        main_diag = np.zeros(Ns)
-        upper_diag = np.zeros(Ns-1)
-        lower_diag = np.zeros(Ns-1)
+        aux1 = self.THRIFT_S11/phia[:,np.newaxis]**2
+        aux2 = self.THRIFT_ETAPARA*self.THRIFT_VP
+        aux3 = aux2 * (phia[:,np.newaxis]/mu0) * J_SOURCE *self.THRIFT_BAV
         #
-        main_diag[1:-1] = -Dplus/ds - Pplus/2 - Dminus/ds - Pminus/2
-        upper_diag[1:] = Dplus/ds + Pplus/2 
-        lower_diag[0:-1] = Dminus/ds + Pminus/2
+        D = aux2 * self.THRIFT_BSQAV/mu0
+        P = aux2 * self.THRIFT_PPRIME
+        F = -aux1 * np.gradient(aux3,self.THRIFT_S,axis=1)
         #
-        L = diags([lower_diag/ds, main_diag/ds, upper_diag/ds], offsets=[-1, 0, 1], format="csr")  
+        if(add_neglected_terms):
+            iota = self.THRIFT_IOTA
+            S11 = self.THRIFT_S11
+            S12 = self.THRIFT_S12
+            dS11dt = np.gradient(S11,t_solver,axis=0)
+            dS12dt = np.gradient(S12,t_solver,axis=0)
+            #
+            F = F + (phia[:,np.newaxis]/mu0) * (dS12dt + iota*dS11dt)
         
-        # Multiply L operator by S11/phia^2 term
-        G = diags(aux1, 0, format="csr")
-        L = G @ L
-        
-        # Create LHS matrix
-        Id = identity(Ns, format="csr")
-        LHS = Id - dt*L
-        
-        # Create RHS matrix
-        RHS_last = -phia*L_inductance / (self.THRIFT_VP[it_select,-1]*self.THRIFT_ETAPARA[it_select,-1])
-        # 
-        diag = np.ones(Ns)
-        diag[-1] = RHS_last
-        #
-        RHS = diags(diag, offsets=0, format="csr")
-        
-        # Source Vector with boundary conditions
-        SOURCE = dt*F
-        SOURCE[0] = 0.0
-        SOURCE[-1] = -J_SOURCE[-1]*self.THRIFT_BAV[it_select,-1]*dt
-        
-        # Apply edge BC on LHS
-        LHS = LHS.tolil()  # Convert to LIL for easy row modification
-        VpEtapar = self.THRIFT_VP[it_select,-1]*self.THRIFT_ETAPARA[it_select,-1]
-        B2 = self.THRIFT_BSQAV[it_select,-1]
-        pp = self.THRIFT_PPRIME[it_select,-1]
-        LHS[-1,:] = 0.0 
-        LHS[-1,-1] = -phia*L_inductance/(VpEtapar) - 1.5*B2*dt/(phia*ds) - mu0*pp*dt/phia
-        LHS[-1,-2] = 2.0*B2*dt / (phia*ds)
-        LHS[-1,-3] = -0.5*B2*dt / (phia*ds)
-        LHS = LHS.tocsr()
-        
-        # Solve
         I_solution = np.zeros((Nt,Ns)) # initial condition is I(t=0,s) = 0.0
         #
-        for i in range(1,Nt):
-            I_solution[i,:] = spsolve(LHS, RHS.dot(I_solution[i-1,:]) + SOURCE)
+        for it in range(1,Nt):
             
+            # Assemble L operator
+            Dminus = 0.5 * (D[it,0:-2] + D[it,1:-1])
+            Dplus  = 0.5 * (D[it,1:-1] + D[it,2:])
+            #
+            Pminus = 0.5 * (P[it,0:-2] + P[it,1:-1])
+            Pplus  = 0.5 * (P[it,1:-1] + P[it,2:])
+            #
+            main_diag = np.zeros(Ns)
+            upper_diag = np.zeros(Ns-1)
+            lower_diag = np.zeros(Ns-1)
+            #
+            main_diag[1:-1] = -Dplus/ds - Pplus/2 - Dminus/ds - Pminus/2
+            upper_diag[1:] = Dplus/ds + Pplus/2 
+            lower_diag[0:-1] = Dminus/ds + Pminus/2
+            #
+            L = diags([lower_diag/ds, main_diag/ds, upper_diag/ds], offsets=[-1, 0, 1], format="csr")  
+            
+            # Multiply L operator by S11/phia^2 term
+            G = diags(aux1[it,:], 0, format="csr")
+            L = G @ L
+            
+            # Create LHS matrix
+            dt = t_solver[it] - t_solver[it-1]
+            Id = identity(Ns, format="csr")
+            LHS = Id - dt*L
+            
+            # Create RHS matrix
+            RHS_last = -phia[it]*L_inductance / (self.THRIFT_VP[it,-1]*self.THRIFT_ETAPARA[it,-1])
+            # 
+            diag = np.ones(Ns)
+            diag[-1] = RHS_last
+            #
+            RHS = diags(diag, offsets=0, format="csr")
+            
+            # Source Vector with boundary conditions
+            SOURCE = dt*F[it,:]
+            SOURCE[0] = 0.0
+            SOURCE[-1] = -J_SOURCE[it,-1]*self.THRIFT_BAV[it,-1]*dt
+            
+            # Apply edge BC on LHS
+            LHS = LHS.tolil()  # Convert to LIL for easy row modification
+            VpEtapar = self.THRIFT_VP[it,-1]*self.THRIFT_ETAPARA[it,-1]
+            B2 = self.THRIFT_BSQAV[it,-1]
+            pp = self.THRIFT_PPRIME[it,-1]
+            LHS[-1,:] = 0.0 
+            LHS[-1,-1] = -phia[it]*L_inductance/(VpEtapar) - 1.5*B2*dt/(phia[it]*ds) - mu0*pp*dt/phia[it]
+            LHS[-1,-2] = 2.0*B2*dt / (phia[it]*ds)
+            LHS[-1,-3] = -0.5*B2*dt / (phia[it]*ds)
+            LHS = LHS.tocsr()
+            
+            # Solve    
+            I_solution[it,:] = spsolve(LHS, RHS.dot(I_solution[it-1,:]) + SOURCE)
+        
         return t_solver, I_solution
+    
+    def create_plasma_profiles_file_from_transport_solver_jolib(self,joblib_file,output_filename='plasma_profiles.h5'):
+        """ This function creates a plasma profiles files, which is read by THRIFT, 
+        from a joblib output file of transport solver solver
+        """
+        import joblib
+        import h5py
+        from libstell.plasma import PLASMA
+        
+        solver = joblib.load(joblib_file)
+        
+        time_array = solver.time
+        nt = len(time_array)
+        raxis_prof = solver.rho_grid
+        nrho = len(raxis_prof)
+        
+        ne = solver.N['electrons'].T
+        Te = solver.T['electrons'].T
+        
+        ions = [s for s in solver.list_of_species if s != 'electrons']
+        num_ions = len(ions)
+        
+        plasma = PLASMA(list_of_species=solver.list_of_species)
+        Zcharge_ions = np.array( [plasma.Zcharge[ion] for ion in plasma.ion_species], dtype=float )
+        mass_ions    = [plasma.mass[ion] for ion in plasma.ion_species]
+        
+        ni = np.stack([solver.N[ion].T for ion in ions], axis=-1)
+        Ti = np.stack([solver.T[ion].T for ion in ions], axis=-1)  
+
+        hf = h5py.File(output_filename, 'w')
+        #
+        hf.create_dataset('nrho', data=nrho)
+        hf.create_dataset('nt', data=nt)
+        hf.create_dataset('nion', data=num_ions)
+        hf.create_dataset('raxis_prof', data=raxis_prof)
+        hf.create_dataset('taxis_prof', data=time_array)
+        hf.create_dataset('Z_prof', data=Zcharge_ions)
+        hf.create_dataset('mass_prof', data=mass_ions)
+        hf.create_dataset('ne_prof', data=ne)
+        hf.create_dataset('te_prof', data=Te)
+        hf.create_dataset('ni_prof', data=ni)
+        hf.create_dataset('ti_prof', data=Ti)
+        #
+        hf.close()
     
     def plot_thrift_vars_subiterations(self,folder, plot_var):
         """
@@ -1423,7 +1469,7 @@ class THRIFT_plasma_solver():
             with h5py.File(file,'r') as f:
                 for temp in ['r_plasma_grid','plasma_N','plasma_T','N_fast_alphas','Dn_NEO','cn_NEO','Dp_NEO',\
                              'cp_NEO','G_NEO_complet','Q_NEO_complet','Dp_total','cp_total','Dn_total','cn_total',\
-                             'S_radiated_power','S_alpha_power','S_energy_ext','S_particle_ext','dVdr']:
+                             'S_radiated_power','S_alpha_power','S_energy_ext','S_particle_ext','dVdr','plasma_Er']:
                     try:
                         data = np.array(f[temp][:,:,:])
                     except:
@@ -1643,7 +1689,9 @@ class THRIFT_plasma_solver():
         saved_class.r_grid = self.r_grid[sl,:]
         saved_class.dVdr = self.dVdr[sl,:]
         
-        for attr1,attr2 in zip(('N','T','Dp','cp','Dn','cn'),('plasma_N','plasma_T','Dp_total','cp_total','Dn_total','cn_total')):
+        saved_class.Er = self.plasma_Er[sl,:]
+        
+        for attr1,attr2 in zip(('N','T','Dp','cp','Dn','cn','Dn_NEO','Dp_NEO','cp_NEO','cn_NEO','Q_NEO_complet'),('plasma_N','plasma_T','Dp_total','cp_total','Dn_total','cn_total','Dn_NEO','Dp_NEO','cp_NEO','cn_NEO','Q_NEO_complet')):
             setattr(saved_class, attr1, {})
             for ispecies,species in enumerate(self.list_of_species):
                 getattr(saved_class, attr1)[species] = getattr(self, attr2)[ispecies,sl,:]
@@ -1653,7 +1701,11 @@ class THRIFT_plasma_solver():
         saved_class.explicit_energy_sources   = defaultdict(dict)
         saved_class.explicit_particle_sources = defaultdict(dict)
         saved_class.Q_total = defaultdict(dict)
-        saved_class.G_total = defaultdict(dict)
+        saved_class.Gamma_total = defaultdict(dict)
+        saved_class.Q_NEO = defaultdict(dict)
+        saved_class.Gamma_NEO = defaultdict(dict)
+        saved_class.Q_turb = defaultdict(dict)
+        saved_class.Gamma_turb = defaultdict(dict)
 
         saved_class.explicit_energy_sources['electrons']['Bremsstrahlung'] = -self.S_radiated_power[sl,:]
         
@@ -1672,7 +1724,13 @@ class THRIFT_plasma_solver():
             dndr = akima_derivative(r_grid,n_r,axis=1)
             #
             saved_class.Q_total[species] = -self.Dp_total[ispecies,sl,:]*dpdr + self.cp_total[ispecies,sl,:]*p_r
-            saved_class.G_total[species] = -self.Dn_total[ispecies,sl,:]*dndr + self.cn_total[ispecies,sl,:]*n_r
+            saved_class.Gamma_total[species] = -self.Dn_total[ispecies,sl,:]*dndr + self.cn_total[ispecies,sl,:]*n_r
+            #
+            saved_class.Q_NEO[species] = -self.Dp_NEO[ispecies,sl,:]*dpdr + self.cp_NEO[ispecies,sl,:]*p_r
+            saved_class.Gamma_NEO[species] = -self.Dn_NEO[ispecies,sl,:]*dndr + self.cn_NEO[ispecies,sl,:]*n_r
+            #
+            saved_class.Q_turb[species] = saved_class.Q_total[species] - saved_class.Q_NEO[species]
+            saved_class.Gamma_turb[species] = saved_class.Gamma_total[species] - saved_class.Gamma_NEO[species]
             
         if(thrift_class is not None):
             saved_class.aminor = thrift_class.get_vars('THRIFT_AMINOR',time=saved_class.time)[:,-1]

@@ -371,8 +371,9 @@ class COLLISIONS():
 
 	def collisionfreq_PENTA(self,v1,m,Z,T,n,clog):
 		"""Computes the perpendicular collision frequency 
-  		of particle 1 inside thermal bath of species [1,2,...,n]
-		as in the PENTA code
+  		of particle 1 inside thermal bath of species [1,2,...,n],
+		as in the PENTA code. Note that particle 1 must be in the first position
+		of the arrays!
 
 		Parameters
 		----------
@@ -399,18 +400,13 @@ class COLLISIONS():
   
 		m1 = m[0]
 		Z1 = Z[0]
-
-		freq = []
-		for m2,Z2,T2,n2,clog2 in zip(m,Z,T,n,clog):
   
-			x = m2*v1*v1 / (2*EC*T2)
+		x = m*v1*v1 / (2*EC*T)
 
-			nu = Z1**2 * Z2**2 * EC**4 * clog2 * n2 / (m1**2 * v1**3 * 4*np.pi * EPS0**2)
-			nu = nu * ( (1-0.5/x)*erf(np.sqrt(x)) + np.exp(-x)/np.sqrt(x*np.pi) )
+		nu = Z1**2 * Z**2 * EC**4 * clog * n / (m1**2 * v1**3 * 4*np.pi * EPS0**2)
+		nu = nu * ( (1-0.5/x)*erf(np.sqrt(x)) + np.exp(-x)/np.sqrt(x*np.pi) )
    
-			freq.append( nu )
-  
-		return freq
+		return nu
 
 	def collisionfreq_energy(self,m1,Z1,v1,m2,Z2,T2,n2,clog):
 		"""Computes the energy loss collision frequency 

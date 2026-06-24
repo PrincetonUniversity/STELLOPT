@@ -21,7 +21,8 @@
 !        ier         Error flag
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER :: ier, nfg
+      INTEGER :: ier, nfg, i, nwrite, Nt_write
+      INTEGER, ALLOCATABLE :: write_idx(:)
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -229,6 +230,15 @@
       
       IF(solve_plasma_equations .AND. myworkid == master) THEN
 #if defined(LHDF5)
+         ! Define stride for writing in file
+         IF(dt_plasma_write <= dt_plasma_solver) THEN
+            nwrite = 1
+         ELSE
+            nwrite = nint(dt_plasma_write/dt_plasma_solver)
+         ENDIF
+         Nt_write = (Nt_total_plasma_solver-1)/nwrite + 1
+         ALLOCATE(write_idx(Nt_write))
+         write_idx = [(1 + (i-1)*nwrite, i=1,Nt_write)]
          ! Open file
          CALL open_hdf5('plasma_solver_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.true.)
          IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'plasma_solver_'//TRIM(id_string)//'.h5',ier)
@@ -236,66 +246,75 @@
          CALL write_scalar_hdf5(fid,'add_NEO',ier,BOOVAR=add_NEO,ATT='add_NEO',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'add_NEO',ier)
          ! Integers
-         CALL write_scalar_hdf5(fid,'Nt_plasma_grid',ier,INTVAR=Nt_total_plasma_solver,ATT='Number of Time Steps Plasma Solver',ATT_NAME='description')
+         CALL write_scalar_hdf5(fid,'Nt_plasma_grid',ier,INTVAR=Nt_write,ATT='Number of Time Steps Plasma Solver',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Nt plasma grid',ier)
          CALL write_scalar_hdf5(fid,'Nr_plasma_grid',ier,INTVAR=Nr_plasma_solver,ATT='Number of Radial Gridpoints Plasma Solver',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Nr plasma grid',ier)
          ! Grids
-         CALL write_var_hdf5(fid,'time_plasma_grid',Nt_total_plasma_solver,ier,DBLVAR=time_plasma_grid,ATT='Time grid [s]',ATT_NAME='description')
-         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'time_plasma_grid',ier)
          CALL write_var_hdf5(fid,'rho_plasma_grid',Nr_plasma_solver,ier,DBLVAR=rho_plasma_grid,ATT='Rho grid [-]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'rho_plasma_grid',ier)
-         CALL write_var_hdf5(fid,'r_plasma_grid',Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=r_plasma_grid,ATT='r-grid [-]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'r_plasma_grid',Nt_write,Nr_plasma_solver,ier,DBLVAR=r_plasma_grid(write_idx,:),ATT='r-grid [-]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'r_plasma_grid',ier)
          ! dV/dr
-         CALL write_var_hdf5(fid,'dVdr',Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=dVdr_keep,ATT='dV/dr [m^2]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'dVdr',Nt_write,Nr_plasma_solver,ier,DBLVAR=dVdr_keep(write_idx,:),ATT='dV/dr [m^2]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dVdr',ier)
-         ! Arrays
+         ! Zions
          CALL write_var_hdf5(fid,'Zions',nion_prof,ier,INTVAR=Zatom_prof,ATT='Ions charge number [-]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Zions',ier)
-         CALL write_var_hdf5(fid,'plasma_N',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=plasma_N_keep,ATT='Density of each species [m^-3]',ATT_NAME='description')
+         ! List of Species
+         CALL write_var_hdf5(fid,'list_of_species',nion_prof+1,ier,STRVAR=list_of_species,ATT='List of Species',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'list_of_species',ier)
+         ! Time arrays
+         CALL write_var_hdf5(fid,'time_plasma_grid',Nt_write,ier,DBLVAR=time_plasma_grid(write_idx),ATT='Time grid [s]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'time_plasma_grid',ier)
+         CALL write_var_hdf5(fid,'plasma_N',num_species,Nt_write,Nr_plasma_solver,ier,DBLVAR=plasma_N_keep(:,write_idx,:),ATT='Density of each species [m^-3]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'plasma_N',ier)
-         CALL write_var_hdf5(fid,'plasma_T',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=plasma_T_keep,ATT='Temperature of each species [eV]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'plasma_T',num_species,Nt_write,Nr_plasma_solver,ier,DBLVAR=plasma_T_keep(:,write_idx,:),ATT='Temperature of each species [eV]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'plasma_T',ier)
-         CALL write_var_hdf5(fid,'Dn_NEO',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=Dn_NEO,ATT='Dn NEO particle diffusion coeff. [m^2/s]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'Dn_NEO',num_species,Nt_write,Nr_plasma_solver,ier,DBLVAR=Dn_NEO(:,write_idx,:),ATT='Dn NEO particle diffusion coeff. [m^2/s]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Dn_NEO',ier)
-         CALL write_var_hdf5(fid,'cn_NEO',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=cn_NEO,ATT='cn NEO particle convective velocity [m/s]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'cn_NEO',num_species,Nt_write,Nr_plasma_solver,ier,DBLVAR=cn_NEO(:,write_idx,:),ATT='cn NEO particle convective velocity [m/s]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'cn_NEO',ier)
-         CALL write_var_hdf5(fid,'Dp_NEO',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=Dp_NEO,ATT='Dp NEO heat diffusion coeff. [m^2/s]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'Dp_NEO',num_species,Nt_write,Nr_plasma_solver,ier,DBLVAR=Dp_NEO(:,write_idx,:),ATT='Dp NEO heat diffusion coeff. [m^2/s]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Dp_NEO',ier)
-         CALL write_var_hdf5(fid,'cp_NEO',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=cp_NEO,ATT='cp NEO heat convective velocity [m/s]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'cp_NEO',num_species,Nt_write,Nr_plasma_solver,ier,DBLVAR=cp_NEO(:,write_idx,:),ATT='cp NEO heat convective velocity [m/s]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'cp_NEO',ier)
          !
-         CALL write_var_hdf5(fid,'Dp_total',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=Dp_total,ATT='Total Dp heat diffusion coeff [m^2/s]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'Dp_total',num_species,Nt_write,Nr_plasma_solver,ier,DBLVAR=Dp_total(:,write_idx,:),ATT='Total Dp heat diffusion coeff [m^2/s]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Dp_total',ier)
-         CALL write_var_hdf5(fid,'cp_total',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=cp_total,ATT='Total cp heat convective velocity [m/s]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'cp_total',num_species,Nt_write,Nr_plasma_solver,ier,DBLVAR=cp_total(:,write_idx,:),ATT='Total cp heat convective velocity [m/s]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'cp_total',ier)
          !
-         CALL write_var_hdf5(fid,'Dn_total',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=Dn_total,ATT='Total Dn particle diffusion coeff.  [m^2/s]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'Dn_total',num_species,Nt_write,Nr_plasma_solver,ier,DBLVAR=Dn_total(:,write_idx,:),ATT='Total Dn particle diffusion coeff.  [m^2/s]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Dn_total',ier)
-         CALL write_var_hdf5(fid,'cn_total',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=cn_total,ATT='Total cn particle convective velocity [m/s]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'cn_total',num_species,Nt_write,Nr_plasma_solver,ier,DBLVAR=cn_total(:,write_idx,:),ATT='Total cn particle convective velocity [m/s]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'cn_total',ier)
          !! Neo fluxes (complete versions)
-         CALL write_var_hdf5(fid,'G_NEO_complet',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=G_NEO_complet,ATT='G NEO [m^-2 s^-1]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'G_NEO_complet',num_species,Nt_write,Nr_plasma_solver,ier,DBLVAR=G_NEO_complet(:,write_idx,:),ATT='G NEO [m^-2 s^-1]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'G_NEO_complet',ier)
-         CALL write_var_hdf5(fid,'Q_NEO_complet',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=Q_NEO_complet,ATT='Q NEO [W/m^2]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'Q_NEO_complet',num_species,Nt_write,Nr_plasma_solver,ier,DBLVAR=Q_NEO_complet(:,write_idx,:),ATT='Q NEO [W/m^2]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Q_NEO_complet',ier)
          ! N_fast_alphas
-         CALL write_var_hdf5(fid,'N_fast_alphas',Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=N_fast_alphas,ATT='Density of fast alphas [m^-3]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'N_fast_alphas',Nt_write,Nr_plasma_solver,ier,DBLVAR=N_fast_alphas(write_idx,:),ATT='Density of fast alphas [m^-3]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'N_fast_alphas',ier)
          ! Energy Sources
-         CALL write_var_hdf5(fid,'S_radiated_power',Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=S_radiated_power,ATT='Radiated Power [W/m^3]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'S_radiated_power',Nt_write,Nr_plasma_solver,ier,DBLVAR=S_radiated_power(write_idx,:),ATT='Radiated Power [W/m^3]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'S_radiated_power',ier)
-         CALL write_var_hdf5(fid,'S_alpha_power',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=S_alpha_power,ATT='Alpha Power [W/m^3]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'S_alpha_power',num_species,Nt_write,Nr_plasma_solver,ier,DBLVAR=S_alpha_power(:,write_idx,:),ATT='Alpha Power [W/m^3]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'S_alpha_power',ier)
-         CALL write_var_hdf5(fid,'S_energy_ext',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=S_energy_ext,ATT='External Power Source [W/m^3]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'S_energy_ext',num_species,Nt_write,Nr_plasma_solver,ier,DBLVAR=S_energy_ext(:,write_idx,:),ATT='External Power Source [W/m^3]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'S_energy_ext',ier)
          ! External Particle Source
-         CALL write_var_hdf5(fid,'S_particle_ext',num_species,Nt_total_plasma_solver,Nr_plasma_solver,ier,DBLVAR=S_particle_ext,ATT='External Particle Source [part/(s.m^3)]',ATT_NAME='description')
+         CALL write_var_hdf5(fid,'S_particle_ext',num_species,Nt_write,Nr_plasma_solver,ier,DBLVAR=S_particle_ext(:,write_idx,:),ATT='External Particle Source [part/(s.m^3)]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'S_particle_ext',ier)
+         ! Electric Field
+         CALL write_var_hdf5(fid,'plasma_Er',Nt_write,Nr_plasma_solver,ier,DBLVAR=plasma_Er(write_idx,:),ATT='Radial Electric Field [V/n]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'plasma_Er',ier)
          ! Close file
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'plasma_solver_'//TRIM(id_string)//'.h5',ier)
+         !
+         DEALLOCATE(write_idx)
 #endif  
          ! Close plasma_solver.log file
          CLOSE(unit=ilogplasma)

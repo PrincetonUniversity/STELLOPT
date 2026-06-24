@@ -26,7 +26,7 @@ MODULE thrift_plasma_solver_mod
     IMPLICIT NONE
     REAL(rprec) :: drho_plasma_solver, dr_plasma_solver
     REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_plasma_grid, time_plasma_grid
-    REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: r_plasma_grid, N_fast_alphas
+    REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: r_plasma_grid, N_fast_alphas, plasma_Er
     INTEGER :: ilogplasma, num_species
     REAL(rprec), DIMENSION(:,:), ALLOCATABLE, PRIVATE :: plasma_N, plasma_T, plasma_P
     REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: plasma_N_keep, plasma_T_keep, &
@@ -41,9 +41,13 @@ MODULE thrift_plasma_solver_mod
     TYPE(EZspline1_r8), DIMENSION(:), ALLOCATABLE, PRIVATE :: N_splines, T_splines
     TYPE(EZspline1_r8), PRIVATE :: P_spline, fast_alphas_spl
     TYPE(EZspline2_r8), DIMENSION(:), ALLOCATABLE, PRIVATE :: chi_normalized_splines
+    TYPE(EZspline1_r8) :: Er_spline
     INTEGER, PRIVATE :: subiter
     CHARACTER(len=20), DIMENSION(:), ALLOCATABLE :: list_of_species
-    LOGICAL :: look_for_ambipolar = .TRUE.
+    ! Init (when initial profiles read from file)
+    INTEGER :: nrho_init
+    REAL(rprec), DIMENSION(:),   ALLOCATABLE, PRIVATE :: rhoaxis_init
+    REAL(rprec), DIMENSION(:,:), ALLOCATABLE, PRIVATE :: DENS_INIT, TEMP_INIT
 
 !-----------------------------------------------------------------------
 !     Input Namelists
@@ -58,7 +62,7 @@ MODULE thrift_plasma_solver_mod
     PRIVATE :: write_header_plasma_solver_logfile, &
     write_to_plasma_solver_logfile, update_pressure_and_temperature, &
     get_LHS_density_ions, solve_tridiagonal_system, &
-    solve_sparse_nontridiag_system
+    solve_sparse_nontridiag_system, solve_banded
     
     CONTAINS
 
@@ -66,7 +70,7 @@ MODULE thrift_plasma_solver_mod
 
         IMPLICIT NONE
         INTEGER :: istat, i, idx, irho, j, ispecies, ier, plasma_iteration
-        REAL(rprec) :: rho, delta_p, delta_n
+        REAL(rprec) :: rho, delta_p, delta_n, k_prev, k_now
         REAL(rprec), DIMENSION(:), ALLOCATABLE :: pressure_total, pressure_total_old, ne_old
         REAL(rprec), DIMENSION(:), ALLOCATABLE :: RHS_density, lower_diag, upper_diag, main_diag, RHS_pressure
         real(rprec), DIMENSION(:,:), ALLOCATABLE :: LHS_pressure
@@ -90,6 +94,7 @@ MODULE thrift_plasma_solver_mod
         IF( .NOT. ALLOCATED(S_alpha_power)) ALLOCATE(S_alpha_power(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
         IF( .NOT. ALLOCATED(S_radiated_power)) ALLOCATE(S_radiated_power(Nt_total_plasma_solver,Nr_plasma_solver))
         IF( .NOT. ALLOCATED(dVdr_keep)) ALLOCATE(dVdr_keep(Nt_total_plasma_solver,Nr_plasma_solver))
+        IF( .NOT. ALLOCATED(plasma_Er)) ALLOCATE(plasma_Er(Nt_total_plasma_solver,Nr_plasma_solver))
         ! These arrays are filled in thrift_penta with the total NEO fluxes. They include the inter-species diffusion coeffs
         ! which are neglected when computing the Dn_NEO and cn_NEO coeffs used by the transport solver
         IF( .NOT. ALLOCATED(G_NEO_complet)) ALLOCATE(G_NEO_complet(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
@@ -186,10 +191,20 @@ MODULE thrift_plasma_solver_mod
 
                 ! Run PENTA if NEO fluxes are to be added
                 IF(add_NEO) THEN
-                    look_for_ambipolar = .false.
+                    ! Only look for ambipolar at every dt_Er
+                    k_prev = int( (time_plasma_grid(mytimestep_plasma_solver-1) - time_plasma_grid(1)) / dt_Er_ambipolar)
+                    k_now  = int( (time_plasma_grid(mytimestep_plasma_solver)   - time_plasma_grid(1)) / dt_Er_ambipolar)
+                    IF(k_now > k_prev) THEN
+                        look_for_ambipolar = .TRUE.
+                        update_thrift_vars = .FALSE.
+                        update_transport_vars = .TRUE.
+                    ELSE
+                        look_for_ambipolar = .FALSE.
+                        update_thrift_vars = .FALSE.
+                        update_transport_vars = .TRUE.
+                    END IF
                     CALL thrift_paraexe('penta',proc_string,lscreen_subcodes)
-                    IF (ier /= 0) STOP 'Error running PENTA inside plasma solver'
-                    look_for_ambipolar = .true.
+                    ! IF (ier /= 0) STOP 'Error running PENTA inside plasma solver'
                 END IF
   
                 DO i=1,nion_prof
@@ -204,7 +219,7 @@ MODULE thrift_plasma_solver_mod
 
                 CALL get_LHS_pressure(LHS_pressure)
                 CALL get_RHS_pressure(RHS_pressure)
-                CALL solve_sparse_nontridiag_system(LHS_pressure,RHS_pressure,pressure_total)
+                CALL solve_banded(LHS_pressure,RHS_pressure,pressure_total)  ! CALL solve_sparse_nontridiag_system(LHS_pressure,RHS_pressure,pressure_total)
 
                 ! update 'plasma_P' and 'plasma_T' with 'pressure_total' and 'plasma_N'
                 CALL update_pressure_and_temperature(pressure_total)
@@ -384,6 +399,22 @@ MODULE thrift_plasma_solver_mod
             ENDIF
 
             DEALLOCATE(raxis_source,taxis_source,S_energy,S_particle)
+
+            IF(TRIM(init_profiles_type)=='read_from_file') THEN
+                CALL read_scalar_hdf5(fid,'nrho_init',ier,INTVAR=nrho_init)
+                IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nrho_init',ier)
+                !
+                ALLOCATE(rhoaxis_init(nrho_init),DENS_INIT(num_species,nrho_init),TEMP_INIT(num_species,nrho_init))
+                !
+                CALL read_var_hdf5(fid,'rhoaxis_init',nrho_init,ier,DBLVAR=rhoaxis_init)
+                IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'rhoaxis_init',ier)
+                !
+                CALL read_var_hdf5(fid,'N_init',num_species,nrho_init,ier,DBLVAR=DENS_INIT)
+                IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'N_init',ier)
+                !
+                CALL read_var_hdf5(fid,'T_init',num_species,nrho_init,ier,DBLVAR=TEMP_INIT)
+                IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'T_init',ier)
+            END IF
         END IF
 
         ! Broadcast nrho_source, nt_source, nion_prof
@@ -461,6 +492,11 @@ MODULE thrift_plasma_solver_mod
         IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'init: plasma splines',ier)
         fast_alphas_spl%x1 = rho_plasma_grid
         fast_alphas_spl%isHermite = 1
+        !
+        CALL EZspline_init(Er_spline,Nr_plasma_solver,bcs0,ier)
+        IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'init: Er spline',ier)
+        Er_spline%x1 = rho_plasma_grid
+        Er_spline%isHermite = 1
 
         IF (lverb) WRITE(6,*) 'Splines Allocated!'
 
@@ -731,7 +767,7 @@ MODULE thrift_plasma_solver_mod
             LHS_pressure(row,row) = one
         END DO
 
-        DEALLOCATE(Dp,cp,Vp,LHS_coll_heat_exchange,dndr,chi_beurskens)
+        DEALLOCATE(Dp,cp,Vp,LHS_coll_heat_exchange,dndr,chi_beurskens,chi_external)
 
         RETURN
     END SUBROUTINE
@@ -868,6 +904,9 @@ MODULE thrift_plasma_solver_mod
         ! Fast Alphas Density
         CALL EZspline_setup(fast_alphas_spl,N_fast_alphas(mytimestep_plasma_solver,:),ier,EXACT_DIM=.true.)
 
+        ! Er
+        CALL EZspline_setup(Er_spline,plasma_Er(mytimestep_plasma_solver,:),ier,EXACT_DIM=.true.)
+        
         RETURN
 
     END SUBROUTINE update_splines
@@ -885,8 +924,14 @@ MODULE thrift_plasma_solver_mod
         IMPLICIT NONE
         INTEGER :: i, j, ier, Nr_restart, k
         INTEGER :: bcs0(2)
-        TYPE(EZspline1_r8) :: spline_restart
+        TYPE(EZspline1_r8) :: spline_restart, spline_init
         bcs0=(/ 0, 0/)
+
+        ! Make checks
+        IF( trim(init_profiles_type) == 'read_from_file' .AND. lrestart_from_file) THEN
+            STOP 'Cannot use init profiles from file and restart at same time!'
+        END IF
+        !
         IF(lrestart_from_file) THEN
             ! Interpolate DENS_RESTART and TEMP_RESTART into plasma_solver grid
             Nr_restart = SIZE(DENS_RESTART, DIM=2)
@@ -915,7 +960,24 @@ MODULE thrift_plasma_solver_mod
             CALL EZspline_interp(spline_restart,Nr_plasma_solver,rho_plasma_grid,N_fast_alphas(1,:),ier)
             !
             CALL EZspline_free(spline_restart,ier)
-        ELSE
+        ELSEIF(trim(init_profiles_type) == 'read_from_file' ) THEN
+            CALL EZspline_init(spline_init,nrho_init,bcs0,ier)
+            IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'init: init spline',ier)
+            spline_init%x1 = rhoaxis_init
+            spline_init%isHermite = 1
+            !
+            DO i=1,nion_prof+1
+                CALL EZspline_setup(spline_init,DENS_INIT(i,:),ier,EXACT_DIM=.true.)
+                IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'setup: init spline dens',ier)
+                CALL EZspline_interp(spline_init,Nr_plasma_solver,rho_plasma_grid,plasma_N(i,:),ier)
+                !
+                CALL EZspline_setup(spline_init,TEMP_INIT(i,:),ier,EXACT_DIM=.true.)
+                IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'setup: init spline temp',ier)
+                CALL EZspline_interp(spline_init,Nr_plasma_solver,rho_plasma_grid,plasma_T(i,:),ier)
+            END DO
+            CALL EZspline_free(spline_init,ier)
+            IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'free: init spline',ier)
+        ELSEIF(trim(init_profiles_type) == 'default' ) THEN
             ! ions: ni = N0_init on axis, 0.8*N0_init on edge, and quadratic decay
             DO i=1,nion_prof
                 plasma_N(1+i,:) = N0_init_ions(i) * (0.8_rprec + 0.2_rprec*(1.0_rprec-rho_plasma_grid*rho_plasma_grid))
@@ -929,6 +991,8 @@ MODULE thrift_plasma_solver_mod
             DO i=1,num_species
                 plasma_T(i,:) = T0_init_all(i) * (0.8_rprec + 0.2_rprec*(1.0_rprec-rho_plasma_grid*rho_plasma_grid))
             END DO
+        ELSE
+            STOP '!! No valid init_profiles type !!'
         END IF
         plasma_P = plasma_N * plasma_T * e_charge    
         RETURN
@@ -978,13 +1042,71 @@ MODULE thrift_plasma_solver_mod
         RETURN
     END SUBROUTINE solve_sparse_nontridiag_system
 
+    SUBROUTINE solve_banded(LHS_matrix,RHS_vec,result)
+        ! LHS_matrix and RHS_vec are in species-major ordering:
+        !   [(is1,r1),(is1,r2),...,(is2,r1),...].
+        ! Internally, unknowns are permuted to point-major ordering:
+        !   [(r1,is1),(r1,is2),...,(r2,is1),...],
+        ! under which the matrix is banded with kl=ku=num_species:
+        !   transport terms connect (ir,is)↔(ir±1,is), offset=num_species;
+        !   heat exchange couples (ir,is1)↔(ir,is2), offset<=num_species-1.
+        ! This lets DGBSV replace DGESV at O(N·Ns²) instead of O(N³).
+        IMPLICIT NONE
+        REAL(rprec), DIMENSION(:,:), INTENT(IN)    :: LHS_matrix
+        REAL(rprec), DIMENSION(:),   INTENT(IN)    :: RHS_vec
+        REAL(rprec), DIMENSION(:),   INTENT(INOUT) :: result
+        INTEGER :: ier, N, kl, ku, ldab, k, l, j, p, ir_k, is_k, ir_l, is_l
+        INTEGER, DIMENSION(:),   ALLOCATABLE :: ipiv
+        REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: AB
+        REAL(rprec), DIMENSION(:),   ALLOCATABLE :: RHS_pm
+
+        N    = Nr_plasma_solver * num_species
+        kl   = num_species
+        ku   = num_species
+        ldab = 2*kl + ku + 1
+
+        ALLOCATE(AB(ldab,N), RHS_pm(N), ipiv(N))
+        AB = 0.0_rprec
+
+        ! Permute LHS and RHS from species-major to point-major; extract band.
+        DO k = 1, N
+            ir_k      = (k-1)/num_species + 1
+            is_k      = MOD(k-1, num_species) + 1
+            j         = (is_k-1)*Nr_plasma_solver + ir_k
+            RHS_pm(k) = RHS_vec(j)
+            DO l = MAX(1, k-kl), MIN(N, k+ku)
+                ir_l           = (l-1)/num_species + 1
+                is_l           = MOD(l-1, num_species) + 1
+                p              = (is_l-1)*Nr_plasma_solver + ir_l
+                AB(kl+ku+1+k-l, l) = LHS_matrix(j,p)
+            END DO
+        END DO
+
+        CALL DGBSV(N, kl, ku, 1, AB, ldab, ipiv, RHS_pm, N, ier)
+        IF(ier/=0) CALL handle_err(THRIFT_SOLVER_ERR,'Pressure_Solver',mytimestep_plasma_solver)
+
+        ! Permute solution back to species-major
+        DO k = 1, N
+            ir_k     = (k-1)/num_species + 1
+            is_k     = MOD(k-1, num_species) + 1
+            j        = (is_k-1)*Nr_plasma_solver + ir_k
+            result(j) = RHS_pm(k)
+        END DO
+
+        IF(ANY(ISNAN(result)))  CALL handle_err(THRIFT_NAN_ERR,'Pressure_Solver',mytimestep_plasma_solver)
+        IF(ANY(result < 0.0_rprec)) STOP 'Negative values found on pressure. Exiting program...'
+
+        DEALLOCATE(AB, RHS_pm, ipiv)
+        RETURN
+    END SUBROUTINE solve_banded
+
     SUBROUTINE get_collisional_heat_exchange_matrix(LHS_heat_exchange_matrix)
         USE collision_operators
         IMPLICIT NONE
         REAL(rprec), DIMENSION(:,:), INTENT(INOUT) :: LHS_heat_exchange_matrix
         REAL(rprec), DIMENSION(:), ALLOCATABLE :: mass_all, Z_all
         REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: W_s1_s2, aux_B
-        INTEGER :: is1, is2, j, p, ir1, ir2, ir
+        INTEGER :: is1, is2, j, p, ir
         REAL(rprec) :: m1,n1,T1,m2,n2,T2,clog,const,vth_s1_sqr,vth_s2_sqr
         REAL(rprec) :: den, gamma, Z1, Z2
 
@@ -1048,18 +1170,13 @@ MODULE thrift_plasma_solver_mod
         END DO
         
         ! Fill LHS matrix
-        j=1
         DO is1=1,num_species
-            DO ir1=1,Nr_plasma_solver
-                p=1
-                DO is2=1,num_species
-                    DO ir2=1,Nr_plasma_solver
-                        ! Note the minus sign; this is to have it LHS
-                        IF(ir1 .EQ. ir2) LHS_heat_exchange_matrix(j,p) = -W_s1_s2(is1,is2,ir2)
-                        p = p+1
-                    END DO
+            DO is2=1,num_species
+                DO ir=1,Nr_plasma_solver
+                    j = (is1-1)*Nr_plasma_solver + ir
+                    p = (is2-1)*Nr_plasma_solver + ir
+                    LHS_heat_exchange_matrix(j,p) = -W_s1_s2(is1,is2,ir)
                 END DO
-                j = j+1
             END DO
         END DO
 

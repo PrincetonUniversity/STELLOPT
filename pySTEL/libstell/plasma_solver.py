@@ -322,7 +322,9 @@ class PLASMA_SOLVER:
         Sets particle sources for a given species. The source_type can be:
         'external_gaussian', 'time_dependent_gaussian', 'constant', 'lambda_2D',
         'fast_alphas_source' (for He-4) and 'alpha_particles_sink' (for D and T),
-        'pid_edense_gaussian' (for PID electron density control with gaussian soure)
+        'pid_edense_gaussian' (for PID electron density control with gaussian soure),
+        'protium generation' (for hydrogen)
+        'deuterium_sink_protium_generation' (for deuterium)
         """
         import inspect
         
@@ -393,6 +395,15 @@ class PLASMA_SOLVER:
             case 'alpha_particles_sink':
                 if(species != 'deuterium' and species != 'tritium'):
                     raise ValueError('ERROR: alpha_particles_sink is only source for deuterium and tritium')
+                self.particle_sources[species][source_type] = {}
+            #
+            case 'protium_generation':
+                if(species != 'hydrogen'):
+                    raise ValueError('ERROR: protium generation is only source for hydrogen')
+                self.particle_sources[species][source_type] = {}
+            case 'deuterium_sink_protium_generation':
+                if(species != 'deuterium'):
+                    raise ValueError('ERROR: deuterium sink protium generation is only source for deuterium')
                 self.particle_sources[species][source_type] = {}
             #
             case 'constant':
@@ -1083,6 +1094,20 @@ class PLASMA_SOLVER:
                     
                 case 'fast_alphas_source':
                     aux_source = self.N['alphas_fast'][it,:] / self.tau_fast_alphas
+                    
+                case 'protium_generation':
+                    nD = self.N['deuterium'][it,:]
+                    TD = self.T['deuterium'][it,:]
+                    
+                    sigmav = fusion.sigmaBH(TD,'DDT')
+                    aux_source = 0.5*nD*nD*sigmav # factor 1/2 due to like-particle collisions (see Freidberg for instance)
+                    
+                case 'deuterium_sink_protium_generation':
+                    nD = self.N['deuterium'][it,:]
+                    TD = self.T['deuterium'][it,:]
+                    
+                    sigmav = fusion.sigmaBH(TD,'DDT')
+                    aux_source = - 2*0.5*nD*nD*sigmav # 2 D's disappear for each protium
                     
                 case 'constant':
                     aux_source = self.particle_sources[species]['constant']['cte_source']
@@ -2239,7 +2264,6 @@ def merge_output_files(*output_files,concatenated_file=None):
     # ------------------------------------------------------------
     ref_solver = joblib.load(output_files[0])
     concatenated_class = deepcopy(ref_solver)
-    
     # ------------------------------------------------------------
     # Loop over remaining solvers
     # ------------------------------------------------------------
@@ -2338,12 +2362,12 @@ def merge_output_files(*output_files,concatenated_file=None):
                         axis=0
                     )
         
-        concatenated_class.Nt = len(concatenated_class.time)
-        
-        if(concatenated_file is not None):
-            joblib.dump(concatenated_class, concatenated_file)
-        
-        return concatenated_class
+    concatenated_class.Nt = len(concatenated_class.time)
+    
+    if(concatenated_file is not None):
+        joblib.dump(concatenated_class, concatenated_file)
+    
+    return concatenated_class
                     
         
 # def process_surfaces(surface,wout_path):
