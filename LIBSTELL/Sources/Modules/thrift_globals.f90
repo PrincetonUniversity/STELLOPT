@@ -17,20 +17,22 @@
       IMPLICIT NONE
 
       ! Moved from thrift_vars
-      LOGICAL ::  lverbj, leccd, lnbcd, lohmic
+      LOGICAL ::  lverbj, leccd, lnbcd, lohmic, save_subiterations
       INTEGER ::  nrho, ntimesteps, n_eq, npicard, nsj
       REAL(rprec) :: tstart, tend, jtol, picard_factor, boot_factor
 
       ! Moved from thrift_vars (For ECCD in general)
       INTEGER, PARAMETER :: ntime_ecrh = 200
-      REAL(rprec), DIMENSION(ntime_ecrh) :: PECRH_AUX_T, PECRH_AUX_F
+      INTEGER :: ngyrotrons
+      ! REAL(rprec), DIMENSION(ntime_ecrh) :: PECRH_AUX_T, PECRH_AUX_F
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: PECRH_AUX_T, PECRH_AUX_F
       REAL(rprec) :: ecrh_rc, ecrh_w
 
       ! Moved from thrift_vars (for TRAVIS)
       INTEGER, PARAMETER :: nsys   = 16
       INTEGER :: nra_ecrh, nphi_ecrh
       INTEGER, DIMENSION(nsys)     :: wmode_ecrh
-      REAL(rprec), DIMENSION(nsys) :: freq_ecrh, power_ecrh
+      REAL(rprec), DIMENSION(nsys) :: freq_ecrh, power_ecrh, power_beam
       REAL(rprec), DIMENSION(nsys,3)     :: antennaposition_ecrh, &
                  targetposition_ecrh, rbeam_ecrh, rfocus_ecrh
 
@@ -47,18 +49,23 @@
       INTEGER :: nparallel_runs, mboz, nboz
       CHARACTER(256) :: bootstrap_type, eccd_type, vessel_ecrh, &
                         mirror_ecrh, targettype_ecrh, antennatype_ecrh, &
-                        etapar_type
+                        etapar_type, power_type
 
       ! Plasma solver
       LOGICAL :: solve_plasma_equations, beurskens_ions, add_NEO, &
       external_normalized_diffusivities
       INTEGER, PARAMETER :: nions_max = 6
-      REAL(rprec) :: dt_plasma_solver, tol_plasma_solver
+      REAL(rprec) :: dt_plasma_solver, tol_plasma_solver, dt_Er_ambipolar
       REAL(rprec) :: stiffness_beurskens, aLT_critical_beurskens, alpha_beurskens, &
                      alpha_chi_external, tau_fast_alphas, mass_ref_species
+      REAL(rprec) :: dt_plasma_write
       INTEGER :: max_subiter_plasma_solver, Nr_plasma_solver
       REAL(rprec), DIMENSION(nions_max+1) :: chi_all, T0_init_all, frac_alpha_heating
       REAL(rprec), DIMENSION(nions_max) :: Dn_ions, N0_init_ions
+      CHARACTER(LEN=50) :: init_profiles_type
+
+      ! Used in thrift_penta
+      LOGICAL :: look_for_ambipolar, update_thrift_vars, update_transport_vars
 
       CONTAINS
 

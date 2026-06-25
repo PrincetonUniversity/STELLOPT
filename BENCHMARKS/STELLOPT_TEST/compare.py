@@ -64,6 +64,9 @@ if __name__=="__main__":
     if run_name in ['PSO_TEST']:
         data['TEST_X'] = sopt.TEST_X_VAL[-1,0].tolist()
         data['TEST_Y'] = sopt.TEST_Y_VAL[-1,0].tolist()
+    if run_name in ['SA_TEST']:
+        data['TEST_X'] = sopt.TEST_X_VAL[-1,0].tolist()
+        data['TEST_Y'] = sopt.TEST_Y_VAL[-1,0].tolist()
     if run_name in ['IOTA_LMDIF']:
         data['TEST_X'] = sopt.IOTA_VAL[-1,:].tolist()
     if run_name in ['RECON_TOK']:

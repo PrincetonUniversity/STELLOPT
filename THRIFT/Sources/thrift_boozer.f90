@@ -148,36 +148,18 @@
          IF (mnum(myworkid+1) == 0) mystart = myend + 1
          DEALLOCATE(mnum)
 
-         ! Becasue of jsurf we first have everyone call on the 0th surface
-         ik = 1
-         DO
-            IF (lsurf_boz(ik)) EXIT
-            ik = ik + 1
-         END DO
-         irun_setup_booz = 0
-         CALL boozer_coords(ik,irun_setup_booz)
-         IF (myend<=ik) mystart = myend + 1 ! we did it
-         IF (myworkid /= master) THEN
-            rmncb = 0
-            zmnsb = 0
-            pmnsb = 0
-            gmncb = 0
-            bmncb = 0
-            IF (lasym_xboozer) THEN
-               rmnsb = 0
-               zmncb = 0
-               pmncb = 0
-               gmnsb = 0
-               bmnsb = 0
-            END IF
-            IF(mystart <= myend) irun_setup_booz = COUNT(lsurf_boz(1:mystart-1))
-         ELSE
-            mystart = ik+1
-         END IF
 #endif
-         ! Calculate Boozer Coordinates
+         ! One-time Boozer-grid setup on every rank (formerly done
+         ! inside boozer_coords on the jsurf==0 entry).
+         CALL boozer_setup
+         ! boozer_coords now takes jsurf (1..jsize) as INTENT(IN),
+         ! so we track the packed-output index here.
+         irun_setup_booz = COUNT(lsurf_boz(1:mystart-1))
          DO ik = mystart, myend
-            IF (lsurf_boz(ik)) CALL boozer_coords(ik,irun_setup_booz)
+            IF (lsurf_boz(ik)) THEN
+               irun_setup_booz = irun_setup_booz + 1
+               CALL boozer_coords(ik, irun_setup_booz)
+            END IF
          END DO
 #if defined(MPI_OPT)
          CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)

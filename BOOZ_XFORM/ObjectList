@@ -5,6 +5,7 @@ foranl.o \
 allocate_boozer.o \
 transpmn.o \
 boozer_xform.o \
+boozer_setup.o \
 setup_booz.o \
 write_boozmn.o \
 harfun.o \
