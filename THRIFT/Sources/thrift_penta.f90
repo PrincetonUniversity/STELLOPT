@@ -328,7 +328,7 @@
                         !
                         CALL interpolate_from_PENTA(nrho_penta=ns_dkes, rho_penta=rho_k, y_penta=Dp_PENTA(jspecies,:),\
                                           nrho_out=Nr_plasma_solver, rho_out=rho_plasma_grid, y_out=Dp_NEO(jspecies,mytimestep_plasma_solver,:),\
-                                          isHermite=1, useLog=.FALSE.)
+                                          isHermite=1, useLog=.FALSE., preventNeg = .TRUE.)
                         !
                         CALL interpolate_from_PENTA(nrho_penta=ns_dkes, rho_penta=rho_k, y_penta=cp_PENTA(jspecies,:),\
                                           nrho_out=Nr_plasma_solver, rho_out=rho_plasma_grid, y_out=cp_NEO(jspecies,mytimestep_plasma_solver,:),\
