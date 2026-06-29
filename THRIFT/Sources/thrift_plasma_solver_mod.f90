@@ -1023,7 +1023,7 @@ MODULE thrift_plasma_solver_mod
         REAL(rprec), DIMENSION(:,:), INTENT(IN) :: LHS_matrix
         REAL(rprec), DIMENSION(:), INTENT(IN) :: RHS_vec
         REAL(rprec), DIMENSION(:), INTENT(INOUT) :: result
-        INTEGER :: ier, mat_size
+        INTEGER :: ier, mat_size, idx, is_neg, ir_neg
         INTEGER, DIMENSION(:), ALLOCATABLE :: ipiv
         ier = 0
         mat_size = Nr_plasma_solver * num_species
@@ -1036,6 +1036,16 @@ MODULE thrift_plasma_solver_mod
         IF(ANY(ISNAN(result))) CALL handle_err(THRIFT_NAN_ERR,'Pressure_Solver',mytimestep_plasma_solver)
         ! Look for negative values
         IF (ANY(result < 0.0)) THEN
+            DO idx = 1, mat_size
+                IF (result(idx) < 0.0) THEN
+                    is_neg = (idx-1)/Nr_plasma_solver + 1
+                    ir_neg = MOD(idx-1, Nr_plasma_solver) + 1
+                    WRITE(*,'(A,ES12.4,A,A,A,I4,A,F8.5,A,ES12.4)') &
+                        'Negative pressure at t=', time_plasma_grid(mytimestep_plasma_solver), &
+                        ': species=', TRIM(list_of_species(is_neg)), &
+                        ', ir=', ir_neg, ', rho=', rho_plasma_grid(ir_neg), ', value=', result(idx)
+                END IF
+            END DO
             STOP 'Negative values found on pressure. Exiting program...'
         END IF
         DEALLOCATE(ipiv)
@@ -1094,7 +1104,19 @@ MODULE thrift_plasma_solver_mod
         END DO
 
         IF(ANY(ISNAN(result)))  CALL handle_err(THRIFT_NAN_ERR,'Pressure_Solver',mytimestep_plasma_solver)
-        IF(ANY(result < 0.0_rprec)) STOP 'Negative values found on pressure. Exiting program...'
+        IF (ANY(result < 0.0_rprec)) THEN
+            DO k = 1, N
+                IF (result(k) < 0.0_rprec) THEN
+                    is_k = (k-1)/Nr_plasma_solver + 1
+                    ir_k = MOD(k-1, Nr_plasma_solver) + 1
+                    WRITE(*,'(A,ES12.4,A,A,A,I4,A,F8.5,A,ES12.4)') &
+                        'Negative pressure at t=', time_plasma_grid(mytimestep_plasma_solver), &
+                        ': species=', TRIM(list_of_species(is_k)), &
+                        ', ir=', ir_k, ', rho=', rho_plasma_grid(ir_k), ', value=', result(k)
+                END IF
+            END DO
+            STOP 'Negative values found on pressure. Exiting program...'
+        END IF
 
         DEALLOCATE(AB, RHS_pm, ipiv)
         RETURN
