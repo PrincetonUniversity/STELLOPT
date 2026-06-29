@@ -1371,7 +1371,7 @@ MODULE thrift_plasma_solver_mod
         IMPLICIT NONE
         CHARACTER(len = 200) :: header_str
 
-        header_str = '  T       NSUB    TE_AXIS [keV]    NE_AXIS[m-3]      TI1_AXIS [keV]    NI1_AXIS [m-3]      MAX(dp/p_old)      MAX(dn/n_old)'
+        header_str = '     T[s]    NSUB    TE_AXIS [keV]    NE_AXIS[m-3]      TI1_AXIS [keV]    NI1_AXIS [m-3]      MAX(dp/p_old)      MAX(dn/n_old)'
                
         WRITE(ilogplasma,'(A)')' '
         WRITE(ilogplasma,'(A)') TRIM(header_str)
@@ -1386,7 +1386,7 @@ MODULE thrift_plasma_solver_mod
         REAL(rprec), INTENT(in) :: t,te_eV,ne,ti_eV,ni,max_dp,max_dn
         CHARACTER(len = 200) :: progress_str
 
-        WRITE(progress_str,'(1X,F7.3,3X,I2,6X,F7.3,11X,ES8.2,11X,F7.3,13X,ES8.2,12X,ES8.2,11X,ES8.2)') &
+        WRITE(progress_str,'(1X,F10.5,3X,I2,6X,F7.3,11X,ES8.2,11X,F7.3,13X,ES8.2,12X,ES8.2,11X,ES8.2)') &
                   t,nsub,te_eV/1000,ne,ti_eV/1000,ni,max_dp,max_dn
         WRITE(ilogplasma,'(A)') TRIM(progress_str)
 
