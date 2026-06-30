@@ -32,6 +32,7 @@
                      mumaterial_padfactor, mumaterial_convcheck
       REAL(rprec), DIMENSION(MAXBEAMS) :: Adist_beams, Asize_beams, Div_beams, E_beams, mass_beams, &
                                         charge_beams, Zatom_beams, P_beams
+      CHARACTER(len=8), DIMENSION(MAXBEAMS) :: species_beams
       REAL(rprec), DIMENSION(MAXBEAMS, 2) :: r_beams, z_beams, phi_beams
       REAL(rprec), DIMENSION(MAXPROFLEN) :: TE_AUX_S, TE_AUX_F, NE_AUX_S, NE_AUX_F, TI_AUX_S, TI_AUX_F,&
                                             POT_AUX_S, POT_AUX_F,OMEG_AUX_S, OMEG_AUX_F, ZEFF_AUX_S, ZEFF_AUX_F                                  

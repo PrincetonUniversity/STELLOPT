@@ -27,7 +27,7 @@ SUBROUTINE beams3d_follow_fo
     USE safe_open_mod, ONLY: safe_open
     USE collision_operators, ONLY: SET_COULOMB_FACTOR
     USE mpi_inc
-    USE tabshi_db
+    USE boxsim_db
     !-----------------------------------------------------------------------
     !     Local Variables
     !          status       MPI stats indicator
@@ -80,7 +80,7 @@ SUBROUTINE beams3d_follow_fo
     mf = 10
     ALLOCATE(q(neqs_nag))
 
-    ! Initialize tabshi cross-section database
+    ! Initialize boxsim cross-section database
     IF (lboxsim) CALL RANDOM_NUMBER(rand_prob)
     ! Screen output so we know what's happening
     IF (lverb) THEN
@@ -137,6 +137,7 @@ SUBROUTINE beams3d_follow_fo
                     IF (tf_nag>t_end(l)) CYCLE
                     ! Particle indicies
                     myline = l
+                    boxsim_parent(myline) = myline
                     mytdex = 1; ndt = 1
                     IF (lbeam) mytdex = 3
                     ! Don't do full_orbit particles
@@ -196,6 +197,7 @@ SUBROUTINE beams3d_follow_fo
                     IF (t_nag>t_end(l)) CYCLE
                     ! Particle indicies
                     myline = l
+                    boxsim_parent(myline) = myline
                     mytdex = 1; ndt = 1
                     IF (lbeam) mytdex = 3
                     ! Don't do full_orbit particles
@@ -276,6 +278,7 @@ SUBROUTINE beams3d_follow_fo
                     t_nag = t_last(l)
                     ! Particle indicies
                     myline = l
+                    boxsim_parent(myline) = myline
                     mytdex = MAX(COUNT(R_lines(0:npoinc,l)>0,DIM=1),1)
                     ! Don't do particle if stopped
                     IF ((mytdex>=npoinc) .or. end_state(l) /= 0) CYCLE

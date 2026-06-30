@@ -173,9 +173,10 @@ beams3d_init_beams_bbnbi.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      ../../LIBSTELL/$(LOCTYPE)/boxsim_db.o \
       beams3d_lines.o \
       beams3d_grid.o \
-      beams3d_runtime.o
+      beams3d_runtime.o \
       
 
 beams3d_init_coil.o: \
@@ -291,7 +292,7 @@ beams3d_physics_mod.o: \
       ../../LIBSTELL/$(LOCTYPE)/ezspline_obj.o \
       ../../LIBSTELL/$(LOCTYPE)/collision_operators.o \
       ../../LIBSTELL/$(LOCTYPE)/fusion_mod.o \
-      ../../LIBSTELL/$(LOCTYPE)/tabshi_db.o \
+      ../../LIBSTELL/$(LOCTYPE)/boxsim_db.o \
       beams3d_runtime.o \
       beams3d_lines.o \
       beams3d_grid.o \

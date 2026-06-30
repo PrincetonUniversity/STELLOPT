@@ -67,7 +67,7 @@
                                mass_in, Zatom_in, weight_in, &
                                vc_adapt_tol,  &
                                int_type, Adist_beams, Asize_beams, &
-                               Div_beams, E_beams, Dex_beams, &
+                               Div_beams, E_beams, Dex_beams, species_beams, &
                                mass_beams, charge_beams, Zatom_beams, &
                                r_beams, z_beams, phi_beams, s_max, TE_AUX_S, &
                                TE_AUX_F, NE_AUX_S, NE_AUX_F, TI_AUX_S, &
@@ -140,6 +140,7 @@
       mass_beams = 1.0_rprec
       charge_beams = 0.0_rprec
       Zatom_beams = 1.0_rprec
+      species_beams = ''
       P_beams = 0.0_rprec
       s_max = 1.0_rprec
       s_max_te = 0.0_rprec
@@ -541,6 +542,7 @@
             WRITE(iunit_out,vecvar) 'DIV_BEAMS',n,div_beams(n)
             WRITE(iunit_out,vecvar) 'ADIST_BEAMS',n,adist_beams(n)
             WRITE(iunit_out,vecvar) 'ASIZE_BEAMS',n,asize_beams(n)
+            IF (species_beam/='') WRITE(iunit_out,vecvar) 'SPECIES_BEAMS',n,species_beams(n)
             WRITE(iunit_out,vecvar) 'MASS_BEAMS',n,mass_beams(n)
             WRITE(iunit_out,vecvar) 'ZATOM_BEAMS',n,zatom_beams(n)
             WRITE(iunit_out,vecvar) 'CHARGE_BEAMS',n,charge_beams(n)
@@ -680,6 +682,7 @@
           CALL MPI_BCAST(phi_beams,MAXBEAMS*2,MPI_REAL8, local_master, comm,istat)
           CALL MPI_BCAST(mass_beams,MAXBEAMS,MPI_REAL8, local_master, comm,istat)
           CALL MPI_BCAST(charge_beams,MAXBEAMS,MPI_REAL8, local_master, comm,istat)
+          CALL MPI_BCAST(species_beams,MAXBEAMS,MPI_CHARACTER, local_master, comm,istat)\
           CALL MPI_BCAST(Zatom_beams,MAXBEAMS,MPI_REAL8, local_master, comm,istat)
       ELSE
           CALL MPI_BCAST(r_start_in,nparticles,MPI_REAL8, local_master, comm,istat)

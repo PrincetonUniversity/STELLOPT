@@ -18,6 +18,7 @@
       USE mpi_params
       USE mpi_inc
       USE hdf5
+      USE boxsim_db
 
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -34,7 +35,8 @@
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: Energy, X_start, Y_start
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: X, Y, U, V, v_neut
       REAL(rprec), PARAMETER   :: E_error = .01 ! 1% energy spread
-
+      CHARACTER(LEN=8) :: species
+      INTEGER :: part_counts(boxsim_nkinds), charge_int, Z_int, ierr
       ! For HDF5
       INTEGER(HID_T)           :: h5_fid, h5_did, h5_sid
       INTEGER(HSIZE_T), DIMENSION(2)    :: dims, maxdims
@@ -158,10 +160,29 @@
                beam(k1:k2)         = ibeam
                mu_start(k1:k2)     = 0
                t_end(k1:k2)        = t_end_in(ibeam)
-               mass(k1:k2)         = mass_beams(ibeam)
-               charge(k1:k2)       = charge_beams(ibeam)
-               Zatom(k1:k2)        = Zatom_beams(ibeam)
-               partvmax                 = MAX(partvmax,SQRT(2*E_beams(ibeam)/mass_beams(ibeam)))
+
+               IF (lboxsim)  THEN
+                  is_active(k1:k2) = .TRUE.    ! set active
+                  ! Overwrite data with species if available
+                  species = species_beams(ibeam)
+                  IF (species/='') THEN
+                     boxsim_species(k1:k2) = species_beams(ibeam) ! set species
+                     CALL boxsim_parse_species(species, part_counts, charge_int, Z_int, ierr)
+                     IF (ierr/=0) THEN
+                        WRITE(6,*) 'ERROR: could not parse species string for beam ', ibeam, ': "'//TRIM(species)//'"'
+                        STOP
+                     END IF
+                     mass(k1:k2) = DOT_PRODUCT(part_counts, boxsim_kind_mass)
+                     charge(k1:k2) = charge_int* 1.60217662E-19 !e_c
+                     Zatom(k1:k2)        = Z_int
+                  END IF
+               ELSE
+                  mass(k1:k2)         = mass_beams(ibeam)
+                  charge(k1:k2)       = charge_beams(ibeam)
+                  Zatom(k1:k2)        = Zatom_beams(ibeam)
+               END IF
+
+               partvmax            = MAX(partvmax,SQRT(2*E_beams(ibeam)/mass_beams(ibeam)))
                ! Energy distribution
                CALL gauss_rand(n_from_beam, E)
                E = sqrt( (E_beams(ibeam) + E_error*E_beams(ibeam)*E)*(E_beams(ibeam) + E_error*E_beams(ibeam)*E) )
@@ -199,8 +220,7 @@
                vphi_start(k1:k2) = -vneut1*SIN(PHI_start(k1:k2)) + &
                                     vneut2*COS(PHI_start(k1:k2))
                vz_start(k1:k2)   =  vneut3
-               ! Set active
-               IF (lboxsim) is_active(k1:k2) = .TRUE.
+
                END ASSOCIATE
                
                npart_beam_left = npart_beam_left - n_from_beam
@@ -242,7 +262,10 @@
          CALL MPI_BCAST(lgc2fo_start, nparticles, MPI_LOGICAL, master, MPI_COMM_LOCAL,ierr_mpi)
          CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
       END IF
-      IF (lboxsim) CALL MPI_BCAST(is_active, nparticles, MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
+      IF (lboxsim) THEN 
+         CALL MPI_BCAST(is_active,      nparticles, MPI_LOGICAL,   master, MPI_COMM_BEAMS,ierr_mpi)
+         CALL MPI_BCAST(boxsim_species, nparticles, MPI_CHARACTER, master, MPI_COMM_BEAMS,ierr_mpi)
+      END IF
 
 #endif
 

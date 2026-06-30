@@ -38,7 +38,7 @@
       USE mpi_sharmem
       USE beams3d_physics_mod, ONLY: beams3d_suv2rzp ! remove if test below removed
       USE beams3d_neutdens, ONLY: beams3d_read_neutdens
-      USE tabshi_db
+      USE boxsim_db
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
@@ -582,7 +582,7 @@
       !!              Boxsim: preallocate more memory
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       IF (lboxsim) THEN 
-         CALL tabshi_init_reactions()
+         CALL boxsim_init_reactions()
          nbuffer = 1
          DO i = 1, SIZE(reactions_db)
             nbuffer = MAX(nbuffer, reactions_db(i)%nproducts)

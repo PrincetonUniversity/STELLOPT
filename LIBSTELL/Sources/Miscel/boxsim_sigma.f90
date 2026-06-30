@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-!     Module:        tabshi_sigma
+!     Module:        boxsim_sigma
 !     Authors:       L van Ham (lucas.van.ham@ipp.mpg.de)
 !     Date:          01/12/2025
 !     Description:   This module includes analytical functions used to
@@ -7,7 +7,7 @@
 !                    for different energetic hydrogenic species upon
 !                    colliding with a "cold" H2 gas. Used in modelling
 !                    NBI neutralizer physics. These functions were
-!                    lifted from the paper
+!                    taken from the paper
 !
 !                       T. Tabata, T. Shirai,       
 !                  ANALYTIC CROSS SECTIONS FOR COLLISIONS OF H+, H2+,
@@ -15,7 +15,7 @@
 !                  At. Data Nucl. Data Tables 76 (2000), Issue 1,p1-25
 !         
 !-----------------------------------------------------------------------
-MODULE tabshi_sigma
+MODULE boxsim_sigma
     PUBLIC :: get_sigma_Hp_H, get_sigma_Hm_H,  &
               get_sigma_H_Hp, get_sigma_Hm_Hp, &
               get_sigma_H_Hm

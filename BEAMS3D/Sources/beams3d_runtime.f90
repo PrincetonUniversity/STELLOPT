@@ -71,7 +71,7 @@ MODULE beams3d_runtime
                               NI_AUX_M, NI_AUX_Z, &
                               Adist_beams, Asize_beams, DIV_BEAMS, &
                               DEX_BEAMS, R_BEAMS, Z_BEAMS, PHI_BEAMS, &
-                              E_BEAMS, MASS_BEAMS, CHARGE_BEAMS, &
+                              E_BEAMS, MASS_BEAMS, CHARGE_BEAMS,SPECIES_BEAMS,&
                               ZATOM_BEAMS, P_BEAMS, nparticles_start, &
                               npoinc, follow_tol, int_type, ne_scale, &
                               te_scale, ti_scale, zeff_scale, &
@@ -171,7 +171,7 @@ MODULE beams3d_runtime
                luser_init, lread_boxdens, lread_mag
     INTEGER :: nextcur, nprocs_beams, ndt, ndt_max
     INTEGER :: win_beam
-    INTEGER, DIMENSION(:), POINTER :: beam
+    INTEGER, DIMENSION(:), POINTER :: beam, boxsim_parent
     REAL(rprec) :: dt, pi, invpi2, mu0, to3, dt_save, rminor_norm
     INTEGER :: win_lgc2fo_start
     LOGICAL, DIMENSION(:), POINTER :: lgc2fo_start
@@ -182,6 +182,7 @@ MODULE beams3d_runtime
     REAL(rprec), DIMENSION(:), POINTER :: R_start, phi_start, z_start, &
                 vll_start, mu_start, mass, charge, zatom, t_end, weight, &
                 vr_start, vphi_start, vz_start
+    CHARACTER(LEN=8), DIMENSION(:), POINTER :: boxsim_species
     REAL(rprec), ALLOCATABLE :: extcur(:)
     CHARACTER(LEN=10) ::  qid_str_saved ! For ASCOT5
     CHARACTER(256) :: mgrid_string, coil_string, &

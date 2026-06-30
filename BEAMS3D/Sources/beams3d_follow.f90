@@ -107,7 +107,8 @@ SUBROUTINE beams3d_follow
              neut_lines(0:npoinc, mystart:myend), S_lines(0:npoinc, mystart:myend), U_lines(0:npoinc, mystart:myend), &
              vr_lines(0:npoinc, mystart:myend), vphi_lines(0:npoinc, mystart:myend), vz_lines(0:npoinc, mystart:myend), &
               B_lines(0:npoinc, mystart:myend), STAT = ier)
-   IF (lboxsim) ALLOCATE(charge_lines(0:npoinc, mystart:myend), mass_lines(0:npoinc, mystart:myend), reaction_count(mystart:myend))
+   IF (lboxsim) ALLOCATE(charge_lines(0:npoinc, mystart:myend), mass_lines(0:npoinc, mystart:myend), &
+                          boxsim_parent(mystart:myend) reaction_count(mystart:myend))
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'R_LINES, PHI_LINES, Z_LINES', ier)
     ALLOCATE(t_last(mystart:myend), STAT = ier)
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 't_last', ier)
@@ -122,7 +123,7 @@ SUBROUTINE beams3d_follow
     t_last = 0.0
     neut_lines = .TRUE.; 
     IF (lboxsim) THEN
-      charge_lines = 0; mass_lines = 0; reaction_count = 0;
+      charge_lines = 0; mass_lines = 0; reaction_count = 0; boxsim_parent = 0
     END IF
     R_lines(0, mystart:myend)      = R_start(mystart:myend)
     Z_lines(0, mystart:myend)      = Z_start(mystart:myend)

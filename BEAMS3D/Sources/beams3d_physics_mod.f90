@@ -27,7 +27,7 @@ MODULE beams3d_physics_mod
                                fact_vsound, fact_coul, fact_kick, &
                                ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                                ns_prof5, my_end, h1_prof, fact_crit_legacy, &
-                               mycharge_int, mymass_int, mylife, mylife_end, reaction_dex, &
+                               mycharge_int, mylife, mylife_end, reaction_dex, &
                                myenergy_keV, sigma_next, E_by_v, myqm, vlast, xlast, ylast, zlast, &
                                reaction_count, myfreedex, is_active, neut_lines
       USE beams3d_grid, ONLY: delta_t, MODB4D, OMEG4D, nomeg,&
@@ -48,7 +48,7 @@ MODULE beams3d_physics_mod
       USE fusion_mod, ONLY: DT_CROSS_SECTION, DD_CROSS_SECTION, &
                             DDHe3_CROSS_SECTION, DHe3_CROSS_SECTION
       USE mpi_params 
-      USE tabshi_db
+      USE boxsim_db
 
       !-----------------------------------------------------------------
       !     Module PARAMETERS
@@ -67,7 +67,6 @@ MODULE beams3d_physics_mod
       DOUBLE PRECISION, PRIVATE, PARAMETER :: one           = 1.0D0 ! 1.0
       DOUBLE PRECISION, PRIVATE, PARAMETER :: eps_0 = 8.854187817E-12;
       DOUBLE PRECISION, PRIVATE, PARAMETER :: hbar = 1.054571817E-34;
-      DOUBLE PRECISION, PRIVATE, PARAMETER :: p_mass = 1.67262192E-27 ! proton mass
 
       !-----------------------------------------------------------------
       !     SUBROUTINES
@@ -721,7 +720,7 @@ MODULE beams3d_physics_mod
       !     Function:      beams3d_physics_boxsim
       !     Authors:       L. van Ham (lucas.van.ham@ipp.mpg.de)
       !     Date:          04/12/2025
-      !     Description:   Particle neutralization or ionization
+      !     Description:   Particle neutralization, ionization, dissociation
       !-----------------------------------------------------------------
       SUBROUTINE beams3d_physics_boxsim(t, q)
          USE beams3d_neutdens
@@ -736,9 +735,14 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Local Variables
          !--------------------------------------------------------------
-         INTEGER :: ier, i
+         INTEGER :: ierr, iprod
          DOUBLE PRECISION :: xav, yav, zav, vav, neutdens, vol, mtemp, vll
+         INTEGER :: parent_charge, parent_Zatom, nproducts
+         INTEGER :: parent_counts(boxsim_nkinds)
+         INTEGER :: product_counts(boxsim_nkinds, boxsim_max_products)
+         DOUBLE PRECISION :: mass_parent
          TYPE(box_reaction) :: reaction_info 
+         CHARACTER(LEN=8) :: species
 
          !--------------------------------------------------------------
          !     Begin Subroutine
@@ -762,30 +766,39 @@ MODULE beams3d_physics_mod
             ! Update particle
             reaction_count(myline) = reaction_count(myline)+1
             reaction_info = reactions_db(reaction_dex)
+            nproducts = reaction_info%nproducts
 
-            mtemp = mass(myline)
-            mymass_int = reaction_info%output_A(1)
-            mymass = mymass_int*p_mass
+            ! Get particle info from string
+            mtemp = mass(myline) ! old mass
+            CALL boxsim_parse_species(boxsim_species(myline), parent_counts, parent_charge, parent_Zatom, ierr)
+            CALL boxsim_split_counts(parent_counts, reaction_info%output_A, nproducts, &
+                                       product_counts, ierr)
+            parent_counts = product_counts(:,1)
+            mymass = DOT_PRODUCT(parent_counts, boxsim_kind_mass)
             mass(myline) = mymass
             myenergy_keV = 0.5d0*mymass*SUM(q(4:6)**2)/(e_charge*1.0d3)
-
             mycharge_int = reaction_info%output_Z(1)
             mycharge = mycharge_int*e_charge
             charge(myline) = mycharge
+            CALL boxsim_species_from_counts(parent_counts, reaction_info%output_Z(1), species, ierr)
+            boxsim_species(myline) = species 
 
             lneut = (mycharge_int==0)
             myqm = mycharge/mymass
             E_by_v=mymass*0.5d-3/e_charge
 
             ! Dissociation; skipped if nproducts = 1
-            DO i = 2, reaction_info%nproducts
+            DO iprod = 2, nproducts
                is_active(myfreedex) = .TRUE.
                reaction_count(myfreedex) = 0
                weight(myfreedex) = weight(myline)
-               mass(myfreedex) = reaction_info%output_A(i)*p_mass
-               charge(myfreedex) = reaction_info%output_Z(i)*e_charge
+               mass(myfreedex) = DOT_PRODUCT(product_counts(:,iprod), boxsim_kind_mass)
+               CALL boxsim_species_from_counts(product_counts(:,iprod), reaction_info%output_Z(iprod), species, ierr)          
+               boxsim_species(myfreedex) = species 
+               charge(myfreedex) = reaction_info%output_Z(iprod)*e_charge
                Zatom(myfreedex) = Zatom(myline) ! Atomic Z doesn't change
                beam(myfreedex) = mybeam
+               boxsim_parent(myfreedex) = myline
                ! Neglect internal energy release for now, which simplifies things
                R_lines(0,myfreedex)    = q(1)
                phi_lines(0,myfreedex)  = q(2)
@@ -802,11 +815,13 @@ MODULE beams3d_physics_mod
                ! Next free slot
                myfreedex = myfreedex + 1
             END DO
+         
 
             ! Reset for next reaction
             mylife = 1.0
             CALL RANDOM_NUMBER(mylife_end)
-            CALL beams3d_reaction_sigma(mycharge_int, mymass_int, myenergy_kev, reaction_dex, sigma_next)
+            CALL beams3d_reaction_sigma(mycharge_int, parent_counts, myenergy_kev, reaction_dex, sigma_next, ierr)
+            IF (ierr/=0) sigma_next = 0.0d0
          END IF 
          RETURN ! Go back to out_beams3d_part
 
@@ -2487,18 +2502,18 @@ MODULE beams3d_physics_mod
 !     Subroutine:    beams3d_reaction_sigma
 !     Description:   This subroutine determines which neutralizer atomic
 !                    reaction should take place next. Cross-sections are
-!                    calculated using tabshi_db.f90, and then one is
+!                    calculated using boxsim_db.f90, and then one is
 !                    selected at random using a Monte Carlo approach from
 !                    reactions available to an input particle species.    
 !-----------------------------------------------------------------------
-SUBROUTINE beams3d_reaction_sigma(q_int, m_int, E_kev, react_dex, sigma)
+SUBROUTINE beams3d_reaction_sigma(part_Q, part_counts, E_kev, react_dex, sigma, ierr)
    !-----------------------------------------------------------------------
    !     Libraries
    !-----------------------------------------------------------------------
-   USE tabshi_db
+   USE boxsim_db
    !-----------------------------------------------------------------------
    !     Input parameters
-   !          q_int       molecular charge integer (e.g. H+,H2+ -> +1)
+   !          part_Q     molecular charge integer (e.g. H+,H2+ -> +1)
    !          m_int       molecular particle count (e.g. H-> 1, H2-> 2)
    !          E_kev       particle energy in units of keV
    !     Output parameters
@@ -2506,10 +2521,12 @@ SUBROUTINE beams3d_reaction_sigma(q_int, m_int, E_kev, react_dex, sigma)
    !          sigma       cross-section for next reaction
    !-----------------------------------------------------------------------
    IMPLICIT NONE
-   INTEGER, INTENT(in) :: q_int, m_int
-   INTEGER, INTENT(out) :: react_dex
+   INTEGER, INTENT(in) :: part_Q
+   INTEGER, INTENT(in) :: part_counts(boxsim_nkinds)
    DOUBLE PRECISION, INTENT(in) :: E_kev
    DOUBLE PRECISION, INTENT(out) :: sigma
+   INTEGER, INTENT(out) :: react_dex
+   INTEGER, INTENT(out) :: ierr
    !-----------------------------------------------------------------------
    !     Local Variables
    !         reaction_info  
@@ -2517,6 +2534,8 @@ SUBROUTINE beams3d_reaction_sigma(q_int, m_int, E_kev, react_dex, sigma)
    !         react_sigmas  cross-sections of allowed reactions
    !-----------------------------------------------------------------------
    INTEGER :: i, j, k
+   INTEGER :: part_A, part_CAT
+   DOUBLE PRECISION :: part_M, ref_M, E_eff
    TYPE(box_reaction) :: reaction_info
    DOUBLE PRECISION :: sigma_total, prob, prob_num, prob_denom
    DOUBLE PRECISION, ALLOCATABLE :: react_sigmas(:)
@@ -2524,20 +2543,39 @@ SUBROUTINE beams3d_reaction_sigma(q_int, m_int, E_kev, react_dex, sigma)
    !-----------------------------------------------------------------------
    !     Begin Subroutine
    !-----------------------------------------------------------------------
+   ! Default values for erroring out
+   react_dex = 1
+   sigma = 0.0d0
+   ierr = 0
+   ! Get effective energy for isotopes; for example, D moves ~half as fast 
+   ! as H at the same energy, shifting position in cross-section profile
+   CALL boxsim_cat_from_counts(part_counts, part_CAT, ierr)
+   IF (ierr/=0) RETURN
+   CALL boxsim_ref_from_cat(part_CAT, ref_M, ierr)
+   IF (ierr/=0) RETURN
+   part_M = DOT_PRODUCT(part_counts, boxsim_kind_mass)
+   E_eff = E_kev * ref_M/part_M 
+
    ! Populate allowable reactions 
+   part_A = SUM(part_counts)
    ALLOCATE(react_sigmas(n_reactions), react_dices(n_reactions))
    j = 0
    sigma_total = 0
    DO i = 1, n_reactions
      reaction_info = reactions_db(i)
-    ! IF (lverb) WRITE(6,'(4I0)') reaction_info%input_A, m_int, reaction_info%input_Z, q_int
-     IF ((reaction_info%input_A==m_int) .AND.(reaction_info%input_Z==q_int)) THEN
+     IF ((reaction_info%input_A == part_A) .AND. &
+         (reaction_info%input_Z == part_Q) .AND. &
+         (reaction_info%input_CAT==part_CAT)) THEN
         j = j + 1
-        react_sigmas(j) = reaction_info%calc_sigma(E_kev)
+        react_sigmas(j) = reaction_info%calc_sigma(E_eff)
         sigma_total = sigma_total + react_sigmas(j)
         react_dices(j) = i
      END IF
    END DO
+   IF (j==0) THEN ! No reactions; error out
+      ierr = 1
+      RETURN
+   END IF
 
    ! Choose next reaction; default to k = j.
    CALL RANDOM_NUMBER(rand_prob)
@@ -2547,7 +2585,6 @@ SUBROUTINE beams3d_reaction_sigma(q_int, m_int, E_kev, react_dex, sigma)
    DO i = 1, j
      prob_num = prob_num + react_sigmas(i)
      prob = prob_num/prob_denom
-   !  IF (lverb) WRITE(6,'(I0,3ES10.3)') i,react_sigmas(i), prob, rand_prob
      IF (rand_prob <= prob) THEN
       k = i
       EXIT

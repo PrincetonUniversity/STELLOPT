@@ -508,5 +508,5 @@ lsode.o \
 ewset.o \
 stode.o \
 cfode.o \
-tabshi_sigma.o \
-tabshi_db.o
+boxsim_sigma.o \
+boxsim_db.o

@@ -49,7 +49,7 @@
       ! boxsim stuff
       INTEGER :: nbuffer
       INTEGER, ALLOCATABLE :: charge_lines(:,:),mass_lines(:,:), reaction_count(:)
-      INTEGER :: mycharge_int, mymass_int, reaction_dex, myfreedex
+      INTEGER :: mycharge_int, reaction_dex, myfreedex
       LOGICAL, DIMENSION(:), ALLOCATABLE :: is_active
       DOUBLE PRECISION :: myenergy_keV, sigma_next
       REAL(rprec) :: mylife_end, mylife
