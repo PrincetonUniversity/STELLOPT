@@ -69,8 +69,8 @@ MODULE thrift_plasma_solver_mod
     SUBROUTINE evolve_plasma_equations
 
         IMPLICIT NONE
-        INTEGER :: istat, i, idx, irho, j, ispecies, ier, plasma_iteration
-        REAL(rprec) :: rho, delta_p, delta_n, k_prev, k_now
+        INTEGER :: istat, i, idx, irho, j, ispecies, ier, plasma_iteration, n_steps_per_Er
+        REAL(rprec) :: rho, delta_p, delta_n
         REAL(rprec), DIMENSION(:), ALLOCATABLE :: pressure_total, pressure_total_old, ne_old
         REAL(rprec), DIMENSION(:), ALLOCATABLE :: RHS_density, lower_diag, upper_diag, main_diag, RHS_pressure
         real(rprec), DIMENSION(:,:), ALLOCATABLE :: LHS_pressure
@@ -178,6 +178,9 @@ MODULE thrift_plasma_solver_mod
         ! ne_old from previous time step
         ne_old = plasma_N(1,:)
 
+        ! Number of plasma sub-steps per Er-ambipolar interval
+        n_steps_per_Er = NINT(dt_Er_ambipolar / dt_plasma_solver)
+
         DO plasma_iteration = 1,N_plasma_steps_per_THRIFT_step
 
             mytimestep_plasma_solver = mytimestep_plasma_solver + 1
@@ -191,10 +194,8 @@ MODULE thrift_plasma_solver_mod
 
                 ! Run PENTA if NEO fluxes are to be added
                 IF(add_NEO) THEN
-                    ! Only look for ambipolar at every dt_Er
-                    k_prev = int( (time_plasma_grid(mytimestep_plasma_solver-1) - time_plasma_grid(1)) / dt_Er_ambipolar)
-                    k_now  = int( (time_plasma_grid(mytimestep_plasma_solver)   - time_plasma_grid(1)) / dt_Er_ambipolar)
-                    IF(k_now > k_prev) THEN
+                    ! Only look for ambipolar every dt_Er_ambipolar
+                    IF( MOD(mytimestep_plasma_solver-1, n_steps_per_Er) == 0 ) THEN
                         look_for_ambipolar = .TRUE.
                         update_thrift_vars = .FALSE.
                         update_transport_vars = .TRUE.
