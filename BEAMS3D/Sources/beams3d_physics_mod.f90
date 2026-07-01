@@ -27,7 +27,7 @@ MODULE beams3d_physics_mod
                                fact_vsound, fact_coul, fact_kick, &
                                ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                                ns_prof5, my_end, h1_prof, fact_crit_legacy, &
-                               mycharge_int, mylife, mylife_end, reaction_dex, &
+                               mylife, mylife_end, reaction_dex, &
                                myenergy_keV, sigma_next, E_by_v, myqm, vlast, xlast, ylast, zlast, &
                                reaction_count, myfreedex, is_active, neut_lines
       USE beams3d_grid, ONLY: delta_t, MODB4D, OMEG4D, nomeg,&
@@ -737,7 +737,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          INTEGER :: ierr, iprod
          DOUBLE PRECISION :: xav, yav, zav, vav, neutdens, vol, mtemp, vll
-         INTEGER :: parent_charge, parent_Zatom, nproducts
+         INTEGER :: parent_charge_int, parent_Zatom, nproducts, Q_int
          INTEGER :: parent_counts(boxsim_nkinds)
          INTEGER :: product_counts(boxsim_nkinds, boxsim_max_products)
          DOUBLE PRECISION :: mass_parent
@@ -770,20 +770,20 @@ MODULE beams3d_physics_mod
 
             ! Get particle info from string
             mtemp = mass(myline) ! old mass
-            CALL boxsim_parse_species(boxsim_species(myline), parent_counts, parent_charge, parent_Zatom, ierr)
+            CALL boxsim_parse_species(boxsim_species(myline), parent_counts, parent_charge_int, parent_Zatom, ierr)
             CALL boxsim_split_counts(parent_counts, reaction_info%output_A, nproducts, &
                                        product_counts, ierr)
             parent_counts = product_counts(:,1)
             mymass = DOT_PRODUCT(parent_counts, boxsim_kind_mass)
             mass(myline) = mymass
             myenergy_keV = 0.5d0*mymass*SUM(q(4:6)**2)/(e_charge*1.0d3)
-            mycharge_int = reaction_info%output_Z(1)
-            mycharge = mycharge_int*e_charge
+            Q_int = reaction_info%output_Q(1)
+            mycharge = Q_int*e_charge
             charge(myline) = mycharge
-            CALL boxsim_species_from_counts(parent_counts, reaction_info%output_Z(1), species, ierr)
+            CALL boxsim_species_from_counts(parent_counts, reaction_info%output_Q(1), species, ierr)
             boxsim_species(myline) = species 
 
-            lneut = (mycharge_int==0)
+            lneut = (Q_int==0)
             myqm = mycharge/mymass
             E_by_v=mymass*0.5d-3/e_charge
 
@@ -793,9 +793,9 @@ MODULE beams3d_physics_mod
                reaction_count(myfreedex) = 0
                weight(myfreedex) = weight(myline)
                mass(myfreedex) = DOT_PRODUCT(product_counts(:,iprod), boxsim_kind_mass)
-               CALL boxsim_species_from_counts(product_counts(:,iprod), reaction_info%output_Z(iprod), species, ierr)          
+               CALL boxsim_species_from_counts(product_counts(:,iprod), reaction_info%output_Q(iprod), species, ierr)          
                boxsim_species(myfreedex) = species 
-               charge(myfreedex) = reaction_info%output_Z(iprod)*e_charge
+               charge(myfreedex) = reaction_info%output_Q(iprod)*e_charge
                Zatom(myfreedex) = Zatom(myline) ! Atomic Z doesn't change
                beam(myfreedex) = mybeam
                boxsim_parent(myfreedex) = myline
@@ -820,7 +820,7 @@ MODULE beams3d_physics_mod
             ! Reset for next reaction
             mylife = 1.0
             CALL RANDOM_NUMBER(mylife_end)
-            CALL beams3d_reaction_sigma(mycharge_int, parent_counts, myenergy_kev, reaction_dex, sigma_next, ierr)
+            CALL beams3d_reaction_sigma(Q_int, parent_counts, myenergy_kev, reaction_dex, sigma_next, ierr)
             IF (ierr/=0) sigma_next = 0.0d0
          END IF 
          RETURN ! Go back to out_beams3d_part
@@ -2564,7 +2564,7 @@ SUBROUTINE beams3d_reaction_sigma(part_Q, part_counts, E_kev, react_dex, sigma, 
    DO i = 1, n_reactions
      reaction_info = reactions_db(i)
      IF ((reaction_info%input_A == part_A) .AND. &
-         (reaction_info%input_Z == part_Q) .AND. &
+         (reaction_info%input_Q == part_Q) .AND. &
          (reaction_info%input_CAT==part_CAT)) THEN
         j = j + 1
         react_sigmas(j) = reaction_info%calc_sigma(E_eff)

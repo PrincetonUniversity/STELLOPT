@@ -25,8 +25,7 @@ SUBROUTINE out_beams3d_part(t, q)
                              dist5d_prof, dist5d_fida, win_dist5d, nsh_prof4, &
                              h2_prof, h3_prof, h4_prof, h5_prof, my_end, &
                              r_h, p_h, z_h, e_h, pi_h, E_by_v, h1_prof, &
-                             charge_lines, mass_lines, mymass_int, mycharge_int, &
-                             reaction_count
+                             reaction_count, species_lines
     USE beams3d_grid
     USE beams3d_physics_mod, ONLY: beams3d_physics_fo, beams3d_physics_boxsim
     USE wall_mod, ONLY: collide, get_wall_ik, get_wall_area
@@ -68,8 +67,7 @@ SUBROUTINE out_beams3d_part(t, q)
     vz_lines(mytdex, myline)     = q(6)
     neut_lines(mytdex,myline)    = lneut
     IF (lboxsim) THEN
-      charge_lines(mytdex,myline) = mycharge_int
-      mass_lines(mytdex,myline) = mymass_int
+      species_lines(mytdex,myline) = species(myline)
     END IF
     x0 = MOD(q(2), phimax)
     IF (x0 < 0) x0 = x0 + phimax

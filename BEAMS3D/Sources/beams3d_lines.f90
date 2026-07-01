@@ -48,8 +48,9 @@
                                   vr_lines(:,:),vphi_lines(:,:),vz_lines(:,:)
       ! boxsim stuff
       INTEGER :: nbuffer
-      INTEGER, ALLOCATABLE :: charge_lines(:,:),mass_lines(:,:), reaction_count(:)
-      INTEGER :: mycharge_int, reaction_dex, myfreedex
+      INTEGER, ALLOCATABLE ::  reaction_count(:)
+      CHARACTER(LEN=8), ALLOCATABLE :: species_lines(:,:)
+      INTEGER :: reaction_dex, myfreedex
       LOGICAL, DIMENSION(:), ALLOCATABLE :: is_active
       DOUBLE PRECISION :: myenergy_keV, sigma_next
       REAL(rprec) :: mylife_end, mylife

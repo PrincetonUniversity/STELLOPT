@@ -8,7 +8,7 @@
 !-----------------------------------------------------------------------
       MODULE beams3d_write_par
       CONTAINS
-      SUBROUTINE beams3d_write_parhdf5(n1,n2,m1,m2,mystart,myend,var_name,INTVAR,FLTVAR,DBLVAR)
+      SUBROUTINE beams3d_write_parhdf5(n1,n2,m1,m2,mystart,myend,var_name,INTVAR,FLTVAR,DBLVAR,STRVAR)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -34,6 +34,7 @@
       INTEGER, INTENT(in),  OPTIONAL         :: INTVAR(n1:n2,mystart:myend)
       REAL, INTENT(in),  OPTIONAL            :: FLTVAR(n1:n2,mystart:myend)
       DOUBLE PRECISION, INTENT(in), OPTIONAL :: DBLVAR(n1:n2,mystart:myend)
+      CHARACTER(LEN=*), INTENT(in), OPTIONAL :: STRVAR(n1:n2,mystart:myend)
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier          Error Flag
@@ -47,22 +48,23 @@
 !          mspace_id    Memory identifier
 !          dataspace    Data identifier
 !-----------------------------------------------------------------------
-      LOGICAL :: livar, lfvar, ldvar
+      LOGICAL :: livar, lfvar, ldvar, lsvar
       INTEGER :: ier, info, rank, i
       INTEGER(HID_T) :: file_id, fspace_id, dset_id, mspace_id, &
                         fapl_id, dcpl_id, dxpl_id, driver_id
       INTEGER(HSIZE_T), ALLOCATABLE :: dimsf(:), counts(:), chunk_dims(:),&
                                        offset(:)
-
+      INTEGER(HID_T) :: str_type_id
+      INTEGER(SIZE_T) :: str_len
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
       ! Handle types
-      livar = .false.; lfvar=.false.; ldvar=.false.
+      livar = .false.; lfvar=.false.; ldvar=.false.; lsvar=.false.
       IF (PRESENT(INTVAR)) livar=.true.
       IF (PRESENT(FLTVAR)) lfvar=.true.
       IF (PRESENT(DBLVAR)) ldvar=.true.
-
+      IF (PRESENT(STRVAR)) lsvar=.true.
       ! Setup Helper Arrays
       rank =2;
       ALLOCATE(dimsf(rank),chunk_dims(rank),counts(rank),offset(rank))
@@ -74,6 +76,11 @@
       counts(2) = 1
       offset(1) = 0
       offset(2) = mystart-1
+      
+      IF (lsvar) THEN
+            CALL h5tcopy_f(H5T_NATIVE_CHARACTER, str_type_id, ier)
+            CALL h5tset_size_f(str_type_id, LEN(STRVAR), ier)
+      END IF
 
 #if defined(HDF5_PAR)
       ! Do this so we define the chunking correctly
@@ -104,6 +111,7 @@
       IF (livar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_INTEGER, fspace_id, dset_id, ier, dcpl_id)
       IF (lfvar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_DOUBLE, fspace_id, dset_id, ier, dcpl_id)
       IF (ldvar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_DOUBLE, fspace_id, dset_id, ier, dcpl_id)
+      IF (lsvar) CALL h5dcreate_f(file_id, TRIM(var_name), str_type_id,       fspace_id, dset_id, ier, dcpl_id)
 
       ! Close the file space
       CALL h5sclose_f(fspace_id, ier)
@@ -124,6 +132,7 @@
       IF (livar) CALL h5dwrite_f(dset_id, H5T_NATIVE_INTEGER, INTVAR, dimsf, ier, mem_space_id = mspace_id, file_space_id = fspace_id, xfer_prp = dxpl_id)
       IF (lfvar) CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, FLTVAR, dimsf, ier, mem_space_id = mspace_id, file_space_id = fspace_id, xfer_prp = dxpl_id)
       IF (ldvar) CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, DBLVAR, dimsf, ier, mem_space_id = mspace_id, file_space_id = fspace_id, xfer_prp = dxpl_id)
+      IF (lsvar) CALL h5dwrite_f(dset_id, str_type_id,       STRVAR, dimsf, ier, mem_space_id = mspace_id, file_space_id = fspace_id, xfer_prp = dxpl_id)
 
       ! Close Property list
       CALL h5pclose_f(fapl_id, ier)
@@ -132,7 +141,7 @@
       CALL h5sclose_f(mspace_id, ier)
       CALL h5sclose_f(fspace_id, ier)
       CALL h5dclose_f(dset_id, ier)
-
+      CALL h5tclose_f(str_type_id, ier)
 !!!!!!!CLOSE FILE
       ! Close the file
       CALL h5fclose_f(file_id, ier)
@@ -162,6 +171,7 @@
                IF (livar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_INTEGER, fspace_id, dset_id, ier)
                IF (lfvar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_DOUBLE, fspace_id, dset_id, ier)
                IF (ldvar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_DOUBLE, fspace_id, dset_id, ier)
+               IF (lsvar) CALL h5dcreate_f(file_id, TRIM(var_name), str_type_id,       fspace_id, dset_id, ier)
             !PRINT *,'h5dcreate_f ',ier
             ELSE
                CALL h5dopen_f(file_id, TRIM(var_name), dset_id, ier)
@@ -188,13 +198,15 @@
             IF (livar) CALL h5dwrite_f(dset_id, H5T_NATIVE_INTEGER, INTVAR, dimsf, ier, mem_space_id = mspace_id, file_space_id = fspace_id)
             IF (lfvar) CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, FLTVAR, dimsf, ier, mem_space_id = mspace_id, file_space_id = fspace_id)
             IF (ldvar) CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, DBLVAR, dimsf, ier, mem_space_id = mspace_id, file_space_id = fspace_id)
+            IF (lsvar) CALL h5dwrite_f(dset_id, str_type_id,       STRVAR, dimsf, ier, mem_space_id = mspace_id, file_space_id = fspace_id)
+
             !PRINT *,'h5dwrite_f ',ier
             
             ! Close down
             CALL h5sclose_f(fspace_id, ier)
             CALL h5sclose_f(mspace_id, ier)
             CALL h5dclose_f(dset_id, ier)
-      
+            CALL h5tclose_f(str_type_id, ier)
             ! Close the file
             CALL h5fclose_f(file_id, ier)
       

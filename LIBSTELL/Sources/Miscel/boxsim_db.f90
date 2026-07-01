@@ -28,11 +28,11 @@ MODULE boxsim_db
   INTEGER, PARAMETER :: boxsim_unused = -10
   TYPE :: box_reaction
       CHARACTER(len=64) :: name 
-      INTEGER :: input_Z ! charge in
+      INTEGER :: input_Q ! charge in
       INTEGER :: input_CAT ! family
       INTEGER :: input_A ! atomicity
       INTEGER :: nproducts ! Number of products out
-      INTEGER :: output_Z(boxsim_max_products) = boxsim_unused! charge out
+      INTEGER :: output_Q(boxsim_max_products) = boxsim_unused! charge out
       INTEGER :: output_A(boxsim_max_products) = boxsim_unused! mass out
       LOGICAL :: enabled ! for testing purposes
       PROCEDURE(sigma_interface), POINTER, NOPASS :: calc_sigma => NULL()
@@ -86,61 +86,61 @@ CONTAINS
   reactions_db(n_reactions) = box_reaction( & 
       name = "H+ + H2 -> fast H", &
       nproducts = 1, &
-      input_Z   = 1, &
+      input_Q   = 1, &
       input_A   = 1, &
       input_CAT = boxsim_cat_H, &
       enabled = .TRUE.)
   reactions_db(n_reactions)%calc_sigma => get_sigma_Hp_H
   reactions_db(n_reactions)%output_A(1) = 1 ! H
-  reactions_db(n_reactions)%output_Z(1) = 0 ! H
+  reactions_db(n_reactions)%output_Q(1) = 0 ! H
 
   n_reactions = n_reactions + 1
   reactions_db(n_reactions) = box_reaction( & 
       name = "H + H2 -> fast H+", &
       nproducts = 1, &
-      input_Z   = 0, &
+      input_Q   = 0, &
       input_A   = 1, &
       input_CAT = boxsim_cat_H, &
       enabled = .TRUE.)
   reactions_db(n_reactions)%calc_sigma => get_sigma_H_Hp
   reactions_db(n_reactions)%output_A(1) = 1 ! H+
-  reactions_db(n_reactions)%output_Z(1) = 1 ! H+
+  reactions_db(n_reactions)%output_Q(1) = 1 ! H+
 
   n_reactions = n_reactions + 1
   reactions_db(n_reactions) = box_reaction( & 
       name = "H + H2 -> fast H-", &
       nproducts = 1, &
-      input_Z   = 0, &
+      input_Q   = 0, &
       input_A   = 1, &
       input_CAT = boxsim_cat_H, &
       enabled = .TRUE.)
   reactions_db(n_reactions)%calc_sigma => get_sigma_H_Hm
   reactions_db(n_reactions)%output_A(1) = 1  ! H-
-  reactions_db(n_reactions)%output_Z(1) = -1 ! H-
+  reactions_db(n_reactions)%output_Q(1) = -1 ! H-
 
   n_reactions = n_reactions + 1
   reactions_db(n_reactions) = box_reaction( & 
       name = "H- + H2 -> fast H", &
       nproducts = 1, &
-      input_Z   = -1,  &
+      input_Q   = -1,  &
       input_A   = 1, &
       input_CAT = boxsim_cat_H, &
       enabled = .TRUE.)
   reactions_db(n_reactions)%calc_sigma => get_sigma_Hm_H
   reactions_db(n_reactions)%output_A(1) = 1 ! H
-  reactions_db(n_reactions)%output_Z(1) = 0 ! H
+  reactions_db(n_reactions)%output_Q(1) = 0 ! H
 
   n_reactions = n_reactions + 1
   reactions_db(n_reactions) = box_reaction( & 
       name = "H- + H2 -> fast H+", &
       nproducts = 1, &
-      input_Z   = -1,&
+      input_Q   = -1,&
       input_A   = 1, &
       input_CAT = boxsim_cat_H, &
       enabled = .TRUE.)
   reactions_db(n_reactions)%calc_sigma => get_sigma_Hm_Hp
   reactions_db(n_reactions)%output_A(1) = 1 ! H+
-  reactions_db(n_reactions)%output_Z(1) = 1 ! H+
+  reactions_db(n_reactions)%output_Q(1) = 1 ! H+
 
 !-------------------------------------------------------------------
 !   DOUBLE PROTON
@@ -150,56 +150,56 @@ CONTAINS
   reactions_db(n_reactions) = box_reaction( & 
       name = "H2+ + H2 -> fast H2", &
       nproducts = 1, &
-      input_Z   = 1, &
+      input_Q   = 1, &
       input_A   = 2, &
       input_CAT = boxsim_cat_H, &
       enabled = .TRUE.)
   reactions_db(n_reactions)%calc_sigma => get_sigma_H2p_H2
   reactions_db(n_reactions)%output_A(1) = 2 ! H2
-  reactions_db(n_reactions)%output_Z(1) = 0 ! H2
+  reactions_db(n_reactions)%output_Q(1) = 0 ! H2
 
   ! Ionization of H2 to produce fast H2+
   n_reactions = n_reactions + 1
   reactions_db(n_reactions) = box_reaction( & 
       name = "H2 + (H2) -> fast H2+", &
       nproducts = 1, &
-      input_Z   = 0, &
+      input_Q   = 0, &
       input_A   = 2, &
       input_CAT = boxsim_cat_H, &
       enabled = .TRUE.)
   reactions_db(n_reactions)%calc_sigma => get_sigma_H2_H2p
   reactions_db(n_reactions)%output_A(1) = 2 ! H2+
-  reactions_db(n_reactions)%output_Z(1) = 1 ! H2+
+  reactions_db(n_reactions)%output_Q(1) = 1 ! H2+
 
   ! Dissociation of H2+ into H+ and H
   n_reactions = n_reactions + 1
   reactions_db(n_reactions) = box_reaction( & 
       name = "H2+ + H2 -> fast H+, fast H", &
       nproducts = 2, &
-      input_Z   = 1, &
+      input_Q   = 1, &
       input_A   = 2, &
       input_CAT = boxsim_cat_H, &
       enabled = .TRUE.)
   reactions_db(n_reactions)%calc_sigma => get_sigma_H2p_HHp
   reactions_db(n_reactions)%output_A(1) = 1 ! H+
-  reactions_db(n_reactions)%output_Z(1) = 1 ! H+
+  reactions_db(n_reactions)%output_Q(1) = 1 ! H+
   reactions_db(n_reactions)%output_A(2) = 1 ! H
-  reactions_db(n_reactions)%output_Z(2) = 0 ! H
+  reactions_db(n_reactions)%output_Q(2) = 0 ! H
 
   ! Dissociation of H2 into H+ and H
   n_reactions = n_reactions + 1
   reactions_db(n_reactions) = box_reaction( & 
       name = "H2 + H2 -> fast H+, fast H", &
       nproducts = 2, &
-      input_Z = 0, &
+      input_Q = 0, &
       input_A = 2, &
       input_CAT = boxsim_cat_H, &
       enabled = .TRUE.)
   reactions_db(n_reactions)%calc_sigma => get_sigma_H2_HHp
   reactions_db(n_reactions)%output_A(1) = 1 ! H+
-  reactions_db(n_reactions)%output_Z(1) = 1 ! H+
+  reactions_db(n_reactions)%output_Q(1) = 1 ! H+
   reactions_db(n_reactions)%output_A(2) = 1 ! H
-  reactions_db(n_reactions)%output_Z(2) = 0 ! H
+  reactions_db(n_reactions)%output_Q(2) = 0 ! H
 
 !-------------------------------------------------------------------
 !   TRIPLE PROTON
@@ -209,121 +209,121 @@ CONTAINS
   reactions_db(n_reactions) = box_reaction( & 
       name = "H3+ + H2 -> H2 + H + H2+", &
       nproducts = 2, &
-      input_Z   = 1, &
+      input_Q   = 1, &
       input_A   = 3, &
       input_CAT = boxsim_cat_H, &
       enabled = .TRUE.)
   reactions_db(n_reactions)%calc_sigma => get_sigma_H3p_H2H
   reactions_db(n_reactions)%output_A(1) = 2 ! H2
-  reactions_db(n_reactions)%output_Z(1) = 0 ! H2
+  reactions_db(n_reactions)%output_Q(1) = 0 ! H2
   reactions_db(n_reactions)%output_A(2) = 1 ! H
-  reactions_db(n_reactions)%output_Z(2) = 0 ! H
+  reactions_db(n_reactions)%output_Q(2) = 0 ! H
 
   n_reactions = n_reactions + 1
   reactions_db(n_reactions) = box_reaction( & 
       name = "H3+ + H2 -> H + H + H + H2+", &
       nproducts = 3, &
-      input_Z   = 1, &
+      input_Q   = 1, &
       input_A   = 3, &
       input_CAT = boxsim_cat_H, &
       enabled = .TRUE.)
   reactions_db(n_reactions)%calc_sigma => get_sigma_H3p_3H
   reactions_db(n_reactions)%output_A(1) = 1 ! H
-  reactions_db(n_reactions)%output_Z(1) = 0 ! H
+  reactions_db(n_reactions)%output_Q(1) = 0 ! H
   reactions_db(n_reactions)%output_A(2) = 1 ! H
-  reactions_db(n_reactions)%output_Z(2) = 0 ! H
+  reactions_db(n_reactions)%output_Q(2) = 0 ! H
   reactions_db(n_reactions)%output_A(3) = 1 ! H
-  reactions_db(n_reactions)%output_Z(3) = 0 ! H
+  reactions_db(n_reactions)%output_Q(3) = 0 ! H
 
   n_reactions = n_reactions + 1
   reactions_db(n_reactions) = box_reaction( & 
       name = "H3+ + H2 -> H2+ + H + H2", &
       nproducts = 2, &
-      input_Z   = 1, &
+      input_Q   = 1, &
       input_A   = 3, &
       input_CAT = boxsim_cat_H, &
       enabled = .TRUE.)
   reactions_db(n_reactions)%calc_sigma => get_sigma_H3p_H2pH
   reactions_db(n_reactions)%output_A(1) = 2 ! H2+
-  reactions_db(n_reactions)%output_Z(1) = 1 ! H2+
+  reactions_db(n_reactions)%output_Q(1) = 1 ! H2+
   reactions_db(n_reactions)%output_A(2) = 1 ! H
-  reactions_db(n_reactions)%output_Z(2) = 0 ! H
+  reactions_db(n_reactions)%output_Q(2) = 0 ! H
 
   n_reactions = n_reactions + 1
   reactions_db(n_reactions) = box_reaction( & 
       name = "H3+ + H2 -> H2 + H+ + H2", &
       nproducts = 2, &
-      input_Z   = 1, &
+      input_Q   = 1, &
       input_A   = 3, &
       input_CAT = boxsim_cat_H, &
       enabled = .TRUE.)
   reactions_db(n_reactions)%calc_sigma => get_sigma_H3p_H2Hp
   reactions_db(n_reactions)%output_A(1) = 2 ! H2
-  reactions_db(n_reactions)%output_Z(1) = 0 ! H2
+  reactions_db(n_reactions)%output_Q(1) = 0 ! H2
   reactions_db(n_reactions)%output_A(2) = 1 ! H+
-  reactions_db(n_reactions)%output_Z(2) = 1 ! H+
+  reactions_db(n_reactions)%output_Q(2) = 1 ! H+
 
   n_reactions = n_reactions + 1
   reactions_db(n_reactions) = box_reaction( & 
       name = "H3+ + H2 -> H+ + H + H + H2", &
       nproducts = 3, &
-      input_Z   = 1, &
+      input_Q   = 1, &
       input_A   = 3, &
       input_CAT = boxsim_cat_H, &
       enabled = .TRUE.)
   reactions_db(n_reactions)%calc_sigma => get_sigma_H3p_Hp2H
   reactions_db(n_reactions)%output_A(1) = 1 ! H+
-  reactions_db(n_reactions)%output_Z(1) = 1 ! H+
+  reactions_db(n_reactions)%output_Q(1) = 1 ! H+
   reactions_db(n_reactions)%output_A(2) = 1 ! H
-  reactions_db(n_reactions)%output_Z(2) = 0 ! H
+  reactions_db(n_reactions)%output_Q(2) = 0 ! H
   reactions_db(n_reactions)%output_A(3) = 1 ! H
-  reactions_db(n_reactions)%output_Z(3) = 0 ! H
+  reactions_db(n_reactions)%output_Q(3) = 0 ! H
 
   n_reactions = n_reactions + 1
   reactions_db(n_reactions) = box_reaction( & 
       name = "H3+ + H2 -> H2+ + H+ + H2 + e-", &
       nproducts = 2, &
-      input_Z   = 1, &
+      input_Q   = 1, &
       input_A   = 3, &
       input_CAT = boxsim_cat_H, &
       enabled = .TRUE.)
   reactions_db(n_reactions)%calc_sigma => get_sigma_H3p_H2pHp
   reactions_db(n_reactions)%output_A(1) = 2 ! H2+
-  reactions_db(n_reactions)%output_Z(1) = 1 ! H2+
+  reactions_db(n_reactions)%output_Q(1) = 1 ! H2+
   reactions_db(n_reactions)%output_A(2) = 1 ! H+
-  reactions_db(n_reactions)%output_Z(2) = 1 ! H+
+  reactions_db(n_reactions)%output_Q(2) = 1 ! H+
 
   n_reactions = n_reactions + 1
   reactions_db(n_reactions) = box_reaction( & 
       name = "H3+ + H2 -> H+ + H+ + H + H2 + e-", &
       nproducts = 3, &
-      input_Z   = 1, &
+      input_Q   = 1, &
       input_A   = 3, &
       input_CAT = boxsim_cat_H, &
       enabled = .TRUE.)
   reactions_db(n_reactions)%calc_sigma => get_sigma_H3p_2HpH
   reactions_db(n_reactions)%output_A(1) = 1 ! H+
-  reactions_db(n_reactions)%output_Z(1) = 1 ! H+
+  reactions_db(n_reactions)%output_Q(1) = 1 ! H+
   reactions_db(n_reactions)%output_A(2) = 1 ! H+
-  reactions_db(n_reactions)%output_Z(2) = 1 ! H+
+  reactions_db(n_reactions)%output_Q(2) = 1 ! H+
   reactions_db(n_reactions)%output_A(3) = 1 ! H
-  reactions_db(n_reactions)%output_Z(3) = 0 ! H
+  reactions_db(n_reactions)%output_Q(3) = 0 ! H
 
   n_reactions = n_reactions + 1
   reactions_db(n_reactions) = box_reaction( & 
       name = "H3+ + H2 -> H+ + H+ + H+ + H2 + 2e-", &
       nproducts = 3, &
-      input_Z   = 1, &
+      input_Q   = 1, &
       input_A   = 3, &
       input_CAT = boxsim_cat_H, &
       enabled = .TRUE.)
   reactions_db(n_reactions)%calc_sigma => get_sigma_H3p_3Hp
   reactions_db(n_reactions)%output_A(1) = 1 ! H+
-  reactions_db(n_reactions)%output_Z(1) = 1 ! H+
+  reactions_db(n_reactions)%output_Q(1) = 1 ! H+
   reactions_db(n_reactions)%output_A(2) = 1 ! H+
-  reactions_db(n_reactions)%output_Z(2) = 1 ! H+
+  reactions_db(n_reactions)%output_Q(2) = 1 ! H+
   reactions_db(n_reactions)%output_A(3) = 1 ! H+
-  reactions_db(n_reactions)%output_Z(3) = 0 ! H+
+  reactions_db(n_reactions)%output_Q(3) = 0 ! H+
 
   END SUBROUTINE boxsim_init_reactions
       

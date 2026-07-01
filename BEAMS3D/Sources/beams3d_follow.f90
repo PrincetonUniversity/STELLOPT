@@ -96,9 +96,10 @@ SUBROUTINE beams3d_follow
     IF (ALLOCATED(vz_lines)) DEALLOCATE(vz_lines)
     IF (ALLOCATED(moment_lines)) DEALLOCATE(moment_lines)
     IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
-    IF (ALLOCATED(charge_lines)) DEALLOCATE(charge_lines)
-    IF (ALLOCATED(mass_lines)) DEALLOCATE(mass_lines)
+    IF (ALLOCATED(species_lines)) DEALLOCATE(species_lines)
     IF (ALLOCATED(reaction_count)) DEALLOCATE(reaction_count)
+    IF (ALLOCATED(boxsim_parent)) DEALLOCATE(boxsim_parent)
+
     ! Allocations
     ALLOCATE(q(4), STAT = ier)
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'Q', ier)
@@ -107,8 +108,8 @@ SUBROUTINE beams3d_follow
              neut_lines(0:npoinc, mystart:myend), S_lines(0:npoinc, mystart:myend), U_lines(0:npoinc, mystart:myend), &
              vr_lines(0:npoinc, mystart:myend), vphi_lines(0:npoinc, mystart:myend), vz_lines(0:npoinc, mystart:myend), &
               B_lines(0:npoinc, mystart:myend), STAT = ier)
-   IF (lboxsim) ALLOCATE(charge_lines(0:npoinc, mystart:myend), mass_lines(0:npoinc, mystart:myend), &
-                          boxsim_parent(mystart:myend) reaction_count(mystart:myend))
+   IF (lboxsim) ALLOCATE(species_lines(0:npoinc, mystart:myend), &
+                          boxsim_parent(mystart:myend), reaction_count(mystart:myend))
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'R_LINES, PHI_LINES, Z_LINES', ier)
     ALLOCATE(t_last(mystart:myend), STAT = ier)
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 't_last', ier)
@@ -123,7 +124,7 @@ SUBROUTINE beams3d_follow
     t_last = 0.0
     neut_lines = .TRUE.; 
     IF (lboxsim) THEN
-      charge_lines = 0; mass_lines = 0; reaction_count = 0; boxsim_parent = 0
+      species_lines = ''; reaction_count = -1; boxsim_parent = 0
     END IF
     R_lines(0, mystart:myend)      = R_start(mystart:myend)
     Z_lines(0, mystart:myend)      = Z_start(mystart:myend)
@@ -136,9 +137,7 @@ SUBROUTINE beams3d_follow
     neut_lines(0, mystart:myend)   = .FALSE.
     IF (lbeam) neut_lines(0, mystart:myend) = .TRUE.
     IF (lboxsim) THEN
-         charge_lines(0, mystart:myend) = NINT(charge(mystart:myend)/e_charge)
-         mass_lines(0, mystart:myend) = NINT(mass(mystart:myend)/p_mass)
-         reaction_count(mystart:myend) = 0
+         reaction_count(mystart:myend) = -1
     END IF
 
     ! Some helpers
@@ -379,9 +378,9 @@ SUBROUTINE beams3d_follow
     itemp = 0; WHERE(neut_lines) itemp=1
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,   'neut_lines', INTVAR=itemp)
     IF (lboxsim) THEN
-      CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,   'charge_lines',INTVAR=charge_lines)
-      CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,   'mass_lines', INTVAR=mass_lines) 
-      CALL beams3d_write1d_parhdf5(       1, nparticles, mystart_save, myend_save,     'reaction_count', INTVAR=reaction_count,FILENAME='beams3d_'//TRIM(id_string)) 
+      CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,   'species_lines',STRVAR=species_lines)
+      CALL beams3d_write1d_parhdf5(         1, nparticles, mystart_save, myend_save,   'reaction_count', INTVAR=reaction_count,FILENAME='beams3d_'//TRIM(id_string))
+      CALL beams3d_write1d_parhdf5(         1, nparticles, mystart_save, myend_save,    'boxsim_parent', INTVAR=boxsim_parent,FILENAME='beams3d_'//TRIM(id_string)) 
     END IF
     DEALLOCATE(itemp)
     IF (ALLOCATED(mnum)) DEALLOCATE(mnum)

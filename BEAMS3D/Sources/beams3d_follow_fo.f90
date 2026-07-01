@@ -56,6 +56,7 @@ SUBROUTINE beams3d_follow_fo
     DOUBLE PRECISION :: atol(6)
     DOUBLE PRECISION :: rkh_work(6, 2)
     CHARACTER*1 :: relab
+    INTEGER :: Q_int, Z_int, part_counts(boxsim_nkinds)
     DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 ! e_c
     DOUBLE PRECISION, PARAMETER :: p_mass        = 1.67262192E-27 ! proton mass
     !-----------------------------------------------------------------------
@@ -130,14 +131,13 @@ SUBROUTINE beams3d_follow_fo
                 IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'W', ier)
                 DO l = mystart_save, myend_save
                     IF (lboxsim) THEN
-                     IF (.NOT.(is_active(l))) EXIT 
+                     IF (.NOT.(is_active(l))) EXIT
                     END IF
                     tf_nag = t_last(l)
                     ! Don't do particle if stopped or beyond the full_orbit limit
                     IF (tf_nag>t_end(l)) CYCLE
                     ! Particle indicies
                     myline = l
-                    boxsim_parent(myline) = myline
                     mytdex = 1; ndt = 1
                     IF (lbeam) mytdex = 3
                     ! Don't do full_orbit particles
@@ -159,20 +159,22 @@ SUBROUTINE beams3d_follow_fo
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
-                    mycharge_int = NINT(charge(l)/e_charge)
-                    mymass_int = NINT(mass(l)/p_mass)
-                    myenergy_keV = (energy/(e_charge*1.0E3))
-                    mylife = 1.0
-                    IF (lboxsim) THEN
-                     IF (lverb) WRITE(6,*) mass(l), mymass_int
-                     CALL beams3d_reaction_sigma(mycharge_int, mymass_int, myenergy_keV, reaction_dex, sigma_next)
-                     CALL RANDOM_NUMBER(mylife_end)
-                    END IF
+                    Q_int = NINT(charge(l)/e_charge)
                     E_by_v=mymass*0.5d-3/e_charge
                     mybeam = Beam(l)
                     my_end = t_end(l)
                     ltherm = .false.
-                    lneut  = (mycharge_int==0)
+                    lneut  = (Q_int==0)
+                    ! boxsim
+                    IF (lboxsim) THEN
+                     reaction_count(l) = 0
+                     boxsim_parent(l) = l
+                     CALL boxsim_parse_species(boxsim_species(myline), part_counts, Q_int, Z_int, ierr)
+                     myenergy_keV = (energy/(e_charge*1.0E3))
+                     CALL beams3d_reaction_sigma(Q_int, part_counts, myenergy_keV, reaction_dex, sigma_next, ierr)
+                     mylife = 1.0
+                     CALL RANDOM_NUMBER(mylife_end)
+                    END IF
                     ! Collision parameters
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     CALL SET_COULOMB_FACTOR(mymass,myZ,plasma_mass)
@@ -197,7 +199,6 @@ SUBROUTINE beams3d_follow_fo
                     IF (t_nag>t_end(l)) CYCLE
                     ! Particle indicies
                     myline = l
-                    boxsim_parent(myline) = myline
                     mytdex = 1; ndt = 1
                     IF (lbeam) mytdex = 3
                     ! Don't do full_orbit particles
@@ -218,20 +219,23 @@ SUBROUTINE beams3d_follow_fo
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
-                    mycharge_int = NINT(charge(l)/e_charge)
-                    mymass_int = NINT(mass(l)/p_mass)
+                    Q_int = NINT(charge(l)/e_charge)
                     energy = 0.5*mymass*vlast**2
-                    myenergy_keV = (energy/(e_charge*1.0E3))
-                    mylife = 1.0
-                    IF (lboxsim) THEN
-                     CALL beams3d_reaction_sigma(mycharge_int, mymass_int, myenergy_keV, reaction_dex, sigma_next)
-                     CALL RANDOM_NUMBER(mylife_end)
-                    END IF
                     E_by_v=mymass*0.5d-3/e_charge
                     mybeam = Beam(l)
                     my_end = t_end(l)
                     ltherm = .false.
-                    lneut  = (mycharge_int==0)
+                    lneut  = (Q_int==0)
+                    ! boxsim
+                    IF (lboxsim) THEN
+                     reaction_count(l) = 0
+                     boxsim_parent(l) = l
+                     CALL boxsim_parse_species(boxsim_species(myline), part_counts, Q_int, Z_int, ierr)
+                     myenergy_keV = (energy/(e_charge*1.0E3))
+                     CALL beams3d_reaction_sigma(Q_int, part_counts, myenergy_keV, reaction_dex, sigma_next, ierr)
+                     mylife = 1.0
+                     CALL RANDOM_NUMBER(mylife_end)
+                    END IF
                     ! Collision parameters
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     CALL SET_COULOMB_FACTOR(mymass,myZ,plasma_mass)
@@ -273,12 +277,11 @@ SUBROUTINE beams3d_follow_fo
                 ier = 0
                 DO l = mystart_save, myend_save
                     IF (lboxsim) THEN
-                     IF (.NOT.(is_active(l))) EXIT 
+                     IF (.NOT.(is_active(l))) EXIT
                     END IF
                     t_nag = t_last(l)
                     ! Particle indicies
                     myline = l
-                    boxsim_parent(myline) = myline
                     mytdex = MAX(COUNT(R_lines(0:npoinc,l)>0,DIM=1),1)
                     ! Don't do particle if stopped
                     IF ((mytdex>=npoinc) .or. end_state(l) /= 0) CYCLE
@@ -286,15 +289,13 @@ SUBROUTINE beams3d_follow_fo
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
-                    mycharge_int = NINT(charge(l)/e_charge)
-                    mymass_int = NINT(mass(l)/p_mass)
-                    mylife = 1.0
+                    Q_int = NINT(charge(l)/e_charge)
                     E_by_v=mymass*0.5d-3/e_charge
                     mybeam = Beam(l)
                     my_end = t_end(l)
                     myqm  = mycharge/mymass
                     ltherm = .false.
-                    lneut  = (mycharge_int==0)
+                    lneut  = (Q_int==0)
                     ! Collision parameters
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     CALL SET_COULOMB_FACTOR(mymass,myZ,plasma_mass)
@@ -316,16 +317,21 @@ SUBROUTINE beams3d_follow_fo
                        vlast = sqrt(q(4)**2 + q(5)**2 + q(6)**2)
                     END IF 
                     energy = 0.5*mymass*vlast**2
-                    myenergy_keV = (energy/(e_charge*1.0E3))
+                    ! boxsim
                     IF (lboxsim) THEN
-                        CALL beams3d_reaction_sigma(mycharge_int, mymass_int, myenergy_keV, reaction_dex, sigma_next)
-                        CALL RANDOM_NUMBER(mylife_end)
+                     reaction_count(l) = 0
+                     boxsim_parent(l) = l
+                     CALL boxsim_parse_species(boxsim_species(myline), part_counts, Q_int, Z_int, ierr)
+                     myenergy_keV = (energy/(e_charge*1.0E3))
+                     CALL beams3d_reaction_sigma(Q_int, part_counts, myenergy_keV, reaction_dex, sigma_next, ierr)
+                     mylife = 1.0
+                     CALL RANDOM_NUMBER(mylife_end)
                     END IF
                     xlast = q(1)*cos(q(2))
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)
                     ! Now calc dt
-                    IF (mycharge_int.EQ.0) THEN
+                    IF (Q_int.EQ.0) THEN
                      type = 1
                     ELSE 
                      type = 2
