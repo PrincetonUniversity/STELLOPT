@@ -21,6 +21,7 @@
       leqdsk = .false.
       lpies    = .false.
       lspec    = .false.
+      lbiest   = .false.
       lcoil    = .false.
       lhint    = .false.
       lmgrid   = .false.

@@ -61,6 +61,7 @@
 !          lvmec         Logical to indicate VMEC Equilibria
 !          lpies         Logical to indicate PIES Equilibria
 !          lspec         Logical to indicate SPEC Equilibria
+!          lbiest        Logical to indicate BIEST magnetic fields
 !          lcoil         Logical to indicate coil file
 !          lmgrid        Logical to indicate MAKEGRID File
 !          lmu           Logical to control fieldline diffusion
@@ -129,7 +130,7 @@
       
       INTEGER, PARAMETER ::  NLOCAL = 128  ! Number of local processors
       
-      LOGICAL         :: lverb, lvmec, lpies, lspec, lcoil, lmgrid, &
+      LOGICAL         :: lverb, lvmec, lpies, lspec, lbiest, lcoil, lmgrid, &
                          lvessel, lvac, lrestart, laxis_i, &
                          ladvanced, lauto, lplasma_only, lbfield_only,&
                          lreverse, lhitonly, lafield_only, lraw, lemc3, &

@@ -307,6 +307,11 @@ ifeq ($(LIMAS),T)
   LIB_LINK += $(IMAS_LIB)
   LIB_SHARE += $(IMAS_LIB)
 endif
+ifeq ($(LBIEST),T)
+  MOD1_PATH += $(BIEST_INC)
+  LIB_LINK += $(BIEST_LIB)
+  LIB_SHARE += $(BIEST_LIB)
+endif
 
 # This is hear because of MPI above resetting LINK
 ifeq ($(MAKECMDGOALS),libstell$(STATIC_EXT))

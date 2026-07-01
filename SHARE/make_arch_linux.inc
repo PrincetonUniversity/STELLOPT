@@ -207,7 +207,17 @@ else
   LMANGO = F
 endif
 
+
+#######################################################################
+#            BIEST Options
+#######################################################################
+
+  LBIEST = T
+  BIEST_DIR = /home/dpfeffer/Numerics/BIEST
+  BIEST_INC = 
+  BIEST_LIB = ${BIEST_DIR}/obj/biest_c_api.o -fopenmp -lstdc++
+
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-LIB_SHARE = -lc -lgfortran -lstdc++ -lmpi -lmpi_mpifh -lz -lc -lm -lpthread $(LIBS) -lc
+  LIB_SHARE = -lc -lgfortran -lstdc++ -lmpi -lmpi_mpifh -lz -lc -lm -lpthread $(LIBS) -lc

@@ -124,6 +124,7 @@ sxrch_T.o \
 saddle_coils.o \
 modular_coils.o \
 wall_mod.o \
+biest_mod.o \
 bsc_T.o \
 bnorm_mod.o \
 read_v3post_mod.o \

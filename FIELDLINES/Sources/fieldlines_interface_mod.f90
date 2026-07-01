@@ -194,6 +194,10 @@ CONTAINS
                    i = i + 1
                    lspec = .true.
                    CALL GETCARG(i,id_string,numargs)
+                case ("-biest")
+                   i = i + 1
+                   lbiest = .true.
+                   CALL GETCARG(i,id_string,numargs)
                case ("-hint")
                    i = i + 1
                    lhint = .true.
@@ -345,6 +349,8 @@ CONTAINS
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'lplasma_only',ierr_mpi)
       CALL MPI_BCAST(lspec,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'lspec',ierr_mpi)
+      CALL MPI_BCAST(lbiest,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'lbiest',ierr_mpi)
       CALL MPI_BCAST(lmgrid,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'lmgrid',ierr_mpi)
       CALL MPI_BCAST(lcoil,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)

@@ -57,7 +57,8 @@ fieldlines_init.o: \
       random.o \
       fieldlines_runtime.o \
       fieldlines_grid.o \
-      fieldlines_lines.o
+      fieldlines_lines.o \
+      ${BIEST_DIR}/obj/biest_c_api.o
       
 
 fieldlines_init_backflow.o: \

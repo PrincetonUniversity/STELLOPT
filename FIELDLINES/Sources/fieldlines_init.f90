@@ -21,6 +21,7 @@
       USE fieldlines_lines, ONLY: nlines
       USE wall_mod
       USE random, ONLY: random_normal
+      USE biest_mod
       USE mpi_params                                                    ! MPI
 !DEC$ IF DEFINED (MPI_OPT)
       USE mpi
@@ -54,7 +55,7 @@
 !     Begin Subroutine
 !-----------------------------------------------------------------------
       ! TESTING
-      IF (lvessel .and. lverb .and. .false.) THEN
+      IF (lvessel .AND. lverb .AND. .FALSE.) THEN
          CALL wall_load_txt(TRIM(vessel_string),ier, lverb, MPI_COMM_FIELDLINES)
          IF (lverb) CALL wall_info(6)
          CALL collide(6*1/100._rprec,6*1/100._rprec,0.0_rprec,6*1/100._rprec,6*1/100._rprec,1.5_rprec,xw,yw,zw,lhit)
@@ -70,7 +71,7 @@
       END IF
 
       ! Limit what the user can do
-      IF (laxis_i .and. .not.lvac) lvac = .true.
+      IF (laxis_i .AND. .NOT.lvac) lvac = .TRUE.
       
       
       ! First Read The Input Namelist
@@ -103,10 +104,14 @@
          CALL read_hint_mag(TRIM(id_string)//'.magslice',ier)
          phimin = 0
          CALL get_hint_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)
+      ELSE IF (lbiest) THEN
+         CALL read_fieldlines_input('input.' // TRIM(id_string),ier)
+         IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
+         CALL biest_init(TRIM(id_string) // '.toml' // c_null_char)
       END IF
 
       ! TESTING LMU
-      IF (lmu .and. .false.) THEN
+      IF (lmu .AND. .FALSE.) THEN
          q = 0
          DO i = 1,100000
             phi_q = 0
@@ -164,7 +169,7 @@
       eps3 = (zmax-zmin)*small
       
       ! Output some information
-      IF (lverb .and. .not.lrestart) THEN
+      IF (lverb .AND. .NOT.lrestart) THEN
          WRITE(6,'(A)') '----- Input Parameters -----'
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   R   = [',rmin,',',rmax,'];  NR:   ',nr
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',phimin,',',phimax,'];  NPHI: ',nphi
@@ -209,20 +214,26 @@
             CALL fieldlines_init_coil
          ELSE IF (lnescoil) THEN
             CALL fieldlines_init_nescoil
+         ELSE IF (lbiest) THEN
+            IF (lverb) THEN
+               WRITE(6,'(A)') '----- BIEST grid evaluation -----'
+            ENDIF
+            CALL biest_fill_grid(nr,nphi,nz,raxis,phiaxis,zaxis,B_R,B_PHI,B_Z)
          END IF
+         
       END IF
 
       ! Put the plasma field on the background grid
       IF (lrestart) THEN
          ! Do NOTHING
-      ELSE IF (lvmec .and. .not.lvac) THEN
+      ELSE IF (lvmec .AND. .NOT.lvac) THEN
          CALL fieldlines_init_vmec
          IF (ledge_start) CALL fieldlines_init_vmec_edgestart
-      ELSE IF (lpies .and. .not.lvac) THEN
+      ELSE IF (lpies .AND. .NOT.lvac) THEN
          !CALL fieldlines_init_pies
-      ELSE IF (lspec .and. .not.lvac) THEN
+      ELSE IF (lspec .AND. .NOT.lvac) THEN
          !CALL fieldlines_init_spec
-      ELSE IF (lhint .and. .not.lvac) THEN
+      ELSE IF (lhint .AND. .NOT.lvac) THEN
          CALL fieldlines_init_hint
       ELSE IF (leqdsk) THEN
          !CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
@@ -239,17 +250,17 @@
       ! Adjust magnetic field for magnetic material
       IF (lmumat) CALL fieldlines_init_mumat
       
-      IF (ANY(B_PHI .eq. 0)) THEN
+      IF (ANY(B_PHI .EQ. 0)) THEN
 #if defined(MPI_OPT)
          CALL MPI_FINALIZE(ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FINE_ERR,'fieldlines_init:B_PHI0',ierr_mpi)
 #endif
-         stop 'ERROR: B_PHI = 0 Found'
+         STOP 'ERROR: B_PHI = 0 Found'
       END IF
       
       ! Handle outputting the B-FIELD
-      IF (lemc3 .or. lbfield_only .or. lafield_only) THEN
-         IF (lemc3 .and. myworkid==master) CALL fieldlines_write_emc3
+      IF (lemc3 .OR. lbfield_only .OR. lafield_only) THEN
+         IF (lemc3 .AND. myworkid==master) CALL fieldlines_write_emc3
 #if defined(MPI_OPT)
          CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init:Bfield',ierr_mpi)
@@ -265,7 +276,7 @@
          CALL mpialloc(MU3D, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MU)
          CALL mpialloc(MODB4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MODB4D)
          IF (myid_sharmem == master) THEN
-            MU3D = sqrt(B_R**2+B_PHI**2+B_Z**2)
+            MU3D = SQRT(B_R**2+B_PHI**2+B_Z**2)
             bcs1=(/ 0, 0/)
             bcs2=(/-1,-1/)
             bcs3=(/ 0, 0/)
@@ -275,7 +286,7 @@
             MODB_spl%x1 = raxis
             MODB_spl%x2 = phiaxis
             MODB_spl%x3 = zaxis
-            CALL EZspline_setup(MODB_spl,MU3D,ier,EXACT_DIM=.true.)
+            CALL EZspline_setup(MODB_spl,MU3D,ier,EXACT_DIM=.TRUE.)
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init:MODB_spl',ier)
             MODB4D = MODB_SPL%fspl
             CALL EZspline_free(MODB_spl,ier)
@@ -290,7 +301,7 @@
          CALL mpialloc(MU3D, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MU)
          CALL mpialloc(MU4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MU4D)
          IF (myid_sharmem == master) THEN
-            MU3D = ABS(2*mu*sqrt(B_R**2+B_PHI**2+B_Z**2)/B_PHI)
+            MU3D = ABS(2*mu*SQRT(B_R**2+B_PHI**2+B_Z**2)/B_PHI)
             DO i = 1, nr
                MU3D(i,:,:) = raxis(i) * MU3D(i,:,:)
             END DO
@@ -303,7 +314,7 @@
             MU_spl%x1 = raxis
             MU_spl%x2 = phiaxis
             MU_spl%x3 = zaxis
-            CALL EZspline_setup(MU_spl,MU3D,ier,EXACT_DIM=.true.)
+            CALL EZspline_setup(MU_spl,MU3D,ier,EXACT_DIM=.TRUE.)
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init:MU_SPL',ier)
             MU4D = MU_SPL%fspl
             CALL EZspline_free(MU_spl,ier)
@@ -314,7 +325,7 @@
       END IF
 
       ! Get setup vessel
-      IF (lvessel .and. (.not. lwall_loaded)) THEN
+      IF (lvessel .AND. (.NOT. lwall_loaded)) THEN
          CALL wall_load_txt(TRIM(vessel_string),ier, lverb, MPI_COMM_FIELDLINES)
          IF (ier /= 0) CALL handle_err(WALL_ERR,'fieldlines_init:Vessel',ier)
          IF (lverb) THEN
@@ -324,7 +335,7 @@
       END IF
 
       ! Now we need to reformulate B_R and B_Z as functions of phi
-      IF (myid_sharmem == master .and. .not. lrestart) THEN
+      IF (myid_sharmem == master .AND. .NOT. lrestart) THEN
          DO k = 1, nz
             DO j = 1, nphi
                DO i = 1, nr
@@ -364,9 +375,9 @@
             IF (lmu) WRITE(6,'(A,E15.5)')   '   MU  = ',mu
             WRITE(6,'(A,I1)')               '   HERMITE FORM: ',BR_spl%isHermite
          END IF
-         CALL EZspline_setup(BR_spl,B_R,ier,EXACT_DIM=.true.)
+         CALL EZspline_setup(BR_spl,B_R,ier,EXACT_DIM=.TRUE.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init',ier)
-         CALL EZspline_setup(BZ_spl,B_Z,ier,EXACT_DIM=.true.)
+         CALL EZspline_setup(BZ_spl,B_Z,ier,EXACT_DIM=.TRUE.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init',ier)
          ! Copy Spline info to shared memory and Free
          BR4D = BR_SPL%fspl
