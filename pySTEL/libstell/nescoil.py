@@ -268,6 +268,19 @@ class NESCOIL(FourierRep):
 		if lplotnow: pyplot.show()
 		return hmesh
 
+	def computesurfaces(self):
+		"""Mesh the NESCOIL Surfaces in real space over half field period."""
+		import numpy as np
+		self.theta = np.ndarray((self.nu,1))
+		self.zeta  = np.ndarray((self.nv,1))
+		for j in range(self.nu): self.theta[j]=2.0*np.pi*j/float(self.nu-1)
+		for j in range(self.nv): self.zeta[j]=np.pi*j/float(self.nv-1)
+		self.rp = self.cfunct(self.theta,self.zeta,self.rmnc_plasma.T,self.xm_plasma,self.xn_plasma)
+		self.zp = self.sfunct(self.theta,self.zeta,self.zmns_plasma.T,self.xm_plasma,self.xn_plasma)
+		self.rc = self.cfunct(self.theta,self.zeta,self.rmnc_surface.T,self.xm_surface,self.xn_surface)
+		self.zc = self.sfunct(self.theta,self.zeta,self.zmns_surface.T,self.xm_surface,self.xn_surface)
+		return self
+
 	def plotsurfaces(self,plot3D=None):
 		"""Plots the NESCOIL Surfaces
 
@@ -289,16 +302,9 @@ class NESCOIL(FourierRep):
 			lplotnow = True
 			plt = PLOT3D()
 		# Generate VTK objects
-		theta = np.ndarray((self.nu,1))
-		zeta  = np.ndarray((self.nv,1))
-		for j in range(self.nu): theta[j]=2.0*np.pi*j/float(self.nu)
-		for j in range(self.nv):  zeta[j]=np.pi*j/float(self.nv-1)
-		rp = self.cfunct(theta,zeta,self.rmnc_plasma.T,self.xm_plasma,self.xn_plasma)
-		zp = self.sfunct(theta,zeta,self.zmns_plasma.T,self.xm_plasma,self.xn_plasma)
-		rc = self.cfunct(theta,zeta,self.rmnc_surface.T,self.xm_surface,self.xn_surface)
-		zc = self.sfunct(theta,zeta,self.zmns_surface.T,self.xm_surface,self.xn_surface)
-		self.isotoro(rp,zp,zeta/self.np,-1,plot3D=plt,lclosev=False,color='red')
-		self.isotoro(rc,zc,zeta/self.np,-1,plot3D=plt,lclosev=False,color='green')
+		self.computesurfaces()
+		self.isotoro(self.rp,self.zp,self.zeta/self.np,-1,plot3D=plt,lclosev=False,color='red')
+		self.isotoro(self.rc,self.zc,self.zeta/self.np,-1,plot3D=plt,lclosev=False,color='green')
 		# Render if requested
 		if lplotnow: plt.render()
 

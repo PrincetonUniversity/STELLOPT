@@ -611,8 +611,8 @@
          INTEGER, INTENT(in), OPTIONAL :: comm
          INTEGER :: mn, shar_rank, shar_size,  shar_comm, nu1, u, v, ier, i1, i2
          DOUBLE PRECISION, ALLOCATABLE :: xu(:), xv(:),           &
-               fmn_temp(:), yu(:), yv(:), cop(:), sip(:),         &
-               hu(:), hv(:)
+              fmn_temp(:), yu(:), yv(:), cop(:), sip(:)
+         DOUBLE PRECISION, ALLOCATABLE :: hu(:), hv(:)
          DOUBLE PRECISION, ALLOCATABLE :: rreal(:,:), zreal(:,:), &
                xreal(:,:), yreal(:,:), rureal(:,:), rvreal(:,:),  &
                zureal(:,:), zvreal(:,:), sxreal(:,:),             &
@@ -634,10 +634,11 @@
          u1 = nu_local-1
          v1 = nvp - 1
          ! These normalizations were checked against the surface area
-         !     Ip = NFP*CURPOL/MU0
+         !     Ip = NFP*CURPOL/MU0     ! why mu0
          !     Ip/NFP = CURPOL/MU0 
-         norm   = -DBLE(np*curpol) / DBLE(u1*v1)
-         norm_fsub = -DBLE(np*curpol) / (pi2*pi2)
+         norm   = DBLE(np*curpol) / DBLE(u1*v1)/(2*pi2)
+         norm_fsub = DBLE(np*curpol) / (pi2*pi2)/(2*pi2)
+
          ! These must be consistent with splines below
          nx1    = nu_int;  nx2    = nvp
          x1_min = 0; x2_min = 0
@@ -716,7 +717,8 @@
             FORALL(v=1:nv_local) xv(v) = DBLE(v-1)/DBLE(nv_local-1)
             rreal = zero; rureal = zero; rvreal = zero
             zreal = zero; zureal = zero; zvreal = zero
-            potu = cut; potv = cup;
+            potu = cut; potv = -cup;   !! the minus here is because the poloidal current is measured clockwise in v 
+
             potx = zero; poty = zero; potz = zero
             CALL mntouv_local(mnmax_surface,nu_local,nv_local,xu,xv,            &
                               rmnc_surface,xm_surface,xn_surface,  &
@@ -724,30 +726,27 @@
             CALL mntouv_local(mnmax_surface,nu_local,nv_local,xu,xv,            &
                               zmns_surface,xm_surface,xn_surface,  &
                               zreal,1,0)
-            fmn_temp = -rmnc_surface*xm_surface
+            
+            fmn_temp = -rmnc_surface*xm_surface*pi2
             CALL mntouv_local(mnmax_surface,nu_local,nv_local,xu,xv,fmn_temp,xm_surface,xn_surface,rureal,1,0)
-            fmn_temp = -rmnc_surface*xn_surface
+            fmn_temp = -rmnc_surface*xn_surface*pi2
             CALL mntouv_local(mnmax_surface,nu_local,nv_local,xu,xv,fmn_temp,xm_surface,xn_surface,rvreal,1,0)  
-            fmn_temp =  zmns_surface*xm_surface
+            fmn_temp =  zmns_surface*xm_surface*pi2
             CALL mntouv_local(mnmax_surface,nu_local,nv_local,xu,xv,fmn_temp,xm_surface,xn_surface,zureal,0,0) 
-            fmn_temp =  zmns_surface*xn_surface
+            fmn_temp =  zmns_surface*xn_surface*pi2
             CALL mntouv_local(mnmax_surface,nu_local,nv_local,xu,xv,fmn_temp,xm_surface,xn_surface,zvreal,0,0)
             DEALLOCATE(fmn_temp)
+
             ALLOCATE(fmn_temp(mnmax_pot))
             fmn_temp =  potmns_surface*xm_pot*pi2
             CALL mntouv_local(mnmax_pot,nu_local,nv_local,xu,xv,fmn_temp,xm_pot,xn_pot,potu,0,1)
             fmn_temp =  potmns_surface*xn_pot*pi2
             CALL mntouv_local(mnmax_pot,nu_local,nv_local,xu,xv,fmn_temp,xm_pot,xn_pot,potv,0,0)
-            DEALLOCATE(xu,xv,fmn_temp)
-
-            ! Correct derivatives for missing pi2
-            rureal = pi2*rureal
-            rvreal = pi2*rvreal
-            zureal = pi2*zureal
-            zvreal = pi2*zvreal
-
+            DEALLOCATE(fmn_temp)
+            DEALLOCATE(xu,xv)
+            
             !==========================================================
-            !         CURVILINEAR COORDIANTES
+            !         CURVILINEAR COORDIANTES    !!! this is wrong
             !    x=fx(u,v); y=fy(u,v); z=fz(u,v)
             !    h_u = |dr/du|; h_v = |dr/dv|
             !    grad(f) = 1/h_u * df/du * e_u + 1/h_v * df/dv * e_v
@@ -756,7 +755,8 @@
 
             ! Calculate surface coords and normals
             ALLOCATE(xu(nv_local),xv(nv_local),yu(nv_local),yv(nv_local), &
-               cop(nv_local),sip(nv_local),hu(nv_local),hv(nv_local))
+                 cop(nv_local),sip(nv_local))
+            ALLOCATE(hu(nv_local),hv(nv_local))
             FORALL(v=1:nv_local) cop(v) = DCOS(alp*DBLE(v-1)/DBLE(nv_local-1))
             FORALL(v=1:nv_local) sip(v) = DSIN(alp*DBLE(v-1)/DBLE(nv_local-1))
             DO u = 1, nu_local
@@ -767,27 +767,31 @@
                yu       = rureal(u,:)*sip
                xv       = rvreal(u,:)*cop - rreal(u,:)*sip*alp
                yv       = rvreal(u,:)*sip + rreal(u,:)*cop*alp
-               hu       = one/SQRT(xu*xu + yu*yu + zureal(u,:)*zureal(u,:))
-               hv       = one/SQRT(xv*xv + yv*yv + zvreal(u,:)*zvreal(u,:))
+               
                ! Surface Normal
-               sxreal(u,:) = -yu(:)*zvreal(u,:) + zureal(u,:)*yv(:)
-               syreal(u,:) = -xv(:)*zureal(u,:) + zvreal(u,:)*xu(:)
-               szreal(u,:) = -xu(:)*yv(:)       + yu(:)*xv(:)
-               ! Potential
-               potx(u,:) = potu(u,:)*xu*hu          + potv(u,:)*xv*hv
-               poty(u,:) = potu(u,:)*yu*hu          + potv(u,:)*yv*hv
-               potz(u,:) = potu(u,:)*zureal(u,:)*hu + potv(u,:)*zvreal(u,:)*hv
+               sxreal(u,:) = yu(:)*zvreal(u,:) - zureal(u,:)*yv(:)
+               syreal(u,:) = xv(:)*zureal(u,:) - zvreal(u,:)*xu(:)
+               szreal(u,:) = xu(:)*yv(:)       - yu(:)*xv(:)
+
+               hu       = sqrt(xu*xu + yu*yu + zureal(u,:)*zureal(u,:))   ! |ru|
+               hv       = sqrt(xv*xv + yv*yv + zvreal(u,:)*zvreal(u,:))   ! |rv|
+               
+               ! ! Potential as a gradient times the surface area
+               potx(u,:) = potu(u,:)*xu*hv/hu          + potv(u,:)*xv*hu/hv
+               poty(u,:) = potu(u,:)*yu*hv/hu          + potv(u,:)*yv*hu/hv
+               potz(u,:) = potu(u,:)*zureal(u,:)*hv/hu + potv(u,:)*zvreal(u,:)*hu/hv
             END DO
             Z3D(1,:,1:nv_local) = zreal
-            sn = SQRT(sxreal**2+syreal**2+szreal**2)
-            KX3D(1,:,1:nv_local) = (syreal*potz - szreal*poty)/sn
-            KY3D(1,:,1:nv_local) = (szreal*potx - sxreal*potz)/sn
-            KZ3D(1,:,1:nv_local) = (sxreal*poty - syreal*potx)/sn
+            sn = SQRT(sxreal**2+syreal**2+szreal**2) ! norm of surface normal
+            KX3D(1,:,1:nv_local) = (szreal*poty - syreal*potz)/sn      !  (\nabla\phi\times n)_x
+            KY3D(1,:,1:nv_local) = (sxreal*potz - szreal*potx)/sn
+            KZ3D(1,:,1:nv_local) = (syreal*potx - sxreal*poty)/sn
             u = nu_local - 1
             v = nv_local - 1
             surf_area = np*SUM(SQRT( sxreal(1:u,1:v)**2+syreal(1:u,1:v)**2+szreal(1:u,1:v)**2))/(u*v)
-            !WRITE(*,*) surf_area
-            DEALLOCATE(xu,xv,yu,yv,cop,sip,hu,hv)
+            WRITE(*,*) 'surface area ',surf_area
+            DEALLOCATE(xu,xv,yu,yv,cop,sip)
+            DEALLOCATE(hu,hv)
             DEALLOCATE(sxreal,syreal,szreal,rureal,rvreal,zureal,zvreal,potu,potv,potx,poty,potz,sn)
 
             ! Now extend to more field periods
