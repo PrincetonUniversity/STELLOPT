@@ -612,12 +612,9 @@
          INTEGER :: mn, shar_rank, shar_size,  shar_comm, nu1, u, v, ier, i1, i2
          DOUBLE PRECISION, ALLOCATABLE :: xu(:), xv(:),           &
               fmn_temp(:), yu(:), yv(:), cop(:), sip(:)
-         DOUBLE PRECISION, ALLOCATABLE :: hu(:), hv(:)
          DOUBLE PRECISION, ALLOCATABLE :: rreal(:,:), zreal(:,:), &
                xreal(:,:), yreal(:,:), rureal(:,:), rvreal(:,:),  &
-               zureal(:,:), zvreal(:,:), sxreal(:,:),             &
-               syreal(:,:), szreal(:,:), potu(:,:), potv(:,:),    &
-               potx(:,:), poty(:,:), potz(:,:), sn(:,:)
+               zureal(:,:), zvreal(:,:), potu(:,:), potv(:,:)
          TYPE(EZspline2_r8)   :: f_spl
          INTEGER, PARAMETER, DIMENSION(2) :: bcs1 = (/-1,-1/)
          INTEGER, PARAMETER, DIMENSION(2) :: bcs2 = (/-1,-1/)
@@ -636,8 +633,8 @@
          ! These normalizations were checked against the surface area
          !     Ip = NFP*CURPOL/MU0     ! why mu0
          !     Ip/NFP = CURPOL/MU0 
-         norm   = DBLE(np*curpol) / DBLE(u1*v1)/(2*pi2)
-         norm_fsub = DBLE(np*curpol) / (pi2*pi2)/(2*pi2)
+         norm   = -DBLE(np*curpol) / DBLE(u1*v1)/(2*pi2)
+         norm_fsub = -DBLE(np*curpol) / (pi2*pi2)/(2*pi2)
 
          ! These must be consistent with splines below
          nx1    = nu_int;  nx2    = nvp
@@ -703,23 +700,15 @@
                      rvreal(nu_local,nv_local), &
                      zureal(nu_local,nv_local), &
                      zvreal(nu_local,nv_local), &
-                     sxreal(nu_local,nv_local), &
-                     syreal(nu_local,nv_local), &
-                     szreal(nu_local,nv_local), &
                      potu(nu_local,nv_local), &
-                     potv(nu_local,nv_local), &
-                     potx(nu_local,nv_local), &
-                     poty(nu_local,nv_local), &
-                     potz(nu_local,nv_local), &
-                     sn(nu_local,nv_local))
+                     potv(nu_local,nv_local))
             ALLOCATE(fmn_temp(mnmax_surface))
             FORALL(u=1:nu_local) xu(u) = DBLE(u-1)/DBLE(nu_local-1)
             FORALL(v=1:nv_local) xv(v) = DBLE(v-1)/DBLE(nv_local-1)
             rreal = zero; rureal = zero; rvreal = zero
             zreal = zero; zureal = zero; zvreal = zero
-            potu = cut; potv = -cup;   !! the minus here is because the poloidal current is measured clockwise in v 
+            potu = cut; potv = cup;
 
-            potx = zero; poty = zero; potz = zero
             CALL mntouv_local(mnmax_surface,nu_local,nv_local,xu,xv,            &
                               rmnc_surface,xm_surface,xn_surface,  &
                               rreal,0,1)
@@ -756,9 +745,9 @@
             ! Calculate surface coords and normals
             ALLOCATE(xu(nv_local),xv(nv_local),yu(nv_local),yv(nv_local), &
                  cop(nv_local),sip(nv_local))
-            ALLOCATE(hu(nv_local),hv(nv_local))
             FORALL(v=1:nv_local) cop(v) = DCOS(alp*DBLE(v-1)/DBLE(nv_local-1))
             FORALL(v=1:nv_local) sip(v) = DSIN(alp*DBLE(v-1)/DBLE(nv_local-1))
+            surf_area = 0.0
             DO u = 1, nu_local
                X3D(1,u,1:nv_local) = rreal(u,:)*cop
                Y3D(1,u,1:nv_local) = rreal(u,:)*sip
@@ -768,31 +757,20 @@
                xv       = rvreal(u,:)*cop - rreal(u,:)*sip*alp
                yv       = rvreal(u,:)*sip + rreal(u,:)*cop*alp
                
-               ! Surface Normal
-               sxreal(u,:) = yu(:)*zvreal(u,:) - zureal(u,:)*yv(:)
-               syreal(u,:) = xv(:)*zureal(u,:) - zvreal(u,:)*xu(:)
-               szreal(u,:) = xu(:)*yv(:)       - yu(:)*xv(:)
+               KX3D(1,u,1:nv_local) = potv(u,:)*xu - potu(u,:)*xv
+               KY3D(1,u,1:nv_local) = potv(u,:)*yu - potu(u,:)*yv
+               KZ3D(1,u,1:nv_local) = potv(u,:)*zureal(u,:) - potu(u,:)*zvreal(u,:)
 
-               hu       = sqrt(xu*xu + yu*yu + zureal(u,:)*zureal(u,:))   ! |ru|
-               hv       = sqrt(xv*xv + yv*yv + zvreal(u,:)*zvreal(u,:))   ! |rv|
-               
-               ! ! Potential as a gradient times the surface area
-               potx(u,:) = potu(u,:)*xu*hv/hu          + potv(u,:)*xv*hu/hv
-               poty(u,:) = potu(u,:)*yu*hv/hu          + potv(u,:)*yv*hu/hv
-               potz(u,:) = potu(u,:)*zureal(u,:)*hv/hu + potv(u,:)*zvreal(u,:)*hu/hv
+               IF (u < nu_local) THEN
+                  surf_area = surf_area + SUM(SQRT(xu*xu+yu*yu + zureal(u,1:nv_local-1)*zureal(u,1:nv_local-1))*SQRT(xv*xv+yv*yv + zvreal(u,1:nv_local-1)*zvreal(u,1:nv_local-1)))
+               ENDIF
+
             END DO
             Z3D(1,:,1:nv_local) = zreal
-            sn = SQRT(sxreal**2+syreal**2+szreal**2) ! norm of surface normal
-            KX3D(1,:,1:nv_local) = (szreal*poty - syreal*potz)/sn      !  (\nabla\phi\times n)_x
-            KY3D(1,:,1:nv_local) = (sxreal*potz - szreal*potx)/sn
-            KZ3D(1,:,1:nv_local) = (syreal*potx - sxreal*poty)/sn
-            u = nu_local - 1
-            v = nv_local - 1
-            surf_area = np*SUM(SQRT( sxreal(1:u,1:v)**2+syreal(1:u,1:v)**2+szreal(1:u,1:v)**2))/(u*v)
-            WRITE(*,*) 'surface area ',surf_area
+            surf_area = np*surf_area/((nu_local-1)*(nv_local-1))
+            !WRITE(*,*) "winding surface area",surf_area
             DEALLOCATE(xu,xv,yu,yv,cop,sip)
-            DEALLOCATE(hu,hv)
-            DEALLOCATE(sxreal,syreal,szreal,rureal,rvreal,zureal,zvreal,potu,potv,potx,poty,potz,sn)
+            DEALLOCATE(rureal,rvreal,zureal,zvreal,potu,potv)
 
             ! Now extend to more field periods
             ALLOCATE(cop(np),sip(np))

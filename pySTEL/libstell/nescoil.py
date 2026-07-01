@@ -111,7 +111,7 @@ class NESCOIL(FourierRep):
 	def generatePotential(self,theta,zeta):
 		"""Computes the potential on a grid
 
-		This routine computes the potential on a grid
+		This routine computes the normalised potential on a grid
 
 		Parameters
 		----------
@@ -130,7 +130,7 @@ class NESCOIL(FourierRep):
 	def generateTotalPotential(self,theta,zeta):
 		"""Computes the potential on a grid
 
-		This routine computes the potential on a grid
+		This routine computes the normalised potential on a grid
 
 		Parameters
 		----------
@@ -274,7 +274,7 @@ class NESCOIL(FourierRep):
 		self.theta = np.ndarray((self.nu,1))
 		self.zeta  = np.ndarray((self.nv,1))
 		for j in range(self.nu): self.theta[j]=2.0*np.pi*j/float(self.nu-1)
-		for j in range(self.nv): self.zeta[j]=np.pi*j/float(self.nv-1)
+		for j in range(self.nv): self.zeta[j]=np.pi*j/float(self.nv-1)   ## this is the toroidal angle \varphi/nfp
 		self.rp = self.cfunct(self.theta,self.zeta,self.rmnc_plasma.T,self.xm_plasma,self.xn_plasma)
 		self.zp = self.sfunct(self.theta,self.zeta,self.zmns_plasma.T,self.xm_plasma,self.xn_plasma)
 		self.rc = self.cfunct(self.theta,self.zeta,self.rmnc_surface.T,self.xm_surface,self.xn_surface)
@@ -480,8 +480,8 @@ class NESCOIL(FourierRep):
 			v = np.pi*(k+0.5)/ncoils_per_halfperiod
 			#print(k,u,v)
 			th,ze = self.trace_isocontour(np.squeeze(theta),np.squeeze(zeta),np.squeeze(pot), u, v, num_points=npts, period_x=True, period_y=True)
-			print(th)
-			print(ze)
+			#print(th)
+			#print(ze)
 			# Wrap the coil so that poitive current is positive field (counterclockwise from top)
 			if (th[16]-th[0] > 0):
 				th = th[::-1]
@@ -533,6 +533,20 @@ class NESCOIL(FourierRep):
 			coil_name=f'MOD{k+1}'
 			coils.groups.extend([COILGROUP(x,y,z,c,coil_name)])
 		# Return a coil object
+
+                # Make plot if requested
+		if lplot:
+			px = 1/pyplot.rcParams['figure.dpi']
+			fig=pyplot.figure(figsize=(1024*px,768*px))
+			ax=fig.add_subplot(111)
+			hmesh=ax.contourf(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot),levels=2*ncoils_per_halfperiod+1,extend='both',cmap='Greens')
+			ax.contour(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot),levels=2*ncoils_per_halfperiod+1,colors='black')
+			ax.set_xlabel('Toroidal angle [rad]')
+			ax.set_ylabel('Poloidal angle [rad]')
+			ax.set_title(r'NESCOIL Coil Cutting')
+			pyplot.colorbar(hmesh,label=r'Potential $\Phi$ [arb]',ax=ax)
+			pyplot.show()
+                        
 		return coils
 
 	def cutcoils_helical(self,nhelical_coils,lplot=False):
