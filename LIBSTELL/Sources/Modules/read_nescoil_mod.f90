@@ -762,7 +762,7 @@
                KZ3D(1,u,1:nv_local) = potv(u,:)*zureal(u,:) - potu(u,:)*zvreal(u,:)
 
                IF (u < nu_local) THEN
-                  surf_area = surf_area + SUM(SQRT(xu*xu+yu*yu + zureal(u,1:nv_local-1)*zureal(u,1:nv_local-1))*SQRT(xv*xv+yv*yv + zvreal(u,1:nv_local-1)*zvreal(u,1:nv_local-1)))
+                  surf_area = surf_area + SUM(SQRT(xu(1:nv_local-1)*xu(1:nv_local-1)+yu(1:nv_local-1)*yu(1:nv_local-1) + zureal(u,1:nv_local-1)*zureal(u,1:nv_local-1))*SQRT(xv(1:nv_local-1)*xv(1:nv_local-1)+yv(1:nv_local-1)*yv(1:nv_local-1) + zvreal(u,1:nv_local-1)*zvreal(u,1:nv_local-1)))
                ENDIF
 
             END DO
