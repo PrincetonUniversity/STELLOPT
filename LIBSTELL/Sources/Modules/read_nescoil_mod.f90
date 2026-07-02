@@ -89,9 +89,18 @@
 
 !-----------------------------------------------------------------------
 !     Module Subroutines
+!          nescoil_afield        A-Field using direct integration
+!          nescoil_afield_adapt  A-Field using adaptive integration
 !          nescoil_bfield        B-Field using direct integration
 !          nescoil_bfield_adapt  B-Field using adaptive integration
 !-----------------------------------------------------------------------
+      INTERFACE nescoil_afield
+         MODULE PROCEDURE nescoil_afield_dbl, nescoil_afield_flt
+      END INTERFACE
+
+      INTERFACE nescoil_afield_adapt
+         MODULE PROCEDURE nescoil_afield_adapt_dbl, nescoil_afield_adapt_flt
+      END INTERFACE
       INTERFACE nescoil_bfield
          MODULE PROCEDURE nescoil_bfield_dbl, nescoil_bfield_flt
       END INTERFACE
@@ -1023,6 +1032,178 @@
          !WRITE(327,'(6(ES20.12))') xs,ys,zs,kx,ky,kz
          RETURN
       END SUBROUTINE funsub_b
+
+      SUBROUTINE nescoil_afield_dbl(x,y,z,ax,ay,az)
+         ! Based on BESURFCUR
+         IMPLICIT NONE
+         REAL(rprec), INTENT(in) :: x,y,z
+         REAL(rprec), INTENT(out) :: ax,ay,az 
+         ! LOCAL VARIABLES
+         DOUBLE PRECISION ::  gf(nu_int-1,nvp-1), gf3(nu_int-1,nvp-1)
+
+         gf = one / SQRT(   (x - X3D(1,1:u1,1:v1))**2 &
+                          + (y - Y3D(1,1:u1,1:v1))**2 &
+                          + (z - Z3D(1,1:u1,1:v1))**2 )
+         ax  = SUM(KX3D(1,1:u1,1:v1)*gf)
+         ay  = SUM(KY3D(1,1:u1,1:v1)*gf)
+         az  = SUM(KZ3D(1,1:u1,1:v1)*gf)
+         RETURN
+      END SUBROUTINE nescoil_afield_dbl
+
+      SUBROUTINE nescoil_afield_flt(x_flt,y_flt,z_flt,ax_flt,ay_flt,az_flt)
+         IMPLICIT NONE
+         ! INPUT VARIABLES
+         REAL, INTENT(in)  :: x_flt, y_flt, z_flt
+         REAL, INTENT(out) :: ax_flt, ay_flt, az_flt
+         ! LOCAL VARIABLES
+         DOUBLE PRECISION :: xt,yt,zt,axt,ayt,azt
+         ! BEGIN SUBROUTINE
+         xt  = x_flt
+         yt  = y_flt
+         zt  = z_flt
+         axt = zero
+         ayt = zero
+         azt = zero
+         CALL nescoil_bfield_dbl(xt,yt,zt,axt,ayt,azt)
+         ax_flt = axt
+         ay_flt = ayt
+         az_flt = azt
+         RETURN
+      END SUBROUTINE nescoil_afield_flt
+
+      SUBROUTINE nescoil_afield_adapt_dbl(x,y,z,ax,ay,az,istat)
+         IMPLICIT NONE
+         ! INPUT VARIABLES
+         DOUBLE PRECISION, INTENT(in)  :: x, y, z
+         DOUBLE PRECISION, INTENT(out) :: ax, ay, az
+         INTEGER, INTENT(inout) :: istat
+         ! LOCAL VARIABLES
+         LOGICAL            :: adapt_rerun
+         INTEGER(KIND=8), PARAMETER :: ndim = 2 ! theta,zeta
+         INTEGER(KIND=8), PARAMETER :: nfun = 3 ! Ax, Ay, Az
+         INTEGER(KIND=8) :: maxcls,mincls, restar, wrklen, funcls
+         DOUBLE PRECISION :: absreq, relreq
+         DOUBLE PRECISION :: a(ndim), b(ndim), &
+                              finest(nfun), absest(nfun)
+         DOUBLE PRECISION, ALLOCATABLE :: vrtwrk(:)
+
+         EXTERNAL :: dcuhre
+
+         ! BEGIN SUBROUTINE
+         IF (istat == -327) THEN
+            CALL nescoil_afield(x,y,z,ax,ay,az)
+            RETURN
+         END IF
+
+         a(1:2) = zero
+         b(1:2) = pi2
+         mincls = 0
+         maxcls = 16777216
+         absreq = 1.0E-6
+         relreq = 1.0E-4
+         finest = zero
+         absest = zero
+         x_f      = x
+         y_f      = y
+         z_f      = z
+         funcls   = 0
+         adapt_rerun = .true.
+         restar = 0
+         DO WHILE (adapt_rerun) 
+            IF (.not.ALLOCATED(vrtwrk)) THEN
+               wrklen = ((maxcls-ndim)/(2*ndim) + 1)*(2*ndim+2*nfun+2) + 17*nfun + 1
+               ALLOCATE(vrtwrk(wrklen),STAT=istat)
+               IF (istat .ne. 0) THEN
+                  WRITE(6,*) ' ALLOCATION ERROR IN: nescoil_afield_adapt_dbl'
+                  WRITE(6,*) '   VARIABLE: VRTWRK, SIZE: ',wrklen
+                  WRITE(6,*) '   ISTAT: ',istat
+                  RETURN
+               END IF
+            END IF
+            CALL dcuhre(ndim,nfun,a,b,mincls,maxcls,funsub_a,absreq,&
+                        relreq,0,wrklen,restar,finest,absest,funcls,istat,vrtwrk)
+            IF (istat == 1) THEN
+               ! For now we don't try to restart and just live with the result
+               ax = finest(1)
+               ay = finest(2)
+               az = finest(3)
+               adapt_rerun=.false.
+               DEALLOCATE(vrtwrk)
+            ELSE IF (istat > 1) THEN
+               ax = zero
+               ay = zero
+               az = zero
+               adapt_rerun=.false.
+               DEALLOCATE(vrtwrk)
+            ELSE
+               ax = finest(1)
+               ay = finest(2)
+               az = finest(3)
+               adapt_rerun=.false.
+               DEALLOCATE(vrtwrk)
+            END IF
+         END DO
+         RETURN
+      END SUBROUTINE nescoil_afield_adapt_dbl
+
+      SUBROUTINE nescoil_afield_adapt_flt(x_flt,y_flt,z_flt,ax_flt,ay_flt,az_flt,istat)
+         IMPLICIT NONE
+         ! INPUT VARIABLES
+         REAL, INTENT(in)  :: x_flt, y_flt, z_flt
+         REAL, INTENT(out) :: ax_flt, ay_flt, az_flt
+         INTEGER, INTENT(inout) :: istat
+         ! LOCAL VARIABLES
+         DOUBLE PRECISION :: xt,yt,zt,axt,ayt,azt
+         ! BEGIN SUBROUTINE
+         xt  = x_flt
+         yt  = y_flt
+         zt  = z_flt
+         axt = zero
+         ayt = zero
+         azt = zero
+         CALL nescoil_bfield_adapt_dbl(xt,yt,zt,axt,ayt,azt,istat)
+         ax_flt = axt
+         ay_flt = ayt
+         az_flt = azt
+         RETURN
+      END SUBROUTINE nescoil_afield_adapt_flt
+         
+      SUBROUTINE funsub_a(ndim, vec, nfun, f)
+         IMPLICIT NONE
+         ! INPUT VARIABLES
+         INTEGER, INTENT(in) :: ndim, nfun
+         DOUBLE PRECISION, INTENT(in) :: vec(ndim)
+         DOUBLE PRECISION, INTENT(out) :: f(nfun)
+         ! LOCAL VARIABLES
+         INTEGER :: ier
+         DOUBLE PRECISION :: bn, xs, ys, zs, gf, gf3, nx, ny, &
+                             nz, kx, ky, kz
+         INTEGER :: i,j
+         REAL*8 :: xparam, yparam, hx, hy, hxi, hyi
+         REAL*8 :: xpi, xp2, xpi2, ypi, yp2, ypi2
+         REAL*8 :: cx,cxi,hx2,cy,cyi,hy2 ! Non Hermite quantities
+         ! BEGIN SUBROUTINE
+         CALL lookupgrid2d(vec(1),vec(2),i,j,hx,hy,hxi,hyi,xparam,yparam)
+         xpi  = one - xparam;    ypi  = one - yparam
+         xp2  = xparam * xparam; yp2  = yparam * yparam
+         xpi2 = xpi * xpi;       ypi2 = ypi * ypi
+         ! non Hermite Quatitites
+         cx = xparam*(xp2-1); cxi = xpi*(xpi2-1); hx2 = hx*hx
+         cy = yparam*(yp2-1); cyi = ypi*(ypi2-1); hy2 = hy*hy
+         xs  =  evalbi2D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, yparam, ypi, yp2, ypi2, cy, cyi, hy2, nx1, nx2,  X3D, i, j)
+         ys  =  evalbi2D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, yparam, ypi, yp2, ypi2, cy, cyi, hy2, nx1, nx2,  Y3D, i, j)
+         zs  =  evalbi2D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, yparam, ypi, yp2, ypi2, cy, cyi, hy2, nx1, nx2,  Z3D, i, j)
+         kx  =  evalbi2D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, yparam, ypi, yp2, ypi2, cy, cyi, hy2, nx1, nx2, KX3D, i, j)
+         ky  =  evalbi2D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, yparam, ypi, yp2, ypi2, cy, cyi, hy2, nx1, nx2, KY3D, i, j)
+         kz  =  evalbi2D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, yparam, ypi, yp2, ypi2, cy, cyi, hy2, nx1, nx2, KZ3D, i, j)
+
+         gf   = one/DSQRT((x_f-xs)*(x_f-xs)+(y_f-ys)*(y_f-ys)+(z_f-zs)*(z_f-zs))
+         f(1) = kx*gf
+         f(2) = ky*gf
+         f(3) = kz*gf
+         !WRITE(327,'(6(ES20.12))') xs,ys,zs,kx,ky,kz
+         RETURN
+      END SUBROUTINE funsub_a
 
       SUBROUTINE read_nescout_deallocate(comm)
          USE mpi_sharmem
