@@ -98,6 +98,7 @@ MODULE thrift_vars
              win_thrift_dens_restart,win_thrift_temp_restart,win_thrift_dens_fast_alphas_restart, &
              win_thrift_dpecrhdv, win_thrift_pecrh     
     REAL(rprec) :: dt_first_iter
+    INTEGER :: nion_prof_restart
     REAL(rprec), DIMENSION(:), POINTER :: THRIFT_RHO(:), THRIFT_RHOFULL(:), THRIFT_PHIEDGE(:), &
                                           THRIFT_S(:),   THRIFT_SNOB(:),  THRIFT_T(:),         &
                                           UGRID_RESTART(:), J_RESTART(:), THRIFT_BETATOT(:), &

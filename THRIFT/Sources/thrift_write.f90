@@ -47,6 +47,8 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ntimesteps',ier)
          CALL write_scalar_hdf5(fid,'nssize',ier,INTVAR=nsj,ATT='Number of Radial Gridpoints in s space',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nssize',ier)
+         CALL write_scalar_hdf5(fid,'nion_prof',ier,INTVAR=nion_prof,ATT='Number of ion species',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nion_prof',ier)
          CALL write_scalar_hdf5(fid,'nrho',ier,INTVAR=nrho,ATT='Number of Radial Gridpoints',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nrho',ier)
          CALL write_scalar_hdf5(fid,'npicard',ier,INTVAR=npicard,ATT='Maximum number of Picard Iterations',ATT_NAME='description')
