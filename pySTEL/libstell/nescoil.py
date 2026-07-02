@@ -268,13 +268,31 @@ class NESCOIL(FourierRep):
 		if lplotnow: pyplot.show()
 		return hmesh
 
-	def computesurfaces(self):
-		"""Mesh the NESCOIL Surfaces in real space over half field period."""
+	def computesurfaces(self,theta=None,zeta=None):
+		"""Mesh the NESCOIL Surfaces.
+
+		This routine fourier transforms the plasma and current
+		potential surfaces over a half field period.
+
+		Parameters
+		----------
+		theta : ndarray (optional)
+			Poloidal mesh (default: 0-2pi over nu)
+		zeta : ndarray (optional)
+			Toroidal mesh (default: 0-pi over nv)
+		"""
 		import numpy as np
-		self.theta = np.ndarray((self.nu,1))
-		self.zeta  = np.ndarray((self.nv,1))
-		for j in range(self.nu): self.theta[j]=2.0*np.pi*j/float(self.nu-1)
-		for j in range(self.nv): self.zeta[j]=np.pi*j/float(self.nv-1)   ## this is the toroidal angle \varphi/nfp
+		if type(theta) == type(None):
+			self.theta = np.linspace([0],[2*np.pi],self.nu+1)
+			self.theta = self.theta[0:-2]
+		else:
+			self.theta=theta
+		if type(zeta) == type(None): 
+			# this is the toroidal angle \varphi/nfp
+			self.zeta = np.linspace([0],[np.pi],self.nv+1)
+			self.zeta = self.zeta[0:-2]
+		else:
+			self.zeta = zeta
 		self.rp = self.cfunct(self.theta,self.zeta,self.rmnc_plasma.T,self.xm_plasma,self.xn_plasma)
 		self.zp = self.sfunct(self.theta,self.zeta,self.zmns_plasma.T,self.xm_plasma,self.xn_plasma)
 		self.rc = self.cfunct(self.theta,self.zeta,self.rmnc_surface.T,self.xm_surface,self.xn_surface)
