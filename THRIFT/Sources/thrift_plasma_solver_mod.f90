@@ -29,6 +29,7 @@ MODULE thrift_plasma_solver_mod
     REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: r_plasma_grid, N_fast_alphas, plasma_Er
     INTEGER :: ilogplasma, num_species
     REAL(rprec), DIMENSION(:,:), ALLOCATABLE, PRIVATE :: plasma_N, plasma_T, plasma_P
+    REAL(rprec), DIMENSION(:), ALLOCATABLE   :: plasma_aminor, plasma_Baxis, plasma_Bref, plasma_iota2o3
     REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: plasma_N_keep, plasma_T_keep, &
                                                   S_energy_ext, S_particle_ext, &
                                                   S_alpha_power
@@ -95,6 +96,10 @@ MODULE thrift_plasma_solver_mod
         IF( .NOT. ALLOCATED(S_radiated_power)) ALLOCATE(S_radiated_power(Nt_total_plasma_solver,Nr_plasma_solver))
         IF( .NOT. ALLOCATED(dVdr_keep)) ALLOCATE(dVdr_keep(Nt_total_plasma_solver,Nr_plasma_solver))
         IF( .NOT. ALLOCATED(plasma_Er)) ALLOCATE(plasma_Er(Nt_total_plasma_solver,Nr_plasma_solver))
+        IF( .NOT. ALLOCATED(plasma_Baxis)) ALLOCATE(plasma_Baxis(Nt_total_plasma_solver))
+        IF( .NOT. ALLOCATED(plasma_aminor)) ALLOCATE(plasma_aminor(Nt_total_plasma_solver))
+        IF( .NOT. ALLOCATED(plasma_iota2o3)) ALLOCATE(plasma_iota2o3(Nt_total_plasma_solver))
+        IF( .NOT. ALLOCATED(plasma_Bref)) ALLOCATE(plasma_Bref(Nt_total_plasma_solver))
         ! These arrays are filled in thrift_penta with the total NEO fluxes. They include the inter-species diffusion coeffs
         ! which are neglected when computing the Dn_NEO and cn_NEO coeffs used by the transport solver
         IF( .NOT. ALLOCATED(G_NEO_complet)) ALLOCATE(G_NEO_complet(num_species,Nt_total_plasma_solver,Nr_plasma_solver))
@@ -154,6 +159,9 @@ MODULE thrift_plasma_solver_mod
             ! Update splines and exit routine
             CALL update_splines
 
+            ! Update equilirbrium quantities
+            CALL update_equilibrium_vars
+
             IF( .NOT. lrestart_from_file) RETURN
             ! If lrestart_from_file=T, then proceed imediately to next plasma iteration 
             ! until THRIFT_tstart is reached (don't forget that in restart mode, tstart is
@@ -185,6 +193,8 @@ MODULE thrift_plasma_solver_mod
 
             mytimestep_plasma_solver = mytimestep_plasma_solver + 1
             r_plasma_grid(mytimestep_plasma_solver,:) = rho_plasma_grid * eq_Aminor
+
+            CALL update_equilibrium_vars
 
             ! SUBCYCLE
             delta_p = 10*tol_plasma_solver
@@ -559,8 +569,7 @@ MODULE thrift_plasma_solver_mod
         dt = dt_plasma_solver
 
         ! Vp = dV/dr
-        CALL EZspline_interp(vp_spl,Nr,rho_plasma_grid,Vp,ier)
-        Vp = Vp * 2.0_rprec * rho_plasma_grid * eq_phiedge / eq_Aminor
+        Vp = dVdr_keep(mytimestep_plasma_solver,:)
 
         ! r=0
         main_diag(1) = one + dt*4.0_rprec*Dn(1)/dr2 + 2.0_rprec*dt*cn(2)/dr
@@ -671,10 +680,7 @@ MODULE thrift_plasma_solver_mod
         ALLOCATE(LHS_coll_heat_exchange(Nr*num_species,Nr*num_species))
 
         ! Vp = dV/dr
-        CALL EZspline_interp(vp_spl,Nr,rho_plasma_grid,Vp,ier)
-        Vp = Vp * 2.0_rprec * rho_plasma_grid * eq_phiedge / eq_Aminor
-        ! Bookkeeping
-        dVdr_keep(mytimestep_plasma_solver,:) = Vp
+        Vp = dVdr_keep(mytimestep_plasma_solver,:)
 
         kk = 1
         DO ispecies=1,num_species
@@ -920,6 +926,24 @@ MODULE thrift_plasma_solver_mod
         plasma_T = plasma_P / (plasma_N * e_charge)
         RETURN
     END SUBROUTINE
+
+    SUBROUTINE update_equilibrium_vars
+        ! Updates dVdr_keep, plasma_aminor, plasma_Baxis, plasma_Bref and plasma_iota2o3
+        IMPLICIT NONE
+        REAL(rprec), DIMENSION(Nr_plasma_solver) :: Vp
+        INTEGER :: thrift_irho2o3,ier
+
+        CALL EZspline_interp(vp_spl,Nr_plasma_solver,rho_plasma_grid,Vp,ier)
+        dVdr_keep(mytimestep_plasma_solver,:) = Vp * 2.0_rprec * rho_plasma_grid * eq_phiedge / eq_Aminor
+
+        plasma_aminor(mytimestep_plasma_solver) = eq_Aminor
+        plasma_Baxis(mytimestep_plasma_solver) = SQRT(THRIFT_BSQAV(1,mytimestep))
+        plasma_Bref(mytimestep_plasma_solver) = eq_phiedge / (pi*eq_Aminor**2)
+
+        thrift_irho2o3 = MINLOC(ABS(SQRT(THRIFT_S) - 2./3.), DIM=1)
+        plasma_iota2o3(mytimestep_plasma_solver) = THRIFT_IOTA(thrift_irho2o3,mytimestep)
+
+    END SUBROUTINE update_equilibrium_vars
 
     SUBROUTINE set_initial_profiles
         IMPLICIT NONE
@@ -1228,7 +1252,7 @@ MODULE thrift_plasma_solver_mod
         nref = ni
         Tref = Ti
         mref = mass_ref_species
-        Bref = eq_phiedge / (pi*eq_Aminor**2)
+        Bref = plasma_Bref(mytimestep_plasma_solver)
 
         !Q gyroBohm (for the scaling)
         Q_gB = 2.0_rprec * SQRT(2.0_rprec) * nref * SQRT(mref) * (e_charge*Tref)**2.5_rprec
@@ -1276,7 +1300,7 @@ MODULE thrift_plasma_solver_mod
         nref = n
         Tref = T
         mref = mass_ref_species
-        Bref = eq_phiedge / (pi*eq_Aminor**2)
+        Bref = plasma_Bref(mytimestep_plasma_solver)
 
         !Q gyroBohm (for the scaling)
         Q_gB = 2.0_rprec * SQRT(2.0_rprec) * nref * SQRT(mref) * (e_charge*Tref)**2.5_rprec

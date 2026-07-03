@@ -312,6 +312,13 @@
          ! Electric Field
          CALL write_var_hdf5(fid,'plasma_Er',Nt_write,Nr_plasma_solver,ier,DBLVAR=plasma_Er(write_idx,:),ATT='Radial Electric Field [V/n]',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'plasma_Er',ier)
+         ! aminor, Baxis and iota2o3 (needed for ISS04)
+         CALL write_var_hdf5(fid,'aminor',Nt_write,ier,DBLVAR=plasma_aminor(write_idx),ATT='aminor [m]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'aminor',ier)
+         CALL write_var_hdf5(fid,'Baxis',Nt_write,ier,DBLVAR=plasma_Baxis(write_idx),ATT='Baxis [T]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Baxis',ier)
+         CALL write_var_hdf5(fid,'iota2o3',Nt_write,ier,DBLVAR=plasma_iota2o3(write_idx),ATT='iota2o3',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'iota2o3',ier)
          ! Close file
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'plasma_solver_'//TRIM(id_string)//'.h5',ier)

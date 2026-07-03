@@ -1469,11 +1469,9 @@ class THRIFT_plasma_solver():
             with h5py.File(file,'r') as f:
                 for temp in ['r_plasma_grid','plasma_N','plasma_T','N_fast_alphas','Dn_NEO','cn_NEO','Dp_NEO',\
                              'cp_NEO','G_NEO_complet','Q_NEO_complet','Dp_total','cp_total','Dn_total','cn_total',\
-                             'S_radiated_power','S_alpha_power','S_energy_ext','S_particle_ext','dVdr','plasma_Er']:
-                    try:
-                        data = np.array(f[temp][:,:,:])
-                    except:
-                        data = np.array(f[temp][:,:])
+                             'S_radiated_power','S_alpha_power','S_energy_ext','S_particle_ext','dVdr','plasma_Er',\
+                             'iota2o3','plasma_aminor','plasma_Baxis']:
+                    data = np.array(f[temp])
                     # Check if the attribute exists; if not, initialize it
                     if not hasattr(self, temp):
                         setattr(self, temp, data)
@@ -1659,7 +1657,7 @@ class THRIFT_plasma_solver():
             for it,t in enumerate(self.t_grid_source): 
                 dset[:,it,species_id] = source(t)
                 
-    def convert_to_joblib(self,dt_save=0.1,filename='thrift_transport_simul',thrift_class=None):
+    def convert_to_joblib(self,dt_save=0.1,filename='thrift_transport_simul'):
         """ This function creates a joblib file with the transport simulation data
         We can the use the same post-processing tools we use to analyse transport simulations
         performed by pySTEL class plasma_solver
@@ -1691,7 +1689,9 @@ class THRIFT_plasma_solver():
         
         saved_class.Er = self.plasma_Er[sl,:]
         
-        for attr1,attr2 in zip(('N','T','Dp','cp','Dn','cn','Dn_NEO','Dp_NEO','cp_NEO','cn_NEO','Q_NEO_complet'),('plasma_N','plasma_T','Dp_total','cp_total','Dn_total','cn_total','Dn_NEO','Dp_NEO','cp_NEO','cn_NEO','Q_NEO_complet')):
+        for attr1,attr2 in zip(\
+            ('N','T','Dp','cp','Dn','cn','Dn_NEO','Dp_NEO','cp_NEO','cn_NEO','Q_NEO_complet','aminor','iota2o3','Baxis'),\
+            ('plasma_N','plasma_T','Dp_total','cp_total','Dn_total','cn_total','Dn_NEO','Dp_NEO','cp_NEO','cn_NEO','Q_NEO_complet','aminor','iota2o3','Baxis')):
             setattr(saved_class, attr1, {})
             for ispecies,species in enumerate(self.list_of_species):
                 getattr(saved_class, attr1)[species] = getattr(self, attr2)[ispecies,sl,:]
@@ -1731,12 +1731,6 @@ class THRIFT_plasma_solver():
             #
             saved_class.Q_turb[species] = saved_class.Q_total[species] - saved_class.Q_NEO[species]
             saved_class.Gamma_turb[species] = saved_class.Gamma_total[species] - saved_class.Gamma_NEO[species]
-            
-        if(thrift_class is not None):
-            saved_class.aminor = thrift_class.get_vars('THRIFT_AMINOR',time=saved_class.time)[:,-1]
-            saved_class.Rmajor = thrift_class.get_vars('THRIFT_RMAJOR',time=saved_class.time)[:,-1]
-            saved_class.B      = thrift_class.get_vars('THRIFT_BAV',  time=saved_class.time)[:,:]
-            saved_class.iota   = thrift_class.get_vars('THRIFT_IOTA',  time=saved_class.time)[:,:]
 
         joblib.dump(saved_class, output_filename)
         
