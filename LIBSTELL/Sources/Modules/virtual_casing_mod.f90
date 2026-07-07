@@ -41,7 +41,7 @@
 !                    xn_temp = -xn_nyq/nfp
 !                    ! Copy rmnc/zmns into matching rows of the Nyquist basis;
 !                    ! leave geometry rows with no matching VMEC mode at zero.
-!                    ! currumnc/currvmnc are sqrt(g)*J^u/v on the Nyquist grid.
+!                    ! currumnc/currvmnc are contravariant current harmonics on the Nyquist grid.
 !                    jumnc_temp = isigng*currumnc
 !                    jvmnc_temp = isigng*currvmnc
 !                    CALL init_volint(mnmax_temp,nu2,nv2,ns,xm_temp,xn_temp, &
