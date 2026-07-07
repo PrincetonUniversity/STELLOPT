@@ -1470,15 +1470,18 @@ class THRIFT_plasma_solver():
                 for temp in ['r_plasma_grid','plasma_N','plasma_T','N_fast_alphas','Dn_NEO','cn_NEO','Dp_NEO',\
                              'cp_NEO','G_NEO_complet','Q_NEO_complet','Dp_total','cp_total','Dn_total','cn_total',\
                              'S_radiated_power','S_alpha_power','S_energy_ext','S_particle_ext','dVdr','plasma_Er',\
-                             'iota2o3','plasma_aminor','plasma_Baxis']:
+                             'iota2o3','aminor','Baxis']:
                     data = np.array(f[temp])
                     # Check if the attribute exists; if not, initialize it
                     if not hasattr(self, temp):
                         setattr(self, temp, data)
                     else:
-                        # Concatenate the new data to the existing attribute
+                        # Concatenate the new data to the existing attribute along the last axis
                         existing_data = getattr(self, temp)
-                        setattr(self, temp, np.concatenate((existing_data, data),axis=1))                       
+                        if data.ndim == 1:
+                            setattr(self, temp, np.concatenate((existing_data, data), axis=0))       
+                        else:
+                            setattr(self, temp, np.concatenate((existing_data, data), axis=1))                    
                     
         ##################### TRANSPOSE DATA #################################
         #### 2D arrays should be [time,rho]
