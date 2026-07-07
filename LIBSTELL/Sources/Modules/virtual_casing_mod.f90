@@ -34,16 +34,17 @@
 !
 !                    To load an equilibrium using current density from VMEC
 !
-!                    ALLOCATE(xm_temp(mnmax),xn_temp(mnmax)) ! Integer Arrays
-!                    ALLOCATE(rmnc_temp(mnmax,ns),zmns_temp(mnmax,ns)) ! DOUBLE PRECISION
-!                    ALLOCATE(jumnc_temp(mnmax,ns),jvmnc_temp(mnmax,ns)) ! DOUBLE PRECISION
-!                    xm_temp = xm
-!                    xn_temp = -xn
-!                    rmnc_temp = rmnc
-!                    zmns_temp = zmns
+!                    ALLOCATE(xm_temp(mnmax_temp),xn_temp(mnmax_temp)) ! Integer Arrays
+!                    ALLOCATE(rmnc_temp(mnmax_temp,ns),zmns_temp(mnmax_temp,ns))
+!                    ALLOCATE(jumnc_temp(mnmax_temp,ns),jvmnc_temp(mnmax_temp,ns))
+!                    xm_temp = xm_nyq
+!                    xn_temp = -xn_nyq/nfp
+!                    ! Copy rmnc/zmns into matching rows of the Nyquist basis;
+!                    ! leave geometry rows with no matching VMEC mode at zero.
+!                    ! currumnc/currvmnc are sqrt(g)*J^u/v on the Nyquist grid.
 !                    jumnc_temp = isigng*currumnc
 !                    jvmnc_temp = isigng*currvmnc
-!                    CALL init_volint(mnmax,nu2,nv2,ns,xm_temp,xn_temp, &
+!                    CALL init_volint(mnmax_temp,nu2,nv2,ns,xm_temp,xn_temp, &
 !                                     rmnc_temp,zmns_temp,nfp,&
 !                                     JUMNC=jumnc_temp, JVMNC=jvmnc_temp)
 !
