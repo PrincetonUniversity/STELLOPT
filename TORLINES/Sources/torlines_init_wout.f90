@@ -410,7 +410,7 @@
          END IF
          IF (lnyquist) THEN
             xm_temp = xm_nyq
-            xn_temp = -xn_nyq/nfp
+            xn_temp = -xn_nyq/nfp ! init_volint uses (m*u+n*v), not VMEC's (m*u-n*v*NFP)
             DO u = 1, mnmax_temp
                DO v = 1, mnmax
                   IF ((xm(v) .eq. xm_nyq(u)) .and. (xn(v) .eq. xn_nyq(u))) THEN
@@ -425,7 +425,7 @@
             END DO
          ELSE
             xm_temp = xm
-            xn_temp = -xn/nfp
+            xn_temp = -xn/nfp ! init_volint uses (m*u+n*v), not VMEC's (m*u-n*v*NFP)
             rmnc_temp = rmnc
             zmns_temp = zmns
             IF (lasym) THEN
