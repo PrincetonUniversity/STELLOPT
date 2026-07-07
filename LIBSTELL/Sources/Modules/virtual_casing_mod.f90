@@ -38,7 +38,7 @@
 !                    ALLOCATE(rmnc_temp(mnmax_temp,ns),zmns_temp(mnmax_temp,ns))
 !                    ALLOCATE(jumnc_temp(mnmax_temp,ns),jvmnc_temp(mnmax_temp,ns))
 !                    xm_temp = xm_nyq
-!                    xn_temp = -xn_nyq/nfp
+!                    xn_temp = -xn_nyq
 !                    ! Copy rmnc/zmns into matching rows of the Nyquist basis;
 !                    ! leave geometry rows with no matching VMEC mode at zero.
 !                    ! currumnc/currvmnc are contravariant current harmonics on the Nyquist grid.
@@ -2019,10 +2019,12 @@
             FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -zmnc(mn,:)*xn(mn)
             CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,zv,1,0)
          END IF
+         ! init_volint reconstructs a full torus, so rv/zv are already
+         ! derivatives with respect to the full-torus toroidal coordinate.
          ! Calculate jr, jphi, jz, jx, jy
-         jr   = ju_temp*ru+jv_temp*rv*nfp
+         jr   = ju_temp*ru+jv_temp*rv
          jphi = r_temp * jv_temp
-         jz   = ju_temp*zu+jv_temp*zv*nfp
+         jz   = ju_temp*zu+jv_temp*zv
          DO u = 1, nu
             DO v = 1, nvp
                cop = DCOS(pi2*xv(v))
@@ -2203,7 +2205,7 @@
       ! non Hermite Quatitites
       cx = xparam*(xp2-1); cxi = xpi*(xpi2-1); hx2 = hx*hx
       cy = yparam*(yp2-1); cyi = ypi*(ypi2-1); hy2 = hy*hy
-      cy = zparam*(zp2-1); czi = zpi*(zpi2-1); hz2 = hz*hz
+      cz = zparam*(zp2-1); czi = zpi*(zpi2-1); hz2 = hz*hz
       xs  =  evaltri3D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, &
                        yparam, ypi, yp2, ypi2, cy, cyi, hy2, &
                        zparam, zpi, zp2, zpi2, cz, czi, hz2, &
@@ -2292,7 +2294,7 @@
       ! non Hermite Quatitites
       cx = xparam*(xp2-1); cxi = xpi*(xpi2-1); hx2 = hx*hx
       cy = yparam*(yp2-1); cyi = ypi*(ypi2-1); hy2 = hy*hy
-      cy = zparam*(zp2-1); czi = zpi*(zpi2-1); hz2 = hz*hz
+      cz = zparam*(zp2-1); czi = zpi*(zpi2-1); hz2 = hz*hz
       xs  =  evaltri3D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, &
                        yparam, ypi, yp2, ypi2, cy, cyi, hy2, &
                        zparam, zpi, zp2, zpi2, cz, czi, hz2, &
