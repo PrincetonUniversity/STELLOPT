@@ -162,10 +162,16 @@ MODULE thrift_plasma_solver_mod
             ! Update equilirbrium quantities
             CALL update_equilibrium_vars
 
-            IF( .NOT. lrestart_from_file) RETURN
             ! If lrestart_from_file=T, then proceed imediately to next plasma iteration 
             ! until THRIFT_tstart is reached (don't forget that in restart mode, tstart is
             ! not the time at which the previous simulation was left at)
+            IF( .NOT. lrestart_from_file) THEN
+                RETURN
+            ELSE
+                ! If continuing due to restart, then shut off lscreen of penta
+                lscreen_subcodes = .FALSE.
+                IF (lverb) WRITE(6,'(A)') '----- Running penta for restart -----'
+            END IF
         ENDIF
         
         dr_plasma_solver = drho_plasma_solver * eq_Aminor
@@ -983,6 +989,10 @@ MODULE thrift_plasma_solver_mod
             CALL EZspline_setup(spline_restart,DENS_FAST_ALPHAS_RESTART(:),ier,EXACT_DIM=.true.)
             IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'setup: restart fast alphas spline',ier)
             CALL EZspline_interp(spline_restart,Nr_plasma_solver,rho_plasma_grid,N_fast_alphas(1,:),ier)
+            ! Radial electric field
+            CALL EZspline_setup(spline_restart,ER_RESTART(:),ier,EXACT_DIM=.true.)
+            IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'setup: restart Er spline',ier)
+            CALL EZspline_interp(spline_restart,Nr_plasma_solver,rho_plasma_grid,plasma_Er(1,:),ier)
             !
             CALL EZspline_free(spline_restart,ier)
         ELSEIF(trim(init_profiles_type) == 'read_from_file' ) THEN

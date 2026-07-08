@@ -354,6 +354,10 @@
          CALL thrift_paraexe(tstr1,tstr2,ltst)
       END IF
 
+      ! Run VMEC+booz_xform+dkes using restart profiles so DKES_D** are
+      ! available at the first thrift_penta call when add_NEO=.true.
+      IF (lrestart_from_file .AND. solve_plasma_equations) CALL thrift_restart_equil
+
       RETURN
 !----------------------------------------------------------------------
 !     END SUBROUTINE
