@@ -1693,14 +1693,17 @@ class THRIFT_plasma_solver():
         saved_class.Er = self.plasma_Er[sl,:]
         
         for attr1,attr2 in zip(\
-            ('N','T','Dp','cp','Dn','cn','Dn_NEO','Dp_NEO','cp_NEO','cn_NEO','Q_NEO_complet','aminor','iota2o3','Baxis'),\
-            ('plasma_N','plasma_T','Dp_total','cp_total','Dn_total','cn_total','Dn_NEO','Dp_NEO','cp_NEO','cn_NEO','Q_NEO_complet','aminor','iota2o3','Baxis')):
+            ('N','T','Dp','cp','Dn','cn','Dn_NEO','Dp_NEO','cp_NEO','cn_NEO','Q_NEO_complet'),\
+            ('plasma_N','plasma_T','Dp_total','cp_total','Dn_total','cn_total','Dn_NEO','Dp_NEO','cp_NEO','cn_NEO','Q_NEO_complet')):
             setattr(saved_class, attr1, {})
             for ispecies,species in enumerate(self.list_of_species):
                 getattr(saved_class, attr1)[species] = getattr(self, attr2)[ispecies,sl,:]
         
         saved_class.N['alphas_fast'] = self.N_fast_alphas[sl,:]
-        
+        saved_class.aminor = self.aminor[sl]
+        saved_class.iota2o3 = self.iota2o3[sl]
+        saved_class.Baxis = self.Baxis[sl]
+
         saved_class.explicit_energy_sources   = defaultdict(dict)
         saved_class.explicit_particle_sources = defaultdict(dict)
         saved_class.Q_total = defaultdict(dict)
