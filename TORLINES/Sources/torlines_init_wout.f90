@@ -410,8 +410,9 @@
          END IF
          IF (lnyquist) THEN
             xm_temp = xm_nyq
-            ! init_volint samples phi over the full torus.
-            xn_temp = -xn_nyq
+            ! init_volint expands field-period modes to full-torus modes
+            ! internally, matching init_virtual_casing's public convention.
+            xn_temp = -xn_nyq/nfp
             DO u = 1, mnmax_temp
                DO v = 1, mnmax
                   IF ((xm(v) .eq. xm_nyq(u)) .and. (xn(v) .eq. xn_nyq(u))) THEN
@@ -426,8 +427,9 @@
             END DO
          ELSE
             xm_temp = xm
-            ! init_volint samples phi over the full torus.
-            xn_temp = -xn
+            ! init_volint expands field-period modes to full-torus modes
+            ! internally, matching init_virtual_casing's public convention.
+            xn_temp = -xn/nfp
             rmnc_temp = rmnc
             zmns_temp = zmns
             IF (lasym) THEN
