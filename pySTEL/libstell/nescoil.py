@@ -111,7 +111,7 @@ class NESCOIL(FourierRep):
 	def generatePotential(self,theta,zeta):
 		"""Computes the potential on a grid
 
-		This routine computes the potential on a grid
+		This routine computes the normalised potential on a grid
 
 		Parameters
 		----------
@@ -130,7 +130,7 @@ class NESCOIL(FourierRep):
 	def generateTotalPotential(self,theta,zeta):
 		"""Computes the potential on a grid
 
-		This routine computes the potential on a grid
+		This routine computes the normalised potential on a grid
 
 		Parameters
 		----------
@@ -268,6 +268,37 @@ class NESCOIL(FourierRep):
 		if lplotnow: pyplot.show()
 		return hmesh
 
+	def computesurfaces(self,theta=None,zeta=None):
+		"""Mesh the NESCOIL Surfaces.
+
+		This routine fourier transforms the plasma and current
+		potential surfaces over a half field period.
+
+		Parameters
+		----------
+		theta : ndarray (optional)
+			Poloidal mesh (default: 0-2pi over nu)
+		zeta : ndarray (optional)
+			Toroidal mesh (default: 0-pi over nv)
+		"""
+		import numpy as np
+		if type(theta) == type(None):
+			self.theta = np.linspace([0],[2*np.pi],self.nu+1)
+			self.theta = self.theta[0:-2]
+		else:
+			self.theta=theta
+		if type(zeta) == type(None): 
+			# this is the toroidal angle \varphi/nfp
+			self.zeta = np.linspace([0],[np.pi],self.nv+1)
+			self.zeta = self.zeta[0:-2]
+		else:
+			self.zeta = zeta
+		self.rp = self.cfunct(self.theta,self.zeta,self.rmnc_plasma.T,self.xm_plasma,self.xn_plasma)
+		self.zp = self.sfunct(self.theta,self.zeta,self.zmns_plasma.T,self.xm_plasma,self.xn_plasma)
+		self.rc = self.cfunct(self.theta,self.zeta,self.rmnc_surface.T,self.xm_surface,self.xn_surface)
+		self.zc = self.sfunct(self.theta,self.zeta,self.zmns_surface.T,self.xm_surface,self.xn_surface)
+		return self
+
 	def plotsurfaces(self,plot3D=None):
 		"""Plots the NESCOIL Surfaces
 
@@ -289,16 +320,9 @@ class NESCOIL(FourierRep):
 			lplotnow = True
 			plt = PLOT3D()
 		# Generate VTK objects
-		theta = np.ndarray((self.nu,1))
-		zeta  = np.ndarray((self.nv,1))
-		for j in range(self.nu): theta[j]=2.0*np.pi*j/float(self.nu)
-		for j in range(self.nv):  zeta[j]=np.pi*j/float(self.nv-1)
-		rp = self.cfunct(theta,zeta,self.rmnc_plasma.T,self.xm_plasma,self.xn_plasma)
-		zp = self.sfunct(theta,zeta,self.zmns_plasma.T,self.xm_plasma,self.xn_plasma)
-		rc = self.cfunct(theta,zeta,self.rmnc_surface.T,self.xm_surface,self.xn_surface)
-		zc = self.sfunct(theta,zeta,self.zmns_surface.T,self.xm_surface,self.xn_surface)
-		self.isotoro(rp,zp,zeta/self.np,-1,plot3D=plt,lclosev=False,color='red')
-		self.isotoro(rc,zc,zeta/self.np,-1,plot3D=plt,lclosev=False,color='green')
+		self.computesurfaces()
+		self.isotoro(self.rp,self.zp,self.zeta/self.np,-1,plot3D=plt,lclosev=False,color='red')
+		self.isotoro(self.rc,self.zc,self.zeta/self.np,-1,plot3D=plt,lclosev=False,color='green')
 		# Render if requested
 		if lplotnow: plt.render()
 
@@ -474,8 +498,8 @@ class NESCOIL(FourierRep):
 			v = np.pi*(k+0.5)/ncoils_per_halfperiod
 			#print(k,u,v)
 			th,ze = self.trace_isocontour(np.squeeze(theta),np.squeeze(zeta),np.squeeze(pot), u, v, num_points=npts, period_x=True, period_y=True)
-			print(th)
-			print(ze)
+			#print(th)
+			#print(ze)
 			# Wrap the coil so that poitive current is positive field (counterclockwise from top)
 			if (th[16]-th[0] > 0):
 				th = th[::-1]
@@ -527,6 +551,20 @@ class NESCOIL(FourierRep):
 			coil_name=f'MOD{k+1}'
 			coils.groups.extend([COILGROUP(x,y,z,c,coil_name)])
 		# Return a coil object
+
+                # Make plot if requested
+		if lplot:
+			px = 1/pyplot.rcParams['figure.dpi']
+			fig=pyplot.figure(figsize=(1024*px,768*px))
+			ax=fig.add_subplot(111)
+			hmesh=ax.contourf(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot),levels=2*ncoils_per_halfperiod+1,extend='both',cmap='Greens')
+			ax.contour(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot),levels=2*ncoils_per_halfperiod+1,colors='black')
+			ax.set_xlabel('Toroidal angle [rad]')
+			ax.set_ylabel('Poloidal angle [rad]')
+			ax.set_title(r'NESCOIL Coil Cutting')
+			pyplot.colorbar(hmesh,label=r'Potential $\Phi$ [arb]',ax=ax)
+			pyplot.show()
+                        
 		return coils
 
 	def cutcoils_helical(self,nhelical_coils,lplot=False):
