@@ -8,6 +8,7 @@ if __name__=="__main__":
 	import matplotlib.pyplot as pyplot
 	from matplotlib.backends.backend_agg import FigureCanvasAgg
 	from libstell.vmec import VMEC
+	from libstell.nescoil import NESCOIL
 	from libstell.fieldlines import FIELDLINES
 	from libstell.plot3D import PLOT3D
 	import numpy as np
@@ -27,6 +28,8 @@ if __name__=="__main__":
 		help="Plot a 3D Poincare plot.", default = None, type=int)
 	parser.add_argument("-v", "--vmec", dest="vmec_ext", 
 		help="Add VMEC equilbrium to plot", default = None)
+	parser.add_argument("--nescoil", dest="nescoil_file", 
+		help="Add NESCOIL surfaces to the plot", default = None)
 	parser.add_argument("--nskip", dest="nskip",
 		help="Field line skipping parameter when generating Poincare cross sections (default: 1)", default = 1, type=int)
 	parser.add_argument("--colormap", dest="colormap", 
@@ -62,6 +65,14 @@ if __name__=="__main__":
 			if args.lbackground: canvas = FigureCanvasAgg(fig)
 			phi0 = field_data.PHI_lines[0,args.plotphi]
 			field_data.plot_poincare(phi0,args.nskip,ax=ax)
+			if args.nescoil_file:
+				nescout = NESCOIL()
+				nescout.read_nescout(args.nescoil_file)
+				theta = np.linspace([0],[2.0*np.pi],360)
+				phi = np.array([[phi0*nescout.np]])
+				nescout.computesurfaces(theta=theta,zeta=phi)
+				ax1.plot(nescout.rp[0,:,0],nescout.zp[0,:,0],'r')
+				ax1.plot(nescout.rc[0,:,0],nescout.zc[0,:,0],'b')
 			if args.vmec_ext:
 				vmec_wout = VMEC()
 				vmec_wout.read_wout(args.vmec_ext)
@@ -84,6 +95,18 @@ if __name__=="__main__":
 			field_data.plot_poincare(phi1,args.nskip,ax=ax2)
 			phi2 = field_data.PHI_lines[0,int(np.round(field_data.npoinc/2))]
 			field_data.plot_poincare(phi2,args.nskip,ax=ax3)
+			if args.nescoil_file:
+				nescout = NESCOIL()
+				nescout.read_nescout(args.nescoil_file)
+				theta = np.linspace([0],[2.0*np.pi],360)
+				phi = np.array([[phi0*nescout.np],[phi1*nescout.np],[phi2*nescout.np]])
+				nescout.computesurfaces(theta=theta,zeta=phi)
+				ax1.plot(nescout.rp[0,:,0],nescout.zp[0,:,0],'r')
+				ax2.plot(nescout.rp[0,:,1],nescout.zp[0,:,1],'r')
+				ax3.plot(nescout.rp[0,:,2],nescout.zp[0,:,2],'r')
+				ax1.plot(nescout.rc[0,:,0],nescout.zc[0,:,0],'b')
+				ax2.plot(nescout.rc[0,:,1],nescout.zc[0,:,1],'b')
+				ax3.plot(nescout.rc[0,:,2],nescout.zc[0,:,2],'b')
 			if args.vmec_ext:
 				vmec_wout = VMEC()
 				vmec_wout.read_wout(args.vmec_ext)
