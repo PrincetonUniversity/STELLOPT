@@ -36,7 +36,8 @@
                  mysurf, root_max_Er, jspecies, irho, it_prev
       REAL(rprec) :: s, rho, mytime
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: rho_k, iota, phip, chip, btheta, bzeta, bsq, vp, &
-                        te, ne, dtedrho, dnedrho, EparB, JBS_PENTA, etapar_PENTA, Er_PENTA, rho_temp, J_temp, eta_temp, Er_temp
+                        te, ne, dtedrho, dnedrho, EparB, JBS_PENTA, etapar_PENTA, Er_PENTA, rho_temp, J_temp, eta_temp, Er_temp, &
+                        Er_k
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: GNEO_PENTA, QNEO_PENTA, GNEO_temp, QNEO_temp
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: Dn_PENTA, cn_PENTA, Dn_temp, cn_temp
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: Dp_PENTA, cp_PENTA, Dp_temp, cp_temp
@@ -68,12 +69,12 @@
       ALLOCATE(rho_k(ns_dkes),iota(ns_dkes),phip(ns_dkes),chip(ns_dkes),btheta(ns_dkes),bzeta(ns_dkes),bsq(ns_dkes),vp(ns_dkes),EparB(ns_dkes))
       ALLOCATE(te(ns_dkes),ne(ns_dkes),dtedrho(ns_dkes),dnedrho(ns_dkes))
       ALLOCATE(ni(ns_dkes,nion_prof),ti(ns_dkes,nion_prof),dtidrho(ns_dkes,nion_prof),dnidrho(ns_dkes,nion_prof))
-      ALLOCATE(JBS_PENTA(ns_dkes),etapar_PENTA(ns_dkes),Er_PENTA(ns_dkes))
+      ALLOCATE(JBS_PENTA(ns_dkes),etapar_PENTA(ns_dkes),Er_PENTA(ns_dkes),Er_k(ns_dkes))
       ALLOCATE(GNEO_PENTA(nion_prof+1,ns_dkes),QNEO_PENTA(nion_prof+1,ns_dkes))
       ALLOCATE(Dn_PENTA(nion_prof+1,ns_dkes),cn_PENTA(nion_prof+1,ns_dkes))
       ALLOCATE(Dp_PENTA(nion_prof+1,ns_dkes),cp_PENTA(nion_prof+1,ns_dkes))
 
-      JBS_PENTA = 0.0; etapar_PENTA = 0.0; Er_PENTA = 0.0
+      JBS_PENTA = 0.0; etapar_PENTA = 0.0; Er_PENTA = 0.0; Er_k = 0.0
       GNEO_PENTA = 0.0; QNEO_PENTA = 0.0
       Dn_PENTA = 0.0; cn_PENTA = 0.0
       Dp_PENTA = 0.0; cp_PENTA = 0.0
@@ -129,6 +130,11 @@
                   ! EparB
                   ier = 0
                   CALL EZSpline_interp(EparB_spl, rho, EparB(k), ier)
+                  ! Er from previous plasma solver step
+                  IF (solve_plasma_equations) THEN
+                        ier = 0
+                        CALL EZspline_interp(Er_spline, rho, Er_k(k), ier)
+                  END IF
             END DO
             !
             CALL EZspline_free(EparB_spl,ier)    
@@ -151,6 +157,7 @@
       CALL MPI_BCAST(dtidrho,ns_dkes*nion_prof,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
       CALL MPI_BCAST(dnidrho,ns_dkes*nion_prof,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
       CALL MPI_BCAST(EparB,ns_dkes,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+      CALL MPI_BCAST(Er_k,ns_dkes,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
       ! VMEC quantities
       CALL MPI_BCAST(eq_Aminor,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
       CALL MPI_BCAST(eq_Rmajor,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
@@ -196,7 +203,7 @@
             IF(solve_plasma_equations .AND. .NOT. look_for_ambipolar) THEN
                   ! Need to define num_roots and set Er_roots
                   num_roots = 1
-                  CALL EZspline_interp(Er_spline,rho_k(k),Er_roots(1),ier)
+                  Er_roots(1) = Er_k(k)
             ELSE
                   ! Now the basic steps
                   CALL PENTA_RUN_2_EFIELD
@@ -258,7 +265,7 @@
             DEALLOCATE(rho_k,iota,phip,chip,btheta,bzeta,bsq,vp,EparB)
             DEALLOCATE(te,ne,dtedrho,dnedrho)
             DEALLOCATE(ni,ti,dtidrho,dnidrho)
-            DEALLOCATE(JBS_PENTA,etapar_PENTA,Er_PENTA,GNEO_PENTA,QNEO_PENTA,Dn_PENTA,cn_PENTA,Dp_PENTA,cp_PENTA)
+            DEALLOCATE(JBS_PENTA,etapar_PENTA,Er_PENTA,Er_k,GNEO_PENTA,QNEO_PENTA,Dn_PENTA,cn_PENTA,Dp_PENTA,cp_PENTA)
             RETURN
       ENDIF
 #endif
@@ -328,7 +335,7 @@
                         !
                         CALL interpolate_from_PENTA(nrho_penta=ns_dkes, rho_penta=rho_k, y_penta=Dp_PENTA(jspecies,:),\
                                           nrho_out=Nr_plasma_solver, rho_out=rho_plasma_grid, y_out=Dp_NEO(jspecies,mytimestep_plasma_solver,:),\
-                                          isHermite=1, useLog=.FALSE.)
+                                          isHermite=1, useLog=.FALSE., preventNeg = .TRUE.)
                         !
                         CALL interpolate_from_PENTA(nrho_penta=ns_dkes, rho_penta=rho_k, y_penta=cp_PENTA(jspecies,:),\
                                           nrho_out=Nr_plasma_solver, rho_out=rho_plasma_grid, y_out=cp_NEO(jspecies,mytimestep_plasma_solver,:),\
@@ -338,7 +345,7 @@
             DEALLOCATE(rho_k,iota,phip,chip,btheta,bzeta,bsq,vp,EparB)
             DEALLOCATE(te,ne,dtedrho,dnedrho)
             DEALLOCATE(ni,ti,dtidrho,dnidrho)
-            DEALLOCATE(JBS_PENTA,etapar_PENTA,Er_PENTA,GNEO_PENTA,QNEO_PENTA)
+            DEALLOCATE(JBS_PENTA,etapar_PENTA,Er_PENTA,Er_k,GNEO_PENTA,QNEO_PENTA)
             DEALLOCATE(Dn_PENTA,cn_PENTA,Dp_PENTA,cp_PENTA)              
       END IF
 
