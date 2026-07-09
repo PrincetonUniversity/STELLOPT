@@ -38,7 +38,7 @@
 !                    ALLOCATE(rmnc_temp(mnmax_temp,ns),zmns_temp(mnmax_temp,ns))
 !                    ALLOCATE(jumnc_temp(mnmax_temp,ns),jvmnc_temp(mnmax_temp,ns))
 !                    xm_temp = xm_nyq
-!                    xn_temp = -xn_nyq/nfp
+!                    xn_temp = -xn_nyq
 !                    ! Copy rmnc/zmns into matching rows of the Nyquist basis;
 !                    ! leave geometry rows with no matching VMEC mode at zero.
 !                    ! currumnc/currvmnc are contravariant current harmonics on the Nyquist grid.
@@ -845,8 +845,8 @@
          uv = 1
          DO v = 1, nv
             DO u = 1, nu
-               xsurf(uv)   = rreal(u,v)*dcos(phi(nv))
-               ysurf(uv)   = rreal(u,v)*dsin(phi(nv))
+               xsurf(uv)   = rreal(u,v)*dcos(phi(v))
+               ysurf(uv)   = rreal(u,v)*dsin(phi(v))
                zsurf(uv)   = zreal(u,v)
                xreal(u,v)  = xsurf(uv)
                yreal(u,v)  = ysurf(uv)
@@ -1869,7 +1869,6 @@
       DOUBLE PRECISION, ALLOCATABLE :: zu(:,:,:), zv(:,:,:)
       DOUBLE PRECISION, ALLOCATABLE :: jr(:,:,:), jphi(:,:,:), jz(:,:,:)
       DOUBLE PRECISION, ALLOCATABLE :: jx(:,:,:), jy(:,:,:)
-      INTEGER :: xn_full(1:mnmax)
       TYPE(EZspline3_r8)   :: x3d_spl, y3d_spl, z3d_spl, jx3d_spl, jy3d_spl, jz3d_spl
       ! BEGIN SUBROUTINE
       ! Initialize varaibles
@@ -1990,39 +1989,38 @@
          r_temp=zero; z_temp=zero; ju_temp=zero; jv_temp=zero
          FORALL(u=1:nu) xu(u) = DBLE(u-1)/DBLE(nu-1)
          FORALL(v=1:nvp) xv(v) = DBLE(v-1)/DBLE(nvp-1)
-         xn_full = xn*nfp
-         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,rmnc,xm,xn_full,r_temp,0,1)
-         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,zmns,xm,xn_full,z_temp,1,0)
-         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,jumnc,xm,xn_full,ju_temp,0,0)
-         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,jvmnc,xm,xn_full,jv_temp,0,0)
-         IF (PRESENT(rmns)) CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,rmns,xm,xn_full,r_temp,1,0)
-         IF (PRESENT(zmnc)) CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,zmnc,xm,xn_full,z_temp,0,0)
-         IF (PRESENT(jumns)) CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,jumns,xm,xn_full,ju_temp,1,0)
-         IF (PRESENT(jvmns)) CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,jvmns,xm,xn_full,jv_temp,1,0)
+         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,rmnc,xm,xn,r_temp,0,1)
+         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,zmns,xm,xn,z_temp,1,0)
+         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,jumnc,xm,xn,ju_temp,0,0)
+         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,jvmnc,xm,xn,jv_temp,0,0)
+         IF (PRESENT(rmns)) CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,rmns,xm,xn,r_temp,1,0)
+         IF (PRESENT(zmnc)) CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,zmnc,xm,xn,z_temp,0,0)
+         IF (PRESENT(jumns)) CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,jumns,xm,xn,ju_temp,1,0)
+         IF (PRESENT(jvmns)) CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,jvmns,xm,xn,jv_temp,1,0)
          ! Now we calculate the edge metric elements
          ru = zero; zu = zero; rv = zero; zv = zero
          FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -rmnc(mn,:)*xm(mn)
-         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn_full,ru,1,0)
-         FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -rmnc(mn,:)*xn_full(mn)
-         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn_full,rv,1,0)
+         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,ru,1,0)
+         FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -rmnc(mn,:)*xn(mn)
+         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,rv,1,0)
          FORALL(mn = 1:mnmax) fmn_temp(mn,:) = zmns(mn,:)*xm(mn)
-         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn_full,zu,0,0)
-         FORALL(mn = 1:mnmax) fmn_temp(mn,:) = zmns(mn,:)*xn_full(mn)
-         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn_full,zv,0,0)
+         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,zu,0,0)
+         FORALL(mn = 1:mnmax) fmn_temp(mn,:) = zmns(mn,:)*xn(mn)
+         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,zv,0,0)
          IF (PRESENT(rmns)) THEN
             FORALL(mn = 1:mnmax) fmn_temp(mn,:) = rmns(mn,:)*xm(mn)
-            CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn_full,ru,0,0)
-            FORALL(mn = 1:mnmax) fmn_temp(mn,:) = rmns(mn,:)*xn_full(mn)
-            CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn_full,rv,0,0)
+            CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,ru,0,0)
+            FORALL(mn = 1:mnmax) fmn_temp(mn,:) = rmns(mn,:)*xn(mn)
+            CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,rv,0,0)
          END IF 
          IF (PRESENT(zmnc)) THEN
             FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -zmnc(mn,:)*xm(mn)
-            CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn_full,zu,1,0)
-            FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -zmnc(mn,:)*xn_full(mn)
-            CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn_full,zv,1,0)
+            CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,zu,1,0)
+            FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -zmnc(mn,:)*xn(mn)
+            CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,zv,1,0)
          END IF
-         ! init_volint reconstructs a full torus, so rv/zv are already
-         ! derivatives with respect to the full-torus toroidal coordinate.
+         ! xv spans the full torus here, and xn already carries the full-torus
+         ! toroidal mode number, so rv/zv must not be scaled by nfp again.
          ! Calculate jr, jphi, jz, jx, jy
          jr   = ju_temp*ru+jv_temp*rv
          jphi = r_temp * jv_temp

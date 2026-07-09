@@ -158,9 +158,9 @@
          END IF
          IF (lnyquist) THEN
             xm_temp = xm_nyq
-            ! init_volint expands field-period modes to full-torus modes
-            ! internally, matching init_virtual_casing's public convention.
-            xn_temp = -xn_nyq/nfp
+            ! init_volint reconstructs a full torus and expects full-torus
+            ! toroidal mode numbers.
+            xn_temp = -xn_nyq
             DO u = 1,mnmax_temp
                DO v = 1, mnmax
                   IF ((xm(v) .eq. xm_nyq(u)) .and. (xn(v) .eq. xn_nyq(u))) THEN
@@ -175,9 +175,9 @@
             END DO
          ELSE
             xm_temp = xm
-            ! init_volint expands field-period modes to full-torus modes
-            ! internally, matching init_virtual_casing's public convention.
-            xn_temp = -xn/nfp
+            ! init_volint reconstructs a full torus and expects full-torus
+            ! toroidal mode numbers.
+            xn_temp = -xn
             rmnc_temp = rmnc
             zmns_temp = zmns
          END IF
