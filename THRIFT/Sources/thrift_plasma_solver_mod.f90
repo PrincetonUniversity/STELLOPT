@@ -42,6 +42,7 @@ MODULE thrift_plasma_solver_mod
     TYPE(EZspline1_r8), DIMENSION(:), ALLOCATABLE, PRIVATE :: N_splines, T_splines
     TYPE(EZspline1_r8), PRIVATE :: P_spline, fast_alphas_spl
     TYPE(EZspline2_r8), DIMENSION(:), ALLOCATABLE, PRIVATE :: chi_normalized_splines
+    TYPE(EZspline1_r8), DIMENSION(:), ALLOCATABLE, PRIVATE :: cn_normalized_splines
     TYPE(EZspline1_r8) :: Er_spline
     INTEGER, PRIVATE :: subiter
     CHARACTER(len=20), DIMENSION(:), ALLOCATABLE :: list_of_species
@@ -299,6 +300,7 @@ MODULE thrift_plasma_solver_mod
         INTEGER :: bcs0(2)
         TYPE(EZspline2_r8) :: temp_spl2d
         REAL(rprec), DIMENSION(:), ALLOCATABLE :: raxis_source, taxis_source, aLT_axis
+        REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: cn_normalized
         REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: S_energy, S_particle, chi_normalized
         bcs0=(/ 0, 0/)
         ierr_mpi = 0
@@ -414,6 +416,25 @@ MODULE thrift_plasma_solver_mod
 
                 DEALLOCATE(aLT_axis,chi_normalized)
             ENDIF
+
+            IF(external_normalized_particle_pinch) THEN
+                ALLOCATE(cn_normalized(num_species,nrho_source))
+
+                CALL read_var_hdf5(fid,'cn_normalized',num_species,nrho_source,ier,DBLVAR=cn_normalized)
+                IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'cn_normalized',ier)
+
+                ! Linear Interpolation of cn_normalized
+                ALLOCATE(cn_normalized_splines(num_species))
+                DO ispecies = 1,num_species
+                    CALL EZlinear_init(cn_normalized_splines(ispecies),nrho_source,ier)
+                    IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'init: cn_normalized_splines',ier)
+                    cn_normalized_splines(ispecies)%x1 = raxis_source
+                    CALL EZspline_setup(cn_normalized_splines(ispecies),cn_normalized(ispecies,:),ier,EXACT_DIM=.true.)
+                    IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'setup: cn_normalized',ier)
+                END DO
+
+                DEALLOCATE(cn_normalized)
+            END IF
 
             DEALLOCATE(raxis_source,taxis_source,S_energy,S_particle)
 
@@ -545,7 +566,7 @@ MODULE thrift_plasma_solver_mod
         REAL(rprec), DIMENSION(:), INTENT(INOUT) :: lower_diag, main_diag, upper_diag
         REAL(rprec) :: Dn_turb, cn_turb, dr, dr2, dt, rho
         REAL(rprec) :: Vp_plus, Vp_minus, VDplus, VDminus, cplus, cminus, Dn_plus, Dn_minus
-        REAL(rprec), DIMENSION(:), ALLOCATABLE :: Dn, cn, Vp
+        REAL(rprec), DIMENSION(:), ALLOCATABLE :: Dn, cn, Vp, cn_external
         INTEGER :: ir, ier, Nr
 
         Nr = Nr_plasma_solver
@@ -557,7 +578,7 @@ MODULE thrift_plasma_solver_mod
         Dn_turb = Dn_ions(iion)
         cn_turb = 0.0_rprec
 
-        ALLOCATE(Dn(Nr),cn(Nr),Vp(Nr))
+        ALLOCATE(Dn(Nr),cn(Nr),Vp(Nr),cn_external(Nr))
 
         IF(add_NEO) THEN
             Dn = Dn_NEO(1+iion,mytimestep_plasma_solver,:) + Dn_turb
@@ -565,6 +586,11 @@ MODULE thrift_plasma_solver_mod
         ELSE
             Dn = Dn_turb
             cn = cn_turb
+        END IF
+
+        IF(external_normalized_particle_pinch) THEN
+            CALL get_external_cn(1+iion,cn_external)
+            cn = cn + cn_external
         END IF
 
         ! convection is zero at axis
@@ -608,7 +634,7 @@ MODULE thrift_plasma_solver_mod
         Dn_total(1+iion,mytimestep_plasma_solver,:) = Dn
         cn_total(1+iion,mytimestep_plasma_solver,:) = cn
 
-        DEALLOCATE(Dn,cn,Vp)
+        DEALLOCATE(Dn,cn,Vp,cn_external)
 
         RETURN
     END SUBROUTINE get_LHS_density_ions
@@ -1333,6 +1359,43 @@ MODULE thrift_plasma_solver_mod
         RETURN
 
     END SUBROUTINE get_external_chi
+
+    SUBROUTINE get_external_cn(ispecies,cn_external)
+        !--------------------------------------------------------------
+        !--------------------------------------------------------------
+        ! Computes external cn (convection) of species j, from a normalized advection velocity
+        ! The denormalization is:
+        ! cn,j = cn_normalized,j * Gamma_gB / n_j
+        ! where Gamma_gB = 2.0*sqrt(2)*n_ref*sqrt(m_ref)*(EC*T_ref)**1.5 / (EC*Bref*aminor)**2
+        REAL(rprec) :: Bref,mref
+        INTEGER, INTENT(IN) :: ispecies
+        INTEGER :: ier,Nr
+        REAL(rprec), INTENT(INOUT), DIMENSION(:) :: cn_external
+        REAL(rprec), DIMENSION(:), ALLOCATABLE :: Gamma_gB,T,n,nref,Tref
+
+        Nr = Nr_plasma_solver
+        ALLOCATE(Gamma_gB(Nr),T(Nr),n(Nr),nref(Nr),Tref(Nr))
+
+        T = plasma_T(ispecies,:)
+        n = plasma_N(ispecies,:)
+
+        ! Currently we assume that T_ref~T_j and n_ref~n_j
+        nref = n
+        Tref = T
+        mref = mass_ref_species
+        Bref = plasma_Bref(mytimestep_plasma_solver)
+
+        !Gamma_gB (for the scaling)
+        Gamma_gB = 2.0_rprec * SQRT(2.0_rprec) * nref * SQRT(mref) * (e_charge*Tref)**1.5_rprec
+        Gamma_gB = Gamma_gB / (e_charge*Bref*eq_Aminor)**2
+
+        ! get normalized cn
+        CALL EZspline_interp(cn_normalized_splines(ispecies),Nr,rho_plasma_grid,cn_external,ier)
+        cn_external = cn_external * Gamma_gB / n
+
+        DEALLOCATE(Gamma_gB,T,n,nref,Tref)
+
+    END SUBROUTINE get_external_cn
 
     SUBROUTINE get_fast_alphas_dens(rho_array,val_array)
         ! Interpolates fast alpha density at rho_val
