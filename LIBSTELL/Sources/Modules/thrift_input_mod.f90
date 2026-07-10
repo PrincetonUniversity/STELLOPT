@@ -27,6 +27,7 @@
       NAMELIST /thrift_input/ nparallel_runs,bootstrap_type,mboz,nboz, &
                               nrho, tstart, tend, ntimesteps, n_eq, jtol, &
                               picard_factor, npicard, lverbj, boot_factor, &
+                              edge_bc_type, &
                               eccd_type, power_type, &
                               vessel_ecrh, mirror_ecrh, wmode_ecrh, &
                               targettype_ecrh, antennatype_ecrh, &
@@ -61,6 +62,7 @@
       etapar_type        = 'sauter'
       eccd_type          = ''
       power_type         = ''
+      edge_bc_type       = 'robin'
       nparallel_runs     = 1
       mboz               = 32
       nboz               = 16
