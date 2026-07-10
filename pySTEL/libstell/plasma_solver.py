@@ -190,7 +190,7 @@ class PLASMA_SOLVER:
                     
                     self.dVdr = CubicSpline(roa,dVdr_analytic)
                     
-                    self.Baxis = np.sqrt(np.squeeze(vmec_out.bdotb)[0])   
+                    self.Baxis = sum(np.squeeze(vmec_out.bmnc[0,:]))
                     self.iota23 = CubicSpline(roa,np.squeeze(vmec_out.iotaf))(2.0/3.0)
                     
                     # stella reference magnetic field
