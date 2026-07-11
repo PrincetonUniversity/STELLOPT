@@ -372,7 +372,7 @@
 #endif
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !! Retry reduced-tolerance lookups from an interior neighbor
+      !! Retry failed lookups from an interior-neighbor initial guess
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       nfailed = 0
       DO s = mystart, myend
