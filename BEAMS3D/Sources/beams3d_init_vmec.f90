@@ -66,6 +66,7 @@
       ! Divide up Work
       mylocalid = myworkid
       numprocs_local = 1
+      MPI_COMM_LOCAL = 0
 #if defined(MPI_OPT)
       CALL MPI_COMM_DUP( MPI_COMM_SHARMEM, MPI_COMM_LOCAL, ierr_mpi)
       CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
@@ -444,6 +445,11 @@
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
 #endif
+
+      ! Centered Hermite derivatives need two exterior B support layers;
+      ! flux labels, interior B, and wall coordinates remain unchanged.
+      IF (lplasma_only) CALL beams3d_vmec_extend_exterior(&
+         mystart,myend,MPI_COMM_LOCAL)
       
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! Evaluate the profile quantities on the background grid
@@ -572,6 +578,50 @@
 !-----------------------------------------------------------------------    
       END SUBROUTINE beams3d_init_vmec
 
+      SUBROUTINE beams3d_vmec_extend_exterior(mystart,myend,comm)
+      USE stel_kinds, ONLY: rprec
+      USE beams3d_grid, ONLY: S_ARR, B_R, B_PHI, B_Z
+      USE mpi_inc
+      IMPLICIT NONE
+      INTEGER, INTENT(in) :: mystart, myend, comm
+      INTEGER :: s, i, j, k, nsupport, isupport, ierr_mpi
+      INTEGER, ALLOCATABLE :: support_index(:)
+      LOGICAL :: success
+      REAL(rprec) :: br, bphi, bz
+      REAL(rprec), ALLOCATABLE :: support_br(:), support_bphi(:), support_bz(:)
+
+      ALLOCATE(support_index(myend-mystart+1),support_br(myend-mystart+1),&
+               support_bphi(myend-mystart+1),support_bz(myend-mystart+1))
+      nsupport = 0
+      DO s = mystart, myend
+         CALL beams3d_vmec_grid_index(s,i,j,k)
+         IF (S_ARR(i,j,k) <= 1.0) CYCLE
+         CALL beams3d_vmec_exterior_support(i,j,k,success,br,bphi,bz)
+         IF (.not. success) CYCLE
+         nsupport = nsupport + 1
+         support_index(nsupport) = s
+         support_br(nsupport) = br
+         support_bphi(nsupport) = bphi
+         support_bz(nsupport) = bz
+      END DO
+
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(comm,ierr_mpi)
+#endif
+      IF (nsupport > 0) THEN
+         DO isupport = 1, nsupport
+            CALL beams3d_vmec_grid_index(support_index(isupport),i,j,k)
+            B_R(i,j,k) = support_br(isupport)
+            B_PHI(i,j,k) = support_bphi(isupport)
+            B_Z(i,j,k) = support_bz(isupport)
+         END DO
+      END IF
+      DEALLOCATE(support_index,support_br,support_bphi,support_bz)
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(comm,ierr_mpi)
+#endif
+      END SUBROUTINE beams3d_vmec_extend_exterior
+
       SUBROUTINE beams3d_vmec_grid_index(s,i,j,k)
       USE beams3d_grid, ONLY: nr, nphi
       IMPLICIT NONE
@@ -581,3 +631,116 @@
       j = MOD(s-1,nr*nphi)/nr+1
       k = (s-1)/(nr*nphi)+1
       END SUBROUTINE beams3d_vmec_grid_index
+
+      SUBROUTINE beams3d_vmec_exterior_support(i,j,k,success,br,bphi,bz)
+      USE stel_kinds, ONLY: rprec
+      USE beams3d_grid, ONLY: nr, nz, raxis_g => raxis, zaxis_g => zaxis,&
+                             S_ARR, B_R, B_PHI, B_Z
+      IMPLICIT NONE
+      INTEGER, INTENT(in) :: i, j, k
+      LOGICAL, INTENT(out) :: success
+      REAL(rprec), INTENT(out) :: br, bphi, bz
+      INTEGER :: ndir
+      LOGICAL :: found
+      REAL(rprec) :: candidate(3), field_sum(3)
+
+      success = .false.
+      br = 0.0_rprec
+      bphi = 0.0_rprec
+      bz = 0.0_rprec
+      field_sum = 0.0_rprec
+      ndir = 0
+
+      IF (i > 2) THEN
+         CALL beams3d_vmec_support_pair(S_ARR(i-1,j,k),S_ARR(i-2,j,k),&
+            raxis_g(i),raxis_g(i-1),raxis_g(i-2),&
+            (/B_R(i-1,j,k),B_PHI(i-1,j,k),B_Z(i-1,j,k)/),&
+            (/B_R(i-2,j,k),B_PHI(i-2,j,k),B_Z(i-2,j,k)/),found,candidate)
+         IF (.not. found .and. i > 3) THEN
+            IF (S_ARR(i-1,j,k) > 1.0) CALL beams3d_vmec_support_pair(&
+               S_ARR(i-2,j,k),S_ARR(i-3,j,k),raxis_g(i),raxis_g(i-2),&
+               raxis_g(i-3),(/B_R(i-2,j,k),B_PHI(i-2,j,k),B_Z(i-2,j,k)/),&
+               (/B_R(i-3,j,k),B_PHI(i-3,j,k),B_Z(i-3,j,k)/),found,candidate)
+         END IF
+         CALL beams3d_vmec_add_support(candidate,found,field_sum,ndir)
+      END IF
+
+      IF (i < nr-1) THEN
+         CALL beams3d_vmec_support_pair(S_ARR(i+1,j,k),S_ARR(i+2,j,k),&
+            raxis_g(i),raxis_g(i+1),raxis_g(i+2),&
+            (/B_R(i+1,j,k),B_PHI(i+1,j,k),B_Z(i+1,j,k)/),&
+            (/B_R(i+2,j,k),B_PHI(i+2,j,k),B_Z(i+2,j,k)/),found,candidate)
+         IF (.not. found .and. i < nr-2) THEN
+            IF (S_ARR(i+1,j,k) > 1.0) CALL beams3d_vmec_support_pair(&
+               S_ARR(i+2,j,k),S_ARR(i+3,j,k),raxis_g(i),raxis_g(i+2),&
+               raxis_g(i+3),(/B_R(i+2,j,k),B_PHI(i+2,j,k),B_Z(i+2,j,k)/),&
+               (/B_R(i+3,j,k),B_PHI(i+3,j,k),B_Z(i+3,j,k)/),found,candidate)
+         END IF
+         CALL beams3d_vmec_add_support(candidate,found,field_sum,ndir)
+      END IF
+
+      IF (k > 2) THEN
+         CALL beams3d_vmec_support_pair(S_ARR(i,j,k-1),S_ARR(i,j,k-2),&
+            zaxis_g(k),zaxis_g(k-1),zaxis_g(k-2),&
+            (/B_R(i,j,k-1),B_PHI(i,j,k-1),B_Z(i,j,k-1)/),&
+            (/B_R(i,j,k-2),B_PHI(i,j,k-2),B_Z(i,j,k-2)/),found,candidate)
+         IF (.not. found .and. k > 3) THEN
+            IF (S_ARR(i,j,k-1) > 1.0) CALL beams3d_vmec_support_pair(&
+               S_ARR(i,j,k-2),S_ARR(i,j,k-3),zaxis_g(k),zaxis_g(k-2),&
+               zaxis_g(k-3),(/B_R(i,j,k-2),B_PHI(i,j,k-2),B_Z(i,j,k-2)/),&
+               (/B_R(i,j,k-3),B_PHI(i,j,k-3),B_Z(i,j,k-3)/),found,candidate)
+         END IF
+         CALL beams3d_vmec_add_support(candidate,found,field_sum,ndir)
+      END IF
+
+      IF (k < nz-1) THEN
+         CALL beams3d_vmec_support_pair(S_ARR(i,j,k+1),S_ARR(i,j,k+2),&
+            zaxis_g(k),zaxis_g(k+1),zaxis_g(k+2),&
+            (/B_R(i,j,k+1),B_PHI(i,j,k+1),B_Z(i,j,k+1)/),&
+            (/B_R(i,j,k+2),B_PHI(i,j,k+2),B_Z(i,j,k+2)/),found,candidate)
+         IF (.not. found .and. k < nz-2) THEN
+            IF (S_ARR(i,j,k+1) > 1.0) CALL beams3d_vmec_support_pair(&
+               S_ARR(i,j,k+2),S_ARR(i,j,k+3),zaxis_g(k),zaxis_g(k+2),&
+               zaxis_g(k+3),(/B_R(i,j,k+2),B_PHI(i,j,k+2),B_Z(i,j,k+2)/),&
+               (/B_R(i,j,k+3),B_PHI(i,j,k+3),B_Z(i,j,k+3)/),found,candidate)
+         END IF
+         CALL beams3d_vmec_add_support(candidate,found,field_sum,ndir)
+      END IF
+
+      IF (ndir == 0) RETURN
+      br = field_sum(1)/REAL(ndir,rprec)
+      bphi = field_sum(2)/REAL(ndir,rprec)
+      bz = field_sum(3)/REAL(ndir,rprec)
+      success = .true.
+
+      END SUBROUTINE beams3d_vmec_exterior_support
+
+      SUBROUTINE beams3d_vmec_support_pair(flux1,flux2,x0,x1,x2,&
+                                           field1,field2,success,field)
+      USE stel_kinds, ONLY: rprec
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: flux1, flux2, x0, x1, x2
+      REAL(rprec), INTENT(in) :: field1(3), field2(3)
+      LOGICAL, INTENT(out) :: success
+      REAL(rprec), INTENT(out) :: field(3)
+      REAL(rprec) :: factor
+
+      success = flux1 >= 0.0_rprec .and. flux1 <= 1.0_rprec .and. &
+                flux2 >= 0.0_rprec .and. flux2 <= 1.0_rprec
+      field = 0.0_rprec
+      IF (.not. success) RETURN
+      factor = (x0-x1)/(x1-x2)
+      field = field1 + factor*(field1-field2)
+      END SUBROUTINE beams3d_vmec_support_pair
+
+      SUBROUTINE beams3d_vmec_add_support(candidate,success,field_sum,count)
+      USE stel_kinds, ONLY: rprec
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: candidate(3)
+      LOGICAL, INTENT(in) :: success
+      REAL(rprec), INTENT(inout) :: field_sum(3)
+      INTEGER, INTENT(inout) :: count
+      IF (.not. success) RETURN
+      field_sum = field_sum + candidate
+      count = count + 1
+      END SUBROUTINE beams3d_vmec_add_support

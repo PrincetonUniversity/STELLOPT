@@ -17,7 +17,7 @@ compact = "".join(helper.lower().split())
 assert "i=mod(s-1,nr)+1" in compact
 assert "j=mod(s-1,nr*nphi)/nr+1" in compact
 assert "k=(s-1)/(nr*nphi)+1" in compact
-assert source.count("CALL beams3d_vmec_grid_index(s,i,j,k)") == 6
+assert source.count("CALL beams3d_vmec_grid_index(s,i,j,k)") == 7
 assert "CEILING(REAL" not in source
 assert "FLOOR(REAL" not in source
 
