@@ -326,10 +326,7 @@
       END IF
       CALL FLUSH(6)
       DO s = mystart, myend
-         i = MOD(s-1,nr)+1
-         j = MOD(s-1,nr*nphi)
-         j = FLOOR(REAL(j) / REAL(nr))+1
-         k = CEILING(REAL(s) / REAL(nr*nphi))
+         CALL beams3d_vmec_grid_index(s,i,j,k)
          sflx = 0.001
          uflx = 0.0
          CALL GetBcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
@@ -376,10 +373,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       nfailed = 0
       DO s = mystart, myend
-         i = MOD(s-1,nr)+1
-         j = MOD(s-1,nr*nphi)
-         j = FLOOR(REAL(j) / REAL(nr))+1
-         k = CEILING(REAL(s) / REAL(nr*nphi))
+         CALL beams3d_vmec_grid_index(s,i,j,k)
          IF ((i==1) .or. (i==nr) .or. (k==1) .or. (k==nz)) CYCLE
          IF (S_ARR(i,j,k) < 0.0) nfailed = nfailed + 1
       END DO
@@ -391,10 +385,7 @@
          retry_success = .false.
          ifailed = 0
          DO s = mystart, myend
-            i = MOD(s-1,nr)+1
-            j = MOD(s-1,nr*nphi)
-            j = FLOOR(REAL(j) / REAL(nr))+1
-            k = CEILING(REAL(s) / REAL(nr*nphi))
+            CALL beams3d_vmec_grid_index(s,i,j,k)
             IF ((i==1) .or. (i==nr) .or. (k==1) .or. (k==nz)) CYCLE
             IF (S_ARR(i,j,k) >= 0.0) CYCLE
             ifailed = ifailed + 1
@@ -433,10 +424,7 @@
          DO ifailed = 1, nfailed
             IF (.not. retry_success(ifailed)) CYCLE
             s = failed_index(ifailed)
-            i = MOD(s-1,nr)+1
-            j = MOD(s-1,nr*nphi)
-            j = FLOOR(REAL(j) / REAL(nr))+1
-            k = CEILING(REAL(s) / REAL(nr*nphi))
+            CALL beams3d_vmec_grid_index(s,i,j,k)
             S_ARR(i,j,k) = retry_s(ifailed)
             U_ARR(i,j,k) = retry_u(ifailed)
             B_R(i,j,k) = retry_br(ifailed)
@@ -466,10 +454,7 @@
       END IF
       CALL FLUSH(6)
       DO s = mystart, myend
-         i = MOD(s-1,nr)+1
-         j = MOD(s-1,nr*nphi)
-         j = FLOOR(REAL(j) / REAL(nr))+1
-         k = CEILING(REAL(s) / REAL(nr*nphi))
+         CALL beams3d_vmec_grid_index(s,i,j,k)
          sflx = S_ARR(i,j,k)
          sflx = MAX(sflx,0.0)
          ! Do the potential everwhere
@@ -508,10 +493,7 @@
          END IF
          CALL FLUSH(6)
          DO s = mystart, myend
-            i = MOD(s-1,nr)+1
-            j = MOD(s-1,nr*nphi)
-            j = FLOOR(REAL(j) / REAL(nr))+1
-            k = CEILING(REAL(s) / REAL(nr*nphi))
+            CALL beams3d_vmec_grid_index(s,i,j,k)
             sflx = S_ARR(i,j,k)
             sflx = MAX(sflx,0.0)
             IF (sflx <= 1.0) CYCLE
@@ -589,3 +571,13 @@
 !     End Subroutine
 !-----------------------------------------------------------------------    
       END SUBROUTINE beams3d_init_vmec
+
+      SUBROUTINE beams3d_vmec_grid_index(s,i,j,k)
+      USE beams3d_grid, ONLY: nr, nphi
+      IMPLICIT NONE
+      INTEGER, INTENT(in) :: s
+      INTEGER, INTENT(out) :: i, j, k
+      i = MOD(s-1,nr)+1
+      j = MOD(s-1,nr*nphi)/nr+1
+      k = (s-1)/(nr*nphi)+1
+      END SUBROUTINE beams3d_vmec_grid_index
