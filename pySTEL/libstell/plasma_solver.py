@@ -154,7 +154,7 @@ class PLASMA_SOLVER:
             else:
                 self.alphas_fast_density_restart = restart_solver.N['alphas_fast'][-1,:]
               
-    def set_equilibrium(self,type: str,wout_path=None,aminor=None,Rmajor=None,B=None):
+    def set_equilibrium(self,type: str,wout_path=None,aminor=None,Rmajor=None,B=None, iota23 = None):
         """
         Sets magnetic equilibrium
         Type can be 'VMEC' (need to provide path to wout file) 
@@ -208,6 +208,7 @@ class PLASMA_SOLVER:
                     self.dVdr = CubicSpline(rho,dVdr(rho))
                     self.Baxis = B
                     self.Bref = B
+                    self.iota23 = iota23
                     
     def set_energy_source(self,species,source_type, total_power=None, sigma_rho=None, rho_0=None, 
         fraction_alpha_heating=None, cte_source=None, time_dependent_factor=None, lambda_function_2D=None,
