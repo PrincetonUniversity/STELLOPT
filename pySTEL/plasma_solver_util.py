@@ -54,17 +54,11 @@ if __name__=="__main__":
 		Area = solver.dVdr
 		aminor = solver.aminor
 		Rmajor = solver.Rmajor
-		try:
-			B = solver.B[:,0] # use axes value
-		except:
-			B = solver.Baxis
-		try:
-			iota = solver.iota23
-		except:
-			iota = solver.iota23
+		B = solver.Baxis
+		iota = solver.iota23
 		# Define ISS04
 		fusion  = FUSION()
-		tauiss04 = lambda a,R,P,n,B,i: fusion.iss04(a,R,P,n,B,i)
+		tauiss04 = lambda a,R,P,n,B,i: fusion.iss04(a,R,P*1E-6,n*1E-19,B,i)
 		# Now Loop Over Species
 		n_avg = {}
 		pressure = 0.0
@@ -109,8 +103,8 @@ if __name__=="__main__":
 		P_alpha = cumulative_trapezoid(S_alpha*Area,solver.r_grid,axis=1,initial=0.0)
 		# Total heating Power
 		P_total += P_alpha[:,-1]
+		P_total = np.where(P_total <= 0, 1.0,P_total)
 		# Compute the ISS04
-		print(P_alpha.shape)
 		try:
 			tau_ISS04 = [tauiss04(aminor[it],Rmajor[it],P_total[it],n_avg['electrons'][it],B[it],iota[it]) for it,_ in enumerate(solver.time)]
 		except:
@@ -130,10 +124,8 @@ if __name__=="__main__":
 			#fig,ax = plt.subplots(4,1,figsize=(1800*px,2400*px))
 			fig,ax = plt.subplots(4,1,figsize=(900*px,1200*px))
 			ax[0].plot(solver.time,P_total/1E6,linewidth=2.0,color='#5faf30',label=r'$P_{\mathrm{TOTAL}}$')
-			# ax[0].plot(solver.time,10*P_ECRH[:,-1]/1E6,linewidth=2.0,color='blue',label=r'$P_{\mathrm{ECRH}}x10$')
 			ax[0].plot(solver.time,Q_heat['electrons'][:]/1E6,linewidth=2.0,color='blue',label=r'$P_{\mathrm{ECRH}}$')
 			ax[0].plot(solver.time,P_alpha[:,-1]/1E6,linewidth=2.0,color='green',label=r'$P_{\mathrm{\alpha}}$')
-			# ax[0].plot(solver.time,5*P_alpha[:,-1]/1E6,linewidth=2.0,color='k',label=r'$P_{\mathrm{fusion}}$')
 			ax[0].plot(solver.time,-P_Bremm[:,-1]/1E6,linewidth=2.0,color='red',label=r'$P_{\mathrm{Brem.}}$')
 			ax[0].grid()
 			ax[0].legend()
@@ -149,6 +141,7 @@ if __name__=="__main__":
 				ax[1].plot(solver.time,solver.N[species][:,0]/1E19,linewidth=2.0,color=COLOR_LIST[species],label=rf'{label_txt}')
 			ax[1].grid()
 			ax[1].legend()
+			ax[1].set_ylim(0.0,max(solver.N['electrons'][:,0])*1.2E-19)
 			ax12=ax[1].twinx()
 			ax12.plot(solver.time,S_fueling/1E22,linewidth=1.0,color='black',label=r'$N$')
 			ax[1].set_ylabel(r'$n_0~[10^{19}~m^{-3}]$')
