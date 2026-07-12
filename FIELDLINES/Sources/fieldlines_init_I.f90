@@ -137,9 +137,8 @@
       ! Put the field on the grid
       DO s = mystart, myend
          i = MOD(s-1,nr)+1
-         j = MOD(s-1,nr*nphi)
-         j = FLOOR(REAL(j) / REAL(nr))+1
-         k = CEILING(REAL(s) / REAL(nr*nphi))
+         j = MOD(s-1,nr*nphi)/nr+1
+         k = (s-1)/(nr*nphi)+1
          xp  = raxis_g(i)*cos(phiaxis(j))
          yp  = raxis_g(i)*sin(phiaxis(j))
          zp  = zaxis_g(k)
