@@ -28,7 +28,9 @@
       INTEGER  :: nsh_prof4
       INTEGER  :: nsteps, myline, mybeam, mytdex, myend, mystart_save, myend_save
       INTEGER  :: win_epower, win_ipower, win_ndot, win_dense, win_jprof, win_dist5d, win_dist5d_fida
-      REAL(rprec) :: xlast,ylast,zlast ! for storing position
+      REAL(rprec) :: xlast,ylast,zlast,previous_time,previous_energy,previous_vll, &
+                     previous_moment, &
+                     previous_vr,previous_vphi,previous_vz
       REAL(rprec) :: moment, mycharge, myZ, mymass, myv_neut(3), my_end, &
                      myqm, rand_prob, cum_prob, tau, next_t, &
                      fact_crit, fact_pa, fact_vsound, fact_kick, &
@@ -39,12 +41,21 @@
       INTEGER :: win_end_state
       INTEGER, DIMENSION(:), POINTER     :: end_state
       REAL(rprec), ALLOCATABLE :: shine_through(:), shine_port(:), GFactor(:), t_last(:)
+      INTEGER, ALLOCATABLE :: wall_hit_valid(:), wall_hit_field_valid(:), &
+                              wall_hit_model(:), wall_hit_face(:)
+      REAL(rprec), ALLOCATABLE :: wall_hit_fraction(:), wall_hit_time(:), &
+                                  wall_hit_r(:), wall_hit_phi(:), wall_hit_z(:), &
+                                  wall_hit_vll(:), wall_hit_moment(:), &
+                                  wall_hit_b(:), wall_hit_s(:), wall_hit_u(:), &
+                                  wall_hit_vr(:), wall_hit_vphi(:), &
+                                  wall_hit_vz(:), wall_hit_energy(:)
       REAL(rprec), DIMENSION(:,:), POINTER :: ndot_prof(:,:),epower_prof(:,:), &
                                   ipower_prof(:,:),j_prof(:,:), dense_prof(:,:)
       REAL(rprec), DIMENSION(:,:,:,:,:,:), POINTER :: dist5d_prof
       REAL(rprec), DIMENSION(:,:,:,:,:), POINTER :: dist5d_fida
       REAL(rprec), ALLOCATABLE :: R_lines(:,:),Z_lines(:,:),PHI_lines(:,:),vll_lines(:,:),moment_lines(:,:),&
                                   S_lines(:,:),U_lines(:,:),B_lines(:,:), &
-                                  vr_lines(:,:),vphi_lines(:,:),vz_lines(:,:)
+                                  vr_lines(:,:),vphi_lines(:,:),vz_lines(:,:), &
+                                  time_lines(:,:)
 
       END MODULE beams3d_lines

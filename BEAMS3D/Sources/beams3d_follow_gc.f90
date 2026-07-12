@@ -130,10 +130,15 @@ SUBROUTINE beams3d_follow_gc
                     xlast = q(1)*cos(q(2))
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)
+                    previous_time = t_nag
+                    previous_vll = q(4)
                     moment = moment_lines(mytdex-1,l)
+                    previous_moment = moment
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
+                    previous_energy = 0.5*mymass*q(4)*q(4) + &
+                                      moment*B_lines(mytdex-1,l)
                     E_by_v=mymass*0.5d-3/e_charge
                     mybeam = Beam(l)
                     my_end = t_end(l)
@@ -179,10 +184,15 @@ SUBROUTINE beams3d_follow_gc
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)
                     moment = moment_lines(mytdex-1,l)
-                    t_nag = tf_nag - dt
+                    t_nag = tf_nag
+                    previous_time = t_nag
+                    previous_vll = q(4)
+                    previous_moment = moment
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
+                    previous_energy = 0.5*mymass*q(4)*q(4) + &
+                                      moment*B_lines(mytdex-1,l)
                     E_by_v=mymass*0.5d-3/e_charge
                     mybeam = Beam(l)
                     my_end = t_end(l)
@@ -195,7 +205,7 @@ SUBROUTINE beams3d_follow_gc
                     CALL SET_COULOMB_FACTOR(mymass,myZ,plasma_mass)
                     ! Now calc dt
                     CALL beams3d_calc_dt(1,q(1),q(2),q(3),dt)
-                    tf_nag = t_nag+dt
+                    tf_nag = t_nag
                     ndt = 1
                     ! Setup DRKHVG parameters
                     iopt = 0 
@@ -207,7 +217,7 @@ SUBROUTINE beams3d_follow_gc
                         q(3)=rkh_work(3,2)
                         q(4)=rkh_work(4,2)
                         t_nag = t_nag+dt
-                        tf_nag = tf_nag+dt
+                        tf_nag = t_nag
                         t_last(l) = tf_nag ! Save the value here in case out_beams3d changes it
                         CALL out_beams3d_gc(tf_nag,q)
                         IF ((istate == -1) .or. (istate ==-2) .or. (ABS(tf_nag) > ABS(my_end)) ) EXIT
@@ -251,10 +261,15 @@ SUBROUTINE beams3d_follow_gc
                     xlast = q(1)*cos(q(2))
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)
+                    previous_time = t_nag
+                    previous_vll = q(4)
                     moment = moment_lines(mytdex-1,l)
+                    previous_moment = moment
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
+                    previous_energy = 0.5*mymass*q(4)*q(4) + &
+                                      moment*B_lines(mytdex-1,l)
                     E_by_v=mymass*0.5d-3/e_charge
                     mybeam = Beam(l)
                     my_end = t_end(l)

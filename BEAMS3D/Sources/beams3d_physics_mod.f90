@@ -71,6 +71,54 @@ MODULE beams3d_physics_mod
       !-----------------------------------------------------------------
       CONTAINS
 
+      SUBROUTINE beams3d_event_diagnostics(r,phi,z,s,u,b,br,bphi,bz,lvalid)
+         USE, INTRINSIC :: ieee_arithmetic, ONLY: ieee_is_finite
+         IMPLICIT NONE
+         DOUBLE PRECISION, INTENT(in) :: r,phi,z
+         DOUBLE PRECISION, INTENT(out) :: s,u,b,br,bphi,bz
+         LOGICAL, INTENT(out) :: lvalid
+         INTEGER :: i,j,k
+         INTEGER, PARAMETER :: ict(8)=(/1,0,0,0,0,0,0,0/)
+         DOUBLE PRECISION :: p,xparam,yparam,zparam,xrho,yrho,fval(1)
+
+         s = -HUGE(one); u = -HUGE(one); b = -HUGE(one)
+         br = -HUGE(one); bphi = -HUGE(one); bz = -HUGE(one)
+         p = MOD(phi,phimax)
+         IF (p < 0) p = p+phimax
+         lvalid = r >= rmin-eps1 .and. r <= rmax+eps1 .and. &
+                  p >= phimin-eps2 .and. p <= phimax+eps2 .and. &
+                  z >= zmin-eps3 .and. z <= zmax+eps3
+         IF (.not.lvalid) RETURN
+         i = MIN(MAX(COUNT(raxis < r),1),nr-1)
+         j = MIN(MAX(COUNT(phiaxis < p),1),nphi-1)
+         k = MIN(MAX(COUNT(zaxis < z),1),nz-1)
+         xparam = (r-raxis(i))*hri(i)
+         yparam = (p-phiaxis(j))*hpi(j)
+         zparam = (z-zaxis(k))*hzi(k)
+         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam, &
+                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k), &
+                         XRHO4D(1,1,1,1),nr,nphi,nz)
+         xrho = fval(1)
+         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam, &
+                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k), &
+                         YRHO4D(1,1,1,1),nr,nphi,nz)
+         yrho = fval(1); s = xrho*xrho+yrho*yrho; u = ATAN2(yrho,xrho)
+         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam, &
+                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k), &
+                         BR4D(1,1,1,1),nr,nphi,nz)
+         br = fval(1)
+         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam, &
+                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k), &
+                         BPHI4D(1,1,1,1),nr,nphi,nz)
+         bphi = fval(1)
+         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam, &
+                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k), &
+                         BZ4D(1,1,1,1),nr,nphi,nz)
+         bz = fval(1); b = SQRT(br*br+bphi*bphi+bz*bz)
+         lvalid = b > 0.0 .and. ieee_is_finite(s) .and. &
+                  ieee_is_finite(u) .and. ieee_is_finite(b)
+      END SUBROUTINE beams3d_event_diagnostics
+
       !-----------------------------------------------------------------
       !     Function:      coll_op_nrl19
       !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)

@@ -92,6 +92,25 @@ SUBROUTINE beams3d_follow
     IF (ALLOCATED(vz_lines)) DEALLOCATE(vz_lines)
     IF (ALLOCATED(moment_lines)) DEALLOCATE(moment_lines)
     IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
+    IF (ALLOCATED(wall_hit_valid)) DEALLOCATE(wall_hit_valid)
+    IF (ALLOCATED(wall_hit_field_valid)) DEALLOCATE(wall_hit_field_valid)
+    IF (ALLOCATED(wall_hit_model)) DEALLOCATE(wall_hit_model)
+    IF (ALLOCATED(wall_hit_face)) DEALLOCATE(wall_hit_face)
+    IF (ALLOCATED(wall_hit_fraction)) DEALLOCATE(wall_hit_fraction)
+    IF (ALLOCATED(wall_hit_time)) DEALLOCATE(wall_hit_time)
+    IF (ALLOCATED(wall_hit_r)) DEALLOCATE(wall_hit_r)
+    IF (ALLOCATED(wall_hit_phi)) DEALLOCATE(wall_hit_phi)
+    IF (ALLOCATED(wall_hit_z)) DEALLOCATE(wall_hit_z)
+    IF (ALLOCATED(wall_hit_vll)) DEALLOCATE(wall_hit_vll)
+    IF (ALLOCATED(wall_hit_moment)) DEALLOCATE(wall_hit_moment)
+    IF (ALLOCATED(wall_hit_b)) DEALLOCATE(wall_hit_b)
+    IF (ALLOCATED(wall_hit_s)) DEALLOCATE(wall_hit_s)
+    IF (ALLOCATED(wall_hit_u)) DEALLOCATE(wall_hit_u)
+    IF (ALLOCATED(wall_hit_vr)) DEALLOCATE(wall_hit_vr)
+    IF (ALLOCATED(wall_hit_vphi)) DEALLOCATE(wall_hit_vphi)
+    IF (ALLOCATED(wall_hit_vz)) DEALLOCATE(wall_hit_vz)
+    IF (ALLOCATED(wall_hit_energy)) DEALLOCATE(wall_hit_energy)
+    IF (ALLOCATED(time_lines)) DEALLOCATE(time_lines)
     ! Allocations
     ALLOCATE(q(4), STAT = ier)
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'Q', ier)
@@ -99,10 +118,22 @@ SUBROUTINE beams3d_follow
              PHI_lines(0:npoinc, mystart:myend), vll_lines(0:npoinc, mystart:myend), moment_lines(0:npoinc, mystart:myend), &
              neut_lines(0:npoinc, mystart:myend), S_lines(0:npoinc, mystart:myend), U_lines(0:npoinc, mystart:myend), &
              vr_lines(0:npoinc, mystart:myend), vphi_lines(0:npoinc, mystart:myend), vz_lines(0:npoinc, mystart:myend), &
-              B_lines(0:npoinc, mystart:myend), STAT = ier)
+              B_lines(0:npoinc, mystart:myend), &
+              time_lines(0:npoinc, mystart:myend), STAT = ier)
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'R_LINES, PHI_LINES, Z_LINES', ier)
     ALLOCATE(t_last(mystart:myend), STAT = ier)
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 't_last', ier)
+    ALLOCATE(wall_hit_valid(mystart:myend), wall_hit_field_valid(mystart:myend), &
+             wall_hit_model(mystart:myend), wall_hit_face(mystart:myend), &
+             wall_hit_fraction(mystart:myend), wall_hit_time(mystart:myend), &
+             wall_hit_r(mystart:myend), wall_hit_phi(mystart:myend), &
+             wall_hit_z(mystart:myend), wall_hit_vll(mystart:myend), &
+             wall_hit_moment(mystart:myend), wall_hit_b(mystart:myend), &
+             wall_hit_s(mystart:myend), wall_hit_u(mystart:myend), &
+             wall_hit_vr(mystart:myend), wall_hit_vphi(mystart:myend), &
+             wall_hit_vz(mystart:myend), wall_hit_energy(mystart:myend), &
+             STAT = ier)
+    IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'wall_hit event arrays', ier)
 
     ! Set lbeam to false if doing a box simulation
     lbeam = (lbeam .and. (.not.lboxsim))
@@ -112,7 +143,17 @@ SUBROUTINE beams3d_follow
     R_lines = 0.0; Z_lines = 0.0; PHI_lines = -1.0
     vll_lines = 0.0; moment_lines = 0.0
     S_lines = 1.5; U_lines = 0.0; B_lines = -1.0
+    time_lines = -1.0
     t_last = 0.0
+    wall_hit_valid = 0; wall_hit_field_valid = 0; wall_hit_model = 0; wall_hit_face = -1
+    wall_hit_fraction = -1.0; wall_hit_time = -1.0
+    wall_hit_r = -HUGE(1.0_rprec); wall_hit_phi = -HUGE(1.0_rprec)
+    wall_hit_z = -HUGE(1.0_rprec)
+    wall_hit_vll = -HUGE(1.0_rprec); wall_hit_moment = -HUGE(1.0_rprec)
+    wall_hit_b = -HUGE(1.0_rprec); wall_hit_s = -HUGE(1.0_rprec)
+    wall_hit_u = -HUGE(1.0_rprec); wall_hit_vr = -HUGE(1.0_rprec)
+    wall_hit_vphi = -HUGE(1.0_rprec); wall_hit_vz = -HUGE(1.0_rprec)
+    wall_hit_energy = -HUGE(1.0_rprec)
     R_lines(0, mystart:myend)      = R_start(mystart:myend)
     Z_lines(0, mystart:myend)      = Z_start(mystart:myend)
     PHI_lines(0, mystart:myend)    = phi_start(mystart:myend)
@@ -148,12 +189,15 @@ SUBROUTINE beams3d_follow
        ylast = q(1)*sin(q(2))
        zlast = q(3)
        tf_nag = 0.0
+       previous_time = tf_nag
        mycharge = charge(i)
        myZ = Zatom(i)
        mymass = mass(i)
        E_by_v=mymass*0.5d-3/e_charge
        mybeam = Beam(i)
        moment = mu_start(i)
+       previous_vll = q(4)
+       previous_moment = moment
        fact_pa   = plasma_mass/(mymass*plasma_Zmean)
        CALL SET_COULOMB_FACTOR(mymass,myZ,plasma_mass)
        ! Save the IC of the neutral
@@ -179,12 +223,16 @@ SUBROUTINE beams3d_follow
           xlast = q(1)*cos(q(2))
           ylast = q(1)*sin(q(2))
           zlast = q(3)
+          previous_time = 0.0
           mycharge = charge(i)
           myZ = Zatom(i)
           mymass = mass(i)
           E_by_v=mymass*0.5d-3/e_charge
           mybeam = Beam(i)
           moment = mu_start(i)
+          previous_vll = q(4)
+          previous_moment = moment
+          previous_energy = 0.5*mymass*q(4)*q(4)
           my_end = t_end(i)
           myline = i
           mytdex = 1
@@ -292,7 +340,85 @@ SUBROUTINE beams3d_follow
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,      'S_lines', DBLVAR=S_lines)
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,      'U_lines', DBLVAR=U_lines)
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,      'B_lines', DBLVAR=B_lines)
-    CALL beams3d_write1d_parhdf5(         1, nparticles, mystart_save, myend_save,      't_end',   DBLVAR=t_last,FILENAME='beams3d_'//TRIM(id_string))
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save, &
+                               'time_lines', DBLVAR=time_lines, &
+                               DESCRIPTION='Trajectory-state timestamp [s]')
+    CALL beams3d_write1d_parhdf5(1, nparticles, mystart_save, myend_save, &
+                                 't_end', DBLVAR=t_last, &
+                                 FILENAME='beams3d_'//TRIM(id_string), &
+                                 DESCRIPTION='Integrator terminal timestamp [s]')
+    CALL beams3d_write1d_parhdf5(1, nparticles, mystart_save, myend_save, &
+                                 'wall_hit_valid', INTVAR=wall_hit_valid, &
+                                 FILENAME='beams3d_'//TRIM(id_string), &
+                                 DESCRIPTION='Boundary-hit record valid')
+    CALL beams3d_write1d_parhdf5(1, nparticles, mystart_save, myend_save, &
+                                 'wall_hit_field_valid', INTVAR=wall_hit_field_valid, &
+                                 FILENAME='beams3d_'//TRIM(id_string), &
+                                 DESCRIPTION='Boundary-hit field diagnostics valid')
+    CALL beams3d_write1d_parhdf5(1, nparticles, mystart_save, myend_save, &
+                                 'wall_hit_model', INTVAR=wall_hit_model, &
+                                 FILENAME='beams3d_'//TRIM(id_string), &
+                                 DESCRIPTION='Boundary-hit model: 0 none, 1 guiding center, 2 full orbit')
+    CALL beams3d_write1d_parhdf5(1, nparticles, mystart_save, myend_save, &
+                                 'wall_hit_face', INTVAR=wall_hit_face, &
+                                 FILENAME='beams3d_'//TRIM(id_string), &
+                                 DESCRIPTION='Boundary face index, one based')
+    CALL beams3d_write1d_parhdf5(1, nparticles, mystart_save, myend_save, &
+                                 'wall_hit_fraction', DBLVAR=wall_hit_fraction, &
+                                 FILENAME='beams3d_'//TRIM(id_string), &
+                                 DESCRIPTION='Fraction along accepted segment')
+    CALL beams3d_write1d_parhdf5(1, nparticles, mystart_save, myend_save, &
+                                 'wall_hit_time', DBLVAR=wall_hit_time, &
+                                 FILENAME='beams3d_'//TRIM(id_string), &
+                                 DESCRIPTION='Segment-interpolated boundary-hit time [s]')
+    CALL beams3d_write1d_parhdf5(1, nparticles, mystart_save, myend_save, &
+                                 'wall_hit_r', DBLVAR=wall_hit_r, &
+                                 FILENAME='beams3d_'//TRIM(id_string), &
+                                 DESCRIPTION='Boundary-hit cylindrical R [m]')
+    CALL beams3d_write1d_parhdf5(1, nparticles, mystart_save, myend_save, &
+                                 'wall_hit_phi', DBLVAR=wall_hit_phi, &
+                                 FILENAME='beams3d_'//TRIM(id_string), &
+                                 DESCRIPTION='Boundary-hit cylindrical phi [rad]')
+    CALL beams3d_write1d_parhdf5(1, nparticles, mystart_save, myend_save, &
+                                 'wall_hit_z', DBLVAR=wall_hit_z, &
+                                 FILENAME='beams3d_'//TRIM(id_string), &
+                                 DESCRIPTION='Boundary-hit cylindrical Z [m]')
+    CALL beams3d_write1d_parhdf5(1, nparticles, mystart_save, myend_save, &
+                                 'wall_hit_vll', DBLVAR=wall_hit_vll, &
+                                 FILENAME='beams3d_'//TRIM(id_string), &
+                                 DESCRIPTION='Boundary-hit parallel velocity [m/s]')
+    CALL beams3d_write1d_parhdf5(1, nparticles, mystart_save, myend_save, &
+                                 'wall_hit_moment', DBLVAR=wall_hit_moment, &
+                                 FILENAME='beams3d_'//TRIM(id_string), &
+                                 DESCRIPTION='Boundary-hit magnetic moment [J/T]')
+    CALL beams3d_write1d_parhdf5(1, nparticles, mystart_save, myend_save, &
+                                 'wall_hit_b', DBLVAR=wall_hit_b, &
+                                 FILENAME='beams3d_'//TRIM(id_string), &
+                                 DESCRIPTION='Boundary-hit magnetic-field magnitude [T]')
+    CALL beams3d_write1d_parhdf5(1, nparticles, mystart_save, myend_save, &
+                                 'wall_hit_s', DBLVAR=wall_hit_s, &
+                                 FILENAME='beams3d_'//TRIM(id_string), &
+                                 DESCRIPTION='Boundary-hit normalized toroidal flux')
+    CALL beams3d_write1d_parhdf5(1, nparticles, mystart_save, myend_save, &
+                                 'wall_hit_u', DBLVAR=wall_hit_u, &
+                                 FILENAME='beams3d_'//TRIM(id_string), &
+                                 DESCRIPTION='Boundary-hit equilibrium poloidal angle [rad]')
+    CALL beams3d_write1d_parhdf5(1, nparticles, mystart_save, myend_save, &
+                                 'wall_hit_vr', DBLVAR=wall_hit_vr, &
+                                 FILENAME='beams3d_'//TRIM(id_string), &
+                                 DESCRIPTION='Boundary-hit cylindrical radial velocity [m/s]')
+    CALL beams3d_write1d_parhdf5(1, nparticles, mystart_save, myend_save, &
+                                 'wall_hit_vphi', DBLVAR=wall_hit_vphi, &
+                                 FILENAME='beams3d_'//TRIM(id_string), &
+                                 DESCRIPTION='Boundary-hit cylindrical toroidal velocity [m/s]')
+    CALL beams3d_write1d_parhdf5(1, nparticles, mystart_save, myend_save, &
+                                 'wall_hit_vz', DBLVAR=wall_hit_vz, &
+                                 FILENAME='beams3d_'//TRIM(id_string), &
+                                 DESCRIPTION='Boundary-hit cylindrical vertical velocity [m/s]')
+    CALL beams3d_write1d_parhdf5(1, nparticles, mystart_save, myend_save, &
+                                 'wall_hit_energy', DBLVAR=wall_hit_energy, &
+                                 FILENAME='beams3d_'//TRIM(id_string), &
+                                 DESCRIPTION='Boundary-hit kinetic energy [J]')
     ALLOCATE(itemp(0:npoinc,mystart_save:myend_save))
     itemp = 0; WHERE(neut_lines) itemp=1
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart_save, myend_save,   'neut_lines', INTVAR=itemp)

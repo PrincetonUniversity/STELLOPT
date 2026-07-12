@@ -8,12 +8,13 @@
 !-----------------------------------------------------------------------
       MODULE beams3d_write_par
       CONTAINS
-      SUBROUTINE beams3d_write_parhdf5(n1,n2,m1,m2,mystart,myend,var_name,INTVAR,FLTVAR,DBLVAR)
+      SUBROUTINE beams3d_write_parhdf5(n1,n2,m1,m2,mystart,myend,var_name,INTVAR,FLTVAR,DBLVAR,DESCRIPTION)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
       USE mpi_params
       USE hdf5
+      USE ez_hdf5, ONLY: write_att_hdf5
       USE beams3d_runtime, ONLY: id_string, nprocs_beams, handle_err, &
                                  MPI_BARRIER_ERR
       USE mpi_inc
@@ -34,6 +35,7 @@
       INTEGER, INTENT(in),  OPTIONAL         :: INTVAR(n1:n2,mystart:myend)
       REAL, INTENT(in),  OPTIONAL            :: FLTVAR(n1:n2,mystart:myend)
       DOUBLE PRECISION, INTENT(in), OPTIONAL :: DBLVAR(n1:n2,mystart:myend)
+      CHARACTER(LEN=*), INTENT(in), OPTIONAL :: DESCRIPTION
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier          Error Flag
@@ -104,6 +106,7 @@
       IF (livar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_INTEGER, fspace_id, dset_id, ier, dcpl_id)
       IF (lfvar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_DOUBLE, fspace_id, dset_id, ier, dcpl_id)
       IF (ldvar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_DOUBLE, fspace_id, dset_id, ier, dcpl_id)
+      IF (PRESENT(DESCRIPTION)) CALL write_att_hdf5(dset_id,'description',DESCRIPTION,ier)
 
       ! Close the file space
       CALL h5sclose_f(fspace_id, ier)
@@ -162,6 +165,7 @@
                IF (livar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_INTEGER, fspace_id, dset_id, ier)
                IF (lfvar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_DOUBLE, fspace_id, dset_id, ier)
                IF (ldvar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_DOUBLE, fspace_id, dset_id, ier)
+               IF (PRESENT(DESCRIPTION)) CALL write_att_hdf5(dset_id,'description',DESCRIPTION,ier)
             !PRINT *,'h5dcreate_f ',ier
             ELSE
                CALL h5dopen_f(file_id, TRIM(var_name), dset_id, ier)
@@ -215,12 +219,13 @@
 !-----------------------------------------------------------------------
       END SUBROUTINE beams3d_write_parhdf5
 
-      SUBROUTINE beams3d_write1d_parhdf5(m1,m2,mystart,myend,var_name,INTVAR,FLTVAR,DBLVAR,FILENAME)
+      SUBROUTINE beams3d_write1d_parhdf5(m1,m2,mystart,myend,var_name,INTVAR,FLTVAR,DBLVAR,FILENAME,DESCRIPTION)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
       USE mpi_params
       USE hdf5
+      USE ez_hdf5, ONLY: write_att_hdf5
       USE beams3d_runtime, ONLY: id_string, nprocs_beams, handle_err, &
                                  MPI_BARRIER_ERR
       USE mpi_inc
@@ -242,6 +247,7 @@
       REAL, INTENT(in),  OPTIONAL            :: FLTVAR(mystart:myend)
       DOUBLE PRECISION, INTENT(in), OPTIONAL :: DBLVAR(mystart:myend)
       CHARACTER(LEN=*), INTENT(in), OPTIONAL :: FILENAME
+      CHARACTER(LEN=*), INTENT(in), OPTIONAL :: DESCRIPTION
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier          Error Flag
@@ -311,6 +317,7 @@
       IF (livar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_INTEGER, fspace_id, dset_id, ier, dcpl_id)
       IF (lfvar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_DOUBLE, fspace_id, dset_id, ier, dcpl_id)
       IF (ldvar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_DOUBLE, fspace_id, dset_id, ier, dcpl_id)
+      IF (PRESENT(DESCRIPTION)) CALL write_att_hdf5(dset_id,'description',DESCRIPTION,ier)
 
       ! Close the file space
       CALL h5sclose_f(fspace_id, ier)
@@ -373,6 +380,7 @@
                IF (livar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_INTEGER, fspace_id, dset_id, ier)
                IF (lfvar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_DOUBLE, fspace_id, dset_id, ier)
                IF (ldvar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_DOUBLE, fspace_id, dset_id, ier)
+               IF (PRESENT(DESCRIPTION)) CALL write_att_hdf5(dset_id,'description',DESCRIPTION,ier)
             !PRINT *,'h5dcreate_f ',ier
             ELSE
                CALL h5dopen_f(file_id, TRIM(var_name), dset_id, ier)

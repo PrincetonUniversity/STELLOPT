@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys, os
 import json
+import h5py
 from pathlib import Path
 from argparse import ArgumentParser
 sys.path.insert(0, '../../pySTEL/')
@@ -50,6 +51,75 @@ if __name__=="__main__":
         data['turning'] = np.max(theta,axis=1).tolist()
     if run_name in ['ORBITS_loss']:
         data['end_state'] = b3d.end_state.tolist()
+        lost = b3d.end_state == 2
+        valid = b3d.wall_hit_valid == 1
+        assert b3d.lplasma_only
+        assert b3d.lwall_from_vmec
+        assert np.array_equal(valid, lost)
+        assert np.array_equal(b3d.wall_hit_field_valid == 1, valid)
+        assert np.all(b3d.wall_hit_model[valid] == 1)
+        assert np.all(b3d.wall_hit_model[~valid] == 0)
+        assert np.all((b3d.wall_hit_fraction[valid] >= 0.0) &
+                      (b3d.wall_hit_fraction[valid] <= 1.0))
+        assert np.all(b3d.wall_hit_time[valid] >= 0.0)
+        assert np.all(b3d.wall_hit_time[valid] <= b3d.t_end[valid])
+        assert np.all(np.isfinite(b3d.wall_hit_r[valid]))
+        assert np.all(np.isfinite(b3d.wall_hit_phi[valid]))
+        assert np.all(np.isfinite(b3d.wall_hit_z[valid]))
+        for values in (b3d.wall_hit_vll, b3d.wall_hit_moment, b3d.wall_hit_b,
+                       b3d.wall_hit_s, b3d.wall_hit_u, b3d.wall_hit_energy):
+            assert np.all(np.isfinite(values[valid]))
+            assert np.all(values[~valid] < -1.0e300)
+        assert np.all(b3d.wall_hit_b[valid] > 0.0)
+        assert np.all(b3d.wall_hit_energy[valid] > 0.0)
+        expected_energy = (0.5*b3d.mass[valid]*b3d.wall_hit_vll[valid]**2 +
+                           b3d.wall_hit_moment[valid]*b3d.wall_hit_b[valid])
+        assert np.array_equal(b3d.wall_hit_energy[valid], expected_energy)
+        assert np.all(b3d.wall_hit_face[~valid] == -1)
+        assert np.all(b3d.wall_hit_fraction[~valid] == -1.0)
+        assert np.all(b3d.wall_hit_time[~valid] == -1.0)
+        assert np.all(b3d.wall_hit_r[~valid] < -1.0e300)
+        assert np.all(b3d.wall_hit_phi[~valid] < -1.0e300)
+        assert np.all(b3d.wall_hit_z[~valid] < -1.0e300)
+        with h5py.File(f'beams3d_{run_name}.h5', 'r') as event_data:
+            r_lines = event_data['R_lines'][:]
+            z_lines = event_data['Z_lines'][:]
+            phi_lines = event_data['PHI_lines'][:]
+            vll_lines = event_data['vll_lines'][:]
+            moment_lines = event_data['moment_lines'][:]
+            b_lines = event_data['B_lines'][:]
+            s_lines = event_data['S_lines'][:]
+            u_lines = event_data['U_lines'][:]
+            time_lines = event_data['time_lines'][:]
+            wall_strikes = event_data['wall_strikes'][:]
+            for name in ('wall_hit_valid', 'wall_hit_field_valid', 'wall_hit_model',
+                         'wall_hit_face', 'wall_hit_fraction',
+                         'wall_hit_time', 'wall_hit_r', 'wall_hit_phi',
+                         'wall_hit_z', 'wall_hit_vll', 'wall_hit_moment',
+                         'wall_hit_b', 'wall_hit_s', 'wall_hit_u',
+                         'wall_hit_energy', 'time_lines'):
+                assert 'description' in event_data[name].attrs
+        populated = (r_lines[valid] != 0.0) | (z_lines[valid] != 0.0)
+        all_populated = (r_lines != 0.0) | (z_lines != 0.0)
+        assert np.all(time_lines[all_populated] >= 0.0)
+        for particle in range(time_lines.shape[0]):
+            particle_time = time_lines[particle, all_populated[particle]]
+            assert np.all(np.diff(particle_time) >= 0.0)
+        last = populated.shape[1] - 1 - np.argmax(populated[:, ::-1], axis=1)
+        rows = np.flatnonzero(valid)
+        assert np.sum(wall_strikes) == rows.size
+        expected_strikes = np.bincount(b3d.wall_hit_face[valid] - 1,
+                                       minlength=wall_strikes.size)
+        assert np.array_equal(wall_strikes, expected_strikes)
+        assert np.array_equal(b3d.wall_hit_r[valid], r_lines[rows, last])
+        assert np.array_equal(b3d.wall_hit_phi[valid], phi_lines[rows, last])
+        assert np.array_equal(b3d.wall_hit_z[valid], z_lines[rows, last])
+        assert np.array_equal(b3d.wall_hit_vll[valid], vll_lines[rows, last])
+        assert np.array_equal(b3d.wall_hit_moment[valid], moment_lines[rows, last])
+        assert np.array_equal(b3d.wall_hit_b[valid], b_lines[rows, last])
+        assert np.array_equal(b3d.wall_hit_s[valid], s_lines[rows, last])
+        assert np.array_equal(b3d.wall_hit_u[valid], u_lines[rows, last])
+        assert np.array_equal(b3d.wall_hit_time[valid], time_lines[rows, last])
     if run_name in ['ORBITS_slow']:
         data['vll0']=b3d.vll_lines[0,:].flatten().tolist()
         data['epower']=(b3d.epower_prof[0,:].flatten()*1.0E20).tolist() # factor to make values visible in output.
@@ -135,12 +205,7 @@ if __name__=="__main__":
     # Error Status
     if lfail:
         print('  STATUS: FAIL!!!!!')
-        sys.exit(0) # For now since some may fail due to statistics
+        sys.exit(1)
     else:
         print('  STATUS: PASS')
         sys.exit(0)
-
-
-
-
-

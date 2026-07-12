@@ -26,6 +26,7 @@ test_beams3d:
 	$(MAKE) test_beams3d_basic
 	$(MAKE) test_beams3d_er
 	$(MAKE) test_beams3d_loss
+	$(MAKE) test_beams3d_event_modes
 	$(MAKE) test_beams3d_slow
 	@if [ -n "$(ADASDIR)" ]; then \
 		if [ -d $(ADASDIR) ]; then \
@@ -189,6 +190,12 @@ test_beams3d_loss:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_loss -plasma
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_loss -plasma
 	@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_loss
+	@echo ""
+
+test_beams3d_event_modes:
+	@cd $(BEAMS3D_TEST_DIR); ./check_event_modes.py \
+		--executable $(MYHOME)/xbeams3d \
+		--launcher "$(MPI_RUN) $(MPI_RUN_OPTS_SM)"
 	@echo ""
 
 test_beams3d_slow:

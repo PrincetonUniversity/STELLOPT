@@ -58,6 +58,7 @@
       ! Handle what we do
       luse_vc = ((lmgrid .or. lcoil) .and. .not.lplasma_only)
       lcreate_wall = (lplasma_only .and. .not. lvessel)
+      lwall_from_vmec = lcreate_wall
 
       ! Divide up Work
       mylocalid = myworkid

@@ -38,7 +38,7 @@ class BEAMS3D():
 			for temp in ['lascot', 'lbeam', 'lbeam_simple', \
 						 'lcoil', 'lcollision', 'ldepo', 'lflux', \
 						 'lmgrid', 'lpies', 'lspec', 'lvac', \
-						 'lvessel', 'lvmec', 'leqdsk', 'lhint', \
+						 'lvessel', 'lplasma_only', 'lwall_from_vmec', 'lvmec', 'leqdsk', 'lhint', \
 						 'lfusion', 'lboxsim', 'lhitonly']:
 				if temp in f:
 					setattr(self, temp, np.int64(f[temp][0])==1)
@@ -59,7 +59,14 @@ class BEAMS3D():
 			for temp in ['raxis', 'phiaxis', 'zaxis', \
 						 'mass', 'charge', 'Weight', 'Beam', 'Zatom', \
 						 'end_state', 'Energy', 'wall_strikes', \
-						 'GFactor', 't_end',  \
+						 'GFactor', 't_end', 'wall_hit_valid', 'wall_hit_field_valid', \
+						 'wall_hit_model', \
+						 'wall_hit_face', 'wall_hit_fraction', \
+						 'wall_hit_time', 'wall_hit_r', \
+						 'wall_hit_phi', 'wall_hit_z', 'wall_hit_vll', \
+						 'wall_hit_moment', 'wall_hit_b', 'wall_hit_s', \
+						 'wall_hit_u', 'wall_hit_vr', 'wall_hit_vphi', \
+						 'wall_hit_vz', 'wall_hit_energy', \
 						 'wall_strikes', \
 						 'dist_rhoaxis', 'dist_uaxis', 'dist_paxis', \
 						 'dist_Vaxis', 'dist_Waxis', 'Shinethrough', \
@@ -74,7 +81,8 @@ class BEAMS3D():
 						 'S_lines', 'U_lines', 'B_lines', \
 						 'ndot_prof', \
 						 'epower_prof', 'ipower_prof', 'j_prof', \
-						 'dense_prof','vr_lines','vphi_lines','vz_lines']:
+						 'dense_prof','vr_lines','vphi_lines','vz_lines', \
+						 'time_lines']:
 				if temp in f:
 					array = np.transpose(f[temp][:],(1,0))
 					setattr(self, temp, np.array(array))
@@ -761,6 +769,3 @@ class BEAMS3D_INPUT():
 if __name__=="__main__":
 	import sys
 	sys.exit(0)
-
-
-

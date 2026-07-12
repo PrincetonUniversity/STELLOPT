@@ -13,7 +13,13 @@
    USE beams3d_lines, ONLY: R_lines, PHI_lines, Z_lines, vll_lines, &
                             neut_lines, moment_lines, S_lines, U_lines, &
                             vr_lines, vphi_lines, vz_lines, &
-                            shine_through, &
+                            shine_through, wall_hit_valid, wall_hit_field_valid, &
+                            wall_hit_model, wall_hit_face, &
+                            wall_hit_fraction, wall_hit_time, wall_hit_r, &
+                            wall_hit_phi, wall_hit_z, wall_hit_vll, &
+                            wall_hit_moment, wall_hit_b, wall_hit_s, &
+                            wall_hit_u, wall_hit_vr, wall_hit_vphi, &
+                            wall_hit_vz, wall_hit_energy, time_lines, &
                             B_lines, end_state, shine_port, Gfactor, &
                             ndot_prof, epower_prof, ipower_prof, j_prof,&
                             dense_prof, dist5d_prof, dist5d_fida, &
@@ -46,6 +52,25 @@
       IF (EZspline_allocated(NI_spl_s(i)))   CALL EZspline_free(NI_spl_s(i),ier)
    END DO
    IF (ALLOCATED(R_lines)) DEALLOCATE(R_lines)
+   IF (ALLOCATED(wall_hit_valid)) DEALLOCATE(wall_hit_valid)
+   IF (ALLOCATED(wall_hit_field_valid)) DEALLOCATE(wall_hit_field_valid)
+   IF (ALLOCATED(wall_hit_model)) DEALLOCATE(wall_hit_model)
+   IF (ALLOCATED(wall_hit_face)) DEALLOCATE(wall_hit_face)
+   IF (ALLOCATED(wall_hit_fraction)) DEALLOCATE(wall_hit_fraction)
+   IF (ALLOCATED(wall_hit_time)) DEALLOCATE(wall_hit_time)
+   IF (ALLOCATED(wall_hit_r)) DEALLOCATE(wall_hit_r)
+   IF (ALLOCATED(wall_hit_phi)) DEALLOCATE(wall_hit_phi)
+   IF (ALLOCATED(wall_hit_z)) DEALLOCATE(wall_hit_z)
+   IF (ALLOCATED(wall_hit_vll)) DEALLOCATE(wall_hit_vll)
+   IF (ALLOCATED(wall_hit_moment)) DEALLOCATE(wall_hit_moment)
+   IF (ALLOCATED(wall_hit_b)) DEALLOCATE(wall_hit_b)
+   IF (ALLOCATED(wall_hit_s)) DEALLOCATE(wall_hit_s)
+   IF (ALLOCATED(wall_hit_u)) DEALLOCATE(wall_hit_u)
+   IF (ALLOCATED(wall_hit_vr)) DEALLOCATE(wall_hit_vr)
+   IF (ALLOCATED(wall_hit_vphi)) DEALLOCATE(wall_hit_vphi)
+   IF (ALLOCATED(wall_hit_vz)) DEALLOCATE(wall_hit_vz)
+   IF (ALLOCATED(wall_hit_energy)) DEALLOCATE(wall_hit_energy)
+   IF (ALLOCATED(time_lines)) DEALLOCATE(time_lines)
    IF (ALLOCATED(PHI_lines)) DEALLOCATE(PHI_lines)
    IF (ALLOCATED(Z_lines)) DEALLOCATE(Z_lines)
    IF (ALLOCATED(vll_lines)) DEALLOCATE(vll_lines)

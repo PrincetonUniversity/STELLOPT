@@ -163,7 +163,7 @@ MODULE beams3d_runtime
 ! DEVELOP
     LOGICAL :: lvmec, lpies, lspec, lcoil, lmgrid, &
                lvessel, lvac, lcontinue_grid, lneut, &
-               lhitonly, lread_input, lplasma_only, lraw, &
+               lhitonly, lread_input, lplasma_only, lwall_from_vmec, lraw, &
                ldepo, lbeam_simple, lsuzuki, &
                lascot, lascot4, lfidasim, lfidasim_cyl, lsplit, &
                lvessel_beam, lascotfl, lrandomize, leqdsk, lhint, &

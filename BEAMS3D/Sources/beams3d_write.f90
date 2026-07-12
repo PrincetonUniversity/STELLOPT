@@ -23,7 +23,8 @@
                                  E_kick, NI, beam_density, E_NEUTRONS, NEUTRONS_ARR
       USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, &
                                     lvmec, lpies, lspec, lcoil, lmgrid, lbeam, lascot, &
-                                    lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
+                                    lvessel, lplasma_only, lwall_from_vmec, lvac, lbeam_simple, handle_err, &
+                                    nparticles_start, &
                                     HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
                                     HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
                                     charge, Zatom, mass, ldepo, lcollision, lfusion, lboxsim, &
@@ -72,6 +73,12 @@
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lmgrid',ier)
                CALL write_scalar_hdf5(fid,'lvessel',ier,BOOVAR=lvessel,ATT='Vessel input',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lvessel',ier)
+               CALL write_scalar_hdf5(fid,'lplasma_only',ier,BOOVAR=lplasma_only, &
+                                      ATT='Plasma-only field mode',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lplasma_only',ier)
+               CALL write_scalar_hdf5(fid,'lwall_from_vmec',ier,BOOVAR=lwall_from_vmec, &
+                                      ATT='Boundary generated from VMEC LCFS',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lwall_from_vmec',ier)
                CALL write_scalar_hdf5(fid,'lvac',ier,BOOVAR=lvac,ATT='Vacuum calc',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lvac',ier)
                CALL write_scalar_hdf5(fid,'lbeam',ier,BOOVAR=lbeam,ATT='Neutral Beam Calc',ATT_NAME='description')
@@ -207,6 +214,69 @@
                CALL write_var_hdf5(fid,'end_state',nparticles,ier,INTVAR=end_state,ATT='0: Orbiting; 1: Thermalized; 2: Wall Strike; 3: Shine-through; 4: Port-Load',&
                                    ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'end_state',ier)
+#if !defined(MPI_OPT)
+               CALL write_var_hdf5(fid,'t_end',nparticles,ier,DBLVAR=t_end, &
+                                   ATT='Time at End of Trajectory [s]',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'t_end',ier)
+               CALL write_var_hdf5(fid,'wall_hit_valid',nparticles,ier,INTVAR=wall_hit_valid,&
+                                   ATT='Boundary-hit record valid',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_hit_valid',ier)
+               CALL write_var_hdf5(fid,'wall_hit_field_valid',nparticles,ier,INTVAR=wall_hit_field_valid,&
+                                   ATT='Boundary-hit field diagnostics valid',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_hit_field_valid',ier)
+               CALL write_var_hdf5(fid,'wall_hit_model',nparticles,ier,INTVAR=wall_hit_model,&
+                                   ATT='Boundary-hit model: 0 none, 1 guiding center, 2 full orbit',&
+                                   ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_hit_model',ier)
+               CALL write_var_hdf5(fid,'wall_hit_face',nparticles,ier,INTVAR=wall_hit_face,&
+                                   ATT='Boundary face index',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_hit_face',ier)
+               CALL write_var_hdf5(fid,'wall_hit_fraction',nparticles,ier,DBLVAR=wall_hit_fraction,&
+                                   ATT='Fraction along accepted segment',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_hit_fraction',ier)
+               CALL write_var_hdf5(fid,'wall_hit_time',nparticles,ier,DBLVAR=wall_hit_time,&
+                                   ATT='Segment-interpolated boundary-hit time [s]',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_hit_time',ier)
+               CALL write_var_hdf5(fid,'wall_hit_r',nparticles,ier,DBLVAR=wall_hit_r,&
+                                   ATT='Boundary-hit cylindrical R [m]',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_hit_r',ier)
+               CALL write_var_hdf5(fid,'wall_hit_phi',nparticles,ier,DBLVAR=wall_hit_phi,&
+                                   ATT='Boundary-hit cylindrical phi [rad]',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_hit_phi',ier)
+               CALL write_var_hdf5(fid,'wall_hit_z',nparticles,ier,DBLVAR=wall_hit_z,&
+                                   ATT='Boundary-hit cylindrical Z [m]',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_hit_z',ier)
+               CALL write_var_hdf5(fid,'wall_hit_vll',nparticles,ier,DBLVAR=wall_hit_vll,&
+                                   ATT='Boundary-hit parallel velocity [m/s]',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_hit_vll',ier)
+               CALL write_var_hdf5(fid,'wall_hit_moment',nparticles,ier,DBLVAR=wall_hit_moment,&
+                                   ATT='Boundary-hit magnetic moment [J/T]',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_hit_moment',ier)
+               CALL write_var_hdf5(fid,'wall_hit_b',nparticles,ier,DBLVAR=wall_hit_b,&
+                                   ATT='Boundary-hit magnetic-field magnitude [T]',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_hit_b',ier)
+               CALL write_var_hdf5(fid,'wall_hit_s',nparticles,ier,DBLVAR=wall_hit_s,&
+                                   ATT='Boundary-hit normalized toroidal flux',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_hit_s',ier)
+               CALL write_var_hdf5(fid,'wall_hit_u',nparticles,ier,DBLVAR=wall_hit_u,&
+                                   ATT='Boundary-hit equilibrium poloidal angle [rad]',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_hit_u',ier)
+               CALL write_var_hdf5(fid,'wall_hit_vr',nparticles,ier,DBLVAR=wall_hit_vr,&
+                                   ATT='Boundary-hit cylindrical radial velocity [m/s]',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_hit_vr',ier)
+               CALL write_var_hdf5(fid,'wall_hit_vphi',nparticles,ier,DBLVAR=wall_hit_vphi,&
+                                   ATT='Boundary-hit cylindrical toroidal velocity [m/s]',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_hit_vphi',ier)
+               CALL write_var_hdf5(fid,'wall_hit_vz',nparticles,ier,DBLVAR=wall_hit_vz,&
+                                   ATT='Boundary-hit cylindrical vertical velocity [m/s]',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_hit_vz',ier)
+               CALL write_var_hdf5(fid,'wall_hit_energy',nparticles,ier,DBLVAR=wall_hit_energy,&
+                                   ATT='Boundary-hit kinetic energy [J]',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_hit_energy',ier)
+               CALL write_var_hdf5(fid,'time_lines',npoinc+1,nparticles,ier,DBLVAR=time_lines,&
+                                   ATT='Trajectory-state timestamp [s]',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'time_lines',ier)
+#endif
                CALL write_var_hdf5(fid,'Energy',nbeams,ier,DBLVAR=e_beams,ATT='Beam Energy [J]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'E_BEAMS',ier)
                IF (ASSOCIATED(ihit_array)) THEN

@@ -166,6 +166,7 @@ CONTAINS
          lrestart_particles = .false.
          lhitonly  = .false.
          lplasma_only = .false.
+         lwall_from_vmec = .false.
          lraw = .false.
          ldepo = .false.
          lbeam_simple = .false.

@@ -140,6 +140,12 @@ SUBROUTINE beams3d_follow_fo
                     zlast = q(3)
                     !moment = moment_lines(mytdex-1,l)
                     t_nag = tf_nag - dt
+                    previous_time = t_nag
+                    previous_vll = vll_lines(mytdex-1,l)
+                    previous_moment = moment_lines(mytdex-1,l)
+                    previous_vr = q(4)
+                    previous_vphi = q(5)
+                    previous_vz = q(6)
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
@@ -184,7 +190,13 @@ SUBROUTINE beams3d_follow_fo
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)
                     !moment = moment_lines(mytdex-1,l)
-                    t_nag = tf_nag - dt
+                    tf_nag = t_nag
+                    previous_time = t_nag
+                    previous_vll = vll_lines(mytdex-1,l)
+                    previous_moment = moment_lines(mytdex-1,l)
+                    previous_vr = q(4)
+                    previous_vphi = q(5)
+                    previous_vz = q(6)
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
@@ -205,8 +217,10 @@ SUBROUTINE beams3d_follow_fo
                         q(2)=rkh_work(2,2)
                         q(3)=rkh_work(3,2)
                         q(4)=rkh_work(4,2)
+                        q(5)=rkh_work(5,2)
+                        q(6)=rkh_work(6,2)
                         t_nag = t_nag+dt
-                        tf_nag = tf_nag+dt
+                        tf_nag = t_nag
                         t_last(l) = tf_nag ! Save the value here in case out_beams3d changes it
                         CALL out_beams3d_part(tf_nag,q)
                         IF ((istate == -1) .or. (istate ==-2) .or. (ABS(tf_nag) > ABS(my_end)) ) EXIT
@@ -270,6 +284,12 @@ SUBROUTINE beams3d_follow_fo
                     xlast = q(1)*cos(q(2))
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)
+                    previous_time = t_nag
+                    previous_vll = vll_lines(mytdex-1,l)
+                    previous_moment = moment_lines(mytdex-1,l)
+                    previous_vr = q(4)
+                    previous_vphi = q(5)
+                    previous_vz = q(6)
                     ! Now calc dt
                     CALL beams3d_calc_dt(2,q(1),q(2),q(3),dt)
                     tf_nag = t_nag+dt

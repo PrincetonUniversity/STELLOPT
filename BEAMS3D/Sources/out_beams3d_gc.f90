@@ -23,9 +23,15 @@ SUBROUTINE out_beams3d_gc(t, q)
                              ns_prof5, mymass, mycharge, mybeam, end_state, &
                              dist5d_prof, dist5d_fida, win_dist5d, nsh_prof4, &
                              h2_prof, h3_prof, h4_prof, h5_prof, my_end, &
-                             r_h, p_h, z_h, e_h, pi_h, E_by_v, h1_prof
+                             r_h, p_h, z_h, e_h, pi_h, E_by_v, h1_prof, &
+                             previous_time, wall_hit_valid, wall_hit_field_valid, wall_hit_model, wall_hit_face, &
+                             wall_hit_fraction, wall_hit_time, wall_hit_r, &
+                             wall_hit_phi, wall_hit_z, wall_hit_vll, &
+                             wall_hit_moment, wall_hit_b, wall_hit_s, &
+                             wall_hit_u, wall_hit_energy, time_lines, &
+                             previous_energy, previous_vll, previous_moment
     USE beams3d_grid
-    USE beams3d_physics_mod, ONLY: beams3d_physics_gc
+    USE beams3d_physics_mod, ONLY: beams3d_physics_gc, beams3d_event_diagnostics
     USE wall_mod, ONLY: collide, get_wall_ik, get_wall_area
     USE mpi_params
     USE mpi_inc
@@ -41,10 +47,11 @@ SUBROUTINE out_beams3d_gc(t, q)
     !     Local Variables
     !     jint      Index along phi
     !-----------------------------------------------------------------------
-    LOGICAL             :: lhit
+    LOGICAL             :: lhit, lfield, loutside_grid
     INTEGER             :: ier, d1, d2, d3, d4, d5, d1f
     DOUBLE PRECISION         :: x0,y0,z0,x1,y1,z1,xw,yw,zw, vperp
-    DOUBLE PRECISION    :: q2(4),qdot(4)
+    DOUBLE PRECISION         :: callback_time, hit_fraction, event_br, event_bphi, event_bz
+    DOUBLE PRECISION    :: q2(4)
     ! For splines
     INTEGER :: i,j,k,l
     REAL*8 :: xparam, yparam, zparam !, hx, hy, hz, hxi, hyi, hzi
@@ -54,18 +61,25 @@ SUBROUTINE out_beams3d_gc(t, q)
     !-----------------------------------------------------------------------
     !     Begin Function
     !-----------------------------------------------------------------------
+    callback_time = t
+    lhit = .false.
+    time_lines(mytdex, myline)   = callback_time
     R_lines(mytdex, myline)      = q(1)
     PHI_lines(mytdex, myline)    = q(2)
     Z_lines(mytdex, myline)      = q(3)
     vll_lines(mytdex, myline)    = q(4)
     moment_lines(mytdex, myline) = moment
+    S_lines(mytdex, myline)      = 1.5
+    U_lines(mytdex, myline)      = 0.0
+    B_lines(mytdex, myline)      = -1.0
     neut_lines(mytdex,myline)     = lneut
     x0 = MOD(q(2), phimax)
     IF (x0 < 0) x0 = x0 + phimax
-    rho_help = 0  ! If we're out of domain then don't worry about collisions
-    IF ((q(1) >= rmin-eps1) .and. (q(1) <= rmax+eps1) .and. &
-        (x0 >= phimin-eps2) .and. (x0 <= phimax+eps2) .and. &
-        (q(3) >= zmin-eps3) .and. (q(3) <= zmax+eps3)) THEN
+    loutside_grid = .not.((q(1) >= rmin-eps1) .and. (q(1) <= rmax+eps1) .and. &
+                          (x0 >= phimin-eps2) .and. (x0 <= phimax+eps2) .and. &
+                          (q(3) >= zmin-eps3) .and. (q(3) <= zmax+eps3))
+    rho_help = 0
+    IF (.not.loutside_grid) THEN
        i = MIN(MAX(COUNT(raxis < q(1)),1),nr-1)
        j = MIN(MAX(COUNT(phiaxis < x0),1),nphi-1)
        k = MIN(MAX(COUNT(zaxis < q(3)),1),nz-1)
@@ -123,15 +137,15 @@ SUBROUTINE out_beams3d_gc(t, q)
     ELSE
        IF (lneut) end_state(myline)=3
     END IF
-    IF (lvessel .and. mytdex > 0 .and. rho_help > 0.5) THEN
-       lhit = .false.
+    IF (lvessel .and. mytdex > 0 .and. wall_hit_valid(myline) == 0 .and. &
+        (rho_help > 0.5 .or. loutside_grid)) THEN
        x0    = xlast
        y0    = ylast
        z0    = zlast
        x1    = q(1)*cos(q(2))
        y1    = q(1)*sin(q(2))
        z1    = q(3)
-       CALL collide(x0,y0,z0,x1,y1,z1,xw,yw,zw,lhit)
+       CALL collide(x0,y0,z0,x1,y1,z1,xw,yw,zw,lhit,hit_fraction)
        IF (lhit) THEN
           q2(1) = SQRT(xw*xw+yw*yw)
           q2(2) = atan2(yw,xw)
@@ -141,26 +155,66 @@ SUBROUTINE out_beams3d_gc(t, q)
           Z_lines(mytdex,myline)       = zw
           t = my_end+dt
           l = get_wall_ik()
+          IF (wall_hit_valid(myline) == 0) THEN
+             wall_hit_valid(myline) = 1
+             wall_hit_model(myline) = 1
+             wall_hit_face(myline) = l
+             wall_hit_fraction(myline) = hit_fraction
+             wall_hit_time(myline) = previous_time + &
+                                     hit_fraction*(callback_time-previous_time)
+             wall_hit_r(myline) = q2(1)
+             wall_hit_phi(myline) = q2(2)
+             wall_hit_z(myline) = q2(3)
+             wall_hit_vll(myline) = previous_vll + hit_fraction* &
+                                      (vll_lines(mytdex,myline)-previous_vll)
+             wall_hit_moment(myline) = previous_moment + hit_fraction* &
+                                         (moment_lines(mytdex,myline)-previous_moment)
+             CALL beams3d_event_diagnostics(q2(1),q2(2),q2(3), &
+                    wall_hit_s(myline),wall_hit_u(myline),wall_hit_b(myline), &
+                    event_br,event_bphi,event_bz,lfield)
+             IF (lfield) wall_hit_field_valid(myline) = 1
+             IF (lneut) THEN
+                wall_hit_energy(myline) = 0.5*mymass*wall_hit_vll(myline)**2
+             ELSE IF (lfield) THEN
+                wall_hit_energy(myline) = 0.5*mymass*wall_hit_vll(myline)**2 + &
+                                           wall_hit_moment(myline)*wall_hit_b(myline)
+             END IF
+             time_lines(mytdex,myline) = wall_hit_time(myline)
+             vll_lines(mytdex,myline) = wall_hit_vll(myline)
+             moment_lines(mytdex,myline) = wall_hit_moment(myline)
+             IF (lfield) THEN
+                B_lines(mytdex,myline) = wall_hit_b(myline)
+                S_lines(mytdex,myline) = wall_hit_s(myline)
+                U_lines(mytdex,myline) = wall_hit_u(myline)
+             END IF
+          END IF
           IF (lneut) THEN
-             wall_shine(mybeam,l) = wall_shine(mybeam,l) + weight(myline)*0.5*mymass*q(4)*q(4)/get_wall_area(l)
+             wall_shine(mybeam,l) = wall_shine(mybeam,l) + &
+                                    weight(myline)*wall_hit_energy(myline)/get_wall_area(l)
           ELSE
              end_state(myline) = 2
-             CALL fgc_eom(t,q2,qdot)
-             qdot(4)=0
-             wall_load(mybeam,l) = wall_load(mybeam,l) + weight(myline)*0.5*mymass*(SUM(qdot*qdot)+vperp*vperp)/get_wall_area(l)
+             IF (lfield) THEN
+                wall_load(mybeam,l) = wall_load(mybeam,l) + &
+                    weight(myline)*wall_hit_energy(myline)/get_wall_area(l)
+             ELSE
+                wall_load(mybeam,l) = wall_load(mybeam,l) + &
+                    weight(myline)*previous_energy/get_wall_area(l)
+             END IF
           END IF
           IF (lhitonly) THEN
              R_lines(0,myline)      = SQRT(xlast*xlast+ylast*ylast)
              PHI_lines(0,myline)    = ATAN2(ylast,xlast)
              Z_lines(0,myline)      = zlast
-             vll_lines(0,myline)    = q(4)
-             moment_lines(0,myline) = moment
+             vll_lines(0,myline)    = previous_vll
+             moment_lines(0,myline) = previous_moment
+             time_lines(0,myline)   = previous_time
              neut_lines(0,myline)   = lneut
              R_lines(2,myline)      = q(1)
              PHI_lines(2,myline)    = q(2)
              Z_lines(2,myline)      = q(3)
              vll_lines(2,myline)    = q(4)
              moment_lines(2,myline) = moment
+             time_lines(2,myline)   = callback_time
              neut_lines(2,myline)   = lneut
           END IF
        ELSE
@@ -172,6 +226,17 @@ SUBROUTINE out_beams3d_gc(t, q)
        xlast = q(1)*cos(q(2))
        ylast = q(1)*sin(q(2))
        zlast = q(3)
+    END IF
+    IF (.not. lhit) THEN
+       previous_time = callback_time
+       previous_vll = q(4)
+       previous_moment = moment
+       IF (lneut) THEN
+          previous_energy = 0.5*mymass*q(4)*q(4)
+       ELSE IF (B_lines(mytdex,myline) > 0.0) THEN
+          previous_energy = 0.5*mymass*q(4)*q(4) + &
+                            moment*B_lines(mytdex,myline)
+       END IF
     END IF
     ndt = ndt + 1
     IF (ndt .ge. ndt_max) THEN ! ge needed if npoinc = ndt
@@ -187,4 +252,3 @@ SUBROUTINE out_beams3d_gc(t, q)
     !     End Function
     !-----------------------------------------------------------------------
 END SUBROUTINE out_beams3d_gc
-

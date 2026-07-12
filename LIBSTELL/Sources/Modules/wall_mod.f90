@@ -1123,7 +1123,7 @@
 !!    Wall collide
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      SUBROUTINE collide_float(x0,y0,z0,x1,y1,z1,xw,yw,zw,lhit)
+      SUBROUTINE collide_float(x0,y0,z0,x1,y1,z1,xw,yw,zw,lhit,hit_fraction)
       !-----------------------------------------------------------------------
       ! collide_float: Implementation of collide for floating point values
       !-----------------------------------------------------------------------
@@ -1142,19 +1142,21 @@
       REAL, INTENT(in) :: x0, y0, z0, x1, y1, z1
       REAL, INTENT(out) :: xw, yw, zw
       LOGICAL, INTENT(out) :: lhit
+      REAL, INTENT(out), OPTIONAL :: hit_fraction
       DOUBLE PRECISION :: x0d, y0d, z0d, x1d, y1d, z1d
-      DOUBLE PRECISION :: xwd, ywd, zwd
+      DOUBLE PRECISION :: xwd, ywd, zwd, hit_fraction_double
       LOGICAL          :: lhit2
       ! function simply converts from floating point to double to help compiler
       xw=zero; yw=zero; zw=zero; lhit=.FALSE.
       x0d=x0; y0d=y0; z0d=z0
       x1d=x1; y1d=y1; z1d=z1
-      CALL collide_double(x0d,y0d,z0d,x1d,y1d,z1d,xwd,ywd,zwd,lhit2)
+      CALL collide_double(x0d,y0d,z0d,x1d,y1d,z1d,xwd,ywd,zwd,lhit2,hit_fraction_double)
       xw=xwd; yw=ywd; zw=zwd; lhit=lhit2
+      IF (PRESENT(hit_fraction)) hit_fraction=REAL(hit_fraction_double)
       RETURN
       END SUBROUTINE collide_float
 
-      SUBROUTINE collide_double(x0,y0,z0,x1,y1,z1,xw,yw,zw,lhit)
+      SUBROUTINE collide_double(x0,y0,z0,x1,y1,z1,xw,yw,zw,lhit,hit_fraction)
       !-----------------------------------------------------------------------
       ! collide_double: Implementation of collide for double precision values
       !-----------------------------------------------------------------------
@@ -1175,6 +1177,7 @@
       ! Hit positions and logical if hit was found
       DOUBLE PRECISION, INTENT(out) :: xw, yw, zw
       LOGICAL, INTENT(out) :: lhit
+      DOUBLE PRECISION, INTENT(out), OPTIONAL :: hit_fraction
       ! Loop integers, block integers
       INTEGER :: ik, i, k1, k2, b_found
       ! In which block the ray is in x/y/z
@@ -1190,6 +1193,7 @@
       ! Whether or not out of grid in x/y/z
       LOGICAL :: outlow(3), outhigh(3)
       xw=zero; yw=zero; zw=zero; lhit=.FALSE.
+      IF (PRESENT(hit_fraction)) hit_fraction=-one
       ik_min = zero
       tmin = one + epsilon
       ! Define DR
@@ -1353,6 +1357,7 @@
          xw   = x0 + tmin*dr(1)
          yw   = y0 + tmin*dr(2)
          zw   = z0 + tmin*dr(3)
+         IF (PRESENT(hit_fraction)) hit_fraction=tmin
          ihit_array(ik_min) = ihit_array(ik_min) + 1
       END IF
       RETURN
