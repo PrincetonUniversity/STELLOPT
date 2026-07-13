@@ -220,8 +220,7 @@
          ! Now find missing points
          DO l = 1, nr*nz
             i = MOD(l-1,nr)+1
-            k = MOD(l-1,nr*nz)
-            k = FLOOR(REAL(k) / REAL(nr))+1
+            k = MOD(l-1,nr*nz)/nr+1
             i = MAX(MIN(i,nr-1),2)
             k = MAX(MIN(k,nz-1),2)
             j = 1
