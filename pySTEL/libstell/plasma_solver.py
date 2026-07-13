@@ -10,6 +10,7 @@ from numba import njit
 
 from libstell.plasma import PLASMA
 from libstell.penta import PENTA
+from libstell.libpenta import LIBPENTA
 
 # Constants
 EC = 1.602176634E-19 # Electron charge [C]
@@ -20,7 +21,7 @@ class PLASMA_SOLVER:
 
 	"""
     
-    def __init__(self, list_of_species, solve_fast_alphas=False, tau_fast_alphas=0.5, constrain_nT=False):
+    def __init__(self, list_of_species, solve_fast_alphas=False, tau_fast_alphas=0.5, constrain_nT=False, add_NEO=False):
         
         from collections import defaultdict
         
@@ -42,6 +43,14 @@ class PLASMA_SOLVER:
             self.constrain_nT = True
         else:
             self.constrain_nT = False
+            
+        if(add_NEO):
+            self.add_NEO = add_NEO
+            # Create a libpenta class. Is used when computing fluxes
+            self.libPenta = LIBPENTA()
+            print('Solving for NEOCLASSICAL fluxes')
+            self.time_prepare = 0.0
+            self.time_call_NEO = 0.0
             
         # initialize dictionaries
         self.edge_density_BC = {}
@@ -192,6 +201,8 @@ class PLASMA_SOLVER:
                     
                     self.Baxis = np.sqrt(np.squeeze(vmec_out.bdotb)[0])   
                     self.iota23 = CubicSpline(roa,np.squeeze(vmec_out.iotaf))(2.0/3.0)
+                    
+                    self.Bsq_spline = CubicSpline(roa,np.squeeze(vmec_out.bdotb))
                     
                     # stella reference magnetic field
                     self.Bref = vmec_out.phi[-1]/ (np.pi*self.aminor**2)
@@ -613,6 +624,8 @@ class PLASMA_SOLVER:
                 # compute fluxes and diffusion coefficients
                 self.call_fluxes(it)
                 
+                if(self.add_NEO): self.call_NEO()
+                
                 # set explicit sources
                 for species in self.list_of_species:
                     self.set_explicit_energy_sources(species,it)
@@ -678,6 +691,11 @@ class PLASMA_SOLVER:
             raise KeyError('ERROR: set_heat_fluxes must be called before running!!')
         if(not hasattr(self,'particle_fluxes_info')):
             raise KeyError('ERROR: set_particle_fluxes must be called before running!!')
+        
+        if(self.add_NEO):
+            # Check if initialize_NEO has been called
+            if not hasattr(self,'DKES_nuv'):
+                raise ValueError('!!! add_NEO=True but initialize_NEO has not been called !!! ')
             
     def print_grid_details(self):
         """
@@ -1547,7 +1565,170 @@ class PLASMA_SOLVER:
             
             # this is for bookeeping
             self.Q_turb[species][it,:] = -chi[species] * dpdr + p_r*( (chi[species]/n_r)*dndr + convective_fact*self.Gamma_turb[species][it,:]/n_r)
+    
+    def initialize_NEO(self, surfaces_k, DKES_coeffs_file, Er_root_type='ion_root', dt_Er_ambipolar=None):
+        """
+        """
+        
+        self.DKES_nuv, self.DKES_Erv, self.DKES_D11, self.DKES_D31, self.DKES_D33, self.dkes_k, self.roa_dkes_k = self.process_DKES_file(DKES_coeffs_file,surfaces_k)
+
+        self.Er_root_type = Er_root_type
+        self.dt_Er_ambipolar = dt_Er_ambipolar
+        
+    def call_NEO(self):
+
+        start = perf_counter() 
+        t = self.time[self.it]
+
+        # Search for a new ambipolar Er root at t=0, and (if dt_Er_ambipolar is
+        # set) every dt_Er_ambipolar of simulation time thereafter (measured
+        # from t=0, not from tstart). In between, the Er root from the last
+        # search is reused. A tolerance of dt/2 is used since t=0 (or a
+        # multiple of dt_Er_ambipolar) may not land exactly on the time grid.
+        at_t_zero = np.isclose(t, 0.0, atol=self.dt)
+        if(self.dt_Er_ambipolar is None and self.subiter==1):
+            look_for_ambipolar = at_t_zero
+        else:
+            # remainder = t % self.dt_Er_ambipolar
+            # at_multiple = np.isclose(remainder, 0.0, atol=self.dt/2) or \
+            #               np.isclose(remainder, self.dt_Er_ambipolar, atol=self.dt/2)
+            # look_for_ambipolar = at_t_zero or at_multiple
+            look_for_ambipolar = False
             
+        # Process kinetic profiles data
+        ne, dnedrho = akima_interp(self.rho_grid, self.N['electrons'][self.it,:], self.roa_dkes_k)
+        te, dtedrho = akima_interp(self.rho_grid, self.T['electrons'][self.it,:], self.roa_dkes_k)
+
+        ns_dkes = self.roa_dkes_k.size
+        nion_prof = len(self.plasma.ion_species)
+        ni      = np.empty((ns_dkes, nion_prof))
+        dnidrho = np.empty((ns_dkes, nion_prof))
+        ti      = np.empty((ns_dkes, nion_prof))
+        dtidrho = np.empty((ns_dkes, nion_prof))
+        for j, ion in enumerate(self.plasma.ion_species):
+            ni[:,j], dnidrho[:,j] = akima_interp(self.rho_grid, self.N[ion][self.it,:], self.roa_dkes_k)
+            ti[:,j], dtidrho[:,j] = akima_interp(self.rho_grid, self.T[ion][self.it,:], self.roa_dkes_k)
+
+        # Inputs
+        Matom_prof = [self.plasma.mass[ion]    for ion in self.plasma.ion_species]
+        Zatom_prof = [self.plasma.Zcharge[ion] for ion in self.plasma.ion_species]
+        EparB = 0.0
+        Er_min_Vcm = -250
+        Er_max_Vcm = 250
+        bsq = self.Bsq_spline(self.roa_dkes_k)
+        
+        # Placeholders -- their values don't really matter
+        btheta = np.zeros_like(self.roa_dkes_k)
+        bzeta = np.zeros_like(self.roa_dkes_k)
+        iota = np.zeros_like(self.roa_dkes_k)
+        phip = np.zeros_like(self.roa_dkes_k)
+        chip = np.zeros_like(self.roa_dkes_k)
+        vp = np.zeros_like(self.roa_dkes_k)
+        
+        if(look_for_ambipolar): self.Er = np.zeros_like(self.roa_dkes_k)
+        
+        end = perf_counter() 
+        self.time_prepare += end-start
+        
+        start = perf_counter() 
+        
+        output_Er, output_Dn, output_cn, output_Dp, output_cp = self.libPenta.call_PENTA(
+            Matom_prof, Zatom_prof,
+			ne, dnedrho, te, dtedrho, ni, dnidrho, ti, dtidrho,
+			self.aminor, self.Rmajor, vp, chip, phip, iota, btheta, bzeta, bsq,
+			self.dkes_k, self.roa_dkes_k,
+			self.DKES_nuv, self.DKES_Erv, self.DKES_D11, self.DKES_D31, self.DKES_D33,
+			Er_min_Vcm, Er_max_Vcm, EparB, self.Er, self.Er_root_type, look_for_ambipolar,
+			self.rho_grid)
+        
+        self.Er = output_Er
+        
+        end = perf_counter() 
+        self.time_call_NEO += end-start
+        
+    def process_DKES_file(self,DKES_coeffs_file,surfaces_k):
+        """
+        Reads a DKES coefficients file with the header
+        dkes_k  Er_v           nu_v           D11            D31            D33
+        Inner loop: nu_v
+        Middle loop: Er_v
+        Outer loop: dkes_k
+
+        surfaces_k is a list/array of the dkes_k surfaces to extract.
+
+        The file's first line has the format 'ns_surfaces xxx', where xxx is
+        the total number of surfaces, and the second line is the column
+        header (dkes_k Er_v nu_v D11 D31 D33).
+
+        Returns nu_v, Er_v, DKES_D11, DKES_D31, DKES_D33, surfaces_k, rho_k,
+        where nu_v and Er_v are the unique (non-repeated) 1D arrays of
+        length Nu and Ne, DKES_D11, DKES_D31, DKES_D33 are 3D arrays of
+        shape (len(surfaces_k), Nu, Ne), indexed as [surface, nu, Er], one
+        slice per requested surface (in the order given in surfaces_k), and
+        rho_k = sqrt((surfaces_k-1)/(ns_surfaces-1)) is the normalized
+        radial coordinate of each requested surface.
+        """
+        with open(DKES_coeffs_file) as f:
+            ns_surfaces = int(f.readline().split()[1])
+
+        data = np.loadtxt(DKES_coeffs_file, skiprows=2)
+
+        dkes_k_col = data[:,0].astype(int)
+        Er_col     = data[:,1]
+        nu_col     = data[:,2]
+        D11_col    = data[:,3]
+        D31_col    = data[:,4]
+        D33_col    = data[:,5]
+
+        dkes_k_v = np.unique(dkes_k_col)
+        Er_v     = np.unique(Er_col)
+        nu_v     = np.unique(nu_col)
+
+        Nk = len(dkes_k_v)
+        Ne = len(Er_v)
+        Nu = len(nu_v)
+
+        if len(data) != Nk*Ne*Nu:
+            raise ValueError(f'ERROR: {DKES_coeffs_file} does not have a regular grid of dkes_k, Er_v and nu_v (found {len(data)} rows, expected {Nk}*{Ne}*{Nu}={Nk*Ne*Nu})')
+
+        dkes_k_grid = dkes_k_col.reshape(Nk,Ne,Nu)
+        Er_grid     = Er_col.reshape(Nk,Ne,Nu)
+        nu_grid     = nu_col.reshape(Nk,Ne,Nu)
+
+        if not np.array_equal(nu_grid, np.broadcast_to(nu_v,(Nk,Ne,Nu))):
+            raise ValueError(f'ERROR: {DKES_coeffs_file} does not have nu_v as the inner loop!')
+        if not np.array_equal(Er_grid, np.broadcast_to(Er_v[None,:,None],(Nk,Ne,Nu))):
+            raise ValueError(f'ERROR: {DKES_coeffs_file} does not have Er_v as the middle loop!')
+        if not np.array_equal(dkes_k_grid, np.broadcast_to(dkes_k_v[:,None,None],(Nk,Ne,Nu))):
+            raise ValueError(f'ERROR: {DKES_coeffs_file} does not have dkes_k (first column) as the outer loop!')
+
+        missing_k = [k for k in surfaces_k if k not in dkes_k_v]
+        if len(missing_k) > 0:
+            raise ValueError(f'ERROR: surfaces_k {missing_k} not found in {DKES_coeffs_file}!')
+
+        D11_grid = D11_col.reshape(Nk,Ne,Nu)
+        D31_grid = D31_col.reshape(Nk,Ne,Nu)
+        D33_grid = D33_col.reshape(Nk,Ne,Nu)
+
+        DKES_D11 = []
+        DKES_D31 = []
+        DKES_D33 = []
+        for k in surfaces_k:
+            idx = np.nonzero(dkes_k_v == k)[0][0]
+            # grids are (Ne,Nu) for this surface; transpose to (Nu,Ne)
+            DKES_D11.append(D11_grid[idx].T)
+            DKES_D31.append(D31_grid[idx].T)
+            DKES_D33.append(D33_grid[idx].T)
+
+        DKES_D11 = np.stack(DKES_D11, axis=0)
+        DKES_D31 = np.stack(DKES_D31, axis=0)
+        DKES_D33 = np.stack(DKES_D33, axis=0)
+
+        surfaces_k = np.asarray(surfaces_k)
+        rho_k = np.sqrt((surfaces_k - 1) / (ns_surfaces - 1))
+
+        return nu_v, Er_v, DKES_D11, DKES_D31, DKES_D33, surfaces_k, rho_k
+
     # def compute_NEO_particle_flux(self,it):
         
     #     from scipy.interpolate import CubicSpline, Akima1DInterpolator
@@ -2216,6 +2397,8 @@ class PLASMA_SOLVER:
                 saved_class.energy_sources[species][key] = {
                     "previous_error": self.energy_sources[species][key]["previous_error"],
                     "pid_I": self.energy_sources[species][key]["pid_I"]}
+                
+        saved_class.Er = self.Er
 
         joblib.dump(saved_class, output_filename)
         
@@ -2597,6 +2780,65 @@ def akima_derivative(x, y):
             dy[i] = (w1 * cxm + w2 * cxp) / (w1 + w2)
 
     return dy
+
+@njit
+def akima_interp(x, y, xnew):
+    """
+    Akima interpolation of y(x) and its derivative, evaluated at arbitrary
+    points xnew (unlike akima_derivative, which only returns the derivative
+    at the original nodes x).
+
+    Computes the Akima node slopes via akima_derivative, then evaluates the
+    piecewise cubic Hermite interpolant (and its analytic derivative) built
+    from those slopes -- equivalent to PSPLINE's r8herm1ev on top of
+    r8akherm1(ipx=0) slopes. Points outside [x[0], x[-1]] are extrapolated
+    using the boundary cubic segment.
+
+    Parameters
+    ----------
+    x : 1D array of shape (N,)
+        Strictly increasing source coordinate values
+    y : 1D array of shape (N,)
+        Function values at x
+    xnew : 1D array of shape (M,)
+        Points at which to evaluate the interpolant (need not be sorted)
+
+    Returns
+    -------
+    ynew, dynew : 1D arrays of shape (M,)
+        Interpolated values and derivatives at xnew
+    """
+    dy = akima_derivative(x, y)
+    n = x.size
+    m = xnew.size
+    ynew = np.empty(m)
+    dynew = np.empty(m)
+    for k in range(m):
+        xk = xnew[k]
+        i = np.searchsorted(x, xk) - 1
+        if i < 0:
+            i = 0
+        elif i > n - 2:
+            i = n - 2
+
+        h = x[i + 1] - x[i]
+        t = (xk - x[i]) / h
+        t2 = t * t
+        t3 = t2 * t
+
+        h00 = 2.0 * t3 - 3.0 * t2 + 1.0
+        h10 = t3 - 2.0 * t2 + t
+        h01 = -2.0 * t3 + 3.0 * t2
+        h11 = t3 - t2
+        ynew[k] = h00 * y[i] + h10 * h * dy[i] + h01 * y[i + 1] + h11 * h * dy[i + 1]
+
+        dh00 = 6.0 * t2 - 6.0 * t
+        dh10 = 3.0 * t2 - 4.0 * t + 1.0
+        dh01 = -6.0 * t2 + 6.0 * t
+        dh11 = 3.0 * t2 - 2.0 * t
+        dynew[k] = (dh00 * y[i] + dh10 * h * dy[i] + dh01 * y[i + 1] + dh11 * h * dy[i + 1]) / h
+
+    return ynew, dynew
 
 @njit
 def polyfit_derivative_fast(x, y, deg):
