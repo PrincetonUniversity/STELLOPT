@@ -133,7 +133,7 @@
          DO i = mystart, myend
             s = MOD(i-1,nrho)+1
             u = MOD(i-1,nrho*nu)/nrho+1
-            v = (i-1)/(nrrho*nu)+1
+            v = (i-1)/(nrho*nu)+1
             IF (s < s1) CYCLE
             !u = MOD(s,k)
             !IF (u < s1 .and. u /= 0) CYCLE
@@ -189,7 +189,7 @@
          DO i = mystart, myend
             s = MOD(i-1,nrho)+1
             u = MOD(i-1,nrho*nu)/nrho+1
-            v = (i-1)/(nrrho*nu)+1
+            v = (i-1)/(nrho*nu)+1
             IF (s < s1) CYCLE
             br = 0; bphi = 0; bz = 0
             r = rreal(s,u,v)
@@ -222,7 +222,7 @@
          DO i = mystart, myend
             s = MOD(i-1,nrho)+1
             u = MOD(i-1,nrho*nu)/nrho+1
-            v = (i-1)/(nrrho*nu)+1
+            v = (i-1)/(nrho*nu)+1
             IF (s < s1) CYCLE
             phi = pi2*xv(v)/nfp
             x_vc = rreal(s,u,v)*cos(phi)
