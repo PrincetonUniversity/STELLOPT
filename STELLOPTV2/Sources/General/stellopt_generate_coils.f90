@@ -14,9 +14,10 @@
             nw_coil, nh_coil, width_coil, height_coil, &
             coil_type
       USE stellopt_runtime, ONLY: proc_string
-      USE read_wout_mod, ONLY: mnmax, ns, xm, xn, rmnc, zmns, isigng
+      USE read_wout_mod, ONLY: isigng
       USE vmec_input, ONLY: extcur
       USE spline_coils_mod
+      use surface_extender_mod, ONLY: load_surface_fit
       USE biotsavart, ONLY: write_coils_file
       USE stel_kinds, ONLY: rprec
 
@@ -75,10 +76,16 @@
       !-----------------------------------------------------------------
       !     Load Boundary
       !-----------------------------------------------------------------
-      CALL init_boundary_spline_coils(mnmax,xm,-xn, &
-                                      rmnc(:,ns),zmns(:,ns), &
-                                      rmnc(:,1),zmns(:,1))
+      ! CALL init_boundary_spline_coils(mnmax,xm,-xn, &
+      !                                 rmnc(:,ns),zmns(:,ns), &
+      !                                 rmnc(:,1),zmns(:,1))
 
+      !-----------------------------------------------------------------
+      !     Load outside LCFS coordinate system
+      !-----------------------------------------------------------------
+
+      call load_surface_fit("windingsurface_"//TRIM(proc_string)//".nc")
+      
       !-----------------------------------------------------------------
       !     Create coils
       !-----------------------------------------------------------------

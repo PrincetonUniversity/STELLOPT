@@ -11,6 +11,7 @@
 !-----------------------------------------------------------------------
       USE bsc_T
       USE biotsavart, ONLY: coil_group, nfp => nfp_bs
+      USE surface_extender_mod, ONLY: load_surface_fit, rhothetazeta2xyz
       USE safe_open_mod
       USE EZspline_obj
       USE EZspline
@@ -107,82 +108,82 @@
       RETURN
       END SUBROUTINE init_spline_coils
 
-      SUBROUTINE init_boundary_spline_coils(mnmax_in,xm_in,xn_in,rmnc_in,zmns_in,rmnc_ax,zmns_ax)
-      IMPLICIT NONE
-      INTEGER, INTENT(in) :: mnmax_in
-      DOUBLE PRECISION, DIMENSION(mnmax_in), INTENT(in) :: xm_in
-      DOUBLE PRECISION, DIMENSION(mnmax_in), INTENT(in) :: xn_in
-      DOUBLE PRECISION, DIMENSION(mnmax_in), INTENT(in) :: rmnc_in
-      DOUBLE PRECISION, DIMENSION(mnmax_in), INTENT(in) :: zmns_in
-      DOUBLE PRECISION, DIMENSION(mnmax_in), INTENT(in) :: rmnc_ax
-      DOUBLE PRECISION, DIMENSION(mnmax_in), INTENT(in) :: zmns_ax
-      mnmax = mnmax_in
-      IF (ALLOCATED(xm)) DEALLOCATE(xm)
-      IF (ALLOCATED(xn)) DEALLOCATE(xn)
-      IF (ALLOCATED(rmnc)) DEALLOCATE(rmnc)
-      IF (ALLOCATED(zmns)) DEALLOCATE(zmns)
-      IF (ALLOCATED(rmnc0)) DEALLOCATE(rmnc0)
-      IF (ALLOCATED(zmns0)) DEALLOCATE(zmns0)
-      ALLOCATE(xm(mnmax), xn(mnmax), rmnc(mnmax), zmns(mnmax), rmnc0(mnmax), zmns0(mnmax))
-      xm = xm_in
-      xn = xn_in
-      rmnc = rmnc_in
-      zmns = zmns_in
-      rmnc0 = rmnc_ax
-      zmns0 = zmns_ax
-      nfp = MINVAL(xn, MASK = xn > 0)
-      xn = xn / nfp
-      factor = pi2/nfp
-      RETURN
-      END SUBROUTINE init_boundary_spline_coils
+      ! SUBROUTINE init_boundary_spline_coils(mnmax_in,xm_in,xn_in,rmnc_in,zmns_in,rmnc_ax,zmns_ax)
+      ! IMPLICIT NONE
+      ! INTEGER, INTENT(in) :: mnmax_in
+      ! DOUBLE PRECISION, DIMENSION(mnmax_in), INTENT(in) :: xm_in
+      ! DOUBLE PRECISION, DIMENSION(mnmax_in), INTENT(in) :: xn_in
+      ! DOUBLE PRECISION, DIMENSION(mnmax_in), INTENT(in) :: rmnc_in
+      ! DOUBLE PRECISION, DIMENSION(mnmax_in), INTENT(in) :: zmns_in
+      ! DOUBLE PRECISION, DIMENSION(mnmax_in), INTENT(in) :: rmnc_ax
+      ! DOUBLE PRECISION, DIMENSION(mnmax_in), INTENT(in) :: zmns_ax
+      ! mnmax = mnmax_in
+      ! IF (ALLOCATED(xm)) DEALLOCATE(xm)
+      ! IF (ALLOCATED(xn)) DEALLOCATE(xn)
+      ! IF (ALLOCATED(rmnc)) DEALLOCATE(rmnc)
+      ! IF (ALLOCATED(zmns)) DEALLOCATE(zmns)
+      ! IF (ALLOCATED(rmnc0)) DEALLOCATE(rmnc0)
+      ! IF (ALLOCATED(zmns0)) DEALLOCATE(zmns0)
+      ! ALLOCATE(xm(mnmax), xn(mnmax), rmnc(mnmax), zmns(mnmax), rmnc0(mnmax), zmns0(mnmax))
+      ! xm = xm_in
+      ! xn = xn_in
+      ! rmnc = rmnc_in
+      ! zmns = zmns_in
+      ! rmnc0 = rmnc_ax
+      ! zmns0 = zmns_ax
+      ! nfp = MINVAL(xn, MASK = xn > 0)
+      ! xn = xn / nfp
+      ! factor = pi2/nfp
+      ! RETURN
+      ! END SUBROUTINE init_boundary_spline_coils
 
-      SUBROUTINE rhothetazeta2xyz(rho_in,theta_in,zeta_in,x_out,y_out,z_out)
-      IMPLICIT NONE
-      DOUBLE PRECISION, INTENT(in) :: rho_in, theta_in, zeta_in
-      DOUBLE PRECISION, INTENT(out) :: x_out, y_out, z_out
-      INTEGER :: mn
-      DOUBLE PRECISION :: R, Z, RN, ZN, REDGE, ZEDGE, PHI, N
-      DOUBLE PRECISION :: rho_ext, whi, wlo, wloo, whio, cop, sip
-      R = zero; Z = zero
-      RN = zero; ZN = zero
-      REDGE = zero; ZEDGE = zero
-      ! Extrapolation stuff (like VMEC)
-      PHI = zeta_in/nfp
-      rho_ext = rho_in + 1.0
-      whi   = (rho_ext*rho_ext-1.0)*2.0
-      wlo   = (2.0 - whi)/2.0
-      wloo  = wlo*rho_ext
-      whio  = whi*rho_ext/SQRT(2.0)
-      DO mn = 1, mnmax
-         cop = cos(xm(mn)*theta_in+xn(mn)*zeta_in)
-         sip = sin(xm(mn)*theta_in+xn(mn)*zeta_in)
-         REDGE = REDGE + rmnc(mn)*cop
-         ZEDGE = ZEDGE + zmns(mn)*sip
-         IF ((xm(mn) == 0) .and. (xn(mn) == 0)) THEN
-            R =  R  + rmnc(mn)*cop
-         ELSEIF (MOD(int(xm(mn)),2)==0) THEN
-            R = R + rmnc(mn)*wlo*cop
-            Z = Z + zmns(mn)*wlo*sip
-         ELSE
-            R = R + rmnc(mn)*wloo*cop
-            Z = Z + zmns(mn)*wloo*sip
-         END IF
-         IF ((xm(mn)==1) .and. (xn(mn)==0)) THEN
-            ! Note we use odd here since xm==1
-            R    =  R + 4.0*whio*cop
-            Z    =  Z + 4.0*whio*sip
-         END IF
-      END DO
-      RN    = R - REDGE
-      ZN    = Z - ZEDGE
-      N     = SQRT(RN*RN+ZN*ZN)
-      RN    = RN/N; ZN = ZN/N
-      R     = (REDGE + rho_in*RN)
-      x_out = R*COS(PHI)
-      y_out = R*SIN(PHI)
-      z_out = ZEDGE + rho_in*ZN
-      RETURN
-      END SUBROUTINE rhothetazeta2xyz
+      ! SUBROUTINE rhothetazeta2xyz(rho_in,theta_in,zeta_in,x_out,y_out,z_out)
+      ! IMPLICIT NONE
+      ! DOUBLE PRECISION, INTENT(in) :: rho_in, theta_in, zeta_in
+      ! DOUBLE PRECISION, INTENT(out) :: x_out, y_out, z_out
+      ! INTEGER :: mn
+      ! DOUBLE PRECISION :: R, Z, RN, ZN, REDGE, ZEDGE, PHI, N
+      ! DOUBLE PRECISION :: rho_ext, whi, wlo, wloo, whio, cop, sip
+      ! R = zero; Z = zero
+      ! RN = zero; ZN = zero
+      ! REDGE = zero; ZEDGE = zero
+      ! ! Extrapolation stuff (like VMEC)
+      ! PHI = zeta_in/nfp
+      ! rho_ext = rho_in + 1.0
+      ! whi   = (rho_ext*rho_ext-1.0)*2.0
+      ! wlo   = (2.0 - whi)/2.0
+      ! wloo  = wlo*rho_ext
+      ! whio  = whi*rho_ext/SQRT(2.0)
+      ! DO mn = 1, mnmax
+      !    cop = cos(xm(mn)*theta_in+xn(mn)*zeta_in)
+      !    sip = sin(xm(mn)*theta_in+xn(mn)*zeta_in)
+      !    REDGE = REDGE + rmnc(mn)*cop
+      !    ZEDGE = ZEDGE + zmns(mn)*sip
+      !    IF ((xm(mn) == 0) .and. (xn(mn) == 0)) THEN
+      !       R =  R  + rmnc(mn)*cop
+      !    ELSEIF (MOD(int(xm(mn)),2)==0) THEN
+      !       R = R + rmnc(mn)*wlo*cop
+      !       Z = Z + zmns(mn)*wlo*sip
+      !    ELSE
+      !       R = R + rmnc(mn)*wloo*cop
+      !       Z = Z + zmns(mn)*wloo*sip
+      !    END IF
+      !    IF ((xm(mn)==1) .and. (xn(mn)==0)) THEN
+      !       ! Note we use odd here since xm==1
+      !       R    =  R + 4.0*whio*cop
+      !       Z    =  Z + 4.0*whio*sip
+      !    END IF
+      ! END DO
+      ! RN    = R - REDGE
+      ! ZN    = Z - ZEDGE
+      ! N     = SQRT(RN*RN+ZN*ZN)
+      ! RN    = RN/N; ZN = ZN/N
+      ! R     = (REDGE + rho_in*RN)
+      ! x_out = R*COS(PHI)
+      ! y_out = R*SIN(PHI)
+      ! z_out = ZEDGE + rho_in*ZN
+      !RETURN
+      !END SUBROUTINE rhothetazeta2xyz
 
       SUBROUTINE spline_to_coils(ncoils,coil_type,normal_sign)
       INTEGER, INTENT(in) :: ncoils

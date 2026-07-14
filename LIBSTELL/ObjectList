@@ -511,4 +511,6 @@ lsode.o \
 ewset.o \
 stode.o \
 cfode.o \
-transport_mod.o
+transport_mod.o \
+surface_extender_mod.o
+
