@@ -1535,6 +1535,162 @@ MODULE PENTA_INTERFACE_MOD
 
    END SUBROUTINE interpolate_from_penta
 
+   Subroutine call_PENTA_surface( &
+     nion_prof,ncstar,nestar, &
+     Matom_prof, Zatom_prof, &
+     ne,dnedrho,te,dtedrho,ni,dnidrho,ti,dtidrho, &
+     eq_Aminor, eq_Rmajor, vp, chip, phip, iota, btheta, bzeta, bsq, &
+     DKES_K_surf, rho_k_surf, &
+     DKES_NUSTAR, DKES_ERSTAR, DKES_D11_surf, DKES_D31_surf, DKES_D33_surf, &
+     Er_min_Vcm_in, Er_max_Vcm_in, EparB_surf, Er_k_surf, Er_root_type_in, look_for_ambipolar, &
+     JBS_surf, Er_surf, Dn_surf, cn_surf, Dp_surf, cp_surf &
+     )
+      ! Computes the ambipolar root and neoclassical transport coefficients on a
+      ! SINGLE DKES surface -- i.e. the body of call_PENTA's "DO k = 1,ns_dkes"
+      ! loop, duplicated here as a standalone entry point. This lets independent
+      ! surfaces be evaluated by independent OS processes (e.g. from Python's
+      ! multiprocessing/concurrent.futures), since PENTA's module-level (SAVE)
+      ! state is NOT safe to share across concurrent calls in the same process.
+      ! Note: this does NOT include the final interpolation onto output_rho
+      ! (see interpolate_from_PENTA), which needs every surface gathered first
+      ! and should be done once, serially, by the caller.
+
+      USE phys_const, ONLY: p_mass, elem_charge
+
+      Implicit None
+
+      Integer, Intent(in) :: nion_prof,ncstar,nestar
+      Real(rknd), Dimension(nion_prof), Intent(in) :: Matom_prof
+      Integer, Dimension(nion_prof), Intent(in) :: Zatom_prof
+      Real(rknd), Intent(in) :: ne, dnedrho, te, dtedrho
+      Real(rknd), Dimension(nion_prof), Intent(in) :: ni, dnidrho, ti, dtidrho
+      Real(rknd), Intent(in) :: eq_Aminor, eq_Rmajor
+      Real(rknd), Intent(in) :: vp, chip, phip, iota, btheta, bzeta, bsq
+      Integer, Intent(in) :: DKES_K_surf
+      Real(rknd), Intent(in) :: rho_k_surf
+      Real(rknd), Dimension(ncstar), Intent(in) :: DKES_NUSTAR
+      Real(rknd), Dimension(nestar), Intent(in) :: DKES_ERSTAR
+      Real(rknd), Dimension(ncstar,nestar), Intent(in) ::  DKES_D11_surf, DKES_D31_surf, DKES_D33_surf
+      Real(rknd), Intent(in) :: Er_min_Vcm_in, Er_max_Vcm_in
+      Real(rknd), Intent(in) :: Er_k_surf, EparB_surf
+      Character(Len=100) :: Er_root_type_in
+      Logical, Intent(in) :: look_for_ambipolar
+      Real(rknd), Intent(out) :: JBS_surf, Er_surf
+      Real(rknd), Dimension(nion_prof+1), Intent(out) :: Dn_surf, cn_surf, Dp_surf, cp_surf
+
+      ! Locals
+      Integer :: i, j
+
+      ! Set run_params defaults (input_is_Er, log_interp, flux_cap, Add_Spitzer_to_D33, ...).
+      ! These are never read from a namelist on this call path, so without this call they
+      ! would keep whatever value the uninitialized module variables happen to have.
+      CALL init_penta_input
+
+      ! PENTA
+      CALL PENTA_SET_ION_PARAMS(nion_prof, DBLE(Zatom_prof), Matom_prof/p_mass)
+      CALL PENTA_SET_COMMANDLINE(Er_min_Vcm_in,Er_max_Vcm_in,DKES_K_surf,1,EparB_surf,1,'','','')
+      CALL PENTA_ALLOCATE_SPECIES
+      CALL PENTA_SET_EQ_DATA(rho_k_surf,eq_Aminor,eq_Rmajor,vp,chip,phip,iota,btheta,bzeta,bsq)
+      CALL PENTA_SET_PPROF(ne,dnedrho/eq_Aminor,te,dtedrho/eq_Aminor,ni,dnidrho/eq_Aminor,ti,dtidrho/eq_Aminor)
+      ! MAKE CORRECTIONS ON D31 AND D33 -- values coming from DKES2 miss Bsq factors (see J. Lore documentation)
+      CALL PENTA_SET_DKES_STAR(ncstar,nestar,DKES_NUSTAR(1:ncstar),DKES_ERSTAR(1:nestar), &
+            DKES_D11_surf, DKES_D31_surf*SQRT(bsq), DKES_D33_surf*bsq)
+      CALL PENTA_SET_BEAM(0.0_rknd) ! Zero becasue we don't read
+      CALL PENTA_SET_U2() ! Leave blank for default value
+      CALL PENTA_READ_INPUT_FILES(.FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.)
+      ! CALL PENTA_SCREEN_INFO
+      CALL PENTA_ALLOCATE_DKESCOEFF
+      CALL PENTA_FIT_DXX_COEF
+      CALL PENTA_LMAT_MATRIX
+      CALL PENTA_SET_INTEGRATION_ARRAYS
+
+      ! Only search new ambipolar Er solution if look_for_ambipolar = true
+      IF(.NOT. look_for_ambipolar) THEN
+            ! Need to define num_roots and set Er_roots
+            num_roots = 1
+            Er_roots(1) = Er_k_surf
+      ELSE
+            ! Now the basic steps
+            CALL PENTA_RUN_2_EFIELD
+            CALL PENTA_RUN_3_FIND_ROOTS
+      END IF
+
+      CALL PENTA_RUN_4_AMBIPOLAR
+
+      ! The call to ROOT_ANALYSIS sets the array 'root_type' which decides which root to pick
+      ! The criterium is to pick the 'ion_root'
+      CALL ROOT_ANALYSIS(TRIM(Er_root_type_in))
+
+      ! Using root_type, pick the ambipolar root that will be saved by THRIFT
+      DO i=1,num_roots
+        IF(root_type(i)) THEN
+          JBS_surf = J_BS_ambi(i)
+          Er_surf = Er_roots(i)
+          ! NEO particle transport coefficients
+          Dn_surf = (/ (-L_n_ambi(i,j,j), j=1,nion_prof+1) /)
+          cn_surf = MATMUL(L_T_ambi(i,:,:),elem_charge*dTdrs) / dens + Er_surf*SUM(L_Er_ambi(i,:,:),dim=2) / dens
+          ! NEO heat transport coefficients
+          Dp_surf = (/ (-R_T_ambi(i,j,j), j=1,nion_prof+1) /) * elem_charge*Temps / dens
+          cp_surf = MATMUL(R_n_ambi(i,:,:),dndrs)/dens - MATMUL(R_T_ambi(i,:,:),(elem_charge*Temps/dens)*dndrs)/dens &
+                            + Er_surf*SUM(R_Er_ambi(i,:,:),dim=2) / dens
+          EXIT
+        ENDIF
+      END DO
+
+      CALL PENTA_RUN_5_CLEANUP(.FALSE.)
+
+   End Subroutine call_PENTA_surface
+
+   Subroutine call_PENTA_interpolate( &
+     ns_dkes,nion_prof,output_nrho, &
+     rho_k, Er_PENTA, Dn_PENTA, cn_PENTA, Dp_PENTA, cp_PENTA, &
+     output_rho, &
+     output_Er, output_Dn, output_cn, output_Dp, output_cp &
+     )
+      ! Interpolates the per-surface ambipolar root and neoclassical transport
+      ! coefficients (as computed by call_PENTA_surface, one call per DKES
+      ! surface, then gathered by the caller into arrays indexed by k) from the
+      ! DKES radial grid (rho_k) onto output_rho. This mirrors exactly the
+      ! interpolation block at the end of call_PENTA, duplicated here as a
+      ! standalone entry point. It is a cheap operation (a handful of 1D
+      ! splines) meant to run once, serially, after all surfaces have been
+      ! gathered -- it is NOT a candidate for parallelization.
+      Implicit None
+
+      Integer, Intent(in) :: ns_dkes,nion_prof,output_nrho
+      Real(rknd), Dimension(ns_dkes), Intent(in) :: rho_k, Er_PENTA
+      Real(rknd), Dimension(nion_prof+1,ns_dkes), Intent(in) :: Dn_PENTA, cn_PENTA, Dp_PENTA, cp_PENTA
+      Real(rknd), Dimension(output_nrho), Intent(in) :: output_rho
+      Real(rknd), Dimension(output_nrho), Intent(out) :: output_Er
+      Real(rknd), Dimension(nion_prof+1,output_nrho), Intent(out) :: output_Dn, output_cn, output_Dp, output_cp
+
+      ! Locals
+      Integer :: jspecies
+
+      CALL interpolate_from_PENTA(nrho_penta=ns_dkes, rho_penta=rho_k, y_penta=Er_PENTA,\
+                              nrho_out=output_nrho, rho_out=output_rho, y_out=output_Er,\
+                              isHermite=1, useLog=.FALSE.)
+      !
+      DO jspecies=1,(nion_prof+1)
+         CALL interpolate_from_PENTA(nrho_penta=ns_dkes, rho_penta=rho_k, y_penta=Dn_PENTA(jspecies,:),\
+                     nrho_out=output_nrho, rho_out=output_rho, y_out=output_Dn(jspecies,:),\
+                     isHermite=1, useLog=.FALSE.)
+         !
+         CALL interpolate_from_PENTA(nrho_penta=ns_dkes, rho_penta=rho_k, y_penta=cn_PENTA(jspecies,:),\
+                           nrho_out=output_nrho, rho_out=output_rho, y_out=output_cn(jspecies,:),\
+                           isHermite=1, useLog=.FALSE.)
+         !
+         CALL interpolate_from_PENTA(nrho_penta=ns_dkes, rho_penta=rho_k, y_penta=Dp_PENTA(jspecies,:),\
+                           nrho_out=output_nrho, rho_out=output_rho, y_out=output_Dp(jspecies,:),\
+                           isHermite=1, useLog=.FALSE., preventNeg = .TRUE.)
+         !
+         CALL interpolate_from_PENTA(nrho_penta=ns_dkes, rho_penta=rho_k, y_penta=cp_PENTA(jspecies,:),\
+                           nrho_out=output_nrho, rho_out=output_rho, y_out=output_cp(jspecies,:),\
+                           isHermite=1, useLog=.FALSE.)
+      END DO
+
+   End Subroutine call_PENTA_interpolate
+
    Subroutine call_PENTA( &
      ns_dkes,ncstar,nestar,nion_prof,output_nrho, &
      Matom_prof, Zatom_prof, &
