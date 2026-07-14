@@ -1613,12 +1613,10 @@ class PLASMA_SOLVER:
     
     def initialize_NEO(self, surfaces_k, DKES_coeffs_file, dt_NEO=None, Er_root_type='ion_root', dt_Er_ambipolar=None, n_workers_NEO=1):
         """
-        n_workers_NEO controls how call_NEO evaluates the DKES surfaces (each
-        surface's ambipolar root + neoclassical transport coefficients is an
-        independent PENTA calculation -- see call_PENTA_surface in
-        PENTA/Sources/penta_interface_mod.f90). n_workers_NEO=1 (default)
-        evaluates them serially in this process. n_workers_NEO>1 spreads them
-        across a persistent pool of that many worker processes instead
+        n_workers_NEO controls how call_NEO evaluates the DKES surfaces
+        n_workers_NEO=1 (default) evaluates them serially in this process. 
+        n_workers_NEO>1 spreads them across a persistent pool of that many worker 
+        processes instead
         (created once, here, and reused for every call_NEO call for the
         lifetime of this solver -- NOT recreated per time step).
 
@@ -1627,7 +1625,7 @@ class PLASMA_SOLVER:
         are not safe to share across concurrent calls within a single process.
         """
 
-        self.DKES_nuv, self.DKES_Erv, self.DKES_D11, self.DKES_D31, self.DKES_D33, self.dkes_k, self.roa_dkes_k = self.process_DKES_file(DKES_coeffs_file,surfaces_k)
+        self.DKES_nuv, self.DKES_Erv, self.DKES_D11, self.DKES_D31, self.DKES_D33, self.dkes_k, self.roa_dkes_k = process_DKES_file(DKES_coeffs_file,surfaces_k)
 
         self.Er_root_type = Er_root_type
         self.dt_Er_ambipolar = dt_Er_ambipolar
@@ -1640,78 +1638,6 @@ class PLASMA_SOLVER:
             self.neo_pool = None
             
         self.dt_NEO = dt_NEO
-
-    # --- Original serial call_NEO, kept here (disabled) for reference/rollback. ---
-    # def call_NEO(self):
-    #
-    #     start = perf_counter()
-    #     t = self.time[self.it]
-    #
-    #     # Search for a new ambipolar Er root at t=0, and (if dt_Er_ambipolar is
-    #     # set) every dt_Er_ambipolar of simulation time thereafter (measured
-    #     # from t=0, not from tstart). In between, the Er root from the last
-    #     # search is reused. A tolerance of dt/2 is used since t=0 (or a
-    #     # multiple of dt_Er_ambipolar) may not land exactly on the time grid.
-    #     at_t_zero = np.isclose(t, 0.0, atol=self.dt)
-    #     if(self.dt_Er_ambipolar is None and self.subiter==1):
-    #         look_for_ambipolar = at_t_zero
-    #     else:
-    #         # remainder = t % self.dt_Er_ambipolar
-    #         # at_multiple = np.isclose(remainder, 0.0, atol=self.dt/2) or \
-    #         #               np.isclose(remainder, self.dt_Er_ambipolar, atol=self.dt/2)
-    #         # look_for_ambipolar = at_t_zero or at_multiple
-    #         look_for_ambipolar = False
-    #
-    #     # Process kinetic profiles data
-    #     ne, dnedrho = akima_interp(self.rho_grid, self.N['electrons'][self.it,:], self.roa_dkes_k)
-    #     te, dtedrho = akima_interp(self.rho_grid, self.T['electrons'][self.it,:], self.roa_dkes_k)
-    #
-    #     ns_dkes = self.roa_dkes_k.size
-    #     nion_prof = len(self.plasma.ion_species)
-    #     ni      = np.empty((ns_dkes, nion_prof))
-    #     dnidrho = np.empty((ns_dkes, nion_prof))
-    #     ti      = np.empty((ns_dkes, nion_prof))
-    #     dtidrho = np.empty((ns_dkes, nion_prof))
-    #     for j, ion in enumerate(self.plasma.ion_species):
-    #         ni[:,j], dnidrho[:,j] = akima_interp(self.rho_grid, self.N[ion][self.it,:], self.roa_dkes_k)
-    #         ti[:,j], dtidrho[:,j] = akima_interp(self.rho_grid, self.T[ion][self.it,:], self.roa_dkes_k)
-    #
-    #     # Inputs
-    #     Matom_prof = [self.plasma.mass[ion]    for ion in self.plasma.ion_species]
-    #     Zatom_prof = [self.plasma.Zcharge[ion] for ion in self.plasma.ion_species]
-    #     EparB = 0.0
-    #     Er_min_Vcm = -250
-    #     Er_max_Vcm = 250
-    #     bsq = self.Bsq_spline(self.roa_dkes_k)
-    #
-    #     # Placeholders -- their values don't really matter
-    #     btheta = np.zeros_like(self.roa_dkes_k)
-    #     bzeta = np.zeros_like(self.roa_dkes_k)
-    #     iota = np.zeros_like(self.roa_dkes_k)
-    #     phip = np.zeros_like(self.roa_dkes_k)
-    #     chip = np.zeros_like(self.roa_dkes_k)
-    #     vp = np.zeros_like(self.roa_dkes_k)
-    #
-    #     if(look_for_ambipolar): self.Er = np.zeros_like(self.roa_dkes_k)
-    #
-    #     end = perf_counter()
-    #     self.time_prepare += end-start
-    #
-    #     start = perf_counter()
-    #
-    #     output_Er, output_Dn, output_cn, output_Dp, output_cp = self.libPenta.call_PENTA(
-    #         Matom_prof, Zatom_prof,
-    #         ne, dnedrho, te, dtedrho, ni, dnidrho, ti, dtidrho,
-    #         self.aminor, self.Rmajor, vp, chip, phip, iota, btheta, bzeta, bsq,
-    #         self.dkes_k, self.roa_dkes_k,
-    #         self.DKES_nuv, self.DKES_Erv, self.DKES_D11, self.DKES_D31, self.DKES_D33,
-    #         Er_min_Vcm, Er_max_Vcm, EparB, self.Er, self.Er_root_type, look_for_ambipolar,
-    #         self.rho_grid)
-    #
-    #     self.Er = output_Er
-    #
-    #     end = perf_counter()
-    #     self.time_call_NEO += end-start
 
     def call_NEO(self,it):
         
@@ -1798,89 +1724,6 @@ class PLASMA_SOLVER:
             self.Dp_NEO[species][it,:] = Dp_out[isp,:]
             self.cp_NEO[species][it,:] = cp_out[isp,:]
     
-    def process_DKES_file(self,DKES_coeffs_file,surfaces_k):
-        """
-        Reads a DKES coefficients file with the header
-        dkes_k  Er_v           nu_v           D11            D31            D33
-        Inner loop: nu_v
-        Middle loop: Er_v
-        Outer loop: dkes_k
-
-        surfaces_k is a list/array of the dkes_k surfaces to extract.
-
-        The file's first line has the format 'ns_surfaces xxx', where xxx is
-        the total number of surfaces, and the second line is the column
-        header (dkes_k Er_v nu_v D11 D31 D33).
-
-        Returns nu_v, Er_v, DKES_D11, DKES_D31, DKES_D33, surfaces_k, rho_k,
-        where nu_v and Er_v are the unique (non-repeated) 1D arrays of
-        length Nu and Ne, DKES_D11, DKES_D31, DKES_D33 are 3D arrays of
-        shape (len(surfaces_k), Nu, Ne), indexed as [surface, nu, Er], one
-        slice per requested surface (in the order given in surfaces_k), and
-        rho_k = sqrt((surfaces_k-1)/(ns_surfaces-1)) is the normalized
-        radial coordinate of each requested surface.
-        """
-        with open(DKES_coeffs_file) as f:
-            ns_surfaces = int(f.readline().split()[1])
-
-        data = np.loadtxt(DKES_coeffs_file, skiprows=2)
-
-        dkes_k_col = data[:,0].astype(int)
-        Er_col     = data[:,1]
-        nu_col     = data[:,2]
-        D11_col    = data[:,3]
-        D31_col    = data[:,4]
-        D33_col    = data[:,5]
-
-        dkes_k_v = np.unique(dkes_k_col)
-        Er_v     = np.unique(Er_col)
-        nu_v     = np.unique(nu_col)
-
-        Nk = len(dkes_k_v)
-        Ne = len(Er_v)
-        Nu = len(nu_v)
-
-        if len(data) != Nk*Ne*Nu:
-            raise ValueError(f'ERROR: {DKES_coeffs_file} does not have a regular grid of dkes_k, Er_v and nu_v (found {len(data)} rows, expected {Nk}*{Ne}*{Nu}={Nk*Ne*Nu})')
-
-        dkes_k_grid = dkes_k_col.reshape(Nk,Ne,Nu)
-        Er_grid     = Er_col.reshape(Nk,Ne,Nu)
-        nu_grid     = nu_col.reshape(Nk,Ne,Nu)
-
-        if not np.array_equal(nu_grid, np.broadcast_to(nu_v,(Nk,Ne,Nu))):
-            raise ValueError(f'ERROR: {DKES_coeffs_file} does not have nu_v as the inner loop!')
-        if not np.array_equal(Er_grid, np.broadcast_to(Er_v[None,:,None],(Nk,Ne,Nu))):
-            raise ValueError(f'ERROR: {DKES_coeffs_file} does not have Er_v as the middle loop!')
-        if not np.array_equal(dkes_k_grid, np.broadcast_to(dkes_k_v[:,None,None],(Nk,Ne,Nu))):
-            raise ValueError(f'ERROR: {DKES_coeffs_file} does not have dkes_k (first column) as the outer loop!')
-
-        missing_k = [k for k in surfaces_k if k not in dkes_k_v]
-        if len(missing_k) > 0:
-            raise ValueError(f'ERROR: surfaces_k {missing_k} not found in {DKES_coeffs_file}!')
-
-        D11_grid = D11_col.reshape(Nk,Ne,Nu)
-        D31_grid = D31_col.reshape(Nk,Ne,Nu)
-        D33_grid = D33_col.reshape(Nk,Ne,Nu)
-
-        DKES_D11 = []
-        DKES_D31 = []
-        DKES_D33 = []
-        for k in surfaces_k:
-            idx = np.nonzero(dkes_k_v == k)[0][0]
-            # grids are (Ne,Nu) for this surface; transpose to (Nu,Ne)
-            DKES_D11.append(D11_grid[idx].T)
-            DKES_D31.append(D31_grid[idx].T)
-            DKES_D33.append(D33_grid[idx].T)
-
-        DKES_D11 = np.stack(DKES_D11, axis=0)
-        DKES_D31 = np.stack(DKES_D31, axis=0)
-        DKES_D33 = np.stack(DKES_D33, axis=0)
-
-        surfaces_k = np.asarray(surfaces_k)
-        rho_k = np.sqrt((surfaces_k - 1) / (ns_surfaces - 1))
-
-        return nu_v, Er_v, DKES_D11, DKES_D31, DKES_D33, surfaces_k, rho_k
-    
     def set_NEO_coefficients_from_previous(self,it):
         """ Sets NEO transport coefficients at current it equal to previous it """
         
@@ -1899,229 +1742,6 @@ class PLASMA_SOLVER:
             self.Dn[species][it,:] += self.Dn_NEO[species][it,:]
             self.cn[species][it,:] += self.cn_NEO[species][it,:]
 
-    # def compute_NEO_particle_flux(self,it):
-        
-    #     from scipy.interpolate import CubicSpline, Akima1DInterpolator
-        
-    #     root = 'ion_root'
-
-    #     PENTA_class = PENTA(folder_path='.', plasma=self.plasma, lverb=False)
-        
-    #     for sp,species in enumerate(self.list_of_species):
-            
-    #         # Gamma = np.array( PENTA_class.Gamma_Maxw[species] )
-    #         Gamma = np.array( PENTA_class.Gamma[species,root] )
-    #         roa_PENTA = PENTA_class.roa[root]
-            
-    #         ## Include Gamma(r=0) = 0
-    #         rho_extended = np.concatenate([[0.0],roa_PENTA])
-    #         Gamma_extended = np.concatenate(([0.0],Gamma))
-    #         # Gamma_interp = CubicSpline(rho_extended,Gamma_extended,extrapolate=True,bc_type='natural')
-    #         Gamma_interp = Akima1DInterpolator(rho_extended,Gamma_extended,method='makima')
-    #         Gamma_interp.extrapolate = True
-    #         # This is used when computing the heat flux
-    #         self.Gamma_NEO[species][it,:] = Gamma_interp(self.rho_grid)
-            
-    #         # Compute Dn and cn
-    #         PENTA_class.set_plasma_solver_transport_coeffs()
-    #         Dn = PENTA_class.Dn[species,root][:,sp] # the sp index picks the self diffusion coeff, Dn_aa
-    #         cn = PENTA_class.cn[species,root][:]
-            
-    #         # extended Dn and cn towards the axis by setting them to 0.0
-    #         Dn_extended = np.concatenate(([0.0],Dn))
-    #         cn_extended = np.concatenate(([0.0],cn))
-    #         roa_extended = np.concatenate(([0.0],roa_PENTA))
-            
-    #         Dn_extended_spline = Akima1DInterpolator(roa_extended,Dn_extended,method='makima')
-    #         Dn_extended_spline.extrapolate = True
-    #         #
-    #         cn_extended_spline = Akima1DInterpolator(roa_extended,cn_extended,method='makima')
-    #         cn_extended_spline.extrapolate = True
-            
-    #         self.Dn[species][it,:] = Dn_extended_spline(self.rho_grid)
-    #         self.cn[species][it,:] = cn_extended_spline(self.rho_grid)
-            
-    # def compute_NEO_heat_flux(self,it):
-        
-    #     from scipy.interpolate import CubicSpline, Akima1DInterpolator
-        
-    #     root = 'ion_root'
-
-    #     PENTA_class = PENTA(folder_path='.', plasma=self.plasma, lverb=False)
-        
-    #     for sp,species in enumerate(self.list_of_species):
-            
-    #         QoT = np.array( PENTA_class.QoT[species,root] )
-    #         roa_PENTA = PENTA_class.roa[root]
-            
-    #         T_PENTA = CubicSpline(self.rho_grid, self.T[species][it,:])
-    #         T_PENTA = T_PENTA(roa_PENTA)
-            
-    #         Q = QoT * EC * T_PENTA
-            
-    #         ## Include Q(r=0) = 0
-    #         rho_extended = np.concatenate([[0.0],roa_PENTA])
-    #         Q_extended = np.concatenate(([0.0],Q))
-            
-    #         Q_interp = Akima1DInterpolator(rho_extended,Q_extended,method='makima')
-    #         Q_interp.extrapolate = True
-            
-    #         # This is used when computing the heat flux
-    #         self.Q_NEO[species][it,:] = Q_interp(self.rho_grid)
-            
-    #         # Compute Dp and cp
-    #         PENTA_class.set_plasma_solver_transport_coeffs()
-    #         Dp = PENTA_class.Dp[species,root][:,sp] # the sp index picks the self diffusion coeff, Dn_aa
-    #         cp = PENTA_class.cp[species,root][:]
-            
-    #         # extended Dp and cp towards the axis by setting them to 0.0
-    #         Dp_extended = np.concatenate(([0.0],Dp))
-    #         cp_extended = np.concatenate(([0.0],cp))
-    #         roa_extended = np.concatenate(([0.0],roa_PENTA))
-            
-    #         Dp_extended_spline = Akima1DInterpolator(roa_extended,Dp_extended,method='makima')
-    #         Dp_extended_spline.extrapolate = True
-    #         #
-    #         cp_extended_spline = Akima1DInterpolator(roa_extended,cp_extended,method='makima')
-    #         cp_extended_spline.extrapolate = True
-            
-    #         self.Dp[species][it,:] = Dp_extended_spline(self.rho_grid)
-    #         self.cp[species][it,:] = cp_extended_spline(self.rho_grid)
-            
-    # def compute_NEO_plus_beurskens_heat_flux(self,it):
-        
-    #     from scipy.interpolate import CubicSpline, Akima1DInterpolator
-        
-        
-    #     ##############################################################################################
-    #     ################################ NEO contribution ############################################
-    #     ##############################################################################################
-        
-    #     root = 'ion_root'
-
-    #     PENTA_class = PENTA(folder_path='.', plasma=self.plasma, lverb=False)
-        
-    #     for sp,species in enumerate(self.list_of_species):
-            
-    #         QoT = np.array( PENTA_class.QoT[species,root] )
-    #         roa_PENTA = PENTA_class.roa[root]
-            
-    #         T_PENTA = CubicSpline(self.rho_grid, self.T[species][it,:])
-    #         T_PENTA = T_PENTA(roa_PENTA)
-            
-    #         Q = QoT * EC * T_PENTA
-            
-    #         ## Include Q(r=0) = 0
-    #         rho_extended = np.concatenate([[0.0],roa_PENTA])
-    #         Q_extended = np.concatenate(([0.0],Q))
-            
-    #         Q_interp = Akima1DInterpolator(rho_extended,Q_extended,method='makima')
-    #         Q_interp.extrapolate = True
-            
-    #         # This is used when computing the heat flux
-    #         self.Q_NEO[species][it,:] = Q_interp(self.rho_grid)
-            
-    #         # Compute Dp and cp
-    #         PENTA_class.set_plasma_solver_transport_coeffs()
-    #         Dp = PENTA_class.Dp[species,root][:,sp] # the sp index picks the self diffusion coeff, Dn_aa
-    #         cp = PENTA_class.cp[species,root][:]
-            
-    #         # extended Dp and cp towards the axis by setting them to 0.0
-    #         Dp_extended = np.concatenate(([0.0],Dp))
-    #         cp_extended = np.concatenate(([0.0],cp))
-    #         roa_extended = np.concatenate(([0.0],roa_PENTA))
-            
-    #         Dp_extended_spline = Akima1DInterpolator(roa_extended,Dp_extended,method='makima')
-    #         Dp_extended_spline.extrapolate = True
-    #         #
-    #         cp_extended_spline = Akima1DInterpolator(roa_extended,cp_extended,method='makima')
-    #         cp_extended_spline.extrapolate = True
-            
-    #         self.Dp[species][it,:] = Dp_extended_spline(self.rho_grid)
-    #         self.cp[species][it,:] = cp_extended_spline(self.rho_grid)
-            
-    #     ##############################################################################################
-    #     ########################## Beurskens contribution ############################################
-    #     ##############################################################################################
-        
-    #     chi_electrons = self.heat_fluxes_info['dkespenta_beurskens']['chi_electrons']
-    #     aLT_critical = self.heat_fluxes_info['dkespenta_beurskens']['aLT_critical']
-    #     alpha = self.heat_fluxes_info['dkespenta_beurskens']['alpha']
-    #     stiffness = self.heat_fluxes_info['dkespenta_beurskens']['stiffness']
-    #     convective_fact = self.heat_fluxes_info['dkespenta_beurskens']['convective_fact']
-        
-    #     chi = {}
-        
-    #     ## electrons
-    #     chi['electrons'] = chi_electrons * np.ones(self.Nr)
-        
-    #     r_grid = self.r_grid
-    #     Bsq = self.Bsq(self.rho_grid)
-        
-    #     ## IONS
-    #     for ion in self.plasma.ion_species:
-    #         T_ion = self.T[ion][it,:]
-    #         T_electrons = self.T['electrons'][it,:]
-            
-    #         T_r = CubicSpline(r_grid,T_ion)
-    #         # dTdr_non_filtered = T_r.derivative()
-            
-    #         T_polyfit = np.poly1d( np.polyfit(r_grid,T_ion,deg=12) )
-    #         dTdr_polyfit = np.poly1d( T_polyfit.deriv() )
-    #         dTdr_polyfit = dTdr_polyfit(r_grid)
-            
-    #         dTdr = dTdr_polyfit  
-    #         # dTdr = dTdr_non_filtered(r_grid)
-            
-    #         a_LT = self.aminor * dTdr / T_ion
-            
-    #         a_LT_filtered = -a_LT
-            
-    #         X = a_LT_filtered - aLT_critical
-            
-    #         chi_turb = stiffness * X * np.heaviside(X,1) * (T_electrons/T_ion)**alpha
-            
-    #         mi = self.plasma.mass[ion]
-    #         qi = self.plasma.charge[ion]
-    
-    #         chi_gB = (EC*T_ion/mi)**1.5 * mi*mi / (qi**2 * Bsq) / self.aminor
-            
-    #         chi_turb = chi_gB * chi_turb
-            
-    #         chi[ion] = chi_turb
-        
-    #     for species in self.list_of_species:
-            
-    #         p_r = CubicSpline(r_grid,self.P[species][it,:])
-    #         dpdr = p_r.derivative()
-            
-    #         n_r = CubicSpline(r_grid,self.N[species][it,:])
-    #         dndr = n_r.derivative()
-            
-    #         n_r = self.N[species][it,:]
-    #         dndr = dndr(r_grid)
-            
-    #         D = chi[species]
-            
-    #         # save D of ALL subiter
-    #         self.Dp_keep[species][it].append(np.array(D))
-            
-    #         # average to smooth-out eventual oscillations
-    #         D_avg = np.mean(np.array(self.Dp_keep[species][it]), axis=0)
-    #         D = D_avg
-
-    #         # add Beurskens contribution
-    #         self.Dp[species][it,:] += D
-            
-    #         c = (chi[species]/n_r)*dndr + convective_fact*self.Gamma_turb[species][it,:]/n_r
-    #         c[0] = 0.0
-
-    #         # add Beurskens contribution
-    #         self.cp[species][it,:] += c
-            
-    #         # this is for bookeeping
-    #         self.Q_turb[species][it,:] = -chi[species] * dpdr(r_grid) + p_r(r_grid)*( (chi[species]/n_r)*dndr + convective_fact*self.Gamma_turb[species][it,:]/n_r)
-            
     def solve_density_equations(self,it):
         """Sets LHS matrices and RHS vectors of density equations and solves them"""
         from libstell.fusion import FUSION
@@ -2448,54 +2068,6 @@ class PLASMA_SOLVER:
         W_out = sparse.csr_matrix((data, (rows, cols)), shape=(num_species * Nr, num_species * Nr))
         
         return W_out
-    
-    # def call_PENTA3(self,it):
-    #     import subprocess
-    #     from concurrent.futures import ProcessPoolExecutor, as_completed
-    #     import functools
-        
-    #     # create PLASMA class in order to write PENTA inputs       
-    #     plasma_PENTA = PLASMA(self.list_of_species)
-    #     for species in self.list_of_species:
-    #         plasma_PENTA.set_density(species,'interp',rho_vals=self.rho_grid,n_vals=self.N[species][it,:])
-    #         plasma_PENTA.set_temperature(species,'interp',rho_vals=self.rho_grid,T_vals=self.T[species][it,:])
-        
-    #     plasma_profiles_extension = 'transp_solver'
-    #     plasma_PENTA.write_plasma_profiles_to_PENTA3(filename='plasma_profiles_'+plasma_profiles_extension+'.dat')
-    #     plasma_PENTA.write_PENTA_namelist()
-
-    #     try:
-    #         surfaces = self.particle_fluxes_info['dkespenta']['surfaces']
-    #     except:
-    #         try:
-    #             surfaces = self.heat_fluxes_info['dkespenta']['surfaces']
-    #         except:
-    #             try:
-    #                 surfaces = self.particle_fluxes_info['dkespenta_beurskens']['surfaces']
-    #             except:
-    #                 surfaces = self.heat_fluxes_info['dkespenta_beurskens']['surfaces']
-        
-    #     time_sec = []
-    #     with ProcessPoolExecutor() as executor:
-    #         futures = [executor.submit(process_surfaces, surface, self.wout_path) for surface in surfaces]
-
-    #         for future in as_completed(futures):
-    #             elapsed_seconds = future.result()
-    #             time_sec.append(elapsed_seconds)
-    #             # print(f'Surface processed in {elapsed_seconds:.2f} seconds')
-            
-    #     # delete files not needed
-    #     remove = 'rm ucontra* sigmas* flows_vs_Er*'
-    #     subprocess.run(remove, shell=True, check=True, text=True, capture_output=True)
-        
-    #     # merge _surface_# files into single file
-    #     merge_and_delete('fluxes_vs_roa_surface*','fluxes_vs_roa')
-    #     merge_and_delete('fluxes_vs_Er_surface*','fluxes_vs_Er')
-    #     merge_and_delete('flows_vs_roa_surface*','flows_vs_roa')
-    #     merge_and_delete('Jprl_vs_roa_surface*','Jprl_vs_roa')
-    #     merge_and_delete('particleTransportCoeffs_vs_roa_surface*','particleTransportCoeffs_vs_roa')
-    #     merge_and_delete('heatTransportCoeffs_vs_roa_surface*','heatTransportCoeffs_vs_roa')
-    #     merge_and_delete('plasma_profiles_check_surface*','plasma_profiles_check')
         
     def call_save_output(self,output_filename,dt_save):
         """Saves simulation in output joblib file"""
@@ -2727,79 +2299,6 @@ def merge_output_files(*output_files,concatenated_file=None):
         joblib.dump(concatenated_class, concatenated_file)
     
     return concatenated_class
-                    
-        
-# def process_surfaces(surface,wout_path):
-#     import time
-#     import subprocess
-    
-#     start_time = time.time()
-    
-#     type_of_write = 0
-#     Er_min_V_cm = -100
-#     Er_max_V_cm = 200
-
-#     # wout_path = solver_class.wout_path
-#     EparB = 0.0
-
-#     #Sonine (Laguerre) polynomials
-#     Smax = 1
-    
-#     plasma_profiles_extension = 'transp_solver'
-    
-#     extension_output_files = f'_surface_{surface}'
-        
-#     extension_star_files = f'surface_{surface}'
-
-#     call_penta3 = f'~/bin/xpenta {extension_star_files} {Er_min_V_cm} {Er_max_V_cm} {surface} {type_of_write} {wout_path} {plasma_profiles_extension} {EparB} {Smax} {extension_output_files}'
-    
-#     result = subprocess.run(call_penta3, shell=True, check=True, text=True, capture_output=True)
-#     # print(result.stdout)
-#     if(result.stderr):
-#         print(result.stderr)
-        
-#     end_time = time.time()
-#     elapsed_time = (end_time - start_time)
-#     return elapsed_time
-                
-# def merge_and_delete(pattern, output_filename):
-#     """
-#     Merges files matching the given pattern into a single file and deletes the originals.
-    
-#     Parameters:
-#     pattern (str): The pattern to match files (e.g., 'fluxes_vs_roa_surface_*').
-#     output_filename (str): The name of the output file.
-#     """
-#     import os
-#     import re
-#     import glob
-    
-#     def extract_number(filename):
-#         match = re.search(r'_(\d+)$', filename)  # Extract number at the end
-#         return int(match.group(1)) if match else float('inf')
-
-#     # Find and sort matching files
-#     file_list = glob.glob(pattern)
-#     file_list.sort(key=extract_number)
-
-#     if not file_list:
-#         print(f"No files found matching pattern: {pattern}")
-#         return
-
-#     header_written = False
-#     with open(output_filename, 'w') as outfile:
-#         for filename in file_list:
-#             with open(filename, 'r') as infile:
-#                 lines = infile.readlines()
-#                 if not header_written:
-#                     outfile.write(lines[0])  # Write header
-#                     outfile.write(lines[1])
-#                     header_written = True
-#                 outfile.writelines(lines[2:])  # Write data
-
-#     # Delete original files
-#     for filename in file_list:
-#         os.remove(filename)
         
 def initialize_LHS_density(Nr):
     """
@@ -2882,6 +2381,89 @@ def initialize_LHS_pressure(Nr, num_species):
     upper_blocks = split_blocks(upper_indices)
 
     return A, lower_blocks, main_blocks, upper_blocks
+
+def process_DKES_file(DKES_coeffs_file,surfaces_k):
+    """
+    Reads a DKES coefficients file with the header
+    dkes_k  Er_v           nu_v           D11            D31            D33
+    Inner loop: nu_v
+    Middle loop: Er_v
+    Outer loop: dkes_k
+
+    surfaces_k is a list/array of the dkes_k surfaces to extract.
+
+    The file's first line has the format 'ns_surfaces xxx', where xxx is
+    the total number of surfaces, and the second line is the column
+    header (dkes_k Er_v nu_v D11 D31 D33).
+
+    Returns nu_v, Er_v, DKES_D11, DKES_D31, DKES_D33, surfaces_k, rho_k,
+    where nu_v and Er_v are the unique (non-repeated) 1D arrays of
+    length Nu and Ne, DKES_D11, DKES_D31, DKES_D33 are 3D arrays of
+    shape (len(surfaces_k), Nu, Ne), indexed as [surface, nu, Er], one
+    slice per requested surface (in the order given in surfaces_k), and
+    rho_k = sqrt((surfaces_k-1)/(ns_surfaces-1)) is the normalized
+    radial coordinate of each requested surface.
+    """
+    with open(DKES_coeffs_file) as f:
+        ns_surfaces = int(f.readline().split()[1])
+
+    data = np.loadtxt(DKES_coeffs_file, skiprows=2)
+
+    dkes_k_col = data[:,0].astype(int)
+    Er_col     = data[:,1]
+    nu_col     = data[:,2]
+    D11_col    = data[:,3]
+    D31_col    = data[:,4]
+    D33_col    = data[:,5]
+
+    dkes_k_v = np.unique(dkes_k_col)
+    Er_v     = np.unique(Er_col)
+    nu_v     = np.unique(nu_col)
+
+    Nk = len(dkes_k_v)
+    Ne = len(Er_v)
+    Nu = len(nu_v)
+
+    if len(data) != Nk*Ne*Nu:
+        raise ValueError(f'ERROR: {DKES_coeffs_file} does not have a regular grid of dkes_k, Er_v and nu_v (found {len(data)} rows, expected {Nk}*{Ne}*{Nu}={Nk*Ne*Nu})')
+
+    dkes_k_grid = dkes_k_col.reshape(Nk,Ne,Nu)
+    Er_grid     = Er_col.reshape(Nk,Ne,Nu)
+    nu_grid     = nu_col.reshape(Nk,Ne,Nu)
+
+    if not np.array_equal(nu_grid, np.broadcast_to(nu_v,(Nk,Ne,Nu))):
+        raise ValueError(f'ERROR: {DKES_coeffs_file} does not have nu_v as the inner loop!')
+    if not np.array_equal(Er_grid, np.broadcast_to(Er_v[None,:,None],(Nk,Ne,Nu))):
+        raise ValueError(f'ERROR: {DKES_coeffs_file} does not have Er_v as the middle loop!')
+    if not np.array_equal(dkes_k_grid, np.broadcast_to(dkes_k_v[:,None,None],(Nk,Ne,Nu))):
+        raise ValueError(f'ERROR: {DKES_coeffs_file} does not have dkes_k (first column) as the outer loop!')
+
+    missing_k = [k for k in surfaces_k if k not in dkes_k_v]
+    if len(missing_k) > 0:
+        raise ValueError(f'ERROR: surfaces_k {missing_k} not found in {DKES_coeffs_file}!')
+
+    D11_grid = D11_col.reshape(Nk,Ne,Nu)
+    D31_grid = D31_col.reshape(Nk,Ne,Nu)
+    D33_grid = D33_col.reshape(Nk,Ne,Nu)
+
+    DKES_D11 = []
+    DKES_D31 = []
+    DKES_D33 = []
+    for k in surfaces_k:
+        idx = np.nonzero(dkes_k_v == k)[0][0]
+        # grids are (Ne,Nu) for this surface; transpose to (Nu,Ne)
+        DKES_D11.append(D11_grid[idx].T)
+        DKES_D31.append(D31_grid[idx].T)
+        DKES_D33.append(D33_grid[idx].T)
+
+    DKES_D11 = np.stack(DKES_D11, axis=0)
+    DKES_D31 = np.stack(DKES_D31, axis=0)
+    DKES_D33 = np.stack(DKES_D33, axis=0)
+
+    surfaces_k = np.asarray(surfaces_k)
+    rho_k = np.sqrt((surfaces_k - 1) / (ns_surfaces - 1))
+
+    return nu_v, Er_v, DKES_D11, DKES_D31, DKES_D33, surfaces_k, rho_k
 
 @njit
 def akima_derivative(x, y):
