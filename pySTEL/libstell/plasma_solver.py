@@ -7,10 +7,11 @@ import numpy as np
 import sys
 from time import perf_counter
 from numba import njit
+from concurrent.futures import ProcessPoolExecutor
 
 from libstell.plasma import PLASMA
 from libstell.penta import PENTA
-from libstell.libpenta import LIBPENTA
+from libstell.libpenta import LIBPENTA, _init_NEO_worker, _call_PENTA_surface_worker
 
 # Constants
 EC = 1.602176634E-19 # Electron charge [C]
@@ -43,14 +44,12 @@ class PLASMA_SOLVER:
             self.constrain_nT = True
         else:
             self.constrain_nT = False
-            
+        
+        self.add_NEO = add_NEO
         if(add_NEO):
-            self.add_NEO = add_NEO
             # Create a libpenta class. Is used when computing fluxes
             self.libPenta = LIBPENTA()
             print('Solving for NEOCLASSICAL fluxes')
-            self.time_prepare = 0.0
-            self.time_call_NEO = 0.0
             
         # initialize dictionaries
         self.edge_density_BC = {}
@@ -591,6 +590,14 @@ class PLASMA_SOLVER:
         self.drho = drho
         self.dr = drho * self.aminor
         self.Nr = Nr
+        
+        if(self.add_NEO):
+            if self.dt_NEO is None:
+                self.nsteps_per_NEO = 1
+            else:
+                self.nsteps_per_NEO = round(self.dt_NEO/self.dt)
+                
+        # print grid details
         self.print_grid_details()
         
         # initialize self.## variables
@@ -613,7 +620,9 @@ class PLASMA_SOLVER:
                 self.T[species][it,:] = self.T[species][it-1,:]
                 self.P[species][it,:] = self.P[species][it-1,:]
                 if(self.solve_fast_alphas):
-                    self.N['alphas_fast'][it,:] = self.N['alphas_fast'][it-1,:]      
+                    self.N['alphas_fast'][it,:] = self.N['alphas_fast'][it-1,:]
+                if(self.add_NEO):
+                    self.Er[it,:] = self.Er[it-1,:]   
             
             ### SUBCYCLE
             delta_p = 10*tolerance
@@ -621,10 +630,15 @@ class PLASMA_SOLVER:
             while(delta_p > tolerance and subiter<=max_subiter):
                 self.subiter = subiter  
 
+                # Call NEO
+                if(self.add_NEO):
+                    if it%self.nsteps_per_NEO==0: 
+                        self.call_NEO(it)
+                    else:
+                        self.set_NEO_coefficients_from_previous(it)
+                      
                 # compute fluxes and diffusion coefficients
                 self.call_fluxes(it)
-                
-                if(self.add_NEO): self.call_NEO()
                 
                 # set explicit sources
                 for species in self.list_of_species:
@@ -647,10 +661,15 @@ class PLASMA_SOLVER:
                 subiter += 1
         
         if(output_filename is not None):
-            self.call_save_output(output_filename,dt_save)  
-            
-        end_time = perf_counter()   
-        print(f'Plasma Solver took {(end_time-start_time)/60:.2f}min to run.')  
+            self.call_save_output(output_filename,dt_save)
+
+        # Shut down the persistent NEO worker pool (if any), so no worker
+        # processes are left running once the solve is done.
+        if(getattr(self,'add_NEO',False) and self.neo_pool is not None):
+            self.neo_pool.shutdown()
+
+        end_time = perf_counter()
+        print(f'Plasma Solver took {(end_time-start_time)/60:.2f}min to run.')
     
     def make_checks(self):
         """
@@ -709,6 +728,8 @@ class PLASMA_SOLVER:
         print(f' *  dt     = {self.dt:5.3f}s    *')
         print(f' *  Nt     = {self.Nt:3}       *')
         print(f' *  drho   = {self.drho:5.3f}     *')
+        if(self.add_NEO):
+            print(f' *  dt_NEO = {self.dt*self.nsteps_per_NEO:5.3f}s    *')
         print( ' ***********************')
         
         print(' ')
@@ -722,6 +743,9 @@ class PLASMA_SOLVER:
         Initializes the LHS sparse matrices to solve the density and pressure equations
         """
         from collections import defaultdict
+        
+        Nr = self.Nr
+        Nt = self.Nt
         
         self.N = {}
         self.P = {}
@@ -741,9 +765,14 @@ class PLASMA_SOLVER:
         #
         self.explicit_energy_sources = {}
         self.explicit_particle_sources = {}
-        
-        Nr = self.Nr
-        Nt = self.Nt
+        #
+        if(self.add_NEO):
+            self.Dn_NEO = {}
+            self.cn_NEO = {}
+            self.Dp_NEO = {}
+            self.cp_NEO = {}
+            
+        self.Er = np.zeros((Nt,Nr))
 
         for species in self.list_of_species:
             
@@ -758,7 +787,14 @@ class PLASMA_SOLVER:
             self.Dn[species] = np.zeros((Nt,Nr)) 
             self.cn[species] = np.zeros((Nt,Nr)) 
             self.Q_NEO[species] = np.zeros((Nt,Nr)) 
-            self.Gamma_NEO[species] = np.zeros((Nt,Nr)) 
+            self.Gamma_NEO[species] = np.zeros((Nt,Nr))
+            
+            if(self.add_NEO):
+                self.Dn_NEO[species] = np.zeros((Nt,Nr)) 
+                self.cn_NEO[species] = np.zeros((Nt,Nr)) 
+                self.Dp_NEO[species] = np.zeros((Nt,Nr)) 
+                self.cp_NEO[species] = np.zeros((Nt,Nr)) 
+                
             
             self.explicit_energy_sources[species] = {}
             for source_type in self.energy_sources[species].keys():
@@ -802,6 +838,10 @@ class PLASMA_SOLVER:
         for species in self.list_of_species:
                 self.set_explicit_energy_sources(species,it=0)
                 self.set_explicit_particle_sources(species,it=0)
+                
+        # set NEO coefficients
+        if(self.add_NEO):
+            self.call_NEO(it=0)
         
         # set fluxes at t=0
         self.call_fluxes(it=0)  
@@ -858,6 +898,11 @@ class PLASMA_SOLVER:
         self.particle_flux_func(it)
         # Heat Fluxes
         self.heat_flux_func(it)
+        
+        if(self.add_NEO):
+            # add NEO fluxes to self.Dp, self.cp, self.Dn, self.cn
+            self.add_NEO_transport_coefficients(it)
+            
         
     def set_explicit_energy_sources(self,species: str, it):
         """
@@ -1566,38 +1611,125 @@ class PLASMA_SOLVER:
             # this is for bookeeping
             self.Q_turb[species][it,:] = -chi[species] * dpdr + p_r*( (chi[species]/n_r)*dndr + convective_fact*self.Gamma_turb[species][it,:]/n_r)
     
-    def initialize_NEO(self, surfaces_k, DKES_coeffs_file, Er_root_type='ion_root', dt_Er_ambipolar=None):
+    def initialize_NEO(self, surfaces_k, DKES_coeffs_file, dt_NEO=None, Er_root_type='ion_root', dt_Er_ambipolar=None, n_workers_NEO=1):
         """
+        n_workers_NEO controls how call_NEO evaluates the DKES surfaces (each
+        surface's ambipolar root + neoclassical transport coefficients is an
+        independent PENTA calculation -- see call_PENTA_surface in
+        PENTA/Sources/penta_interface_mod.f90). n_workers_NEO=1 (default)
+        evaluates them serially in this process. n_workers_NEO>1 spreads them
+        across a persistent pool of that many worker processes instead
+        (created once, here, and reused for every call_NEO call for the
+        lifetime of this solver -- NOT recreated per time step).
+
+        Note this must be OS processes, not threads: PENTA keeps its working
+        state in Fortran module-level (SAVE) variables in libpenta.so, which
+        are not safe to share across concurrent calls within a single process.
         """
-        
+
         self.DKES_nuv, self.DKES_Erv, self.DKES_D11, self.DKES_D31, self.DKES_D33, self.dkes_k, self.roa_dkes_k = self.process_DKES_file(DKES_coeffs_file,surfaces_k)
 
         self.Er_root_type = Er_root_type
         self.dt_Er_ambipolar = dt_Er_ambipolar
-        
-    def call_NEO(self):
 
-        start = perf_counter() 
-        t = self.time[self.it]
-
-        # Search for a new ambipolar Er root at t=0, and (if dt_Er_ambipolar is
-        # set) every dt_Er_ambipolar of simulation time thereafter (measured
-        # from t=0, not from tstart). In between, the Er root from the last
-        # search is reused. A tolerance of dt/2 is used since t=0 (or a
-        # multiple of dt_Er_ambipolar) may not land exactly on the time grid.
-        at_t_zero = np.isclose(t, 0.0, atol=self.dt)
-        if(self.dt_Er_ambipolar is None and self.subiter==1):
-            look_for_ambipolar = at_t_zero
+        self.n_workers_NEO = n_workers_NEO
+        if(n_workers_NEO is not None and n_workers_NEO > 1):
+            self.neo_pool = ProcessPoolExecutor(max_workers=n_workers_NEO, initializer=_init_NEO_worker)
+            print(f'Using {n_workers_NEO} worker processes for NEO (PENTA) surface calculations')
         else:
-            # remainder = t % self.dt_Er_ambipolar
-            # at_multiple = np.isclose(remainder, 0.0, atol=self.dt/2) or \
-            #               np.isclose(remainder, self.dt_Er_ambipolar, atol=self.dt/2)
-            # look_for_ambipolar = at_t_zero or at_multiple
-            look_for_ambipolar = False
+            self.neo_pool = None
             
+        self.dt_NEO = dt_NEO
+
+    # --- Original serial call_NEO, kept here (disabled) for reference/rollback. ---
+    # def call_NEO(self):
+    #
+    #     start = perf_counter()
+    #     t = self.time[self.it]
+    #
+    #     # Search for a new ambipolar Er root at t=0, and (if dt_Er_ambipolar is
+    #     # set) every dt_Er_ambipolar of simulation time thereafter (measured
+    #     # from t=0, not from tstart). In between, the Er root from the last
+    #     # search is reused. A tolerance of dt/2 is used since t=0 (or a
+    #     # multiple of dt_Er_ambipolar) may not land exactly on the time grid.
+    #     at_t_zero = np.isclose(t, 0.0, atol=self.dt)
+    #     if(self.dt_Er_ambipolar is None and self.subiter==1):
+    #         look_for_ambipolar = at_t_zero
+    #     else:
+    #         # remainder = t % self.dt_Er_ambipolar
+    #         # at_multiple = np.isclose(remainder, 0.0, atol=self.dt/2) or \
+    #         #               np.isclose(remainder, self.dt_Er_ambipolar, atol=self.dt/2)
+    #         # look_for_ambipolar = at_t_zero or at_multiple
+    #         look_for_ambipolar = False
+    #
+    #     # Process kinetic profiles data
+    #     ne, dnedrho = akima_interp(self.rho_grid, self.N['electrons'][self.it,:], self.roa_dkes_k)
+    #     te, dtedrho = akima_interp(self.rho_grid, self.T['electrons'][self.it,:], self.roa_dkes_k)
+    #
+    #     ns_dkes = self.roa_dkes_k.size
+    #     nion_prof = len(self.plasma.ion_species)
+    #     ni      = np.empty((ns_dkes, nion_prof))
+    #     dnidrho = np.empty((ns_dkes, nion_prof))
+    #     ti      = np.empty((ns_dkes, nion_prof))
+    #     dtidrho = np.empty((ns_dkes, nion_prof))
+    #     for j, ion in enumerate(self.plasma.ion_species):
+    #         ni[:,j], dnidrho[:,j] = akima_interp(self.rho_grid, self.N[ion][self.it,:], self.roa_dkes_k)
+    #         ti[:,j], dtidrho[:,j] = akima_interp(self.rho_grid, self.T[ion][self.it,:], self.roa_dkes_k)
+    #
+    #     # Inputs
+    #     Matom_prof = [self.plasma.mass[ion]    for ion in self.plasma.ion_species]
+    #     Zatom_prof = [self.plasma.Zcharge[ion] for ion in self.plasma.ion_species]
+    #     EparB = 0.0
+    #     Er_min_Vcm = -250
+    #     Er_max_Vcm = 250
+    #     bsq = self.Bsq_spline(self.roa_dkes_k)
+    #
+    #     # Placeholders -- their values don't really matter
+    #     btheta = np.zeros_like(self.roa_dkes_k)
+    #     bzeta = np.zeros_like(self.roa_dkes_k)
+    #     iota = np.zeros_like(self.roa_dkes_k)
+    #     phip = np.zeros_like(self.roa_dkes_k)
+    #     chip = np.zeros_like(self.roa_dkes_k)
+    #     vp = np.zeros_like(self.roa_dkes_k)
+    #
+    #     if(look_for_ambipolar): self.Er = np.zeros_like(self.roa_dkes_k)
+    #
+    #     end = perf_counter()
+    #     self.time_prepare += end-start
+    #
+    #     start = perf_counter()
+    #
+    #     output_Er, output_Dn, output_cn, output_Dp, output_cp = self.libPenta.call_PENTA(
+    #         Matom_prof, Zatom_prof,
+    #         ne, dnedrho, te, dtedrho, ni, dnidrho, ti, dtidrho,
+    #         self.aminor, self.Rmajor, vp, chip, phip, iota, btheta, bzeta, bsq,
+    #         self.dkes_k, self.roa_dkes_k,
+    #         self.DKES_nuv, self.DKES_Erv, self.DKES_D11, self.DKES_D31, self.DKES_D33,
+    #         Er_min_Vcm, Er_max_Vcm, EparB, self.Er, self.Er_root_type, look_for_ambipolar,
+    #         self.rho_grid)
+    #
+    #     self.Er = output_Er
+    #
+    #     end = perf_counter()
+    #     self.time_call_NEO += end-start
+
+    def call_NEO(self,it):
+        
+        t = self.time[it]
+
+        # Search for a new ambipolar Er root at t=0 and every dt_Er_ambipolar
+        at_t_zero = np.isclose(t, 0.0, atol=self.dt/2)
+        if(at_t_zero):
+            look_for_ambipolar = True
+        elif(self.dt_Er_ambipolar is None):
+            look_for_ambipolar = False
+        else:
+            nsteps_per_Er = round(self.dt_Er_ambipolar/self.dt)
+            look_for_ambipolar = (nsteps_per_Er % it == 0)
+
         # Process kinetic profiles data
-        ne, dnedrho = akima_interp(self.rho_grid, self.N['electrons'][self.it,:], self.roa_dkes_k)
-        te, dtedrho = akima_interp(self.rho_grid, self.T['electrons'][self.it,:], self.roa_dkes_k)
+        ne, dnedrho = akima_interp(self.rho_grid, self.N['electrons'][it,:], self.roa_dkes_k)
+        te, dtedrho = akima_interp(self.rho_grid, self.T['electrons'][it,:], self.roa_dkes_k)
 
         ns_dkes = self.roa_dkes_k.size
         nion_prof = len(self.plasma.ion_species)
@@ -1606,17 +1738,18 @@ class PLASMA_SOLVER:
         ti      = np.empty((ns_dkes, nion_prof))
         dtidrho = np.empty((ns_dkes, nion_prof))
         for j, ion in enumerate(self.plasma.ion_species):
-            ni[:,j], dnidrho[:,j] = akima_interp(self.rho_grid, self.N[ion][self.it,:], self.roa_dkes_k)
-            ti[:,j], dtidrho[:,j] = akima_interp(self.rho_grid, self.T[ion][self.it,:], self.roa_dkes_k)
+            ni[:,j], dnidrho[:,j] = akima_interp(self.rho_grid, self.N[ion][it,:], self.roa_dkes_k)
+            ti[:,j], dtidrho[:,j] = akima_interp(self.rho_grid, self.T[ion][it,:], self.roa_dkes_k)
 
         # Inputs
         Matom_prof = [self.plasma.mass[ion]    for ion in self.plasma.ion_species]
         Zatom_prof = [self.plasma.Zcharge[ion] for ion in self.plasma.ion_species]
-        EparB = 0.0
+        EparB = np.zeros_like(self.roa_dkes_k)
         Er_min_Vcm = -250
         Er_max_Vcm = 250
         bsq = self.Bsq_spline(self.roa_dkes_k)
-        
+        Er_k, _ = akima_interp(self.rho_grid, self.Er[it,:], self.roa_dkes_k)
+
         # Placeholders -- their values don't really matter
         btheta = np.zeros_like(self.roa_dkes_k)
         bzeta = np.zeros_like(self.roa_dkes_k)
@@ -1624,28 +1757,47 @@ class PLASMA_SOLVER:
         phip = np.zeros_like(self.roa_dkes_k)
         chip = np.zeros_like(self.roa_dkes_k)
         vp = np.zeros_like(self.roa_dkes_k)
-        
-        if(look_for_ambipolar): self.Er = np.zeros_like(self.roa_dkes_k)
-        
-        end = perf_counter() 
-        self.time_prepare += end-start
-        
-        start = perf_counter() 
-        
-        output_Er, output_Dn, output_cn, output_Dp, output_cp = self.libPenta.call_PENTA(
-            Matom_prof, Zatom_prof,
-			ne, dnedrho, te, dtedrho, ni, dnidrho, ti, dtidrho,
-			self.aminor, self.Rmajor, vp, chip, phip, iota, btheta, bzeta, bsq,
-			self.dkes_k, self.roa_dkes_k,
-			self.DKES_nuv, self.DKES_Erv, self.DKES_D11, self.DKES_D31, self.DKES_D33,
-			Er_min_Vcm, Er_max_Vcm, EparB, self.Er, self.Er_root_type, look_for_ambipolar,
-			self.rho_grid)
-        
-        self.Er = output_Er
-        
-        end = perf_counter() 
-        self.time_call_NEO += end-start
-        
+
+        if(self.neo_pool is None):
+            # Serial: call_PENTA loops over all ns_dkes surfaces and
+            # interpolates onto self.rho_grid in one shot.
+            self.Er[it,:], Dn_out, cn_out, Dp_out, cp_out = self.libPenta.call_PENTA(
+                Matom_prof, Zatom_prof,
+                ne, dnedrho, te, dtedrho, ni, dnidrho, ti, dtidrho,
+                self.aminor, self.Rmajor, vp, chip, phip, iota, btheta, bzeta, bsq,
+                self.dkes_k, self.roa_dkes_k,
+                self.DKES_nuv, self.DKES_Erv, self.DKES_D11, self.DKES_D31, self.DKES_D33,
+                Er_min_Vcm, Er_max_Vcm, EparB, Er_k, self.Er_root_type, look_for_ambipolar,
+                self.rho_grid)
+        else:
+            # Parallel: spread the ns_dkes independent surface calculations
+            # across the persistent process pool created in initialize_NEO.
+            tasks = [
+                (Matom_prof, Zatom_prof,
+                 ne[k], dnedrho[k], te[k], dtedrho[k], ni[k,:], dnidrho[k,:], ti[k,:], dtidrho[k,:],
+                 self.aminor, self.Rmajor, vp[k], chip[k], phip[k], iota[k], btheta[k], bzeta[k], bsq[k],
+                 int(self.dkes_k[k]), self.roa_dkes_k[k],
+                 self.DKES_nuv, self.DKES_Erv, self.DKES_D11[k,:,:], self.DKES_D31[k,:,:], self.DKES_D33[k,:,:],
+                 Er_min_Vcm, Er_max_Vcm, EparB[k], Er_k[k], self.Er_root_type, look_for_ambipolar)
+                for k in range(ns_dkes)
+                    ]
+            results = list(self.neo_pool.map(_call_PENTA_surface_worker, tasks))
+            Er_PENTA = np.array([r[1] for r in results])
+            Dn_PENTA = np.array([r[2] for r in results]).T
+            cn_PENTA = np.array([r[3] for r in results]).T
+            Dp_PENTA = np.array([r[4] for r in results]).T
+            cp_PENTA = np.array([r[5] for r in results]).T
+
+            self.Er[it,:], Dn_out, cn_out, Dp_out, cp_out = self.libPenta.call_PENTA_interpolate(
+                self.roa_dkes_k, Er_PENTA, Dn_PENTA, cn_PENTA, Dp_PENTA, cp_PENTA, self.rho_grid)
+
+        # Assign transport coefficients
+        for isp, species in enumerate(self.list_of_species):
+            self.Dn_NEO[species][it,:] = Dn_out[isp,:]
+            self.cn_NEO[species][it,:] = cn_out[isp,:]
+            self.Dp_NEO[species][it,:] = Dp_out[isp,:]
+            self.cp_NEO[species][it,:] = cp_out[isp,:]
+    
     def process_DKES_file(self,DKES_coeffs_file,surfaces_k):
         """
         Reads a DKES coefficients file with the header
@@ -1728,6 +1880,24 @@ class PLASMA_SOLVER:
         rho_k = np.sqrt((surfaces_k - 1) / (ns_surfaces - 1))
 
         return nu_v, Er_v, DKES_D11, DKES_D31, DKES_D33, surfaces_k, rho_k
+    
+    def set_NEO_coefficients_from_previous(self,it):
+        """ Sets NEO transport coefficients at current it equal to previous it """
+        
+        for species in self.list_of_species:
+            self.Dn_NEO[species][it,:] = self.Dn_NEO[species][it-1,:]
+            self.cn_NEO[species][it,:] = self.cn_NEO[species][it-1,:]
+            self.Dp_NEO[species][it,:] = self.Dp_NEO[species][it-1,:]
+            self.cp_NEO[species][it,:] = self.cp_NEO[species][it-1,:]
+        
+    def add_NEO_transport_coefficients(self,it):
+        """ Adds NEO transport coefficients to Dp,cp,Dn,cn """
+        
+        for species in self.list_of_species:
+            self.Dp[species][it,:] += self.Dp_NEO[species][it,:]
+            self.cp[species][it,:] += self.cp_NEO[species][it,:]
+            self.Dn[species][it,:] += self.Dn_NEO[species][it,:]
+            self.cn[species][it,:] += self.cn_NEO[species][it,:]
 
     # def compute_NEO_particle_flux(self,it):
         
@@ -2361,6 +2531,12 @@ class PLASMA_SOLVER:
             setattr(saved_class, attr, {})
             for species in self.list_of_species:
                 getattr(saved_class, attr)[species] = getattr(self, attr)[species][sl, :]
+                
+        if(self.add_NEO):
+            for attr in ('Dn_NEO','cn_NEO','Dp_NEO','cp_NEO'):
+                setattr(saved_class, attr, {})
+                for species in self.list_of_species:
+                    getattr(saved_class, attr)[species] = getattr(self, attr)[species][sl, :]
         
         if 'alphas_fast' in self.N:
             saved_class.N['alphas_fast'] = self.N['alphas_fast'][sl, :]
