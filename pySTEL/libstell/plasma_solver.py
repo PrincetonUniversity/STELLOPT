@@ -1649,7 +1649,7 @@ class PLASMA_SOLVER:
             look_for_ambipolar = False
         else:
             nsteps_per_Er = round(self.dt_Er_ambipolar/self.dt)
-            look_for_ambipolar = (nsteps_per_Er % it == 0)
+            look_for_ambipolar = (it % nsteps_per_Er == 0)
 
         # Process kinetic profiles data
         ne, dnedrho = akima_interp(self.rho_grid, self.N['electrons'][it,:], self.roa_dkes_k)
