@@ -7,11 +7,7 @@ import numpy as np
 import sys
 from time import perf_counter
 from numba import njit
-from concurrent.futures import ProcessPoolExecutor
-
 from libstell.plasma import PLASMA
-from libstell.penta import PENTA
-from libstell.libpenta import LIBPENTA, _init_NEO_worker, _call_PENTA_surface_worker
 
 # Constants
 EC = 1.602176634E-19 # Electron charge [C]
@@ -47,6 +43,7 @@ class PLASMA_SOLVER:
         
         self.add_NEO = add_NEO
         if(add_NEO):
+            from libstell.libpenta import LIBPENTA
             # Create a libpenta class. Is used when computing fluxes
             self.libPenta = LIBPENTA()
             print('Solving for NEOCLASSICAL fluxes')
@@ -1624,7 +1621,8 @@ class PLASMA_SOLVER:
         state in Fortran module-level (SAVE) variables in libpenta.so, which
         are not safe to share across concurrent calls within a single process.
         """
-
+        from concurrent.futures import ProcessPoolExecutor
+        from libstell.libpenta import _init_NEO_worker
         self.DKES_nuv, self.DKES_Erv, self.DKES_D11, self.DKES_D31, self.DKES_D33, self.dkes_k, self.roa_dkes_k = process_DKES_file(DKES_coeffs_file,surfaces_k)
 
         self.Er_root_type = Er_root_type
@@ -1640,7 +1638,7 @@ class PLASMA_SOLVER:
         self.dt_NEO = dt_NEO
 
     def call_NEO(self,it):
-        
+        from libstell.libpenta import _call_PENTA_surface_worker
         t = self.time[it]
 
         # Search for a new ambipolar Er root at t=0 and every dt_Er_ambipolar
