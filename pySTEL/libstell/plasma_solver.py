@@ -2110,6 +2110,8 @@ class PLASMA_SOLVER:
         
         if 'alphas_fast' in self.N:
             saved_class.N['alphas_fast'] = self.N['alphas_fast'][sl, :]
+            
+        saved_class.Er = self.Er[sl, :]
         
         # nested dict attributes
         nested_attrs = ['explicit_energy_sources','explicit_particle_sources']
@@ -2143,8 +2145,6 @@ class PLASMA_SOLVER:
                 saved_class.energy_sources[species][key] = {
                     "previous_error": self.energy_sources[species][key]["previous_error"],
                     "pid_I": self.energy_sources[species][key]["pid_I"]}
-                
-        saved_class.Er = self.Er
 
         joblib.dump(saved_class, output_filename)
         
