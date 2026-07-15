@@ -16,7 +16,9 @@ jobs:
         uses: actions/checkout@master
 
       - name: set safe directory
-        run: git config --global --add safe.directory "${{ github.workspace }}"
+        run: |
+          git config --global --add safe.directory "${{ github.workspace }}"
+          chown -R $(id -u):$(id -g) .
 
       - name: compile
         run: |
