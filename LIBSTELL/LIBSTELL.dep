@@ -8,10 +8,13 @@ nescoil_input_mod.o : \
 
 conrec.o :
 
+surface_extender_mod.o :
+
 spline_coils_mod.o : \
       ezspline.o \
       ezspline_obj.o \
       biotsavart.o \
+      surface_extender_mod.o \
       bsc_T.o
 
 fusion_mod.o : 
