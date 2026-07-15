@@ -809,6 +809,7 @@ stellopt_fcn.o : \
       
 stellopt_main.o : \
       stellopt_runtime.o \
+      equil_utils.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_input_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/mgrid_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_params.o
