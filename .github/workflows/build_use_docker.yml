@@ -17,7 +17,7 @@ jobs:
       - name: compile
         run: |
           cd ${STELLOPT_PATH}
-          ./build_all -o clean_debug -j 2
+          ./build_all -o clean_debug -j 1
       - name: test
         run: |
           python3 -m unittest discover -s BENCHMARKS/tests -v
