@@ -59,6 +59,7 @@ torlines_write.o: \
       torlines_runtime.o \
       torlines_realspace.o \
       torlines_background.o \
+      torlines_write_parhdf5.o \
       torlines_fieldlines.o
       
 
