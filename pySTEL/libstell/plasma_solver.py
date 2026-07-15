@@ -1431,7 +1431,6 @@ class PLASMA_SOLVER:
             
             n_r = self.N[species][it,:]
             dndr = polyfit_derivative_fast(r_grid,n_r,deg=12)
-            # dndr = akima_derivative(r_grid,n_r)
             
             a_Ln = - self.aminor * dndr / n_r
             
@@ -1449,6 +1448,7 @@ class PLASMA_SOLVER:
             self.cn[species][it,0] = 0.0
                         
             # this is used in heat flux (Q=-n\chi*dT/dr + convective_fact*T*Gamma_turb)
+            dndr = akima_derivative(r_grid,n_r)
             self.Gamma_turb[species][it,:] = -self.Dn[species][it,:] * dndr + self.cn[species][it,:] * n_r
             
     def compute_beurskens_heat_flux(self,it):
