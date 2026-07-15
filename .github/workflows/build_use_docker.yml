@@ -20,5 +20,5 @@ jobs:
           ./build_all -o clean_debug -j 2
       - name: test
         run: |
-          make -C BENCHMARKS test_indexing
+          python3 -m unittest discover -s BENCHMARKS/tests -v
           mpiexec ./bin/xstelloptv2 test -h
