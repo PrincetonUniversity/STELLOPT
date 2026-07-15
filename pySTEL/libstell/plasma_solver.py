@@ -1734,6 +1734,18 @@ class PLASMA_SOLVER:
             self.cn_NEO[species][it,:] = cn_out[isp,:]
             self.Dp_NEO[species][it,:] = Dp_out[isp,:]
             self.cp_NEO[species][it,:] = cp_out[isp,:]
+            
+        # Assign fluxes        
+        for isp, species in enumerate(self.list_of_species):
+            # By construction the neo coeffs already contain the nabla.r term implicitely:
+            # vector(Gamma_NEO)\cdot\nabla_r := -Dn_NEO*dn/dr + cn_NEO*n
+            n = self.N[species][it,:]
+            p = self.P[species][it,:]
+            dndr = akima_derivative(self.r_grid,n)
+            dpdr = akima_derivative(self.r_grid,p)
+            #
+            self.Gamma_NEO[species][it,:] = -Dn_out[isp,:]*dndr + cn_out[isp,:]*n
+            self.Q_NEO[species][it,:]     = -Dp_out[isp,:]*dpdr + cp_out[isp,:]*p
     
     def set_NEO_coefficients_from_previous(self,it):
         """ Sets NEO transport coefficients at current it equal to previous it """
@@ -1743,6 +1755,10 @@ class PLASMA_SOLVER:
             self.cn_NEO[species][it,:] = self.cn_NEO[species][it-1,:]
             self.Dp_NEO[species][it,:] = self.Dp_NEO[species][it-1,:]
             self.cp_NEO[species][it,:] = self.cp_NEO[species][it-1,:]
+            
+        for species in self.list_of_species:
+            self.Gamma_NEO[species][it,:] = self.Gamma_NEO[species][it-1,:]
+            self.Q_NEO[species][it,:] = self.Q_NEO[species][it-1,:]
         
     def add_NEO_transport_coefficients(self,it):
         """ Adds NEO transport coefficients to Dp,cp,Dn,cn """
