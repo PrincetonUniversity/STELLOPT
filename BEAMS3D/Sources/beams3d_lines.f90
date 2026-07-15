@@ -48,7 +48,8 @@
                                   vr_lines(:,:),vphi_lines(:,:),vz_lines(:,:)
       ! boxsim stuff
       INTEGER :: nbuffer
-      INTEGER, ALLOCATABLE ::  reaction_count(:)
+      INTEGER, ALLOCATABLE ::  reaction_count(:), boxsim_parent(:)
+      INTEGER, PARAMETER :: boxsim_noparent = 0
       CHARACTER(LEN=8), ALLOCATABLE :: species_lines(:,:)
       INTEGER :: reaction_dex, myfreedex
       LOGICAL, DIMENSION(:), ALLOCATABLE :: is_active

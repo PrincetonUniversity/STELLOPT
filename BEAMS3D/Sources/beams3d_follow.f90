@@ -124,7 +124,7 @@ SUBROUTINE beams3d_follow
     t_last = 0.0
     neut_lines = .TRUE.; 
     IF (lboxsim) THEN
-      species_lines = ''; reaction_count = -1; boxsim_parent = 0
+      species_lines = ''; reaction_count = -1; boxsim_parent = BOXSIM_NOPARENT
     END IF
     R_lines(0, mystart:myend)      = R_start(mystart:myend)
     Z_lines(0, mystart:myend)      = Z_start(mystart:myend)
@@ -138,6 +138,7 @@ SUBROUTINE beams3d_follow
     IF (lbeam) neut_lines(0, mystart:myend) = .TRUE.
     IF (lboxsim) THEN
          reaction_count(mystart:myend) = -1
+         species_lines(0,mystart:myend) = boxsim_species(mystart:myend)
     END IF
 
     ! Some helpers
@@ -172,9 +173,6 @@ SUBROUTINE beams3d_follow
        mycharge = charge(i)
        myZ = Zatom(i)
        mymass = mass(i)
-       IF (mymass.EQ.0.0d0) THEN
-         WRITE(6,'(I0,A,I0,A,I0,A,L)') myworkid, " MASS IS ZERO! i=", i, " j=", j, " is_active(i)=",is_active(i)
-       END IF
        E_by_v=mymass*0.5d-3/e_charge
        mybeam = Beam(i)
        moment = mu_start(i)

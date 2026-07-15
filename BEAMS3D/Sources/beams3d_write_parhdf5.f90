@@ -77,10 +77,7 @@
       offset(1) = 0
       offset(2) = mystart-1
       
-      IF (lsvar) THEN
-            CALL h5tcopy_f(H5T_NATIVE_CHARACTER, str_type_id, ier)
-            CALL h5tset_size_f(str_type_id, LEN(STRVAR), ier)
-      END IF
+
 
 #if defined(HDF5_PAR)
       ! Do this so we define the chunking correctly
@@ -90,6 +87,11 @@
       info = MPI_INFO_NULL
       ! Initialize
       CALL h5open_f(ier)
+      IF (lsvar) THEN
+            str_len = LEN(STRVAR)
+            CALL h5tcopy_f(H5T_NATIVE_CHARACTER, str_type_id, ier)
+            CALL h5tset_size_f(str_type_id, str_len, ier)
+      END IF
       ! Setup File access
       CALL h5pcreate_f(H5P_FILE_ACCESS_F, fapl_id, ier)
       CALL h5pset_fapl_mpio_f(fapl_id, MPI_COMM_BEAMS, info, ier)
@@ -141,7 +143,7 @@
       CALL h5sclose_f(mspace_id, ier)
       CALL h5sclose_f(fspace_id, ier)
       CALL h5dclose_f(dset_id, ier)
-      CALL h5tclose_f(str_type_id, ier)
+      IF (lsvar) CALL h5tclose_f(str_type_id, ier)
 !!!!!!!CLOSE FILE
       ! Close the file
       CALL h5fclose_f(file_id, ier)
@@ -154,6 +156,11 @@
          IF (myworkid == i) THEN
             ! Open the fotran interface
             CALL h5open_f(ier)
+            IF (lsvar) THEN
+                  str_len = LEN(STRVAR)
+                  CALL h5tcopy_f(H5T_NATIVE_CHARACTER, str_type_id, ier)
+                  CALL h5tset_size_f(str_type_id, str_len, ier)
+              END IF
             !PRINT *,'h5open ',ier
 
             ! Setup File access

@@ -12,7 +12,7 @@ SUBROUTINE out_beams3d_part(t, q)
     USE beams3d_runtime, ONLY: dt, lverb, pi2, lneut, t_end, lvessel, &
                                lhitonly, npoinc, lcollision, ldepo, &
                                weight, invpi2, ndt, ndt_max, lfidasim, lfidasim_cyl, &
-                               lboxsim
+                               lboxsim, boxsim_species
     USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, myline, moment, &
                              nparticles, moment_lines, myend, &
                              vr_lines, vphi_lines, vz_lines, &
@@ -67,7 +67,7 @@ SUBROUTINE out_beams3d_part(t, q)
     vz_lines(mytdex, myline)     = q(6)
     neut_lines(mytdex,myline)    = lneut
     IF (lboxsim) THEN
-      species_lines(mytdex,myline) = species(myline)
+      species_lines(mytdex,myline) = boxsim_species(myline)
     END IF
     x0 = MOD(q(2), phimax)
     IF (x0 < 0) x0 = x0 + phimax

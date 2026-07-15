@@ -689,7 +689,9 @@ CONTAINS
 
   SUBROUTINE boxsim_split_counts(parent_counts, split_pattern, nproducts, & 
                                  product_counts, ierr)
-  
+!!------------------------------------------------------------------------
+!! Returns the boxsim counts of all reaction products
+!!------------------------------------------------------------------------
   IMPLICIT NONE
 
   INTEGER, INTENT(in) :: parent_counts(boxsim_nkinds)
@@ -739,4 +741,27 @@ CONTAINS
 
   END SUBROUTINE boxsim_split_counts
 
+  SUBROUTINE boxsim_ref_from_cat(cat, ref_M, ierr)
+!!------------------------------------------------------------------------
+!! Returns the reference mass of a family
+!!------------------------------------------------------------------------
+  IMPLICIT NONE
+
+  INTEGER, INTENT(in) :: cat
+  DOUBLE PRECISION, INTENT(out) :: ref_M
+  INTEGER, INTENT(out) :: ierr
+
+  ierr = 0
+  ref_M = 0.0d0
+  SELECT CASE (cat)
+    CASE (boxsim_cat_H)
+      ref_M = boxsim_kind_mass(boxsim_kind_H)
+    CASE (boxsim_cat_He)
+      ref_M = boxsim_kind_mass(boxsim_kind_He4)
+    CASE DEFAULT
+      ierr = 1
+  END SELECT
+
+  END SUBROUTINE boxsim_ref_from_cat
+  
 END MODULE boxsim_db

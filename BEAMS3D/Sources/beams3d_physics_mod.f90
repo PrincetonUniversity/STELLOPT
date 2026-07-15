@@ -29,7 +29,7 @@ MODULE beams3d_physics_mod
                                ns_prof5, my_end, h1_prof, fact_crit_legacy, &
                                mylife, mylife_end, reaction_dex, &
                                myenergy_keV, sigma_next, E_by_v, myqm, vlast, xlast, ylast, zlast, &
-                               reaction_count, myfreedex, is_active, neut_lines
+                               reaction_count, myfreedex, is_active, neut_lines, boxsim_parent
       USE beams3d_grid, ONLY: delta_t, MODB4D, OMEG4D, nomeg,&
                               phimax, TE4D, NE4D, TI4D, ZEFF4D, &
                               RHO4D, XRHO4D, YRHO4D, &
@@ -2553,13 +2553,12 @@ SUBROUTINE beams3d_reaction_sigma(part_Q, part_counts, E_kev, react_dex, sigma, 
    IF (ierr/=0) RETURN
    CALL boxsim_ref_from_cat(part_CAT, ref_M, ierr)
    IF (ierr/=0) RETURN
-   part_M = DOT_PRODUCT(part_counts, boxsim_kind_mass)
+   part_M = DOT_PRODUCT(DBLE(part_counts), boxsim_kind_mass)
    E_eff = E_kev * ref_M/part_M 
-
    ! Populate allowable reactions 
    part_A = SUM(part_counts)
    ALLOCATE(react_sigmas(n_reactions), react_dices(n_reactions))
-   j = 0
+   j = 0 
    sigma_total = 0
    DO i = 1, n_reactions
      reaction_info = reactions_db(i)

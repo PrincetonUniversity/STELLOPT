@@ -171,7 +171,7 @@ MODULE beams3d_runtime
                luser_init, lread_boxdens, lread_mag
     INTEGER :: nextcur, nprocs_beams, ndt, ndt_max
     INTEGER :: win_beam
-    INTEGER, DIMENSION(:), POINTER :: beam, boxsim_parent
+    INTEGER, DIMENSION(:), POINTER :: beam
     REAL(rprec) :: dt, pi, invpi2, mu0, to3, dt_save, rminor_norm
     INTEGER :: win_lgc2fo_start
     LOGICAL, DIMENSION(:), POINTER :: lgc2fo_start
@@ -182,7 +182,6 @@ MODULE beams3d_runtime
     REAL(rprec), DIMENSION(:), POINTER :: R_start, phi_start, z_start, &
                 vll_start, mu_start, mass, charge, zatom, t_end, weight, &
                 vr_start, vphi_start, vz_start
-    CHARACTER(LEN=8), DIMENSION(:), POINTER :: boxsim_species
     REAL(rprec), ALLOCATABLE :: extcur(:)
     CHARACTER(LEN=10) ::  qid_str_saved ! For ASCOT5
     CHARACTER(256) :: mgrid_string, coil_string, &
@@ -190,6 +189,7 @@ MODULE beams3d_runtime
                       continue_grid_string, bbnbi_string, &
                       eqdsk_string, mumat_string, boxdens_string, &
                       read_mag_string
+    CHARACTER(LEN=8), DIMENSION(:), ALLOCATABLE :: boxsim_species
 
     REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 5.00
 

@@ -46,7 +46,7 @@ SUBROUTINE beams3d_follow_fo
     !-----------------------------------------------------------------------
     IMPLICIT NONE
     INTEGER :: i, j
-    INTEGER :: ier, l, neqs_nag, itol, itask, type, &
+    INTEGER :: ier, ierr, l, neqs_nag, itol, itask, type, &
                istate, iopt, lrw, liw, mf, out, iunit
     INTEGER, ALLOCATABLE :: iwork(:), itemp(:,:)
     DOUBLE PRECISION, ALLOCATABLE :: w(:), q(:)
@@ -75,6 +75,7 @@ SUBROUTINE beams3d_follow_fo
     ! Initializations
     s_fullorbit = SIGN(rho_fullorbit*rho_fullorbit,rho_fullorbit)
     ier = 0
+    ierr = 0
     tol_nag = follow_tol
     neqs_nag = 6
     relab = "M"
@@ -167,8 +168,8 @@ SUBROUTINE beams3d_follow_fo
                     lneut  = (Q_int==0)
                     ! boxsim
                     IF (lboxsim) THEN
-                     reaction_count(l) = 0
-                     boxsim_parent(l) = l
+                     reaction_count(myline) = 0
+                     IF (boxsim_parent(myline)==BOXSIM_NOPARENT) boxsim_parent(myline) = myline
                      CALL boxsim_parse_species(boxsim_species(myline), part_counts, Q_int, Z_int, ierr)
                      myenergy_keV = (energy/(e_charge*1.0E3))
                      CALL beams3d_reaction_sigma(Q_int, part_counts, myenergy_keV, reaction_dex, sigma_next, ierr)
@@ -228,8 +229,8 @@ SUBROUTINE beams3d_follow_fo
                     lneut  = (Q_int==0)
                     ! boxsim
                     IF (lboxsim) THEN
-                     reaction_count(l) = 0
-                     boxsim_parent(l) = l
+                     reaction_count(myline) = 0
+                     IF (boxsim_parent(myline)==BOXSIM_NOPARENT) boxsim_parent(myline) = myline
                      CALL boxsim_parse_species(boxsim_species(myline), part_counts, Q_int, Z_int, ierr)
                      myenergy_keV = (energy/(e_charge*1.0E3))
                      CALL beams3d_reaction_sigma(Q_int, part_counts, myenergy_keV, reaction_dex, sigma_next, ierr)
@@ -317,16 +318,25 @@ SUBROUTINE beams3d_follow_fo
                        vlast = sqrt(q(4)**2 + q(5)**2 + q(6)**2)
                     END IF 
                     energy = 0.5*mymass*vlast**2
+                    
                     ! boxsim
                     IF (lboxsim) THEN
-                     reaction_count(l) = 0
-                     boxsim_parent(l) = l
+                     reaction_count(myline) = 0
+                     IF (boxsim_parent(myline)==BOXSIM_NOPARENT) boxsim_parent(myline) = myline
                      CALL boxsim_parse_species(boxsim_species(myline), part_counts, Q_int, Z_int, ierr)
+                     IF (ierr /= 0) THEN
+                        WRITE(6,*) 'ERROR: boxsim_parse_species failed for particle', myline, &
+                                   ' species="'//TRIM(boxsim_species(myline))//'" ierr=', ierr
+                      END IF
                      myenergy_keV = (energy/(e_charge*1.0E3))
                      CALL beams3d_reaction_sigma(Q_int, part_counts, myenergy_keV, reaction_dex, sigma_next, ierr)
                      mylife = 1.0
                      CALL RANDOM_NUMBER(mylife_end)
                     END IF
+                    WRITE(6,'(A,I0,A,A,4(A,ES15.8))') &
+                  ' particle=', myline, ' species=', boxsim_species(myline), &
+                  ' mymass=', mymass, ' vlast=', vlast, &
+                  ' energy=', energy, ' myenergy_keV=', myenergy_keV
                     xlast = q(1)*cos(q(2))
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)

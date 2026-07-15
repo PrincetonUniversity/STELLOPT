@@ -649,7 +649,7 @@
 
       IF (lboxsim) THEN
          ! Contiguous allocation
-         ALLOCATE(is_active(nparticles))
+         ALLOCATE(is_active(nparticles),boxsim_species(nparticles))
          is_active = .FALSE.
       END IF
 

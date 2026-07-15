@@ -37,6 +37,7 @@
       REAL(rprec), PARAMETER   :: E_error = .01 ! 1% energy spread
       CHARACTER(LEN=8) :: species
       INTEGER :: part_counts(boxsim_nkinds), charge_int, Z_int, ierr
+      DOUBLE PRECISION :: tmp
       ! For HDF5
       INTEGER(HID_T)           :: h5_fid, h5_did, h5_sid
       INTEGER(HSIZE_T), DIMENSION(2)    :: dims, maxdims
@@ -172,9 +173,14 @@
                         WRITE(6,*) 'ERROR: could not parse species string for beam ', ibeam, ': "'//TRIM(species)//'"'
                         STOP
                      END IF
-                     mass(k1:k2) = DOT_PRODUCT(part_counts, boxsim_kind_mass)
-                     charge(k1:k2) = charge_int* 1.60217662E-19 !e_c
-                     Zatom(k1:k2)        = Z_int
+                     tmp = DOT_PRODUCT(part_counts, boxsim_kind_mass)
+                     mass(k1:k2) = tmp
+                     mass_beams(ibeam) = tmp
+                     tmp = charge_int* 1.60217662E-19 !e_c
+                     charge_beams(ibeam) = tmp
+                     charge(k1:k2) = tmp
+                     Zatom_beams(ibeam) = Z_int
+                     Zatom(k1:k2) = Z_int
                   END IF
                ELSE
                   mass(k1:k2)         = mass_beams(ibeam)
@@ -264,7 +270,7 @@
       END IF
       IF (lboxsim) THEN 
          CALL MPI_BCAST(is_active,      nparticles, MPI_LOGICAL,   master, MPI_COMM_BEAMS,ierr_mpi)
-         CALL MPI_BCAST(boxsim_species, nparticles, MPI_CHARACTER, master, MPI_COMM_BEAMS,ierr_mpi)
+         CALL MPI_BCAST(boxsim_species, nparticles*LEN(boxsim_species(1)), MPI_CHARACTER, master, MPI_COMM_BEAMS,ierr_mpi)
       END IF
 
 #endif
