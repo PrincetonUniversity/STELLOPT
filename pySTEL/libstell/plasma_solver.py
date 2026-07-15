@@ -158,6 +158,13 @@ class PLASMA_SOLVER:
                 raise ValueError('restart file does not have fast alphas density! Yet you want to solve with alphas...')
             else:
                 self.alphas_fast_density_restart = restart_solver.N['alphas_fast'][-1,:]
+                
+        # Get electric field
+        if(self.add_NEO):
+            if not hasattr(restart_solver,'Er'):
+                raise ValueError('restart file does not have Er! Yet you want to solve with NEO fluxes...')
+            else:
+                self.Er_restart = restart_solver.Er[-1,:]
               
     def set_equilibrium(self,type: str,wout_path=None,aminor=None,Rmajor=None,B=None):
         """
@@ -838,6 +845,12 @@ class PLASMA_SOLVER:
                 
         # set NEO coefficients
         if(self.add_NEO):
+            try:
+                self.Er[0,:] = self.Er_restart
+                print('Reading Er from restart file...')
+            except:
+                self.Er[0,:] = 0.0
+            #
             self.call_NEO(it=0)
         
         # set fluxes at t=0
@@ -1645,7 +1658,7 @@ class PLASMA_SOLVER:
         at_t_zero = np.isclose(t, 0.0, atol=self.dt/2)
         if(at_t_zero):
             look_for_ambipolar = True
-        elif(self.dt_Er_ambipolar is None):
+        elif(self.dt_Er_ambipolar is None or it==0):
             look_for_ambipolar = False
         else:
             nsteps_per_Er = round(self.dt_Er_ambipolar/self.dt)
@@ -2157,14 +2170,16 @@ def merge_output_files(*output_files,concatenated_file=None):
     from copy import deepcopy
     
     ATTR_TIME_DEP = ('N','T','Dn','cn','Dp','cp','Q_NEO','Q_turb','Gamma_NEO','Gamma_turb')
-    
+
+    ARRAY_TIME_DEP = ('Er',)
+
     SOURCE_ATTRS = ('explicit_energy_sources', 'explicit_particle_sources')
 
     GRID_ATTRS = ('rho_grid', 'r_grid', 'dVdr')
 
     SCALAR_ATTRS = ('aminor', 'Rmajor', 'Baxis', 'Bref')
     
-    OPTIONAL_ATTRS = ('iota23')
+    OPTIONAL_ATTRS = ('iota23',)
     
     ########################## AUX FUNCT ##################################
     def check_same(name, ref, val):
@@ -2256,7 +2271,19 @@ def merge_output_files(*output_files,concatenated_file=None):
                         new_attr['alphas_fast'][time_slice, :]],
                         axis=0
                     )
-                    
+
+        # -------------------------------
+        # (3b) Concatenate time-dependent arrays of shape (ntime, nrho)
+        # -------------------------------
+        for attr in ARRAY_TIME_DEP:
+            ref_attr = getattr(concatenated_class, attr)
+            new_attr = getattr(solver, attr)
+
+            setattr(concatenated_class, attr, np.concatenate(
+                [ref_attr, new_attr[time_slice, :]],
+                axis=0
+            ))
+
         # ------------------------------------------------------------
         # (4) Concatenate explicit source terms
         #     Structure: sources[species][key][time, space]
