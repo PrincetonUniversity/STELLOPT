@@ -944,13 +944,11 @@ stellopt_paraexe.o : \
       
 stellopt_prof_refit.o : \
       stellopt_runtime.o \
-      $(LIB_DIR)/$(LOCTYPE)/stellopt_input_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
-      $(LIB_DIR)/$(LOCTYPE)/vmec_input.o \
-      $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o \
-      $(LIB_DIR)/$(LOCTYPE)/diagno_input_mod.o \
-      $(LIB_DIR)/$(LOCTYPE)/diagno_runtime.o \
-      $(LIB_DIR)/$(LOCTYPE)/biotsavart.o
+      equil_utils.o \
+      $(BOOTSJ_DIR)/$(LOCTYPE)/parambs.o \
+      $(LIB_DIR)/$(LOCTYPE)/ezspline.o
       
 
 stellopt_clean_up.o : \
