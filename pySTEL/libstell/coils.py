@@ -112,7 +112,7 @@ class COILSET():
 				self.groups[i].coils[j].z = cz(s_new)
 				self.groups[i].coils[j].npts = npts_new_array[i]
 
-	def plotcoils(self,plot3D=None):
+	def plotcoils(self,plot3D=None,color=None):
 		"""Plots a coilset in 3D using VTK
 
 		This routine plots coils in 3D using VTK
@@ -121,6 +121,8 @@ class COILSET():
 		----------
 		plot3D : plot3D object (optional)
 			Plotting object to render to.
+		color : list (optional)
+			List of colors to plot coils.
 		"""
 		import numpy as np
 		import vtk
@@ -133,7 +135,10 @@ class COILSET():
 			lplotnow = True
 			plt = PLOT3D()
 		# Setup color array
-		color_txt=['red','green','blue','yellow','magenta','cyan','aqua']
+		if color:
+			color_txt=color
+		else:
+			color_txt=['red','green','blue','yellow','magenta','cyan','aqua']
 		# Plot coils
 		for i in range(self.ngroups):
 			for j in range(self.groups[i].ncoils):

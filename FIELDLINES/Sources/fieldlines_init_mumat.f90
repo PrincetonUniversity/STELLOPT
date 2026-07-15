@@ -210,9 +210,9 @@
          CALL mumaterial_getbmag_scalar(x_temp, y_temp, z_temp, bx_temp, by_temp, bz_temp)
          br_temp   = bx_temp*cos(phiaxis(j)) + by_temp*sin(phiaxis(j))
          bphi_temp = by_temp*cos(phiaxis(j)) - bx_temp*sin(phiaxis(j))
-         B_R(i,j,k)   =  br_temp   + B_R(i,j,k) 
-         B_PHI(i,j,k) =  bphi_temp + B_PHI(i,j,k)
-         B_Z(i,j,k)   =  bz_temp   + B_Z(i,j,k) 
+         B_R(i,j,k)   =  br_temp   + B_R(i,j,k) * mumaterial_scale
+         B_PHI(i,j,k) =  bphi_temp + B_PHI(i,j,k) * mumaterial_scale
+         B_Z(i,j,k)   =  bz_temp   + B_Z(i,j,k) * mumaterial_scale 
          IF (lverb .and. (MOD(s,nr) == 0)) THEN
             CALL backspace_out(6,6)
             WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*s)/(myend-mystart+1)),']%'

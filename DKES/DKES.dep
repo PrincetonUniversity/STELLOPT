@@ -31,7 +31,8 @@ dkes2.o : \
 dkes_input.o : \
       ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
-      vimatrix.o 
+      vimatrix.o  \
+      vnamecl2.o 
       
 
 dkes_realspace.o : \
@@ -102,6 +103,15 @@ dkes_input_prepare.o : \
       
 
 dkes_input_prepare_old.o : \
+      ../../LIBSTELL/$(LOCTYPE)/date_and_computer.o \
+      ../../LIBSTELL/$(LOCTYPE)/read_boozer_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/read_wout_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
+      
+
+dkes_input_prepare_memory.o : \
+      dkes_input.o \
       ../../LIBSTELL/$(LOCTYPE)/date_and_computer.o \
       ../../LIBSTELL/$(LOCTYPE)/read_boozer_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/read_wout_mod.o \

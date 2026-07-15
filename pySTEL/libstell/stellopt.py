@@ -31,7 +31,8 @@ class STELLOPT():
 			'COILRECT', 'COILPOLY', 'B_PROBES', 'FLUXLOOPS', 'SEGROG',  \
 			'VESSEL', 'SEPARATRIX', 'LIMITER', 'BALLOON', 'BOOTSTRAP', \
 			'NEO', 'DKES', 'DKES_11', 'DKES_31', 'DKES_33', \
-			'DKES_ERDIFF', 'DKES_ALPHA', 'DKES_BOOT', 'TXPORT',      \
+			'DKES_ERDIFF', 'DKES_ALPHA', 'DKES_BOOT', \
+			'PENTA_ER', 'PENTA_J', 'TXPORT',      \
 			'ORBIT', 'HELICITY', 'HELICITY_FULL', 'JSTAR', 'RESJAC',   \
 			'COIL_BNORM', 'REGCOIL_CHI2_B', 'CURVATURE_P2', 'GAMMA_C', \
 			'KINK', 'QUASIISO', 'B10B11', 'TOTALBOOTSTRAP', \
@@ -451,6 +452,140 @@ class STELLOPT():
 		# Flatten ITER
 		self.ITER = self.ITER.flatten()
 
+	def compute_shape_gradient_boundary(self,vmec_data,derivatives_ind):
+		"""Compute the shape gradient
+
+		The subroutine computes the shape gradient assuming the user has
+		read in the Jacobian and provides a corresponding VMEC object.
+
+		Parameters
+		----------
+		vmec_data : VMEC Class Object
+			A vmec class object as defined in libstell.vmec
+		deriviative_ind : int
+			Index of term in Jacobian
+
+		Returns
+		-------
+		normal_tangential_decomposition : Numpy Array
+			Array of the normal tangential decomposition
+		shape_gradient_coefficients:
+			Numpy array of the shape gradient coefficients
+		"""
+		import numpy as np
+		# Check things
+		if not hasattr(self,'jac2d'):
+			print('ERROR: Must read jacobian file first before calling compute_shape_gradient_boundary.')
+			return None,None
+		if not hasattr(self,'var'):
+			try:
+				self.read_stellopt_varlabels()
+				print('WARNING: Var_lables was not read in first using var_labels in current directory.')
+			except:
+				print('ERROR: Must read var_labels before calling compute_shape_gradient_boundary.')
+				return None, None
+		# Get edge data
+		rmnc = np.zeros((1,vmec_data.mnmax))
+		zmns = np.zeros((1,vmec_data.mnmax))
+		rumns = np.zeros((1,vmec_data.mnmax))
+		zumnc = np.zeros((1,vmec_data.mnmax))
+		rmnc[0,:] = vmec_data.rmnc[-1,:]
+		zmns[0,:] = vmec_data.zmns[-1,:]
+		nfp  = vmec_data.nfp
+		xm   = np.squeeze(vmec_data.xm)
+		xn   = np.squeeze(vmec_data.xn)/nfp
+		mpol = int(max(xm))+1
+		ntor = int(max(abs(xn)))
+		for mn in range(vmec_data.mnmax): 
+			rumns[:,mn] =-rmnc[0,mn]*xm[mn]
+			zumnc[:,mn] = zmns[0,mn]*xm[mn]
+		# Fourier transform
+		N = 256
+		theta   = np.linspace([0],[2.0*np.pi],N,endpoint=False)
+		zeta    = np.linspace([0],[2.0*np.pi],N,endpoint=False)
+		R       = np.squeeze(vmec_data.cfunct(theta,zeta,rmnc,vmec_data.xm,vmec_data.xn)).T
+		R_deriv = np.squeeze(vmec_data.sfunct(theta,zeta,rumns,vmec_data.xm,vmec_data.xn)).T
+		Z_deriv = np.squeeze(vmec_data.cfunct(theta,zeta,zumnc,vmec_data.xm,vmec_data.xn)).T
+		# Comput the matrix
+		Theta, Zeta = np.meshgrid(theta, zeta)
+		shape_matrix = np.zeros(((2 * ntor + 1) * 2 * mpol - 2 * ntor, (2 * ntor + 1) * mpol - ntor))
+		shape_dim = (2 * ntor + 1) * mpol - ntor
+		j = 0
+		for mm in range(mpol):
+			for nn in range(-ntor, ntor + 1):
+				if mm == 0 and nn < 0:
+					continue
+				else:
+					q = 0
+					for m in range(mpol):
+						for n in range(-ntor, ntor + 1):
+							if m == 0 and n < 0:
+								continue
+							else:
+								shape_matrix[j, q] = np.sum(np.cos(mm * Theta - nn * nfp * Zeta) * np.cos(
+									m * Theta - n * nfp * Zeta) * R * Z_deriv) / (N ** 2) * (4 * np.pi * np.pi)
+								shape_matrix[j + shape_dim, q] = (-1) * np.sum(np.sin(mm * Theta - nn * nfp * Zeta) * np.cos(
+									m * Theta - n * nfp * Zeta) * R * R_deriv) / (N ** 2) * (4 * np.pi * np.pi)
+								q += 1
+					j += 1
+		shape_matrix = np.delete(shape_matrix, (shape_dim), axis=0)
+		# Filter the jacobian
+		derivatives = self.jac2d[derivatives_ind,:]
+		# First filter to just RBC/ZBS variables
+		lrbc = np.array(['RBC' in temp for temp in self.var])
+		lzbs = np.array(['ZBS' in temp for temp in self.var])
+		ltotal = np.logical_or(lrbc,lzbs)
+		derivatives = derivatives[ltotal]
+		var = np.array(self.var)
+		var   = var[ltotal]
+		# Now filter to modes of VMEC
+		jac_xn = np.array([int(temp[4:8]) for temp in var])
+		jac_xm = np.array([int(temp[9:13]) for temp in var])
+		lfiltn = np.logical_and(jac_xn>=-ntor,jac_xn<=ntor)
+		lfiltm = np.logical_and(jac_xm>=0,jac_xm<mpol)
+		ltotal = np.logical_and(lfiltm,lfiltn)
+		jac_xn = jac_xn[ltotal]
+		jac_xm = jac_xm[ltotal]
+		derivatives = derivatives[ltotal]
+		var   = var[ltotal]
+		# This last part is a mess but seems to work
+		# Now reorder RBC then ZBS (and match VMEC indexing)
+		lrbc = np.array(['RBC' in temp for temp in var])
+		lzbs = np.array(['ZBS' in temp for temp in var])
+		jac_rbc = derivatives[lrbc]
+		jac_zbs = derivatives[lzbs]
+		jac_xn_rbc = jac_xn[lrbc]
+		jac_xn_zbs = jac_xn[lzbs]
+		jac_xm_rbc = jac_xm[lrbc]
+		jac_xm_zbs = jac_xm[lzbs]
+		jac_mnmax_rbc = len(jac_rbc)
+		jac_mnmax_zbs = len(jac_zbs)
+		new_rbc = np.zeros_like(jac_rbc)
+		new_zbs = np.zeros_like(jac_zbs)
+		kr = 0; kz = 0
+		for mn in range(vmec_data.mnmax):
+			for jmn in range(jac_mnmax_rbc):
+				if jac_xn_rbc[jmn] == -xn[mn] and jac_xm_rbc[jmn] == xm[mn]:
+					new_rbc[kr] = jac_rbc[jmn]
+					kr = kr + 1
+			for jmn in range(jac_mnmax_zbs):
+				if jac_xn_zbs[jmn] == -xn[mn] and jac_xm_zbs[jmn] == xm[mn]:
+					new_zbs[kz] = jac_zbs[jmn]
+					kz = kz + 1
+		derivatives = np.concatenate((new_rbc,new_zbs))
+		#
+		#  We should probably pad array for any missing values
+		#
+		# Compute the gradient
+		pseudo_dim_one = 2 * (mpol * (2 * ntor + 1)) - ntor - ntor - 1
+		pseudo_dim_two = (mpol * (2 * ntor + 1)) - ntor
+		U, singular, V = np.linalg.svd(shape_matrix)
+		normal_tangential_decomposition = np.transpose(U) @ derivatives
+		DDD = np.zeros((pseudo_dim_two, pseudo_dim_one))
+		DDD[:len(singular), :len(singular)] = np.diag(1 / singular)
+		shape_gradient_coefficients = np.transpose(V) @ DDD @ np.transpose(U) @ derivatives
+		return normal_tangential_decomposition, shape_gradient_coefficients
+
 	def plot_stellopt_jacobian(self,target='all',ax=None):
 		"""Plot the Jacobian for a given target
 
@@ -481,12 +616,17 @@ class STELLOPT():
 		x_var = np.arange(len(self.var))
 		y_target = np.arange(len(self.targetnames))
 		if target == 'all':
-			hmesh=ax.pcolormesh(x_var,y_target,np.squeeze(self.jac2d),cmap='jet')
+			jac2d = np.log10(abs(self.jac2d))
+			#hmesh=ax.pcolormesh(x_var,y_target,np.squeeze(self.jac2d),cmap='jet')
+			hmesh=ax.pcolormesh(x_var,y_target,np.squeeze(jac2d),cmap='jet')
 			ax.set_xticks(x_var, labels=self.var, fontsize=9)
+			ax.set_yticks(y_target, labels=self.targetnames, fontsize=9)
 			plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+			#plt.setp(ax.get_yticklabels(), rotation=0, ha="right", rotation_mode="anchor")
 			ax.set_xlabel('Targets (F)')
 			ax.set_ylabel('Variables (X)')
-			plt.colorbar(hmesh,label='DF/DX',ax=ax)
+			#plt.colorbar(hmesh,label='DF/DX',ax=ax)
+			plt.colorbar(hmesh,label='log10(DF/DX)',ax=ax)
 		else:
 			# Find indices of target names
 			dex = [n for n,s in enumerate(self.targetnames) if target.upper() in s.upper()]

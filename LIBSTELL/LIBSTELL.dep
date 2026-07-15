@@ -690,6 +690,13 @@ GENERIC_Evolve.o : \
       stel_kinds.o 
       
 
+SA_Evolve.o : \
+      mpi_inc.o \
+      mpi_params.o \
+      safe_open_mod.o \
+      gade_mod.o
+      
+
 MAP_PLANE.o : \
       mpi_inc.o \
       mpi_params.o \
@@ -1233,8 +1240,9 @@ sxrc_T.o : \
 tf_coils.o : \
       stel_constants.o \
       vcoilpts.o 
-      
 
+transport_mod.o : \
+      
 v3_utilities.o : \
       mpi_inc.o \
       stel_kinds.o 

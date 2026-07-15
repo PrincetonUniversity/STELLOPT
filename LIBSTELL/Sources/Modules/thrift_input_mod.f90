@@ -27,14 +27,14 @@
       NAMELIST /thrift_input/ nparallel_runs,bootstrap_type,mboz,nboz, &
                               nrho, tstart, tend, ntimesteps, n_eq, jtol, &
                               picard_factor, npicard, lverbj, boot_factor, &
-                              eccd_type, &
+                              eccd_type, power_type, &
                               vessel_ecrh, mirror_ecrh, wmode_ecrh, &
                               targettype_ecrh, antennatype_ecrh, &
                               antennaposition_ecrh, &
                               targetposition_ecrh, rbeam_ecrh, &
                               rfocus_ecrh, nra_ecrh, nphi_ecrh, &
                               freq_ecrh, power_ecrh, &
-                              pecrh_aux_t, pecrh_aux_f, ecrh_rc, ecrh_w, &
+                              ecrh_rc, ecrh_w, &
                               dkes_k, dkes_Erstar, dkes_Nustar, &
                               etapar_type, save_DKES_coeffs, &
                               solve_plasma_equations, &
@@ -45,7 +45,8 @@
                               Dn_ions, chi_all, N0_init_ions, T0_init_all, &
                               stiffness_beurskens, aLT_critical_beurskens, &
                               alpha_beurskens, frac_alpha_heating, alpha_chi_external, &
-                              tau_fast_alphas, mass_ref_species
+                              tau_fast_alphas, mass_ref_species, dt_Er_ambipolar, &
+                              dt_plasma_write, save_subiterations, init_profiles_type
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -59,6 +60,7 @@
       bootstrap_type     = 'bootsj'
       etapar_type        = 'sauter'
       eccd_type          = ''
+      power_type         = ''
       nparallel_runs     = 1
       mboz               = 32
       nboz               = 16
@@ -75,11 +77,10 @@
       lnbcd              = .FALSE.
       lohmic             = .FALSE.
       lverbj             = .FALSE.
+      save_subiterations = .FALSE.
       ! For BOOTSJ
       boot_factor        = 1
       ! For ecrh simple model
-      pecrh_aux_t     = 1E6
-      pecrh_aux_f     = 0
       ecrh_rc         = 0.3
       ecrh_w          = 0.175
       ! TRAVIS vars
@@ -95,6 +96,7 @@
       rfocus_ecrh = 0
       nra_ecrh = 0
       nphi_ecrh = 8
+      power_ecrh = 1.0
       ! DKES Vars
       dkes_k = -1
       dkes_Erstar = 1E10
@@ -123,6 +125,9 @@
       frac_alpha_heating(3) = 0.1
       tau_fast_alphas = 0.5
       mass_ref_species = 1.6726219E-27
+      dt_Er_ambipolar = 1000D0
+      dt_plasma_write = 1E-1
+      init_profiles_type = 'default'
       RETURN
       END SUBROUTINE init_thrift_input
       
@@ -161,6 +166,7 @@
       CALL tolower(bootstrap_type)
       CALL tolower(etapar_type)
       CALL tolower(eccd_type)
+      CALL tolower(power_type)
       leccd = eccd_type .ne. ''
       nsj = nrho
       nruns_dkes = COUNT(dkes_k>0)*COUNT(dkes_Erstar<1E10)*COUNT(dkes_Nustar<1E10)

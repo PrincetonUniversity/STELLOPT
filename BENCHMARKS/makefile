@@ -95,6 +95,7 @@ test_stellopt:
 	@echo "Beginning testing of STELLOPT"
 	$(MAKE) test_stellopt_lmdif
 	$(MAKE) test_stellopt_gade
+	$(MAKE) test_stellopt_sa
 	$(MAKE) test_stellopt_basic
 	$(MAKE) test_stellopt_iota_lmdif
 	$(MAKE) test_stellopt_tok_r0_delta
@@ -313,6 +314,12 @@ test_stellopt_gade:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.GADE_TEST
 	@cd $(STELLOPT_TEST_DIR)/GADE_TEST; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.GADE_TEST; rm -f *_opt*
 	@cd $(STELLOPT_TEST_DIR) && ./compare.py --file GADE_TEST
+	@echo ""
+
+test_stellopt_sa:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.SA_TEST
+	@cd $(STELLOPT_TEST_DIR)/SA_TEST; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.SA_TEST; rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR) && ./compare.py --file SA_TEST
 	@echo ""
 
 test_stellopt_pso:

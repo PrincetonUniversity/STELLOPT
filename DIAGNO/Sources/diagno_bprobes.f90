@@ -45,8 +45,8 @@
       mylocalmaster = master
       MPI_COMM_LOCAL = MPI_COMM_DIAGNO
       numprocs_local = nprocs_diagno
-      ncg = SIZE(coil_group)
-      IF (ncg == 0) ncg = 1 ! Just so we don't allocate a zero size array
+      ncg = 1 ! Just so we don't allocate a zero size array
+      IF (lcoil) ncg = SIZE(coil_group)
       
       ! Read in diagnostic file
       if(lverb) write(6,*)' --Calculating Magnetic Probe Values'

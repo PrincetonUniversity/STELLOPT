@@ -16,9 +16,9 @@ c................................................................
       USE Vprecal1
       USE Vprecal5
       USE Vprecal6
-      USE Vprecal7, ONLY: conv, sinv, nd
+      USE Vprecal7, ONLY: conv, sinv
       USE Vvacuum1, ONLY: cr, cz, ms, ns
-      USE Vsurface1, ONLY: x, y, z, r, nuv
+      USE Vsurface1, ONLY: x, y, z, r
       USE Vsurface2, ONLY: xu, yu, xv, ru, rv
       USE Vsurface3, ONLY: yv, zu, zv
       USE Vsurface4, ONLY: xuu, yuu, zuu, ruu

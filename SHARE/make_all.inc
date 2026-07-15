@@ -13,7 +13,7 @@ HOME_BIN = ../../
 MOD1_PATH = -I$(MYHOME)/libstell_dir
 MOD_PATH = 
 CLEAN_ARCH = 
-LIB_DIR = ../../LIBSTELL
+LIB_DIR = $(STELLOPT_PATH)/LIBSTELL
 LIB = libstell$(STATIC_EXT)
 
 # Handle third party code dependencies
@@ -66,6 +66,9 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
   NESCOIL_DIR= ../../NESCOIL
   LIB_NESCOIL= libnescoil$(STATIC_EXT)
   MOD_PATH+= -I$(NESCOIL_DIR)/$(LOCTYPE)
+  PENTA_DIR= ../../PENTA
+  LIB_PENTA= libpenta$(STATIC_EXT)
+  MOD_PATH+= -I$(PENTA_DIR)/$(LOCTYPE)
   LIB_LINK=  $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC)  \
 	$(BEAMS3D_DIR)/$(LOCTYPE)/$(LIB_BEAMS3D) \
 	$(BOOTSJ_DIR)/$(LOCTYPE)/$(LIB_BOOTSJ) \
@@ -76,7 +79,8 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
 	$(FIELDLINES_DIR)/$(LOCTYPE)/$(LIB_FIELDLINES) \
 	$(JINV_DIR)/$(LOCTYPE)/$(LIB_JINV) \
   $(MGRID_DIR)/$(LOCTYPE)/$(LIB_MGRID) \
-  $(NESCOIL_DIR)/$(LOCTYPE)/$(LIB_NESCOIL)
+  $(NESCOIL_DIR)/$(LOCTYPE)/$(LIB_NESCOIL) \
+  $(PENTA_DIR)/$(LOCTYPE)/$(LIB_PENTA) 
   ifeq ($(LDKES),T)
     DKES_DIR = ../../DKES
     LIB_DKES = libdkes$(STATIC_EXT)

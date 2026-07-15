@@ -2,8 +2,9 @@
 penta_main.o : \
       penta_modules.o
 
-
 bspline.o :
+
+bspline_new.o :
 
 coeff_var_pass.o : \
       penta_kind_mod.o
@@ -37,6 +38,7 @@ penta_functions_mod.o : \
       phys_const.o \
       penta_math_routines_mod.o \
       bspline.o \
+      bspline_new.o
 
 penta_kind_mod.o : 
 
@@ -49,7 +51,8 @@ penta_subroutines.o : \
       penta_functions_mod.o \
       pprof_pass.o \
       vmec_var_pass.o \
-      bspline.o 
+      bspline.o \
+      bspline_new.o
 
 phys_const.o : \
       penta_kind_mod.o

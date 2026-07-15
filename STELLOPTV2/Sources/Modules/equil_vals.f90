@@ -36,10 +36,11 @@
       REAL(rprec),ALLOCATABLE :: txport_q(:,:,:), txport_q_all(:,:,:,:)
       TYPE(EZspline1_r8) :: pres_spl, iota_spl, phi_spl, ip_spl, V_spl, &
                             te_spl, ne_spl, ti_spl, th_spl, ah_spl, &
-                            jdotb_spl, zeff_spl, jcurv_spl, omega_spl,&
-                            nustar_spl, emis_xics_spl
+                            jdotb_spl, bdotb_spl, zeff_spl, jcurv_spl, &
+                            omega_spl, nustar_spl, emis_xics_spl
       REAL(rprec), ALLOCATABLE :: wp_kink(:), wk_kink(:), omega_kink(:),&
                      growth_kink(:), bnormal_total(:), baxis_total(:), &
-                     bmnc_normal_total(:), bmns_normal_total(:)
+                     bmnc_normal_total(:), bmns_normal_total(:), &
+                     jbs_penta(:), er_penta(:)
 
       END MODULE equil_vals

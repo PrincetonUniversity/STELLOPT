@@ -38,13 +38,13 @@
       INTEGER :: mf=10, nf=10, md=20, nd=20
       INTEGER :: m, n, mn, u, v, uv, nuv, iunit, ncoilgroups, nu, nv
       REAL(rprec) :: theta, phi, arg, cop, sip, RU, RV, ZU, ZV, &
-            Ax, Ay, Az, Bx, By, Bz, Norm, factor
+            Ax, Ay, Az, Bx, By, Bz, Norm
       REAL(rprec), DIMENSION(3) :: xvec, bvec
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: bnfou, bnfou_c
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: rreal, zreal, zeta
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: NX, NY, NZ
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: BXa, BYa, BZa
-      REAL(rprec), DIMENSION(:), ALLOCATABLE :: bnreal, bcreal
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: bnreal, bcreal,factor
 
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: carg, sarg
 
@@ -134,11 +134,7 @@
       ALLOCATE(bcreal(nuv))
       ALLOCATE(carg(nuv,mnmax), sarg(nuv,mnmax))
       ALLOCATE(zeta(nv))
-      IF (lasym) THEN
-         FORALL(v=1:nv) zeta(v) = pi2*DBLE(v-1)/DBLE(nv)
-      ELSE
-         FORALL(v=1:nv) zeta(v) = pi*DBLE(v-1)/DBLE(nv-1)
-      END IF
+      FORALL(v=1:nv) zeta(v) = pi2*DBLE(v-1)/DBLE(nv)
       rreal = 0.0; zreal = 0.0; bnreal = 0.0
       nx = 0.0; ny = 0.0; nz = 0.0
       bcreal = 0.0
@@ -306,22 +302,25 @@
          IF (ALLOCATED(bmns_normal_total)) DEALLOCATE(bmns_normal_total)
          IF (ALLOCATED(im_normal_total)) DEALLOCATE(im_normal_total)
          IF (ALLOCATED(in_normal_total)) DEALLOCATE(in_normal_total)
-         ALLOCATE(bmnc_normal_total(mnmax), bmns_normal_total(mnmax))
+         ALLOCATE(bmnc_normal_total(mnmax), bmns_normal_total(mnmax), &
+            factor(mnmax))
          ALLOCATE(in_normal_total(mnmax),im_normal_total(mnmax))
          bmnc_normal_total = 0.0; bmns_normal_total = 0.0
          WRITE(iunit,'(I8)') mnmax
          factor = 2.0 / DBLE(nuv)
+         WHERE ((xm == 0) .AND. (xn == 0)) factor = 1.0 / DBLE(nuv)
          DO mn = 1, mnmax
             m = xm(mn)
             n = xn(mn)/nfp
-            bmnc_normal_total(mn) = SUM(bnormal_total*carg(:,mn)) * factor
-            bmns_normal_total(mn) = SUM(bnormal_total*sarg(:,mn)) * factor
+            bmnc_normal_total(mn) = SUM(bnormal_total*carg(:,mn),DIM=1) * factor(mn)
+            bmns_normal_total(mn) = SUM(bnormal_total*sarg(:,mn),DIM=1) * factor(mn)
             im_normal_total(mn) = m
             in_normal_total(mn) = n
             WRITE(iunit, '(3(1X,I6),2(1pe24.16))') &
                mn,m,n,bmnc_normal_total(mn),bmns_normal_total(mn)
          END DO
          CLOSE(iunit)
+         DEALLOCATE(factor)
       END IF
 
       !-----------------------------------------------------------------

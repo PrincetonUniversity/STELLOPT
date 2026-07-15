@@ -619,10 +619,9 @@
       ELSE !This is the initialization loop that just counts targets
         DO ik = 1, nsd
           IF (sigma(ik) < bigno) THEN
+            lload_equil = .TRUE.
             mtargets = mtargets + 1
-            IF (niter == -2) THEN
-              target_dex(mtargets)=jtarget_gamma_c
-            END IF
+            IF (niter == -2) target_dex(mtargets)=jtarget_gamma_c
           END IF
         END DO
       END IF

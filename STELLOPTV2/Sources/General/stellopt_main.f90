@@ -62,7 +62,6 @@
       pi = 4.0 * ATAN(1.0)
       pi2 = 8.0 * ATAN(1.0)
       mu0 = 16.0E-7 * ATAN(1.0)
-      lneed_output = .false.
       lrestart = .false.
       ltriangulate = .false.
       lno_restart = .false.
@@ -72,6 +71,7 @@
       lneed_bnormal = .false.
       lneed_dkes    = .false.
       lbooz         = .false.
+      lneed_penta   = .false.
       pct_domain = 0.05
       xvec_file = 'xvec.dat'
       INQUIRE(UNIT=6,NAME=screen_str) ! Store STDOUT

@@ -23,8 +23,6 @@
       USE mpi_params
       USE mpi_inc
       USE mpi_sharmem
-      USE EZspline
-      USE EZspline_obj
 #if defined(LHDF5)
       USE ez_hdf5
 #endif
@@ -36,12 +34,9 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       LOGICAL        :: ltst
-      INTEGER        :: ier, i, iunit, ntimesteps_restart, ns_restart, k
+      INTEGER        :: ier, i, iunit, ntimesteps_ecrh, nbeams
       CHARACTER(256) :: tstr1,tstr2
       REAL(rprec)    :: dt, tend_restart
-      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: temp2d
-      REAL(rprec), DIMENSION(:), ALLOCATABLE :: temp1d
-      REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: temp3d
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -148,6 +143,10 @@
       CALL mpialloc(UGRID_RESTART,   nsj, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_ugrid_restart)
       CALL mpialloc(J_RESTART,       nsj, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_j_restart)
 
+      ! ECCD power (saved when using TRAVIS)
+      CALL mpialloc(THRIFT_DPECRHDV,  nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_dpecrhdv)
+      CALL mpialloc(THRIFT_PECRH,  nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_pecrh)
+      
       ! Read the Bootstrap input
       CALL tolower(bootstrap_type)
       SELECT CASE (TRIM(bootstrap_type))
@@ -198,101 +197,12 @@
       END IF
 
       ! Read restart file
-      IF (lrestart_from_file) THEN
-         UGRID_RESTART = 0.0
-         IF (lverb) THEN 
-            WRITE(6,'(A)') '----- Reading Restart File -----'
-            WRITE(6,'(A)')  '   FILE: '//TRIM(restart_filename)
-         END IF
-         ! Read file 
-         IF (myid_sharmem == master) THEN
-            CALL open_hdf5(TRIM(restart_filename),fid,ier,LCREATE=.false.)
-            IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,TRIM(restart_filename),ier)
-
-            CALL read_scalar_hdf5(fid,'ntimesteps',ier,INTVAR=ntimesteps_restart)
-            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ntimesteps',ier)
-
-            CALL read_scalar_hdf5(fid,'nssize',ier,INTVAR=ns_restart)
-            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nssize',ier)
-
-            !Check that ns_restart is equal to current ns
-            IF(ns_restart /= nsj) THEN
-               WRITE(6,*) '!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
-               WRITE(6,*) '  ns_restart different from nsj '
-               WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-               STOP
-            ENDIF
-
-            ALLOCATE(temp2d(ns_restart,ntimesteps_restart),temp1d(ntimesteps_restart))
-
-            CALL read_var_hdf5(fid,'THRIFT_T',ntimesteps_restart,ier,DBLVAR=temp1d)
-            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_T',ier)
-            tend_restart = temp1d(ntimesteps_restart)
-
-            IF(lverb) WRITE(6,'(A17,F8.4)') '   TEND_RESTART: ', tend_restart
-
-            ! Check tstart > tend_restart
-            IF(tstart < tend_restart) THEN 
-               WRITE(6,*) '!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
-               WRITE(6,*) '          tstart < tend_resart  '
-               WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-               STOP
-            ENDIF
-
-            dt_first_iter = tstart - tend_restart
-            IF(ntimesteps == 1) dt = dt_first_iter
-
-            CALL read_var_hdf5(fid,'THRIFT_UGRID',ns_restart,ntimesteps_restart,ier,DBLVAR=temp2d)
-            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_UGRID',ier)
-            UGRID_RESTART = temp2d(:,ntimesteps_restart)
-
-            CALL read_var_hdf5(fid,'THRIFT_J',ns_restart,ntimesteps_restart,ier,DBLVAR=temp2d)
-            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_J',ier)
-            J_RESTART = temp2d(:,ntimesteps_restart)
-
-            CALL read_var_hdf5(fid,'eq_Aminor',ier,DBLVAR=eq_Aminor)
-            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'eq_Aminor',ier)
-
-            CALL read_var_hdf5(fid,'THRIFT_PHIEDGE',ntimesteps_restart,ier,DBLVAR=temp1d)
-            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_PHIEDGE',ier)
-            eq_phiedge = temp1d(ntimesteps_restart)
-
-            CALL read_var_hdf5(fid,'THRIFT_VP',ns_restart,ntimesteps_restart,ier,DBLVAR=temp2d)
-            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_VP',ier)
-
-            ! dV/dPhi Spline (Volume derivative)
-            bcs1=(/ 0, 0/)
-            IF (EZspline_allocated(vp_spl)) CALL EZspline_free(vp_spl,ier)
-            CALL EZspline_init(vp_spl,ns_restart,bcs1,ier)
-            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'thrift_init: vp_spl',ier)
-            vp_spl%isHermite = 0
-            FORALL (k=1:ns_restart) vp_spl%x1(k) = sqrt(DBLE(k-1)/DBLE(ns_restart-1))
-            CALL EZspline_setup(vp_spl,temp2d(:,ntimesteps_restart)/eq_phiedge,ier,EXACT_DIM=.true.)
-            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'thrift_init: vp_spl',ier)
-
-            CALL read_var_hdf5(fid,'THRIFT_BSQAV',ns_restart,ntimesteps_restart,ier,DBLVAR=temp2d)
-            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_BSQAV',ier)
-
-            ! Bsq Spline
-            bcs1=(/ 0, 0/)
-            IF (EZspline_allocated(bsq_spl)) CALL EZspline_free(bsq_spl,ier)
-            CALL EZspline_init(bsq_spl,ns_restart,bcs1,ier)
-            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'thrift_init: bsq_spl',ier)
-            bsq_spl%isHermite = 0
-            FORALL (k=1:ns_restart) bsq_spl%x1(k) = sqrt(DBLE(k-1)/DBLE(ns_restart-1))
-            CALL EZspline_setup(bsq_spl,temp2d(:,ntimesteps_restart),ier,EXACT_DIM=.true.)
-            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'thrift_init: bsq_spl',ier)
-
-            DEALLOCATE(temp2d,temp1d)
-            
-            !Close the HDF5 file
-            CALL close_hdf5(fid,ier)
-            IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,TRIM(restart_filename),ier)
-         END IF
-      END IF
+      IF (lrestart_from_file) CALL thrift_restart
 
       CALL MPI_BCAST(dt,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
       CALL MPI_BCAST(dt_first_iter,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+      IF (lrestart_from_file .AND. ntimesteps == 1) dt = dt_first_iter
+      IF (lrestart_from_file) tend_restart = tstart - dt_first_iter
 
       IF(solve_plasma_equations) THEN
          ! Check dt_plasma_solver and ajust it
@@ -331,10 +241,19 @@
 
       ! Now setup the profiles (plasma profiles if not solving plasma eqs; external source profiles if solving plasma eqs.)
       IF(solve_plasma_equations) THEN
-         CALL initialize_plasma_solver((TRIM(prof_string))) 
+         CALL initialize_plasma_solver((TRIM(prof_string)))
       ELSE
          CALL read_thrift_profh5(TRIM(prof_string))
       ENDIF
+
+      ! Check that the number of ion species in the restart file matches the profiles file
+      IF (lrestart_from_file .AND. nion_prof_restart /= nion_prof) THEN
+         WRITE(6,*) '!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
+         WRITE(6,*) '  nion_prof mismatch: restart file has ', nion_prof_restart, &
+                    ' ion species but profiles file has ', nion_prof
+         WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         STOP
+      END IF
 
       ! Allocate particle and heat fluxes (do it here because nion_prof only now available)
       CALL mpialloc(THRIFT_GNEO,   nion_prof+1, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_gneo) 
@@ -343,43 +262,70 @@
       CALL mpialloc(THRIFT_DENS,   nion_prof+1, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_dens)
       CALL mpialloc(THRIFT_TEMP,   nion_prof+1, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_temp)
       CALL mpialloc(THRIFT_PRESS,  nion_prof+1, nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_press)    
-      CALL mpialloc(THRIFT_FAST_ALPHAS_DENS,    nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_fast_alphas_dens)    
-      ! Restart vars
-      IF(lrestart_from_file) THEN
-         CALL mpialloc(DENS_RESTART,   nion_prof+1, ns_restart, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_dens_restart)
-         CALL mpialloc(TEMP_RESTART,   nion_prof+1, ns_restart, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_temp_restart)
-         CALL mpialloc(DENS_FAST_ALPHAS_RESTART,    ns_restart, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_dens_fast_alphas_restart)
-      END IF
-
-      IF(lrestart_from_file .AND. solve_plasma_equations .AND. myid_sharmem == master) THEN
-         CALL open_hdf5(TRIM(restart_filename),fid,ier,LCREATE=.false.)
-         IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,TRIM(restart_filename),ier)
-
-         ALLOCATE(temp3d(nion_prof+1,ns_restart,ntimesteps_restart),temp2d(ns_restart,ntimesteps_restart))
-         ! Read density of all species at last time step
-         CALL read_var_hdf5(fid,'THRIFT_DENS',nion_prof+1,ns_restart,ntimesteps_restart,ier,DBLVAR=temp3d)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_DENS',ier)
-         DENS_RESTART = temp3d(:,:,ntimesteps_restart)
-         ! Read fast alphas density at last time step
-         CALL read_var_hdf5(fid,'THRIFT_FAST_ALPHAS_DENS',ns_restart,ntimesteps_restart,ier,DBLVAR=temp2d)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_FAST_ALPHAS_DENS',ier)
-         DENS_FAST_ALPHAS_RESTART = temp2d(:,ntimesteps_restart)
-         ! Read temperature of all species at last time step
-         CALL read_var_hdf5(fid,'THRIFT_TEMP',nion_prof+1,ns_restart,ntimesteps_restart,ier,DBLVAR=temp3d)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'THRIFT_TEMP',ier)
-         TEMP_RESTART = temp3d(:,:,ntimesteps_restart)
-         !
-         DEALLOCATE(temp3d,temp2d)
-
-         !Close the HDF5 file
-         CALL close_hdf5(fid,ier)
-         IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,TRIM(restart_filename),ier)
-      END IF
+      CALL mpialloc(THRIFT_FAST_ALPHAS_DENS,    nsj, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_fast_alphas_dens)
 
       IF (myid_sharmem == master) THEN
         FORALL(i = 1:nrho) THRIFT_RHO(i) = DBLE(i-0.5)/DBLE(nrho) ! (half) rho grid
         FORALL(i = 1:nsj)  THRIFT_S(i)   = DBLE(i-1)/DBLE(nsj-1)  ! (full)  s  grid
         FORALL(i = 1:ntimesteps) THRIFT_T(i) = tstart + (i-1)*dt  !       time grid
+      END IF
+
+      ! Read PECRH_AUX_T and PECRH_AUX_F in case they exist in profiles file
+      IF(leccd) THEN
+         IF (myid_sharmem == master) THEN
+            !
+            nbeams = 0
+            DO i = 1,nsys
+               IF (ANY(antennaposition_ecrh(i,:) .ne. 0)) nbeams = nbeams + 1
+            END DO
+            !
+            CALL open_hdf5(TRIM(prof_string),fid,ier,LCREATE=.false.)
+            IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,TRIM(prof_string),ier)
+            !
+            IF( TRIM(power_type) .EQ. 'read_from_file' ) THEN
+               CALL read_scalar_hdf5(fid,'ecrh_ntimesteps',ier,INTVAR=ntimesteps_ecrh)
+               IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ecrh_ntimesteps',ier)
+               CALL read_scalar_hdf5(fid,'ecrh_ngyrotrons',ier,INTVAR=ngyrotrons)
+               IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ecrh_ngyrotrons',ier)
+               !
+               ! Let's check that nygrotrons is the same as number of antennas in input file
+               IF(nbeams .ne. ngyrotrons) THEN
+                  WRITE(6,*) '!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
+                  WRITE(6,*) '  Number of gyrotrons in profiles file different from number of beams in input file '
+                  WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+                  STOP
+               END IF
+               !
+               ALLOCATE(PECRH_AUX_T(ngyrotrons,ntimesteps_ecrh),PECRH_AUX_F(ngyrotrons,ntimesteps_ecrh))
+               !
+               CALL read_var_hdf5(fid,'PECRH_AUX_T',ngyrotrons,ntimesteps_ecrh,ier,DBLVAR=PECRH_AUX_T)
+               IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'PECRH_AUX_T',ier)
+               CALL read_var_hdf5(fid,'PECRH_AUX_F',ngyrotrons,ntimesteps_ecrh,ier,DBLVAR=PECRH_AUX_F)
+               IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'PECRH_AUX_F',ier)
+               !
+               CALL close_hdf5(fid,ier)   
+            ELSE IF( TRIM(power_type) .EQ. 'read_from_namelist') THEN
+               ! When power read from namelist, assumes the same power at all times
+               ntimesteps_ecrh = ntimesteps
+               ngyrotrons = nbeams
+               ALLOCATE(PECRH_AUX_T(ngyrotrons,ntimesteps_ecrh),PECRH_AUX_F(ngyrotrons,ntimesteps_ecrh))
+               DO i=1,ngyrotrons
+                  PECRH_AUX_T(i,:) = THRIFT_T
+                  PECRH_AUX_F(i,:) = power_ecrh(i)
+               END DO
+            ELSE
+               WRITE(6,*) '  power_type MUST BE read_from_file OR read_from_namelist '
+               FLUSH(6)
+               STOP
+            END IF
+         END IF
+         ! CALL barrier??
+         CALL MPI_BCAST(ntimesteps_ecrh,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+         CALL MPI_BCAST(ngyrotrons,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+         IF( .NOT. ALLOCATED(PECRH_AUX_T)) ALLOCATE(PECRH_AUX_T(ngyrotrons,ntimesteps_ecrh))
+         IF( .NOT. ALLOCATED(PECRH_AUX_F)) ALLOCATE(PECRH_AUX_F(ngyrotrons,ntimesteps_ecrh))
+         CALL MPI_BCAST(PECRH_AUX_T,ngyrotrons*ntimesteps_ecrh,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+         CALL MPI_BCAST(PECRH_AUX_F,ngyrotrons*ntimesteps_ecrh,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
       END IF
 
       ! Extra variables (used in debugging process)
@@ -407,6 +353,10 @@
          tstr2 = id_string
          CALL thrift_paraexe(tstr1,tstr2,ltst)
       END IF
+
+      ! Run VMEC+booz_xform+dkes using restart profiles so DKES_D** are
+      ! available at the first thrift_penta call when add_NEO=.true.
+      IF (lrestart_from_file .AND. solve_plasma_equations) CALL thrift_restart_equil
 
       RETURN
 !----------------------------------------------------------------------
