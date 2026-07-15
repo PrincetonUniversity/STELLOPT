@@ -158,7 +158,7 @@ if __name__=="__main__":
 			ax12.set_ylabel(r'$\tau_E/\tau_{\mathrm{ISS04}}$')
 			plt.tight_layout()
 			plt.show()
-			if (args.lsave): fig.savefig(f'overview_{args.output_ext}.png', dpi=fig.dpi)
+			if (args.lsave): fig.savefig(f'overview_{args.output_files[0]}.png', dpi=fig.dpi)
 		if args.lplot_popcon:
 			te_min = 2.0E3; te_max = 30.0E3
 			ne_min = 1.0E19; ne_max = 3.0E20
@@ -282,7 +282,7 @@ if __name__=="__main__":
 			ax[3,1].yaxis.tick_right()
 			ax[0,0].set_title(f'Profiles at t={solver.time[tdex]}s')
 			plt.show()
-			if (args.lsave): fig.savefig(f'profs_{args.output_ext}_t{np.round(args.tslice_profs*1000)}ms.png', dpi=fig.dpi)
+			if (args.lsave): fig.savefig(f'profs_{args.output_files[0]}_t{np.round(args.tslice_profs*1000)}ms.png', dpi=fig.dpi)
 
 
 	sys.exit(0)

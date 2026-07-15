@@ -17,7 +17,7 @@ MODULE thrift_vars
         antennaposition_ecrh, targetposition_ecrh, rbeam_ecrh, &
         rfocus_ecrh, DKES_NS_MAX, DKES_NSTAR_MAX, nruns_dkes, &
         DKES_rundex, DKES_K, dkes_Erstar, dkes_Nustar, nsj, leccd, &
-        lnbcd, lohmic
+        lnbcd, lohmic, save_subiterations
     !-------------------------------------------------------------------
     !     Module Variables
     !          leccd            Calc Elec. Cyclo. Current Drive
@@ -95,12 +95,15 @@ MODULE thrift_vars
              win_thrift_betatot,  &
              win_thrift_gneo,    win_thrift_qneo,                                               &
              win_thrift_dens, win_thrift_temp, win_thrift_press, win_thrift_fast_alphas_dens,   &
-             win_thrift_dens_restart,win_thrift_temp_restart,win_thrift_dens_fast_alphas_restart            
+             win_thrift_dens_restart,win_thrift_temp_restart,win_thrift_dens_fast_alphas_restart, &
+             win_thrift_er_restart, &
+             win_thrift_dpecrhdv, win_thrift_pecrh
     REAL(rprec) :: dt_first_iter
+    INTEGER :: nion_prof_restart
     REAL(rprec), DIMENSION(:), POINTER :: THRIFT_RHO(:), THRIFT_RHOFULL(:), THRIFT_PHIEDGE(:), &
                                           THRIFT_S(:),   THRIFT_SNOB(:),  THRIFT_T(:),         &
                                           UGRID_RESTART(:), J_RESTART(:), THRIFT_BETATOT(:), &
-                                          DENS_FAST_ALPHAS_RESTART(:)
+                                          DENS_FAST_ALPHAS_RESTART(:), ER_RESTART(:)
     REAL(rprec), DIMENSION(:,:), POINTER :: &
                  THRIFT_J,THRIFT_I,THRIFT_UGRID, &
                  THRIFT_JPLASMA, THRIFT_IPLASMA, &
@@ -117,7 +120,8 @@ MODULE thrift_vars
                                  THRIFT_COEFF_BP,THRIFT_COEFF_CP,THRIFT_COEFF_DP,&
                  THRIFT_ALPHA1,  THRIFT_ALPHA2,  THRIFT_ALPHA3,  THRIFT_ALPHA4,  &
                  THRIFT_MATLD,   THRIFT_MATMD,   THRIFT_MATUD,   THRIFT_MATRHS,  &
-                 THRIFT_BVAV, DENS_RESTART, TEMP_RESTART, THRIFT_FAST_ALPHAS_DENS
+                 THRIFT_BVAV, DENS_RESTART, TEMP_RESTART, THRIFT_FAST_ALPHAS_DENS, &
+                 THRIFT_DPECRHDV, THRIFT_PECRH
     REAL(rprec), DIMENSION(:,:,:), POINTER :: THRIFT_GNEO, THRIFT_QNEO, THRIFT_DENS, THRIFT_TEMP, THRIFT_PRESS                                               
                  
 

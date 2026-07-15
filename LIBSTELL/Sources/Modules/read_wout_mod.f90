@@ -219,10 +219,10 @@
         ln_bsubvmns = 'sinmn covariant v-component of B, half mesh',    &
         ln_bsubsmnc = 'cosmn covariant s-component of B, half mesh',    &
 
-        ln_currumnc = 'cosmn covariant u-component of J, full mesh',    &
-        ln_currumns = 'sinmn covariant u-component of J, full mesh',    &
-        ln_currvmnc = 'cosmn covariant v-component of J, full mesh',    &
-        ln_currvmns = 'sinmn covariant v-component of J, full mesh',    &
+        ln_currumnc = 'cosmn contravariant u-component of J, full mesh', &
+        ln_currumns = 'sinmn contravariant u-component of J, full mesh', &
+        ln_currvmnc = 'cosmn contravariant v-component of J, full mesh', &
+        ln_currvmns = 'sinmn contravariant v-component of J, full mesh', &
 
         ln_bsubumns_sur = 'sinmn covaiant u-component of B, surface',   &
         ln_bsubvmns_sur = 'sinmn covaiant v-component of B, surface',   &
@@ -3161,4 +3161,3 @@
       END SUBROUTINE LoadRZL
 
       END MODULE read_wout_mod
-

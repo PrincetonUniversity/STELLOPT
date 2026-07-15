@@ -86,6 +86,8 @@
          CALL MPI_BCAST(ne_prof,nprof_travis,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
          CALL MPI_BCAST(te_prof,nprof_travis,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
          CALL MPI_BCAST(z_prof,nprof_travis,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+         ! Broadcast power_beam (computed by master in thrift_run_eccd)
+         CALL MPI_BCAST(power_beam,ngyrotrons,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
 #endif            
          ! Setup Beams
          antennaCoordType     = antennatype_ecrh(1:4)
@@ -204,7 +206,7 @@
                !CALL Disable_Output_f77
 
                ! Run BEAM
-               CALL run_ECRH_Beam_f77m(i,freq_ecrh(i)*1E-9,wmode_ecrh(i),power_ecrh(i)*1E-6)
+               CALL run_ECRH_Beam_f77m(i,freq_ecrh(i)*1E-9,wmode_ecrh(i),power_beam(i)*1E-6)
 
             END DO
 
@@ -253,6 +255,8 @@
                !s = THRIFT_RHO(i)*THRIFT_RHO(i)
                !CALL get_equil_Bav(s,Bav,Bsqav,istat)
                THRIFT_JECCD(i,mytimestep) = Jbb(i)
+               THRIFT_DPECRHDV(i,mytimestep) = dPdV(i)
+               THRIFT_PECRH(i,mytimestep) = Pabs(i)
             END DO
          END IF
 

@@ -111,7 +111,7 @@ class NESCOIL(FourierRep):
 	def generatePotential(self,theta,zeta):
 		"""Computes the potential on a grid
 
-		This routine computes the potential on a grid
+		This routine computes the normalised potential on a grid
 
 		Parameters
 		----------
@@ -130,7 +130,7 @@ class NESCOIL(FourierRep):
 	def generateTotalPotential(self,theta,zeta):
 		"""Computes the potential on a grid
 
-		This routine computes the potential on a grid
+		This routine computes the normalised potential on a grid
 
 		Parameters
 		----------
@@ -147,10 +147,11 @@ class NESCOIL(FourierRep):
 		pot = self.generatePotential(theta,zeta)
 		nu = len(theta)
 		nv = len(zeta)
-		for j in range(nu): pot[0,j,:] = pot[0,j,:] - self.cut*0.5*theta[j]/np.pi
-		for j in range(nv): pot[0,:,j] = pot[0,:,j] - self.cup*0.5*zeta[j]/np.pi
+		# note that while techincally this should be pot - u and pot - v,
+		# NESCOIL says dpot/dv = dphi/dv + v in surfcur_diag....so we use that
+		for j in range(nu): pot[0,j,:] = pot[0,j,:] + self.cut*0.5*theta[j]/np.pi
+		for j in range(nv): pot[0,:,j] = pot[0,:,j] + self.cup*0.5*zeta[j]/np.pi
 		return pot
-
 
 	def plotpotential(self,ax=None,cmap='jet'):
 		"""Plots the NESCOIL Potential
@@ -188,8 +189,8 @@ class NESCOIL(FourierRep):
 		if lplotnow: pyplot.show()
 		return quadmesh
 
-	def plottotalpotential(self,ax=None,cmap='jet'):
-		"""Plots the NESCOIL Total Potential
+	def plottotalpotential_old(self,ax=None,cmap='jet'):
+		"""Plots the NESCOIL Total Potential (old)
 
 		This routine plots the NESCOIL code surface potential
 
@@ -222,6 +223,82 @@ class NESCOIL(FourierRep):
 		if lplotnow: pyplot.show()
 		return quadmesh
 
+	def plottotalpotential(self,ax=None,nlevels=5,cmap='jet'):
+		"""Plots the NESCOIL Total Potential
+
+		This routine plots the NESCOIL code surface potential
+
+		Parameters
+		----------
+		ax : axes (optional)
+			Matplotlib axes object to plot to.
+		nlevels : int (optional)
+			Number of contour levels (default: 5)
+		cmap : string (optional)
+			Colormap (default: jet)
+
+		Returns
+		-------
+		quadmesh : matplotlib.collections.Quadmesh
+			Quadmesh as produced by pcolormesh
+		"""
+		import numpy as np
+		import matplotlib.pyplot as pyplot
+		lplotnow = False
+		if not ax:
+			ax = pyplot.axes()
+			lplotnow = True
+		theta = np.ndarray((self.nu,1))
+		zeta  = np.ndarray((self.nv,1))
+		for j in range(self.nu): theta[j]=2.0*np.pi*j/float(self.nu-1)
+		for j in range(self.nv):  zeta[j]=    np.pi*j/float(self.nv-1)
+		pot = self.generateTotalPotential(theta,zeta)
+		cont_vals = np.zeros((nlevels))
+		for k in range(nlevels):
+			u = round(0.0*self.nu)
+			v = round((k+0.5)*self.nv/(nlevels))
+			cont_vals[k] = pot[0,u,v]
+		hmesh=ax.contourf(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot),np.sort(cont_vals),extend='both',cmap='Greens')
+		ax.contour(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot),np.sort(cont_vals),colors='black')
+		#quadmesh=ax.pcolormesh(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot[0,:,:]),cmap=cmap,shading='gouraud')
+		ax.set_xlabel('Toroidal angle [rad]')
+		ax.set_ylabel('Poloidal angle [rad]')
+		ax.set_title(r'NESCOIL Total $\Phi$ Potential')
+		pyplot.colorbar(hmesh,label='$Pot$ [arb]',ax=ax)
+		if lplotnow: pyplot.show()
+		return hmesh
+
+	def computesurfaces(self,theta=None,zeta=None):
+		"""Mesh the NESCOIL Surfaces.
+
+		This routine fourier transforms the plasma and current
+		potential surfaces over a half field period.
+
+		Parameters
+		----------
+		theta : ndarray (optional)
+			Poloidal mesh (default: 0-2pi over nu)
+		zeta : ndarray (optional)
+			Toroidal mesh (default: 0-pi over nv)
+		"""
+		import numpy as np
+		if type(theta) == type(None):
+			self.theta = np.linspace([0],[2*np.pi],self.nu+1)
+			self.theta = self.theta[0:-2]
+		else:
+			self.theta=theta
+		if type(zeta) == type(None): 
+			# this is the toroidal angle \varphi/nfp
+			self.zeta = np.linspace([0],[np.pi],self.nv+1)
+			self.zeta = self.zeta[0:-2]
+		else:
+			self.zeta = zeta
+		self.rp = self.cfunct(self.theta,self.zeta,self.rmnc_plasma.T,self.xm_plasma,self.xn_plasma)
+		self.zp = self.sfunct(self.theta,self.zeta,self.zmns_plasma.T,self.xm_plasma,self.xn_plasma)
+		self.rc = self.cfunct(self.theta,self.zeta,self.rmnc_surface.T,self.xm_surface,self.xn_surface)
+		self.zc = self.sfunct(self.theta,self.zeta,self.zmns_surface.T,self.xm_surface,self.xn_surface)
+		return self
+
 	def plotsurfaces(self,plot3D=None):
 		"""Plots the NESCOIL Surfaces
 
@@ -243,60 +320,13 @@ class NESCOIL(FourierRep):
 			lplotnow = True
 			plt = PLOT3D()
 		# Generate VTK objects
-		theta = np.ndarray((self.nu,1))
-		zeta  = np.ndarray((self.nv,1))
-		for j in range(self.nu): theta[j]=2.0*np.pi*j/float(self.nu)
-		for j in range(self.nv):  zeta[j]=np.pi*j/float(self.nv-1)
-		rp = self.cfunct(theta,zeta,self.rmnc_plasma.T,self.xm_plasma,self.xn_plasma)
-		zp = self.sfunct(theta,zeta,self.zmns_plasma.T,self.xm_plasma,self.xn_plasma)
-		rc = self.cfunct(theta,zeta,self.rmnc_surface.T,self.xm_surface,self.xn_surface)
-		zc = self.sfunct(theta,zeta,self.zmns_surface.T,self.xm_surface,self.xn_surface)
-		self.isotoro(rp,zp,zeta/self.np,-1,plot3D=plt,lclosev=False,color='red')
-		self.isotoro(rc,zc,zeta/self.np,-1,plot3D=plt,lclosev=False,color='green')
+		self.computesurfaces()
+		self.isotoro(self.rp,self.zp,self.zeta/self.np,-1,plot3D=plt,lclosev=False,color='red')
+		self.isotoro(self.rc,self.zc,self.zeta/self.np,-1,plot3D=plt,lclosev=False,color='green')
 		# Render if requested
 		if lplotnow: plt.render()
 
-	def plotsurfaces_old(self,renderer=None,render_window=None):
-		"""Plots the NESCOIL Surfaces
-
-		This routine plots the NESCOIL current potential surface
-		and the plasma surface over a half field period.
-
-		Parameters
-		----------
-		renderer : vtkRenderer (optional)
-			Renderer for plotting with VTK
-		render_window : vtkRnderWindow (optional)
-			Render window for plotting with VTK
-		"""
-		import numpy as np
-		import matplotlib.pyplot as pyplot
-		import vtk
-		# Handle optionals
-		lplotnow = True
-		if renderer or render_window: lplotnow=False
-		if not renderer: renderer = vtk.vtkRenderer()
-		if not render_window: 
-			render_window = vtk.vtkRenderWindow()
-			render_window.AddRenderer(renderer)
-			render_window_interactor = vtk.vtkRenderWindowInteractor()
-			render_window_interactor.SetRenderWindow(render_window)
-			render_window.SetSize(1024, 768)
-		theta = np.ndarray((self.nu,1))
-		zeta  = np.ndarray((self.nv,1))
-		for j in range(self.nu): theta[j]=2.0*np.pi*j/float(self.nu-1)
-		for j in range(self.nv):  zeta[j]=np.pi*j/float(self.nv-1)
-		rp = self.cfunct(theta,zeta,self.rmnc_plasma.T,self.xm_plasma,self.xn_plasma)
-		zp = self.sfunct(theta,zeta,self.zmns_plasma.T,self.xm_plasma,self.xn_plasma)
-		rc = self.cfunct(theta,zeta,self.rmnc_surface.T,self.xm_surface,self.xn_surface)
-		zc = self.sfunct(theta,zeta,self.zmns_surface.T,self.xm_surface,self.xn_surface)
-		self.isotoro(rp,zp,zeta/self.np,-1,renderer=renderer,render_window=render_window)
-		self.isotoro(rc,zc,zeta/self.np,-1,renderer=renderer,render_window=render_window,color='green')
-		if lplotnow:
-			render_window.Render()
-			render_window_interactor.Start()
-
-	def cutcoils(self,ncoils_per_halfperiod,npts=128,lplot=False):
+	def cutcoils_old(self,ncoils_per_halfperiod,npts=128,lplot=False):
 		"""Cut coils from the NESCOIL potential
 
 		This routine cuts coils from the NESCOIL potential.
@@ -341,7 +371,7 @@ class NESCOIL(FourierRep):
 		zeta  = np.reshape( np.linspace(zeta_min,zeta_max,self.nv),(self.nv,1))
 		pot = self.generateTotalPotential(theta,zeta)
 		# Now generate contours
-		cont_gen = contour_generator(x=np.squeeze(zeta),y=np.squeeze(theta),z=np.squeeze(pot), line_type=LineType.Separate)
+		cont_gen = contour_generator(x=np.squeeze(zeta),y=np.squeeze(theta),z=np.squeeze(pot), line_type=LineType.Separate, chunk_size=0)
 		# Make plot if requested
 		if lplot:
 			px = 1/pyplot.rcParams['figure.dpi']
@@ -359,12 +389,18 @@ class NESCOIL(FourierRep):
 			level = cont_gen.lines(cont_vals[k])
 			th = np.array([]); ze = np.array([])
 			# One contour per level
-			temp = level[0]
-			th = np.append(th,temp[:,1])
-			ze = np.append(ze,temp[:,0])
-			#for temp in level:
-			#	th = np.append(th,temp[:,1])
-			#	ze = np.append(ze,temp[:,0])
+			for temp in level:
+				th_t = temp[:,1]
+				ze_t = temp[:,0]
+				if th_t[0] == th_t[-1]:
+					if th_t[0] > 0:
+						th_t = th_t - np.pi*2.0
+				th = np.append(th_t[0:-1],th)
+				ze = np.append(ze_t[0:-1],ze)
+			#print('========')
+			#print(temp)
+			#print(th)
+			#print(ze)
 			# Wrap the coil so that poitive current is positive field (counterclockwise from top)
 			if (th[16]-th[0] > 0):
 				th = th[::-1]
@@ -418,6 +454,119 @@ class NESCOIL(FourierRep):
 		# Return a coil object
 		return coils
 
+
+	def cutcoils(self,ncoils_per_halfperiod,npts=128,lplot=False):
+		"""Cut coils from the NESCOIL potential
+
+		This routine cuts coils from the NESCOIL potential.
+		It allows the user to specify the number of coils per half 
+		period.
+
+		Parameters
+		----------
+		ncoils_per_halfperiod : integer
+			Number of coils per half period (suggest 5)
+		npts : int
+			Number of points in coil (default: 128)
+		lplot : boolean (optional)
+			Plot the potential and potential lines. (default: False)
+		"""
+		import numpy as np
+		from libstell.coils import COILSET, COILGROUP, COIL
+		from contourpy import contour_generator, LineType
+		import matplotlib.pyplot as pyplot
+		# Generate coilset
+		coils = COILSET()
+		coils.nfp = self.np
+		coils.ngroups = ncoils_per_halfperiod
+		coils.xmin = 1E9; coils.xmax=-1E9
+		coils.ymin = 1E9; coils.ymax=-1E9
+		coils.zmin = 1E9; coils.zmax=-1E9
+		# Compute total current
+		Ipol = self.curpol*self.np/(4.0E-7*np.pi)
+		# Calculate the potential map over full field period
+		theta = np.linspace([0],[2.0*np.pi],self.nu)
+		zeta = np.linspace([-np.pi],[np.pi],self.nv*2)
+		pot = np.squeeze(self.generateTotalPotential(theta,zeta))
+		# Recompute theta and zeta to match format
+		theta = np.squeeze(theta)
+		zeta = np.squeeze(zeta)
+		# Now generate contours
+		# Now loop over contours
+		for k in range(ncoils_per_halfperiod):
+			u = 0.0
+			v = np.pi*(k+0.5)/ncoils_per_halfperiod
+			#print(k,u,v)
+			th,ze = self.trace_isocontour(np.squeeze(theta),np.squeeze(zeta),np.squeeze(pot), u, v, num_points=npts, period_x=True, period_y=True)
+			#print(th)
+			#print(ze)
+			# Wrap the coil so that poitive current is positive field (counterclockwise from top)
+			if (th[16]-th[0] > 0):
+				th = th[::-1]
+				ze = ze[::-1]
+				print(rf'Flipping coil {k}')
+			# Now we need to interpolate the coil onto the interval [0,2*pi] in theta.
+			l_in   = np.linspace(0.0,1.0,len(th))
+			l_out  = np.linspace(0.0,1.0,npts)
+			th_out = np.interp(l_out,l_in,th)
+			ph_out = np.interp(l_out,l_in,ze)/self.np
+			# Fourier transform the coil
+			r = np.zeros((npts)); z = np.zeros((npts))
+			for mn in range(self.mnmax_surface):
+				mtheta = th_out*self.xm_surface[mn]
+				nzeta  = ph_out*self.xn_surface[mn]*self.np
+				r  = r + np.cos(mtheta+nzeta)*self.rmnc_surface[mn]
+				z  = z + np.sin(mtheta+nzeta)*self.zmns_surface[mn]
+			# Convert to XYZ and make current/group
+			x = r * np.cos(ph_out)
+			y = r * np.sin(ph_out)
+			c = np.ones((npts))*Ipol/(self.np*ncoils_per_halfperiod*2)
+			g = np.ones((npts))*(k+1)
+			c[-1] = 0.0
+			# Create stellarator symmetric coil
+			#phn = (2.0*np.pi/self.np - ph_out)
+			phn = -ph_out
+			xo = np.append(x,r[::-1]*np.cos(phn[::-1]))
+			yo = np.append(y,r[::-1]*np.sin(phn[::-1]))
+			zo = np.append(z,-z[::-1])
+			co = np.append(c,c)
+			go = np.append(g,g)
+			x  = xo; y = yo; z = zo; c = co; g =go
+			# Now make all field periods
+			for mn in range(1,self.np):
+				cop = np.cos(mn*self.alp)
+				sip = np.sin(mn*self.alp)
+				x = np.append(x,xo*cop - yo*sip)
+				y = np.append(y,xo*sip + yo*cop)
+				z = np.append(z,zo)
+				c = np.append(c,co)
+				g = np.append(g,go)
+			coils.xmin = np.minimum(coils.xmin,np.min(x))
+			coils.ymin = np.minimum(coils.ymin,np.min(y))
+			coils.zmin = np.minimum(coils.zmin,np.min(z))
+			coils.xmax = np.maximum(coils.xmax,np.max(x))
+			coils.ymax = np.maximum(coils.ymax,np.max(y))
+			coils.zmax = np.maximum(coils.zmax,np.max(z))
+			# Now create group
+			coil_name=f'MOD{k+1}'
+			coils.groups.extend([COILGROUP(x,y,z,c,coil_name)])
+		# Return a coil object
+
+                # Make plot if requested
+		if lplot:
+			px = 1/pyplot.rcParams['figure.dpi']
+			fig=pyplot.figure(figsize=(1024*px,768*px))
+			ax=fig.add_subplot(111)
+			hmesh=ax.contourf(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot),levels=2*ncoils_per_halfperiod+1,extend='both',cmap='Greens')
+			ax.contour(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot),levels=2*ncoils_per_halfperiod+1,colors='black')
+			ax.set_xlabel('Toroidal angle [rad]')
+			ax.set_ylabel('Poloidal angle [rad]')
+			ax.set_title(r'NESCOIL Coil Cutting')
+			pyplot.colorbar(hmesh,label=r'Potential $\Phi$ [arb]',ax=ax)
+			pyplot.show()
+                        
+		return coils
+
 	def cutcoils_helical(self,nhelical_coils,lplot=False):
 		"""Cut coils from the NESCOIL potential
 
@@ -442,99 +591,133 @@ class NESCOIL(FourierRep):
 		print('!!  NOT IMPLEMENTED !!')
 		print('!!!!!!!!!!!!!!!!!!!!!!')
 		return coils
-		coils.nfp = self.np
-		coils.ngroups = nhelical_coils
-		coils.xmin = 1E9; coils.xmax=-1E9
-		coils.ymin = 1E9; coils.ymax=-1E9
-		coils.zmin = 1E9; coils.zmax=-1E9
-		# First generate potential to determine contours
-		theta = np.reshape( np.linspace(0,2*np.pi,self.nu),(self.nu,1))
-		zeta  = np.reshape( np.linspace(0,np.pi,self.nv),(self.nv,1))
-		pot = self.generateTotalPotential(theta,zeta)
-		cont_vals = np.zeros((nhelical_coils))
-		for k in range(nhelical_coils):
-			v = 0
-			u = round(float(k)*self.nu/(nhelical_coils))
-			cont_vals[k] = pot[0,u,v]
-		# Now calculate a larger potential map so coils can span periods
-		theta = np.reshape( np.linspace(0,2*np.pi,self.nu),(self.nu,1))
-		zeta_min = 0.0
-		zeta_max = np.pi
-		zeta  = np.reshape( np.linspace(zeta_min,zeta_max,self.nv),(self.nv,1))
-		pot = self.generateTotalPotential(theta,zeta)
-		# Now generate contours
-		potmin = np.min(pot)
-		potmax = np.max(pot)
-		delta  = 2*(potmax-potmin)/float(2*nhelical_coils+1.5)
-		cont_gen = contour_generator(x=np.squeeze(zeta),y=np.squeeze(theta),z=np.squeeze(pot), line_type=LineType.Separate)
-		# Make plot if requested
-		if lplot:
-			px = 1/pyplot.rcParams['figure.dpi']
-			fig=pyplot.figure(figsize=(1024*px,768*px))
-			ax=fig.add_subplot(111)
-			hmesh=ax.contourf(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot),np.sort(cont_vals),extend='both',cmap='Greens')
-			ax.contour(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot),np.sort(cont_vals),colors='black')
-			ax.set_xlabel('Toroidal angle [rad]')
-			ax.set_ylabel('Poloidal angle [rad]')
-			ax.set_title(r'NESCOIL Coil Cutting')
-			pyplot.colorbar(hmesh,label=r'Potential $\Phi$ [arb]',ax=ax)
-			pyplot.show()
-		# Now loop over contours
-		for k in range(nhelical_coils):
-			level = cont_gen.lines(cont_vals[k])
-			th = np.array([]); ze = np.array([])
-			th_save = np.array([]); ze_save = np.array([])
-			th0 = 0; ze0 = 0;
-			for temp in level:
-				th = np.append(th,temp[:-1,1]+th0)
-				ze = np.append(ze,temp[:-1,0]+ze0)
-				th_save = np.append(th_save,temp[:-1,1]+th0)
-				ze_save = np.append(ze_save,temp[:-1,0]+ze0)
-				th0 = th[-1]
-				ze0 = ze[-1]
-			if True:
-				px = 1/pyplot.rcParams['figure.dpi']
-				fig=pyplot.figure(figsize=(1024*px,768*px))
-				ax=fig.add_subplot(111)
-				ax.plot(th,ze)
-				ax.set_xlim(0,2*np.pi)
-				ax.set_ylim(0,2*np.pi)
-				#hmesh=ax.contourf(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot),np.sort(cont_vals),extend='both',cmap='Greens')
-				#ax.contour(np.squeeze(zeta),np.squeeze(theta),np.squeeze(pot),np.sort(cont_vals),colors='black')
-				ax.set_xlabel('Toroidal angle [rad]')
-				ax.set_ylabel('Poloidal angle [rad]')
-				ax.set_title(r'NESCOIL Coil Cutting')
-				#pyplot.colorbar(hmesh,label=r'Potential $\Phi$ [arb]',ax=ax)
-				pyplot.show()
 
-			# Now we need to extend the coil over the whole torus
-			th0 = th[0]; ze0 = ze[0]
-			thf = th[-1]; zef = ze[-1]
-			for i in range(0,self.np):
-				th_temp = th_save[:-1] + th[-1]
-				ze_temp = ze_save[:-1] + ze[-1]
-				th = np.append(th,th_temp)
-				ze = np.append(ze,ze_temp)
-			# Fourier transform the coil
-			npts = len(th)
-			r = np.zeros((npts)); z = np.zeros((npts))
-			for mn in range(self.mnmax_surface):
-				mtheta = th*self.xm_surface[mn]
-				nzeta  = ze*self.xn_surface[mn]
-				r  = r + np.cos(mtheta+nzeta)*self.rmnc_surface[mn]
-				z  = z + np.sin(mtheta+nzeta)*self.zmns_surface[mn]
-			# Convert to XYZ and make current/group
-			ph = ze/float(self.np)
-			x = r * np.cos(ph)
-			y = r * np.sin(ph)
-			c = np.ones((npts))*self.curpol/(np.pi*4E-7*nhelical_coils*2)
-			g = np.ones((npts))*(k+1)
-			c[-1] = 0.0
-			# Now create group
-			coil_name=f'HEL{k+1}'
-			coils.groups.extend([COILGROUP(x,y,z,c,coil_name)])
-		# Return a coil object
-		return coils
+
+	def trace_isocontour(self, x, y, f, x0, y0, num_points=64, period_x=False, period_y=False):
+		"""
+		Traces an isocontour line from a given starting point on a 2D grid.
+		
+		Parameters:
+			x (1D array): Grid coordinates along the first axis, shape (M,)
+			y (1D array): Grid coordinates along the second axis, shape (N,)
+			f (2D array): Evaluated functional values, shape (M, N)
+			x0, y0 (float): Starting coordinate for the trace
+			num_points (int): Exact number of points to return along the trajectory
+			period_x (bool or float): Periodicity in x. If True, inferred from grid.
+			period_y (bool or float): Periodicity in y. If True, inferred from grid.
+			
+		Returns:
+			resampled_x (1D array): X coordinates of the trace, length `num_points`
+			resampled_y (1D array): Y coordinates of the trace, length `num_points`
+		"""
+		import numpy as np
+		from scipy.interpolate import RegularGridInterpolator
+		from scipy.integrate import solve_ivp
+
+		# 1. Parse Periodicity, Offsets, and Grid Spacings
+		dx_grid = np.abs(x[1] - x[0])
+		dy_grid = np.abs(y[1] - y[0])
+		min_spacing = min(dx_grid, dy_grid)
+		
+		x_min, y_min = x[0], y[0]
+
+		# PERIOD DEFINITION: 
+		# Change to (x[-1] - x[0] + dx_grid) ONLY if your grid stops short of the repeating boundary.
+		# If x[0]=-1 and x[-1]=1 are the exact same physical point, leave it as (x[-1] - x[0]).
+		px = (x[-1] - x[0]) if period_x is True else (period_x if period_x else None)
+		py = (y[-1] - y[0]) if period_y is True else (period_y if period_y else None)
+		
+		# Domain-shifted wrap function
+		def wrap(val, p, offset):
+			return offset + ((val - offset) % p) if p else val
+
+		# 2. Setup Grid Interpolator
+		interp = RegularGridInterpolator((x, y), f, method='linear', bounds_error=False, fill_value=None)
+		
+		# 3. Numerical Gradient Function (with proper domain shifts)
+		def get_grad(pt):
+			cx, cy = pt
+			eps = 1e-5
+			cx_p, cx_m = wrap(cx + eps, px, x_min), wrap(cx - eps, px, x_min)
+			cy_p, cy_m = wrap(cy + eps, py, y_min), wrap(cy - eps, py, y_min)
+			
+			df_dx = (interp((cx_p, wrap(cy, py, y_min))) - interp((cx_m, wrap(cy, py, y_min)))) / (2 * eps)
+			df_dy = (interp((wrap(cx, px, x_min), cy_p)) - interp((wrap(cx, px, x_min), cy_m))) / (2 * eps)
+			return np.array([np.asarray(df_dx).item(), np.asarray(df_dy).item()])
+
+		# 4. Define the ODE System
+		def ode_func(s, pt):
+			grad = get_grad(pt)
+			norm = np.linalg.norm(grad)
+			if norm < 1e-9:
+				return np.array([0.0, 0.0])
+			return np.array([-grad[1] / norm, grad[0] / norm])
+
+		# 5. Scale-Independent Event Detection
+		tol = 0.5 * min_spacing  
+		lockout_distance = 4.0 * tol  
+
+		def close_to_start(s, pt):
+			if s < lockout_distance: 
+				return 1.0  
+			cx, cy = pt
+			dx = cx - x0
+			if px: dx = (dx + px/2) % px - px/2
+			dy = cy - y0
+			if py: dy = (dy + py/2) % py - py/2
+			return np.sqrt(dx**2 + dy**2) - tol
+		
+		def out_of_bounds(s, pt):
+			cx, cy = pt
+			if not period_x and (cx < x[0] or cx > x[-1]): return -1.0
+			if not period_y and (cy < y[0] or cy > y[-1]): return -1.0
+			return 1.0
+
+		close_to_start.terminal = True
+		out_of_bounds.terminal = True
+
+		max_len = 1.0 * ((x[-1] - x[0]) + (y[-1] - y[0]))
+		max_step_val = 0.2 * tol
+
+		# 6. Execute Integration
+		sol_f = solve_ivp(
+			ode_func, t_span=(0, max_len), y0=[x0, y0],
+			events=[close_to_start, out_of_bounds], 
+			rtol=1e-5, atol=1e-5, max_step=max_step_val
+		)
+		
+		closed_loop = len(sol_f.t_events[0]) > 0
+		
+		if closed_loop:
+			path_x, path_y = sol_f.y[0], sol_f.y[1]
+		else:
+			sol_b = solve_ivp(
+				ode_func, t_span=(0, -max_len), y0=[x0, y0],
+				events=[out_of_bounds], 
+				rtol=1e-5, atol=1e-5, max_step=max_step_val
+			)
+			bx, by = sol_b.y[0][::-1], sol_b.y[1][::-1]
+			path_x = np.concatenate((bx[:-1], sol_f.y[0]))
+			path_y = np.concatenate((by[:-1], sol_f.y[1]))
+
+		# 7. Uniform Resampling & SEAM-FREE Final Wrapping
+		dx_pts, dy_pts = np.diff(path_x), np.diff(path_y)
+		step_lens = np.sqrt(dx_pts**2 + dy_pts**2)
+		arc_lengths = np.concatenate(([0], np.cumsum(step_lens)))
+		
+		if arc_lengths[-1] == 0:
+			return np.full(num_points, x0), np.full(num_points, y0)
+			
+		target_arcs = np.linspace(0, arc_lengths[-1], num_points)
+		resampled_x = np.interp(target_arcs, arc_lengths, path_x)
+		resampled_y = np.interp(target_arcs, arc_lengths, path_y)
+		
+		# FIX: Wrap relative to the start point (x0, y0) instead of the grid minimum.
+		# This keeps the curve visually continuous and eliminates boundary grazing spikes.
+		if px: resampled_x = x0 + ((resampled_x - x0 + px/2) % px - px/2)
+		if py: resampled_y = y0 + ((resampled_y - y0 + py/2) % py - py/2)
+			
+		return resampled_x, resampled_y
 
 # Main routine
 if __name__=="__main__":
