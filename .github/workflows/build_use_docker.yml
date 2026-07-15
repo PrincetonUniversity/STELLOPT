@@ -14,10 +14,17 @@ jobs:
     steps:
       - name: checkout sources
         uses: actions/checkout@master
+
+      - name: set safe directory
+        run: |
+          git config --global --add safe.directory "${{ github.workspace }}"
+          chown -R $(id -u):$(id -g) .
+
       - name: compile
         run: |
           cd ${STELLOPT_PATH}
           ./build_all -o clean_debug -j 2
+
       - name: test
         run: |
           mpiexec ./bin/xstelloptv2 test -h

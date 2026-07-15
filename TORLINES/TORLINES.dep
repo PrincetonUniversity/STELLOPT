@@ -56,10 +56,14 @@ torlines_emc3.o: \
 
 torlines_write.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
-      torlines_runtime.o \
-      torlines_realspace.o \
+      ../../LIBSTELL/$(LOCTYPE)/ez_hdf5.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      torlines_fieldlines.o \
       torlines_background.o \
-      torlines_fieldlines.o
+      torlines_realspace.o \
+      torlines_runtime.o \
+      torlines_write_parhdf5.o 
       
 
 follow.o: \
