@@ -1621,7 +1621,7 @@ class PLASMA_SOLVER:
             # this is for bookeeping
             self.Q_turb[species][it,:] = -chi[species] * dpdr + p_r*( (chi[species]/n_r)*dndr + convective_fact*self.Gamma_turb[species][it,:]/n_r)
     
-    def initialize_NEO(self, surfaces_k, DKES_coeffs_file, dt_NEO=None, Er_root_type='ion_root', dt_Er_ambipolar=None, n_workers_NEO=1):
+    def initialize_NEO(self, surfaces_k, DKES_coeffs_file, dt_NEO=None, Er_root_type='ion_root', dt_Er_ambipolar=None, n_workers_NEO=1, add_NEO_particle_fluxes=True, add_NEO_heat_fluxes=True):
         """
         n_workers_NEO controls how call_NEO evaluates the DKES surfaces
         n_workers_NEO=1 (default) evaluates them serially in this process. 
@@ -1649,6 +1649,12 @@ class PLASMA_SOLVER:
             self.neo_pool = None
             
         self.dt_NEO = dt_NEO
+        
+        self.fact_NEO_particle_fluxes = 1.0
+        self.fact_NEO_heat_fluxes     = 1.0
+        
+        if(not add_NEO_particle_fluxes): self.fact_NEO_particle_fluxes = 0.0
+        if(not add_NEO_heat_fluxes):     self.fact_NEO_heat_fluxes     = 0.0
 
     def call_NEO(self,it):
         from libstell.libpenta import _call_PENTA_surface_worker
@@ -1764,10 +1770,10 @@ class PLASMA_SOLVER:
         """ Adds NEO transport coefficients to Dp,cp,Dn,cn """
         
         for species in self.list_of_species:
-            self.Dp[species][it,:] += self.Dp_NEO[species][it,:]
-            self.cp[species][it,:] += self.cp_NEO[species][it,:]
-            self.Dn[species][it,:] += self.Dn_NEO[species][it,:]
-            self.cn[species][it,:] += self.cn_NEO[species][it,:]
+            self.Dn[species][it,:] += self.Dn_NEO[species][it,:]*self.fact_NEO_particle_fluxes
+            self.cn[species][it,:] += self.cn_NEO[species][it,:]*self.fact_NEO_particle_fluxes
+            self.Dp[species][it,:] += self.Dp_NEO[species][it,:]*self.fact_NEO_heat_fluxes
+            self.cp[species][it,:] += self.cp_NEO[species][it,:]*self.fact_NEO_heat_fluxes
 
     def solve_density_equations(self,it):
         """Sets LHS matrices and RHS vectors of density equations and solves them"""
