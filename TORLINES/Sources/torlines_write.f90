@@ -9,14 +9,14 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
+      USE ez_hdf5
+      USE mpi_params
+      USE mpi_inc
       USE torlines_fieldlines
       USE torlines_background
       USE torlines_realspace
       USE torlines_runtime
       USE torlines_write_par
-      USE ez_hdf5
-      USE mpi_params
-      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Input Variables
 !          write_type  Type of write to preform
