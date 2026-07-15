@@ -1471,11 +1471,12 @@ MODULE PENTA_INTERFACE_MOD
 
    END SUBROUTINE root_analysis
 
-   SUBROUTINE interpolate_from_penta(nrho_penta,rho_penta,y_penta,nrho_out,rho_out,y_out,isHermite,useLog)
+   SUBROUTINE interpolate_from_penta(nrho_penta,rho_penta,y_penta,nrho_out,rho_out,y_out,isHermite,useLog,preventNeg)
       ! This subroutine is an aider to thrift_penta, where a bunch of splines are done from the penta grid onto
       ! the thrift and plasma solver grids
       ! ASSUMES: that rho_penta does not have rho=0 nor rho=1, and so a linear extrapolation is done
       ! useLog is useful to intepolate non-negative quantities that span several orders of magnitude
+      ! if preventNeg is .true. then all negative values are clamped to 0.0
       USE EZspline
       USE EZspline_obj
       IMPLICIT NONE
@@ -1486,6 +1487,7 @@ MODULE PENTA_INTERFACE_MOD
       REAL(rknd), DIMENSION(nrho_out), INTENT(OUT) :: y_out
       INTEGER, INTENT(IN) :: isHermite
       LOGICAL, INTENT(IN) :: useLog
+      LOGICAL, INTENT(IN), OPTIONAL :: preventNeg
       !
       INTEGER :: ier
       INTEGER :: bcs0(2)
@@ -1524,6 +1526,12 @@ MODULE PENTA_INTERFACE_MOD
       CALL EZspline_free(y_spl,ier)
 
       DEALLOCATE(rho_temp,y_temp)
+
+      IF(PRESENT(preventNeg)) THEN
+         IF(preventNeg) THEN
+            WHERE (y_out .LE. 0.0_rknd) y_out = 1.0E-20_rknd
+         END IF
+      END IF
 
    END SUBROUTINE interpolate_from_penta
 

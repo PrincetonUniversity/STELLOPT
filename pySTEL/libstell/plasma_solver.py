@@ -2311,7 +2311,7 @@ class PLASMA_SOLVER:
         saved_class.list_of_species = self.list_of_species
         # In case of a VMEC equilibrium
         if hasattr(self,'iota23'):
-            saved_class.iota23 = self.iota23
+            saved_class.iota2o3 = self.iota23
         
         # only save at minimum every dt=dt_save
         freq = max(1, round(dt_save / self.dt))
