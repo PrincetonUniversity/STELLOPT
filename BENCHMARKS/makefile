@@ -251,7 +251,7 @@ test_beams3d_multiion:
 	@echo ""
 
 test_beams3d_fullorbit:
-	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt;
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fullorbit -plasma
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fullorbit -plasma
 	#@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_fullorbit
