@@ -932,6 +932,7 @@ stellopt_paraexe.o : \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_input_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
       equil_vals.o \
+      equil_utils.o \
       $(VMEC_DIR)/$(LOCTYPE)/vmec_params.o \
       $(LIB_DIR)/$(LOCTYPE)/wall_mod.o \
       $(BEAMS3D_DIR)/$(LOCTYPE)/beams3d_runtime.o \
