@@ -333,7 +333,6 @@ SUBROUTINE beams3d_follow_fo
                      mylife = 1.0
                      CALL RANDOM_NUMBER(mylife_end)
                     END IF
-                    WRITE(6,'(A,I0,A,A,4(A,ES15.8))') &
                     xlast = q(1)*cos(q(2))
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)
