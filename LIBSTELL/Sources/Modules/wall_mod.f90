@@ -1535,9 +1535,8 @@
 
          DO i = 1, wall%nblocks
             zi = MOD(i-1,nblocks(3))+1
-            yi = MOD(i-1,nblocks(2)*nblocks(3))
-            yi = FLOOR(REAL(yi) / REAL(nblocks(3)))+1
-            xi = CEILING(REAL(i) / REAL(nblocks(2)*nblocks(3)))
+            yi = MOD(i-1,nblocks(2)*nblocks(3))/nblocks(3)+1
+            xi = (i-1)/(nblocks(2)*nblocks(3))+1
             wall%blocks(i)%rmin(1) = xs(xi)
             wall%blocks(i)%rmin(2) = ys(yi)
             wall%blocks(i)%rmin(3) = zs(zi)

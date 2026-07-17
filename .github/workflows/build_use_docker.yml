@@ -25,6 +25,8 @@ jobs:
           cd ${STELLOPT_PATH}
           ./build_all -o clean_debug -j 2
 
-      - name: test
-        run: |
-          mpiexec ./bin/xstelloptv2 test -h
+      - name: unit_test
+        run: python3 -m unittest discover -s BENCHMARKS/tests -v
+
+      - name: test_stellopt
+        run: mpiexec ./bin/xstelloptv2 test -h
