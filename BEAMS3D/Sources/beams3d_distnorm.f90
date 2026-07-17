@@ -80,10 +80,9 @@
       ! Iterate over volumes
       DO s = mystart, myend
          ! Distribution grid index
-         i = MOD(s-1,(ns_prof1))+1
-         j = MOD(s-1,(ns_prof1)*(ns_prof2))
-         j = FLOOR(REAL(j) / REAL(ns_prof1))+1
-         k = CEILING(REAL(s) / REAL(ns_prof1*ns_prof2))
+         i = MOD(s-1,ns_prof1)+1
+         j = MOD(s-1,ns_prof1*ns_prof2)/ns_prof1+1
+         k = (s-1)/(ns_prof1*ns_prof2)+1
 
          ! Bounding values of rho and u, p is centered in voxel
          rho1 = (i-1)*ds

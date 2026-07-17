@@ -323,9 +323,8 @@
       CALL FLUSH(6)
       DO s = mystart, myend
          i = MOD(s-1,nr)+1
-         j = MOD(s-1,nr*nphi)
-         j = FLOOR(REAL(j) / REAL(nr))+1
-         k = CEILING(REAL(s) / REAL(nr*nphi))
+         j = MOD(s-1,nr*nphi)/nr+1
+         k = (s-1)/(nr*nphi)+1
          sflx = MAX(0.001,MIN(0.999,sflx))
          CALL GetBcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
                       br, bphi, bz, SFLX=sflx,UFLX=uflx,info=ier)
@@ -376,9 +375,8 @@
       CALL FLUSH(6)
       DO s = mystart, myend
          i = MOD(s-1,nr)+1
-         j = MOD(s-1,nr*nphi)
-         j = FLOOR(REAL(j) / REAL(nr))+1
-         k = CEILING(REAL(s) / REAL(nr*nphi))
+         j = MOD(s-1,nr*nphi)/nr+1
+         k = (s-1)/(nr*nphi)+1
          ! First update progress
          IF (MOD(s,nr) == 0) THEN
             IF (lverb) THEN
@@ -453,9 +451,8 @@
       CALL FLUSH(6)
       DO s = mystart, myend
          i = MOD(s-1,nr)+1
-         j = MOD(s-1,nr*nphi)
-         j = FLOOR(REAL(j) / REAL(nr))+1
-         k = CEILING(REAL(s) / REAL(nr*nphi))
+         j = MOD(s-1,nr*nphi)/nr+1
+         k = (s-1)/(nr*nphi)+1
          sflx = S_ARR(i,j,k)
          sflx = MAX(sflx,0.0)
          ! Do the potential everwhere
@@ -495,9 +492,8 @@
          CALL FLUSH(6)
          DO s = mystart, myend
             i = MOD(s-1,nr)+1
-            j = MOD(s-1,nr*nphi)
-            j = FLOOR(REAL(j) / REAL(nr))+1
-            k = CEILING(REAL(s) / REAL(nr*nphi))
+            j = MOD(s-1,nr*nphi)/nr+1
+            k = (s-1)/(nr*nphi)+1
             sflx = S_ARR(i,j,k)
             sflx = MAX(sflx,0.0)
             IF (sflx <= 1.0) CYCLE

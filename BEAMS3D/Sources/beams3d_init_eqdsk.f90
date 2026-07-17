@@ -160,8 +160,7 @@
 #endif
       DO s = mystart, myend
          i = MOD(s-1,nr)+1
-         k = MOD(s-1,nr*nz)
-         k = FLOOR(REAL(k) / REAL(nr))+1
+         k = MOD(s-1,nr*nz)/nr+1
          sflx = 0.0
 
          ! Bfield
