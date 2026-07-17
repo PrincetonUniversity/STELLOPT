@@ -13,7 +13,7 @@
             rho_coil_kts, theta_coil_kts, zeta_coil_kts, &
             nw_coil, nh_coil, width_coil, height_coil, &
             coil_type
-      USE stellopt_runtime, ONLY: proc_string
+      USE stellopt_runtime, ONLY: id_string, proc_string
       USE read_wout_mod, ONLY: isigng
       USE vmec_input, ONLY: extcur
       USE spline_coils_mod
@@ -84,7 +84,7 @@
       !     Load outside LCFS coordinate system
       !-----------------------------------------------------------------
 
-      call load_surface_fit("windingsurface_"//TRIM(proc_string)//".nc")
+      call load_surface_fit("windingsurface_"//TRIM(id_string)//".nc")
       
       !-----------------------------------------------------------------
       !     Create coils
@@ -126,7 +126,7 @@
       !-----------------------------------------------------------------
       !     Deallocations
       !-----------------------------------------------------------------
-
+      
 !-----------------------------------------------------------------------
 !     END SUBROUTINE
 !-----------------------------------------------------------------------

@@ -11,7 +11,7 @@
 !-----------------------------------------------------------------------
       USE bsc_T
       USE biotsavart, ONLY: coil_group, nfp => nfp_bs
-      USE surface_extender_mod, ONLY: load_surface_fit, rhothetazeta2xyz
+      USE surface_extender_mod, ONLY: rhothetazeta2xyz
       USE safe_open_mod
       USE EZspline_obj
       USE EZspline

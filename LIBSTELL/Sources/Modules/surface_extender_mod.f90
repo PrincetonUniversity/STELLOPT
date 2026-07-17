@@ -45,11 +45,9 @@ MODULE surface_extender_mod
   DOUBLE PRECISION, ALLOCATABLE :: Rc(:), Zc(:)
 
   PUBLIC :: load_surface_fit
+  PUBLIC :: unload_surface_fit
   PUBLIC :: rhothetazeta2xyz
   PUBLIC :: get_field_period
-!  PUBLIC :: evaluate_coefficients
-!  PUBLIC :: evaluate_RZ
-!  PUBLIC :: evaluate_xyz
   
 CONTAINS
 
@@ -74,6 +72,12 @@ CONTAINS
 
     CHARACTER(len=32) :: fit_name
 
+    !--------------------------------------
+    ! Deallocate arrays if load_surface_fit called again
+    !--------------------------------------
+
+    CALL unload_surface_fit()
+    
     !--------------------------------------
     ! Open file
     !--------------------------------------
@@ -281,13 +285,27 @@ CONTAINS
 
   END SUBROUTINE rhothetazeta2xyz
 
-  SUBROUTINE unload()
-    DEALLOCATE(m,n)
-    DEALLOCATE(Rc,Zc)
-    DEALLOCATE(Rc_coeff,Zc_coeff)
-    DEALLOCATE(R0,R1,Z0,Z1,Rc_ab,Zc_ab)
-
-  END SUBROUTINE unload
+  SUBROUTINE unload_surface_fit()
+    
+    ! gracefully deallocate arrays
+    
+    IF (ALLOCATED(m)) DEALLOCATE(m)
+    IF (ALLOCATED(n)) DEALLOCATE(n)
+    
+    IF (ALLOCATED(Rc)) DEALLOCATE(Rc)
+    IF (ALLOCATED(Zc)) DEALLOCATE(Zc)
+    
+    IF (ALLOCATED(Rc_coeff)) DEALLOCATE(Rc_coeff)
+    IF (ALLOCATED(Zc_coeff)) DEALLOCATE(Zc_coeff)
+    
+    IF (ALLOCATED(R0)) DEALLOCATE(R0)
+    IF (ALLOCATED(R1)) DEALLOCATE(R1)
+    IF (ALLOCATED(Z0)) DEALLOCATE(Z0)
+    IF (ALLOCATED(Z1)) DEALLOCATE(Z1)
+    IF (ALLOCATED(Rc_ab)) DEALLOCATE(Rc_ab)
+    IF (ALLOCATED(Zc_ab)) DEALLOCATE(Zc_ab)
+    
+  END SUBROUTINE unload_surface_fit
           
 END MODULE surface_extender_mod
         
