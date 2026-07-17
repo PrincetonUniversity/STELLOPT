@@ -162,18 +162,16 @@
       IF (lissubmaster) THEN
          DO s = 1, ourstart-1
             i = MOD(s-1,nr)+1
-            j = MOD(s-1,nr*nphi)
-            j = FLOOR(REAL(j) / REAL(nr))+1
-            k = CEILING(REAL(s) / REAL(nr*nphi))
+            j = MOD(s-1,nr*nphi)/nr+1
+            k = (s-1)/(nr*nphi)+1
             B_R(i,j,k)   = 0.0
             B_PHI(i,j,k) = 0.0
             B_Z(i,j,k)   = 0.0
          END DO
          DO s = ourend+1, nr*nphi*nz
             i = MOD(s-1,nr)+1
-            j = MOD(s-1,nr*nphi)
-            j = FLOOR(REAL(j) / REAL(nr))+1
-            k = CEILING(REAL(s) / REAL(nr*nphi))
+            j = MOD(s-1,nr*nphi)/nr+1
+            k = (s-1)/(nr*nphi)+1
             B_R(i,j,k)   = 0.0
             B_PHI(i,j,k) = 0.0
             B_Z(i,j,k)   = 0.0
@@ -194,9 +192,8 @@
       ! Get the fields
       DO s = mystart, myend
          i = MOD(s-1,nr)+1
-         j = MOD(s-1,nr*nphi)
-         j = FLOOR(REAL(j) / REAL(nr))+1
-         k = CEILING(REAL(s) / REAL(nr*nphi))
+         j = MOD(s-1,nr*nphi)/nr+1
+         k = (s-1)/(nr*nphi)+1
          br_temp   = 0
          bphi_temp = 0
          bz_temp   = 0
