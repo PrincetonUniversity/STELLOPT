@@ -89,11 +89,12 @@ if __name__=="__main__":
 			fig,(ax1,ax2,ax3) = pyplot.subplots(1,3,sharey=True,figsize=(1024*px,512*px))
 			if args.lbackground: canvas = FigureCanvasAgg(fig)
 			pyplot.subplots_adjust(hspace=0.1,wspace=0.15)
-			phi0 = 0
+			phis = np.linspace(0.0, field_data.phiaxis[-1], field_data.npoinc,endpoint=False)
+			phi0 = phis[0]
 			field_data.plot_poincare(phi0,args.nskip,ax=ax1)
-			phi1 = field_data.PHI_lines[0,int(np.round(field_data.npoinc/4))]
+			phi1 = phis[int(np.round(field_data.npoinc/4))]
 			field_data.plot_poincare(phi1,args.nskip,ax=ax2)
-			phi2 = field_data.PHI_lines[0,int(np.round(field_data.npoinc/2))]
+			phi2 = phis[int(np.round(field_data.npoinc/2))]
 			field_data.plot_poincare(phi2,args.nskip,ax=ax3)
 			if args.nescoil_file:
 				nescout = NESCOIL()

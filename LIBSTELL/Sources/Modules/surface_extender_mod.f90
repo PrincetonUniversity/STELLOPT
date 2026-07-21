@@ -47,14 +47,20 @@ MODULE surface_extender_mod
   PUBLIC :: load_surface_fit
   PUBLIC :: unload_surface_fit
   PUBLIC :: rhothetazeta2xyz
+  PUBLIC :: get_rhoscale
   PUBLIC :: get_field_period
-  
+    
 CONTAINS
 
   INTEGER FUNCTION get_field_period()
     IMPLICIT NONE
     get_field_period=nfp
   END FUNCTION get_field_period
+
+  DOUBLE PRECISION FUNCTION get_rhoscale()
+    IMPLICIT NONE
+    get_rhoscale=rhoscale
+  END FUNCTION get_rhoscale
   
   
   SUBROUTINE load_surface_fit(filename)
@@ -133,7 +139,7 @@ CONTAINS
     !--------------------------------------
 
     IF (TRIM(fit_name) == "polynomial") THEN
-
+       
        fit_type = FIT_POLYNOMIAL
 
        ALLOCATE(Rc_coeff(nmodes,degrees_of_freedom))    ! opposite convention to python
@@ -234,7 +240,8 @@ CONTAINS
   
       
   SUBROUTINE evaluate_RZ(theta,zeta,R,Z)
-    ! This routine must be called after an update of the coefficients (evaluate_coefficients(t)) if the radial coordinate changes    
+    ! This routine must be called after an update of the coefficients (evaluate_coefficients(t)) if the radial coordinate changes
+    ! zeta is the NESCOIL angle i.e. zeta=PHI*nfp where PHI is the geometric toroidal angle
     IMPLICIT NONE
 
     DOUBLE PRECISION, INTENT(in)  :: theta
@@ -250,7 +257,7 @@ CONTAINS
     Z = 0.0
 
     DO i = 1, nmodes
-       phase = m(i)*theta + n(i)*zeta*nfp
+       phase = m(i)*theta + n(i)*zeta
 
        R = R + Rc(i)*COS(phase)
        Z = Z + Zc(i)*SIN(phase)
@@ -258,7 +265,11 @@ CONTAINS
     END DO
 
   END SUBROUTINE evaluate_RZ
-        
+
+
+  ! zeta is the NESCOIL angle, ie PHI=zeta*nfp where PHI is the geometric toroidal angle
+  ! t is the parameter used in the polynomial fit of the Fourier coefficients. It ranges (typically) from [0,1]
+  ! where t=0 returns the LCFS and t=1 returns the winding surface
   SUBROUTINE evaluate_xyz(t,theta,zeta,x,y,z)
     IMPLICIT NONE
 
@@ -270,12 +281,16 @@ CONTAINS
     CALL evaluate_coefficients(t)
     CALL evaluate_RZ(theta, zeta, R, z)
 
-    x = R*COS(zeta)
-    y = R*SIN(zeta)
+    x = R*COS(zeta/nfp)
+    y = R*SIN(zeta/nfp)
 
   END SUBROUTINE evaluate_xyz
 
-
+  ! zeta is the NESCOIL angle, ie PHI=zeta*nfp where PHI is the geometric toroidal angle
+  ! rho_in is a radial variable off the LCFS, approximately equal to the (euclidean) distance away from the LCFS.
+  ! However the Fourier coefficients are fit over the variable t\in [0,1]. Hence we divide by the rhoscale to convert t=rho_in/rhoscale
+  ! rho_in=0 will return the LCFS and rho_in=rhoscale will return the winding surface.
+  ! rho_in+1 is an extrapolation of the VMEC radial coordinate.
   SUBROUTINE rhothetazeta2xyz(rho_in,theta_in,zeta_in,x_out,y_out,z_out)
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(in) :: rho_in, theta_in, zeta_in
