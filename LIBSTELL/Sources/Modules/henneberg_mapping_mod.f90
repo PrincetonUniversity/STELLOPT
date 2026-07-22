@@ -227,7 +227,7 @@ contains
     ! Transformation from Henneberg to VMEC
     ! =========================================================================
     subroutine henneberg_to_vmec(nmax, mmax, R0nH, Z0nH, bn, rhomn, &
-                                         alpha_fac, ntor_out, rc, zs)
+                                         alpha_fac, rc, zs)
         integer, intent(in) :: nmax, mmax, alpha_fac
         real(dp), intent(in) :: R0nH(0:nmax)
         real(dp), intent(in) :: Z0nH(0:nmax)
@@ -235,7 +235,7 @@ contains
         !real(dp), intent(in) :: rhomn(0:mmax, -nmax:nmax)
         real(dp), intent(in) :: rhomn(-nmax:nmax, 0:mmax)
         
-        integer, intent(out) :: ntor_out
+        !integer, intent(out) :: ntor_out
         ! Must be sized to handle the resulting offset logic natively
         !real(dp), intent(out) :: rc(0:mmax, -(nmax + abs(alpha_fac)) : (nmax + abs(alpha_fac)))
         !real(dp), intent(out) :: zs(0:mmax, -(nmax + abs(alpha_fac)) : (nmax + abs(alpha_fac)))
@@ -247,7 +247,7 @@ contains
 
         if (alpha_fac < -1 .or. alpha_fac > 1) stop "alpha_fac has to be -1, 0 or +1"
 
-        ntor_out = nmax + abs(alpha_fac)
+        !ntor_out = nmax + abs(alpha_fac)
 
         rc = 0.0_dp
         zs = 0.0_dp
