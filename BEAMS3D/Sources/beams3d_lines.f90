@@ -53,7 +53,7 @@
       CHARACTER(LEN=8), ALLOCATABLE :: species_lines(:,:)
       INTEGER :: reaction_dex, myfreedex
       LOGICAL, DIMENSION(:), ALLOCATABLE :: is_active
-      DOUBLE PRECISION :: myenergy_keV, sigma_next
+      DOUBLE PRECISION :: myenergy_keV, sigma_tot
       REAL(rprec) :: mylife_end, mylife
       REAL(rprec) :: vlast
       
