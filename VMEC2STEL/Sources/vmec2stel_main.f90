@@ -863,12 +863,13 @@
                deltamn = 0.0_rprec
                rbc_temp = rbc
                zbs_temp = zbs
-               alpha_fac = 1
+               alpha_fac = 1 ! 1 or 2
+               IF (ntor == 0) alpha_fac = 0
                CALL vmec_to_henneberg(mpol-1, ntor, &
                                       rbc(-ntor:ntor,0:mpol-1), &
                                       zbs(-ntor:ntor,0:mpol-1), &
                                       nfp, alpha_fac, &
-                                      mpol, ntor, mpol*8, ntor*8, &
+                                      mpol-1, ntor, MAX(mpol*8,16), MAX(ntor*8,16), &
                                       R0_HENNEBERG(0:ntor), &
                                       Z0_HENNEBERG(0:ntor), &
                                       BCOEF_HENNEBERG(0:ntor), &
