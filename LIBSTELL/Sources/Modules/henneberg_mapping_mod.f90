@@ -15,8 +15,6 @@ contains
         integer, intent(in)  :: mpol, ntor, nfp, alpha_fac
         integer, intent(in)  :: mmax, nmax, ntheta, nphi
         ! Fortran arrays can take negative indices, matching the [-ntor, ntor] physics naturally
-        !real(dp), intent(in) :: rc(0:mpol, -ntor:ntor)
-        !real(dp), intent(in) :: zs(0:mpol, -ntor:ntor)
         real(dp), intent(in) :: rc(-ntor:ntor, 0:mpol)
         real(dp), intent(in) :: zs(-ntor:ntor, 0:mpol)
         
@@ -419,57 +417,262 @@ contains
     ! Helper 3: Cubic Spline interpolation routine
     ! Replicates scipy.interpolate.interp1d(kind="cubic")
     ! =========================================================================
-    subroutine interp_cubic(n, x, y, n_out, x_out, y_out)
+    subroutine interp_cubic(n, x, y, n_out, x_out, y_out, &
+                            assume_sorted, extrapolate, fill_value)
+        use, intrinsic :: ieee_arithmetic, only : ieee_is_finite, &
+            ieee_is_nan, ieee_value, ieee_quiet_nan
+
+        implicit none
+
         integer, intent(in) :: n, n_out
         real(dp), intent(in) :: x(n), y(n), x_out(n_out)
         real(dp), intent(out) :: y_out(n_out)
 
-        ! Automatic arrays for spline coefficients
-        real(dp) :: h(n-1), alpha_spl(n-1)
-        real(dp) :: l(n), mu(n), z(n), c(n), b(n), d(n)
-        integer  :: i, j
-        real(dp) :: dx
+        logical, intent(in), optional :: assume_sorted
+        logical, intent(in), optional :: extrapolate
+        real(dp), intent(in), optional :: fill_value
 
-        ! Compute natural spline coefficients
-        do i = 1, n - 1
-            h(i) = x(i+1) - x(i)
-        end do
+        real(dp), allocatable :: xs(:), ys(:)
+        real(dp), allocatable :: h(:), alpha(:)
+        real(dp), allocatable :: lower(:), diag(:), upper(:)
+        real(dp), allocatable :: rhs(:), q(:)
+        real(dp), allocatable :: b(:), c(:), d(:)
+
+        real(dp) :: dx, factor, xq, nan_value
+        integer :: i, j, k, m
+        integer :: lo, hi, mid
+        logical :: sorted_input, do_extrapolate, outside
+
+        ! interp1d(kind='cubic') requires at least four points.
+        if (n < 4) then
+            error stop &
+                'interp_cubic: cubic interpolation requires at least 4 points'
+        end if
+
+        if (n_out < 0) then
+            error stop 'interp_cubic: n_out must be nonnegative'
+        end if
+
+        ! SciPy documents input NaN behavior as undefined. Rejecting
+        ! nonfinite data is safer for a numerical library routine.
+        if (.not. all(ieee_is_finite(x)) .or. &
+            .not. all(ieee_is_finite(y))) then
+            error stop &
+                'interp_cubic: x and y must contain only finite values'
+        end if
+
+        ! Match interp1d defaults:
+        !   assume_sorted = False
+        !   extrapolation disabled
+        sorted_input = .false.
+        if (present(assume_sorted)) sorted_input = assume_sorted
+
+        do_extrapolate = .false.
+        if (present(extrapolate)) do_extrapolate = extrapolate
+
+        allocate(xs(n), ys(n))
+        xs = x
+        ys = y
+
+        ! interp1d sorts its input unless assume_sorted=True.
+        if (.not. sorted_input) then
+            call quicksort_pairs(xs, ys, 1, n)
+        end if
+
+        if (any(xs(2:n) <= xs(1:n-1))) then
+            error stop &
+                'interp_cubic: x values must be unique and strictly increasing'
+        end if
+
+        allocate(h(n-1), alpha(n))
+        allocate(b(n-1), c(n), d(n-1))
+
+        h = xs(2:n) - xs(1:n-1)
+        alpha = 0.0_dp
 
         do i = 2, n - 1
-            alpha_spl(i) = 3.0_dp / h(i) * (y(i+1) - y(i)) - 3.0_dp / h(i-1) * (y(i) - y(i-1))
+            alpha(i) = 3.0_dp * ( &
+                (ys(i+1) - ys(i)) / h(i) - &
+                (ys(i) - ys(i-1)) / h(i-1))
         end do
 
-        l(1) = 1.0_dp
-        mu(1) = 0.0_dp
-        z(1) = 0.0_dp
+        ! Solve for c(2:n-1), where each interval is represented as
+        !
+        ! S_j(dx) = y_j + b_j*dx + c_j*dx**2 + d_j*dx**3.
+        !
+        ! The endpoint equations incorporate the not-a-knot conditions:
+        !
+        ! d(1)   = d(2)
+        ! d(n-2) = d(n-1)
+        !
+        ! Thus the first two intervals are one cubic polynomial, and
+        ! likewise for the last two intervals.
 
-        do i = 2, n - 1
-            l(i) = 2.0_dp * (x(i+1) - x(i-1)) - h(i-1) * mu(i-1)
-            mu(i) = h(i) / l(i)
-            z(i) = (alpha_spl(i) - h(i-1) * z(i-1)) / l(i)
+        m = n - 2
+
+        allocate(lower(m-1), diag(m), upper(m-1))
+        allocate(rhs(m), q(m))
+
+        ! First reduced equation, incorporating the left not-a-knot
+        ! condition.
+        diag(1) = (h(1) + h(2)) * &
+                  (h(1) + 2.0_dp*h(2))
+
+        upper(1) = h(2)**2 - h(1)**2
+        rhs(1) = alpha(2) * h(2)
+
+        ! Standard interior spline equations.
+        do i = 3, n - 2
+            k = i - 1
+
+            lower(k-1) = h(i-1)
+            diag(k) = 2.0_dp * (h(i-1) + h(i))
+            upper(k) = h(i)
+            rhs(k) = alpha(i)
         end do
 
-        l(n) = 1.0_dp
-        z(n) = 0.0_dp
-        c(n) = 0.0_dp
+        ! Last reduced equation, incorporating the right not-a-knot
+        ! condition.
+        lower(m-1) = h(n-2)**2 - h(n-1)**2
 
-        do j = n - 1, 1, -1
-            c(j) = z(j) - mu(j) * c(j+1)
-            b(j) = (y(j+1) - y(j)) / h(j) - h(j) * (c(j+1) + 2.0_dp * c(j)) / 3.0_dp
-            d(j) = (c(j+1) - c(j)) / (3.0_dp * h(j))
+        diag(m) = (h(n-2) + h(n-1)) * &
+                  (2.0_dp*h(n-2) + h(n-1))
+
+        rhs(m) = alpha(n-1) * h(n-2)
+
+        ! Thomas algorithm for the reduced tridiagonal system.
+        do i = 2, m
+            factor = lower(i-1) / diag(i-1)
+
+            diag(i) = diag(i) - factor*upper(i-1)
+            rhs(i) = rhs(i) - factor*rhs(i-1)
         end do
 
-        ! Interpolate at requested points
+        q(m) = rhs(m) / diag(m)
+
+        do i = m - 1, 1, -1
+            q(i) = (rhs(i) - upper(i)*q(i+1)) / diag(i)
+        end do
+
+        c(2:n-1) = q
+
+        ! Recover the endpoint quadratic coefficients from the
+        ! not-a-knot conditions.
+        c(1) = ((h(1) + h(2))*c(2) - h(1)*c(3)) / h(2)
+
+        c(n) = ((h(n-2) + h(n-1))*c(n-1) - &
+                 h(n-1)*c(n-2)) / h(n-2)
+
+        ! Construct the remaining power-basis coefficients.
+        do j = 1, n - 1
+            b(j) = (ys(j+1) - ys(j)) / h(j) - &
+                   h(j)*(2.0_dp*c(j) + c(j+1))/3.0_dp
+
+            d(j) = (c(j+1) - c(j)) / (3.0_dp*h(j))
+        end do
+
+        nan_value = ieee_value(0.0_dp, ieee_quiet_nan)
+
         do i = 1, n_out
-            ! Find bracket
-            j = 1
-            do while (j < n - 1 .and. x_out(i) > x(j+1))
-                j = j + 1
-            end do
-            
-            dx = x_out(i) - x(j)
-            y_out(i) = y(j) + b(j)*dx + c(j)*(dx**2) + d(j)*(dx**3)
+            xq = x_out(i)
+
+            ! SciPy returns NaN when an evaluation coordinate is NaN.
+            if (ieee_is_nan(xq)) then
+                y_out(i) = nan_value
+                cycle
+            end if
+
+            outside = xq < xs(1) .or. xq > xs(n)
+
+            if (outside .and. .not. do_extrapolate) then
+                if (present(fill_value)) then
+                    y_out(i) = fill_value
+                    cycle
+                else
+                    ! This corresponds to interp1d's default bounds error.
+                    error stop &
+                        'interp_cubic: x_out lies outside interpolation range'
+                end if
+            end if
+
+            ! Locate the interval by binary search. Boundary intervals
+            ! are also used for polynomial extrapolation when enabled.
+            if (xq <= xs(1)) then
+                j = 1
+
+            else if (xq >= xs(n)) then
+                j = n - 1
+
+            else
+                lo = 1
+                hi = n
+
+                do while (hi - lo > 1)
+                    mid = lo + (hi - lo)/2
+
+                    if (xq < xs(mid)) then
+                        hi = mid
+                    else
+                        lo = mid
+                    end if
+                end do
+
+                j = lo
+            end if
+
+            dx = xq - xs(j)
+
+            ! Horner evaluation of the interval polynomial.
+            y_out(i) = ys(j) + dx * ( &
+                b(j) + dx*(c(j) + dx*d(j)))
         end do
+
+    contains
+
+        recursive subroutine quicksort_pairs(a, v, left, right)
+            real(dp), intent(inout) :: a(:), v(:)
+            integer, intent(in) :: left, right
+
+            real(dp) :: pivot, tmp
+            integer :: il, ir
+
+            il = left
+            ir = right
+            pivot = a(left + (right-left)/2)
+
+            do
+                do while (a(il) < pivot)
+                    il = il + 1
+                end do
+
+                do while (a(ir) > pivot)
+                    ir = ir - 1
+                end do
+
+                if (il <= ir) then
+                    tmp = a(il)
+                    a(il) = a(ir)
+                    a(ir) = tmp
+
+                    tmp = v(il)
+                    v(il) = v(ir)
+                    v(ir) = tmp
+
+                    il = il + 1
+                    ir = ir - 1
+                end if
+
+                if (il > ir) exit
+            end do
+
+            if (left < ir) then
+                call quicksort_pairs(a, v, left, ir)
+            end if
+
+            if (il < right) then
+                call quicksort_pairs(a, v, il, right)
+            end if
+        end subroutine quicksort_pairs
 
     end subroutine interp_cubic
 
