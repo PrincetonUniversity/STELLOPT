@@ -172,7 +172,7 @@ SUBROUTINE beams3d_follow_fo
                      IF (boxsim_parent(myline)==BOXSIM_NOPARENT) boxsim_parent(myline) = myline
                      CALL boxsim_parse_species(boxsim_species(myline), part_counts, Q_int, Z_int, ierr)
                      myenergy_keV = (energy/(e_charge*1.0E3))
-                     CALL beams3d_reaction_sigma(Q_int, part_counts, myenergy_keV, reaction_dex, sigma_next, ierr)
+                     CALL beams3d_reaction_sigma(Q_int, part_counts, myenergy_keV, reaction_dex, sigma_tot, ierr)
                      mylife = 1.0
                      CALL RANDOM_NUMBER(mylife_end)
                     END IF
@@ -233,7 +233,7 @@ SUBROUTINE beams3d_follow_fo
                      IF (boxsim_parent(myline)==BOXSIM_NOPARENT) boxsim_parent(myline) = myline
                      CALL boxsim_parse_species(boxsim_species(myline), part_counts, Q_int, Z_int, ierr)
                      myenergy_keV = (energy/(e_charge*1.0E3))
-                     CALL beams3d_reaction_sigma(Q_int, part_counts, myenergy_keV, reaction_dex, sigma_next, ierr)
+                     CALL beams3d_reaction_sigma(Q_int, part_counts, myenergy_keV, reaction_dex, sigma_tot, ierr)
                      mylife = 1.0
                      CALL RANDOM_NUMBER(mylife_end)
                     END IF
@@ -329,7 +329,7 @@ SUBROUTINE beams3d_follow_fo
                                    ' species="'//TRIM(boxsim_species(myline))//'" ierr=', ierr
                       END IF
                      myenergy_keV = (energy/(e_charge*1.0E3))
-                     CALL beams3d_reaction_sigma(Q_int, part_counts, myenergy_keV, reaction_dex, sigma_next, ierr)
+                     CALL beams3d_reaction_sigma(Q_int, part_counts, myenergy_keV, reaction_dex, sigma_tot, ierr)
                      mylife = 1.0
                      CALL RANDOM_NUMBER(mylife_end)
                     END IF

@@ -28,7 +28,7 @@ MODULE beams3d_physics_mod
                                ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                                ns_prof5, my_end, h1_prof, fact_crit_legacy, &
                                mylife, mylife_end, reaction_dex, &
-                               myenergy_keV, sigma_next, E_by_v, myqm, vlast, xlast, ylast, zlast, &
+                               myenergy_keV, sigma_tot, E_by_v, myqm, vlast, xlast, ylast, zlast, &
                                reaction_count, myfreedex, is_active, neut_lines, boxsim_parent
       USE beams3d_grid, ONLY: delta_t, MODB4D, OMEG4D, nomeg,&
                               phimax, TE4D, NE4D, TI4D, ZEFF4D, &
@@ -757,7 +757,7 @@ MODULE beams3d_physics_mod
          yav = 0.5*(ylast+q(1)*sin(q(2)))
          zav = 0.5*(zlast+q(3))
          vav = 0.5*(vlast + sqrt(q(4)**2 + q(5)**2 + q(6)**2))
-         vol = vav*dt*sigma_next ! sigma*v*dt for reaction
+         vol = vav*dt*sigma_tot ! sigma*v*dt for reaction
          CALL beams3d_get_neutdens(xav,yav,zav,neutdens)
 
          ! Attenuate life
@@ -820,8 +820,8 @@ MODULE beams3d_physics_mod
             ! Reset for next reaction
             mylife = 1.0
             CALL RANDOM_NUMBER(mylife_end)
-            CALL beams3d_reaction_sigma(Q_int, parent_counts, myenergy_kev, reaction_dex, sigma_next, ierr)
-            IF (ierr/=0) sigma_next = 0.0d0
+            CALL beams3d_reaction_sigma(Q_int, parent_counts, myenergy_kev, reaction_dex, sigma_tot, ierr)
+            IF (ierr/=0) sigma_tot = 0.0d0
          END IF 
          RETURN ! Go back to out_beams3d_part
 
@@ -2506,7 +2506,7 @@ MODULE beams3d_physics_mod
 !                    selected at random using a Monte Carlo approach from
 !                    reactions available to an input particle species.    
 !-----------------------------------------------------------------------
-SUBROUTINE beams3d_reaction_sigma(part_Q, part_counts, E_kev, react_dex, sigma, ierr)
+SUBROUTINE beams3d_reaction_sigma(part_Q, part_counts, E_kev, react_dex, sigma_total, ierr)
    !-----------------------------------------------------------------------
    !     Libraries
    !-----------------------------------------------------------------------
@@ -2518,13 +2518,13 @@ SUBROUTINE beams3d_reaction_sigma(part_Q, part_counts, E_kev, react_dex, sigma, 
    !          E_kev       particle energy in units of keV
    !     Output parameters
    !          react_dex   next reaction index is reaction_db
-   !          sigma       cross-section for next reaction
+   !          sigma       total cross-section
    !-----------------------------------------------------------------------
    IMPLICIT NONE
    INTEGER, INTENT(in) :: part_Q
    INTEGER, INTENT(in) :: part_counts(boxsim_nkinds)
    DOUBLE PRECISION, INTENT(in) :: E_kev
-   DOUBLE PRECISION, INTENT(out) :: sigma
+   DOUBLE PRECISION, INTENT(out) :: sigma_total
    INTEGER, INTENT(out) :: react_dex
    INTEGER, INTENT(out) :: ierr
    !-----------------------------------------------------------------------
@@ -2537,7 +2537,7 @@ SUBROUTINE beams3d_reaction_sigma(part_Q, part_counts, E_kev, react_dex, sigma, 
    INTEGER :: part_A, part_CAT
    DOUBLE PRECISION :: part_M, ref_M, E_eff
    TYPE(box_reaction) :: reaction_info
-   DOUBLE PRECISION :: sigma_total, prob, prob_num, prob_denom
+   DOUBLE PRECISION :: prob, prob_num, prob_denom
    DOUBLE PRECISION, ALLOCATABLE :: react_sigmas(:)
    INTEGER, ALLOCATABLE :: react_dices(:)
    !-----------------------------------------------------------------------
@@ -2545,7 +2545,6 @@ SUBROUTINE beams3d_reaction_sigma(part_Q, part_counts, E_kev, react_dex, sigma, 
    !-----------------------------------------------------------------------
    ! Default values for erroring out
    react_dex = 1
-   sigma = 0.0d0
    ierr = 0
    ! Get effective energy for isotopes; for example, D moves ~half as fast 
    ! as H at the same energy, shifting position in cross-section profile
@@ -2559,7 +2558,7 @@ SUBROUTINE beams3d_reaction_sigma(part_Q, part_counts, E_kev, react_dex, sigma, 
    part_A = SUM(part_counts)
    ALLOCATE(react_sigmas(n_reactions), react_dices(n_reactions))
    j = 0 
-   sigma_total = 0
+   sigma_total = 0.0d0
    DO i = 1, n_reactions
      reaction_info = reactions_db(i)
      IF ((reaction_info%input_A == part_A) .AND. &
@@ -2589,7 +2588,6 @@ SUBROUTINE beams3d_reaction_sigma(part_Q, part_counts, E_kev, react_dex, sigma, 
       EXIT
      END IF
    END DO
-   sigma = react_sigmas(k)
    react_dex = react_dices(k)
 
    DEALLOCATE(react_sigmas,react_dices)
