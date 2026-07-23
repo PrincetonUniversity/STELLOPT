@@ -2111,7 +2111,6 @@ class LIBSTELL():
 		henne_func.restype=None
 		nmax_c = ct.c_int(nmax)
 		mmax_c = ct.c_int(mmax)
-		num_modes = (2*ntor+1)*(mpol+1)
 		R0_c = R0.ctypes.data_as(ct.POINTER(ct.c_double))
 		Z0_c = Z0.ctypes.data_as(ct.POINTER(ct.c_double))
 		BCOEF_c = ct.c_double(BCOEF)
