@@ -50,7 +50,7 @@
 !        iunit       File unit number
 !----------------------------------------------------------------------
       LOGICAL ::  lscreen
-      INTEGER ::  nvar_in, dex, dex2, ik, istat, iunit, pass, mf,nf
+      INTEGER ::  nvar_in, dex, dex2, ik, istat, iunit, pass, mf,nf, n1, n2
       INTEGER ::  vctrl_array(5)
       REAL(rprec) :: norm_aphi, norm_am, norm_ac, norm_ai, norm_ah,&
                      norm_at, norm_ne, norm_te, norm_ti, norm_th, &
@@ -199,8 +199,13 @@
       END IF
       IF (ANY(lb_henne_opt) .or. ANY(lR0_henne_opt) &
          .or. ANY(lZ0_henne_opt) .or. ANY(lrho_henne_opt)) THEN
-            CALL henneberg_to_vmec(mpol, ntor, R0_henne, Z0_henne, b_henne, rho_henne, &
-                                         alpha_henne, rbc, zbs)
+            n1 = - (nmax_henne + ABS(alpha_henne))
+            n2 =   (nmax_henne + ABS(alpha_henne))
+            CALL henneberg_to_vmec(nmax_henne, mmax_henne, R0_henne(0:nmax_henne), &
+                                    Z0_henne(0:nmax_henne), b_henne(0:nmax_henne), &
+                                    rho_henne(-nmax_henne:nmax_henne,0:mmax_henne), &
+                                    alpha_henne, rbc(n1:n2,0:mmax_henne), &
+                                    zbs(n1:n2,0:mmax_henne))
       END IF
 
       ! Unpack RBC/ZBS/RBS/ZBC

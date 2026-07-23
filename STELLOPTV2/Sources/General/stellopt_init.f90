@@ -37,7 +37,7 @@
 !        iunit       File unit number
 !----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER ::  i,n,m,ier, iunit,nvar_in,ctrl_dofs,nknots
+      INTEGER ::  i,n,m,ier, iunit,nvar_in,ctrl_dofs,nknots,n1,n2
       INTEGER ::  ictrl(5)
       REAL(rprec) :: norm, delta, scale
       REAL(rprec) :: fvec_temp(1)
@@ -214,7 +214,7 @@
               IF (ANY(lR0_henne_opt)) nvars = nvars + COUNT(lR0_henne_opt)
               IF (ANY(lZ0_henne_opt)) nvars = nvars + COUNT(lZ0_henne_opt)
               DO n = -ntord, ntord
-                 DO m = -mpol1d, mpol1d
+                 DO m = 0, mpol1d
                     IF (lrho_henne_opt(n,m)) THEN
                        nvars = nvars + 1
                     END IF
@@ -249,13 +249,15 @@
 
       ! Convert to Henneberg if needed
       IF (ANY(lb_henne_opt) .or. ANY(lR0_henne_opt) .or. ANY(lZ0_henne_opt) .or. ANY(lrho_henne_opt)) THEN
-         IF (mmax_henne < 0) mmax_henne = mpol
+         IF (mmax_henne < 0) mmax_henne = mpol-1
          IF (nmax_henne < 0) nmax_henne = ntor
-         nu_henne = mmax_henne * 8
-         nv_henne = nmax_henne * 8
-         CALL vmec_to_henneberg(mpol, ntor, rbc, zbs, nfp, alpha_henne, &
+         nu_henne = MAX(mmax_henne * 8,64)
+         nv_henne = MAX(nmax_henne * 8,1)
+         CALL vmec_to_henneberg(mpol1d, ntord, rbc, zbs, nfp, alpha_henne, &
                                          mmax_henne, nmax_henne, nu_henne, nv_henne, &
-                                         R0_henne, Z0_henne, b_henne, rho_henne)
+                                         R0_henne(0:nmax_henne), Z0_henne(0:nmax_henne), &
+                                         b_henne(0:nmax_henne), &
+                                         rho_henne(-nmax_henne:nmax_henne,0:mmax_henne))
       ENDIF
 
       ! Initialize nvar_in to 0 and load up the variables
@@ -1651,8 +1653,13 @@
          END IF
          ! Check Henneberg representation
          IF (ANY(lb_henne_opt) .or. ANY(lR0_henne_opt) .or. ANY(lZ0_henne_opt) .or. ANY(lrho_henne_opt)) THEN
-            CALL henneberg_to_vmec(mpol, ntor, R0_henne, Z0_henne, b_henne, rho_henne, &
-                                         alpha_henne, rbc_temp, zbs_temp)
+            n1 = - (nmax_henne + ABS(alpha_henne))
+            n2 =   (nmax_henne + ABS(alpha_henne))
+            CALL henneberg_to_vmec(nmax_henne, mmax_henne, R0_henne(0:nmax_henne), &
+                                    Z0_henne(0:nmax_henne), b_henne(0:nmax_henne), &
+                                    rho_henne(-nmax_henne:nmax_henne,0:mmax_henne), &
+                                    alpha_henne, rbc_temp(n1:n2,0:mmax_henne), &
+                                    zbs_temp(n1:n2,0:mmax_henne))
             delta = 0
             DO m = 0, mpol
                DO n = -ntor, ntor
@@ -1678,9 +1685,10 @@
                IF (Z0_henne(n) /= 0.0_rprec) WRITE(iunit,*) n,Z0_henne(n)
             END DO
             WRITE(iunit,'(A)') 'RHO(n,m): '
-            DO m = LBOUND(ldeltamn_opt,2), UBOUND(ldeltamn_opt,2)
-               DO n = LBOUND(ldeltamn_opt,1), UBOUND(ldeltamn_opt,1)
-                  IF (deltamn(n,m) /= 0.0_rprec) WRITE(iunit,*) n,m,rho_henne(n,m)
+            CALL FLUSH(iunit)
+            DO m = LBOUND(rho_henne,2), UBOUND(rho_henne,2)
+               DO n = LBOUND(rho_henne,1), UBOUND(rho_henne,1)
+                  IF (rho_henne(n,m) /= 0.0_rprec) WRITE(iunit,*) n,m,rho_henne(n,m)
                END DO
             END DO
             CLOSE(iunit)
