@@ -212,6 +212,36 @@ class GIST():
 			self.L2[u] = 2.0*np.sqrt(s)*(dBds + c*(gaa*gst-gsa*gat)*self.dBdt[u]/(4*self.Bhat[u]**2))
 		self.kp1 = self.L2 - self.dpdx/2.0/self.Bhat
 
+	def write_gist(self,filename):
+		"""Writes a GIST geometry file
+
+		This routine writes the GIST geometry file in the same
+		format expected by read_gist (and produced by the
+		STELLOPT stellopt_txport code).
+
+		Parameters
+		----------
+		filename : str
+			Path to GIST file to write.
+		"""
+		f = open(filename,'w')
+		f.write('&PARAMETERS\n')
+		f.write(f's0 = {self.s0:12.7f}\n')
+		f.write(f'!alpha0 = {self.alpha0:12.7f}\n')
+		f.write(f'!major, minor radius[m]= {self.Rmajor:12.7f}{self.Aminor:12.7f}\n')
+		f.write(f'my_dpdx = {self.dpdx:12.7f}\n')
+		f.write(f'q0 = {self.q0:12.7f}\n')
+		f.write(f'shat = {self.shat:12.7f}\n')
+		f.write(f'gridpoints = {self.gridpoints:5d}\n')
+		f.write(f'n_pol = {self.n_pol:5d}\n')
+		f.write('/\n')
+		for j in range(self.gridpoints):
+			f.write(f'{self.g11[j]:20.10E}{self.g12[j]:20.10E}{self.g22[j]:20.10E}'
+					f'{self.Bhat[j]:20.10E}{self.abs_jac[j]:20.10E}{self.L2[j]:20.10E}'
+					f'{self.L1[j]:20.10E}{self.dBdt[j]:20.10E}\n')
+		f.close()
+		print(f'{filename} created successfully!')
+
 	def calcProxG11(self):
 		"""Computes the G11 proxy
 
