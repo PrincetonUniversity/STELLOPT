@@ -267,7 +267,7 @@ CONTAINS
   END SUBROUTINE evaluate_RZ
 
 
-  ! zeta is the NESCOIL angle, ie PHI=zeta*nfp where PHI is the geometric toroidal angle
+  ! zeta is the NESCOIL angle, ie PHI=zeta/nfp where PHI is the geometric toroidal angle
   ! t is the parameter used in the polynomial fit of the Fourier coefficients. It ranges (typically) from [0,1]
   ! where t=0 returns the LCFS and t=1 returns the winding surface
   SUBROUTINE evaluate_xyz(t,theta,zeta,x,y,z)
@@ -286,7 +286,7 @@ CONTAINS
 
   END SUBROUTINE evaluate_xyz
 
-  ! zeta is the NESCOIL angle, ie PHI=zeta*nfp where PHI is the geometric toroidal angle
+  ! zeta is the NESCOIL angle, ie PHI=zeta/nfp where PHI is the geometric toroidal angle
   ! rho_in is a radial variable off the LCFS, approximately equal to the (euclidean) distance away from the LCFS.
   ! However the Fourier coefficients are fit over the variable t\in [0,1]. Hence we divide by the rhoscale to convert t=rho_in/rhoscale
   ! rho_in=0 will return the LCFS and rho_in=rhoscale will return the winding surface.
