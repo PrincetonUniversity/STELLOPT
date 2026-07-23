@@ -26,6 +26,7 @@
 !                             animec_flag, flow_flag
       USE vmec_main, ONLY:  multi_ns_grid
       USE read_wout_mod, ONLY: read_wout_file, write_wout_file, read_wout_deallocate
+      USE henneberg_mapping_mod
       USE mpi_params                                                    ! MPI
       IMPLICIT NONE
       
@@ -171,6 +172,22 @@
             IF (lexp_scale) scale = EXP(-exp_alpha*MAX(ABS(arr_dex(nvar_in,1)),arr_dex(nvar_in,2)))
             deltamn(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)*scale
          END IF
+         IF (var_dex(nvar_in) == ihenne_b) THEN
+            IF (lexp_scale) scale = EXP(-exp_alpha*ABS(arr_dex(nvar_in,1)))
+            b_henne(arr_dex(nvar_in,1)) = x(nvar_in)*scale
+         END IF
+         IF (var_dex(nvar_in) == ihenne_R0) THEN
+            IF (lexp_scale) scale = EXP(-exp_alpha*ABS(arr_dex(nvar_in,1)))
+            R0_henne(arr_dex(nvar_in,1)) = x(nvar_in)*scale
+         END IF
+         IF (var_dex(nvar_in) == ihenne_Z0) THEN
+            IF (lexp_scale) scale = EXP(-exp_alpha*ABS(arr_dex(nvar_in,1)))
+            Z0_henne(arr_dex(nvar_in,1)) = x(nvar_in)*scale
+         END IF
+         IF (var_dex(nvar_in) == ihenne_rho) THEN
+            IF (lexp_scale) scale = EXP(-exp_alpha*MAX(ABS(arr_dex(nvar_in,1)),arr_dex(nvar_in,2)))
+            rho_henne(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)*scale
+         END IF
       END DO
 
       ! Adust Boundary Representation
@@ -179,6 +196,11 @@
       END IF
       IF (ANY(var_dex == ideltamn)) THEN
          CALL unique_boundary_PG(rbc,zbs,deltamn,ntord,mpol1d,mpol-1,ntor)
+      END IF
+      IF (ANY(lb_henne_opt) .or. ANY(lR0_henne_opt) &
+         .or. ANY(lZ0_henne_opt) .or. ANY(lrho_henne_opt)) THEN
+            CALL henneberg_to_vmec(mpol, ntor, R0_henne, Z0_henne, b_henne, rho_henne, &
+                                         alpha_henne, rbc, zbs)
       END IF
 
       ! Unpack RBC/ZBS/RBS/ZBC
