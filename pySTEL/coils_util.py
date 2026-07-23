@@ -6,7 +6,6 @@ if __name__=="__main__":
 	import sys
 	from argparse import ArgumentParser
 	from libstell.coils import COILSET
-	from libstell.vmec import VMEC
 	from libstell.wall import WALL
 	from libstell.plot3D import PLOT3D
 	from libstell.libstell import FourierRep
@@ -18,10 +17,10 @@ if __name__=="__main__":
 		   simple tool for assessing coils or coils files.''')
 	parser.add_argument("-c", "--coil", dest="coils_file",
 		help="Coils file for input", default = None)
-	parser.add_argument("-v", "--vmec", dest="vmec_ext",
-		help="VMEC file extension.", default = None)
 	parser.add_argument("-p", "--plot", dest="lplot", action='store_true',
 		help="Plot the coils file.", default = False)
+	parser.add_argument("-w", "--surface-fit", dest="surface_fit_file",
+		help="Surface-extension NetCDF file used for STELLOPT coil knots.", default=None)
 	parser.add_argument("-prz", "--plotRZ", dest="lplotRZ", action='store_true',
 		help="Plot each coil group in RZ.", default = False)
 	parser.add_argument("--plotcoildist", dest="lplotcoildist", action='store_true',
@@ -54,13 +53,6 @@ if __name__=="__main__":
 		help="Flip the toroidal direction of the coil.", default = False)
 	args = parser.parse_args()
 	coils = COILSET()
-	if args.vmec_ext:
-		vmec_data = VMEC()
-		try:
-			vmec_data.read_wout(args.vmec_ext)
-		except:
-			print(f'Could not file input file: wout_{args.vmec_ext}.nc or wout.{args.vmec_ext}')
-			sys.exit(-1)
 	if args.coils_file: 
 		coils.read_coils_file(args.coils_file)
 		if args.new_pts: coils.rescalecoils(args.new_pts)
@@ -126,7 +118,7 @@ if __name__=="__main__":
 		if args.lfit_surf:
 			# VTK stuff
 			plt3d = PLOT3D()
-			print('  Fitting Surface')
+			print('	 Fitting Surface')
 			coils.plotcoilsHalfFP(plot3D=plt3d)
 			xm,xn,rmnc,zmns=coils.fitSurface()
 			theta = np.linspace([0],[np.pi*2],64)
@@ -147,8 +139,12 @@ if __name__=="__main__":
 		if args.loutput: coils.write_coils_file(args.coils_file+'_new')
 		if args.lgourdon: coils.write_Gourdon_coils()
 		if args.lstellopt:
-			[s,u,zeta]=coils.stellopt_knots(vmec_data)
+			if not args.surface_fit_file:
+				parser.error("--stellopt requires --surface-fit")
+
+			[s,u,zeta] = coils.stellopt_knots(args.surface_fit_file)
 			f=open(f'{args.coils_file}_stellopt.nml','w')
+
 			for i in range(s.shape[0]):
 				f.write(f'!-----COIL {i+1:02d} -----\n')
 				f.write(f'  RHO_COIL_KTS({i+1:02d},:) = ')

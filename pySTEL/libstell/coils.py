@@ -1003,15 +1003,16 @@ class COILSET():
 		for j in range(self.ngroups):
 			self.groups[j].flip()
 
-	def stellopt_knots(self,vmec_data,nknots=18):
+	def stellopt_knots(self,surface_fit_file,nknots=18):
 		"""Compute the STELLOPT coil knots parameterization.
 
 		This routine returns the STELLOPT coils knot information.
 
 		Parameters
 		----------
-		vmec_data : VMEC Object
-			VMEC object for determining rho, theta.
+		surface_fit_file : str or path-like
+			Surface-extension NetCDF file used to determine rho,
+			theta, and zeta beyond the LCFS.
 		nknots : int (optional)
 			Number of knots in spline (default: 18)
 
@@ -1032,12 +1033,10 @@ class COILSET():
 		zeta_kts = np.zeros((self.ngroups,nknots))
 		s_new = np.linspace(0.0,1.0,nknots+1)
 		theta = np.zeros((self.groups[0].coils[0].npts,))
-		# Setup spine_coils
+		# Initialize the outside-LCFS coordinate system.
 		libs = LIBSTELL()
-		libs.spline_coils_init_boundary(vmec_data.mnmax,\
-			np.squeeze(vmec_data.xm), np.squeeze(vmec_data.xn), \
-			np.squeeze(vmec_data.rmnc[-1,:]),np.squeeze(vmec_data.zmns[-1,:]),\
-			np.squeeze(vmec_data.rmnc[0,:]),np.squeeze(vmec_data.zmns[0,:]))
+		rhoscale = libs.surface_extender_load_surface_fit(surface_fit_file)
+
 		for i in range(self.ngroups):
 			x = self.groups[i].coils[0].x
 			y = self.groups[i].coils[0].y
@@ -1049,7 +1048,7 @@ class COILSET():
 			cx = CubicSpline(s,x,bc_type='periodic')
 			cy = CubicSpline(s,y,bc_type='periodic')
 			cz = CubicSpline(s,z,bc_type='periodic')
-			rhot = 1.0; ut = 0.0; zetat = 0.0
+			rhot = rhoscale; ut = 0.0; zetat = 0.0
 			xt = cx(s_new)
 			yt = cy(s_new)
 			zt = cz(s_new)

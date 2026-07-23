@@ -17,7 +17,7 @@
       USE read_wout_mod, ONLY: isigng
       USE vmec_input, ONLY: extcur
       USE spline_coils_mod
-      use surface_extender_mod, ONLY: load_surface_fit
+      use surface_extender_mod, ONLY: load_surface_fit, get_field_period
       USE biotsavart, ONLY: write_coils_file
       USE stel_kinds, ONLY: rprec
 
@@ -66,25 +66,21 @@
       END IF
 
       !-----------------------------------------------------------------
+      !     Load outside LCFS coordinate system (first)
+      !-----------------------------------------------------------------
+
+      call load_surface_fit("windingsurface_"//TRIM(id_string)//".nc")
+
+
+      !-----------------------------------------------------------------
       !     Load Splines
       !-----------------------------------------------------------------
       CALL init_spline_coils(nscoil, numcoilgroups, n, &
                               rho_coil_kts(1:numcoilgroups,1:n), &
                               theta_coil_kts(1:numcoilgroups,1:n), &
                               zeta_coil_kts(1:numcoilgroups,1:n),&
-                              coil_type(1:numcoilgroups))
-      !-----------------------------------------------------------------
-      !     Load Boundary
-      !-----------------------------------------------------------------
-      ! CALL init_boundary_spline_coils(mnmax,xm,-xn, &
-      !                                 rmnc(:,ns),zmns(:,ns), &
-      !                                 rmnc(:,1),zmns(:,1))
-
-      !-----------------------------------------------------------------
-      !     Load outside LCFS coordinate system
-      !-----------------------------------------------------------------
-
-      call load_surface_fit("windingsurface_"//TRIM(id_string)//".nc")
+                              coil_type(1:numcoilgroups),&
+                              get_field_period()) ! set field period from winding surface netCDF file
       
       !-----------------------------------------------------------------
       !     Create coils

@@ -11,7 +11,7 @@
 !-----------------------------------------------------------------------
       USE bsc_T
       USE biotsavart, ONLY: coil_group, nfp => nfp_bs
-      USE surface_extender_mod, ONLY: rhothetazeta2xyz
+      USE surface_extender_mod, ONLY: rhothetazeta2xyz, get_field_period
       USE safe_open_mod
       USE EZspline_obj
       USE EZspline
@@ -40,11 +40,12 @@
       CONTAINS
 
       SUBROUTINE init_spline_coils(ns_in, ncoilgroups_in, n_in, &
-            rho_in, theta_in, zeta_in, coil_type)
+            rho_in, theta_in, zeta_in, coil_type, nfp_in)
       IMPLICIT NONE
       INTEGER, INTENT(in) :: ns_in
       INTEGER, INTENT(in) :: ncoilgroups_in
       INTEGER, INTENT(in) :: n_in
+      INTEGER, INTENT(in) :: nfp_in
       DOUBLE PRECISION, INTENT(in) :: rho_in(ncoilgroups_in,n_in)
       DOUBLE PRECISION, INTENT(in) :: theta_in(ncoilgroups_in,n_in)
       DOUBLE PRECISION, INTENT(in) :: zeta_in(ncoilgroups_in,n_in)
@@ -54,6 +55,8 @@
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: rx_kts, ry_kts, z_kts
       DOUBLE PRECISION :: ttemp,rtemp
       ns = ns_in
+      nfp = nfp_in   ! set the field period (belongs to Biot-Savart module) from input
+      factor=pi2/nfp
       ncoilgroups = ncoilgroups_in
       ! First save the knots
       IF (ALLOCATED(rho_kts)) DEALLOCATE(rho_kts)
@@ -485,7 +488,7 @@
          rho_min, theta_min, X, Y, Z, R, X1, Y1, Z1, R1, delta, &
          dRdrho, dZdrho, dRdtheta, dZdtheta, dR, dZ, tau, &
          delrho, deltheta
-      zeta_out = ATAN2(y_in,x_in)*nfp
+      zeta_out = ATAN2(y_in,x_in)*get_field_period()  ! the field period should come from the surface_extender_mod and (hopefully) match the Biot-Savart field period
       rho_out = MAX(rho_out,0.0)
       R_in = SQRT(x_in*x_in + y_in*y_in)
       fnorm = one / SQRT(R_in*R_in+Z_in*Z_in)
