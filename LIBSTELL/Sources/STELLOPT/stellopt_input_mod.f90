@@ -263,7 +263,7 @@
                          mboz, nboz, rho_exp, &
                          lxval_opt, xval, dxval_opt, xval_min, xval_max, &
                          lyval_opt, yval, dyval_opt, yval_min, yval_max, &
-                         alpha_henne, &
+                         alpha_henne, mmax_henne, nmax_henne, &
                          lb_henne_opt, lr0_henne_opt, lz0_henne_opt, lrho_henne_opt, &
                          db_henne_opt, dr0_henne_opt, dz0_henne_opt, drho_henne_opt, & 
                          b_henne_min, b_henne_max, r0_henne_min, r0_henne_max, &
@@ -428,6 +428,10 @@
       exp_alpha       = 0.0
       b0_vac          = 0.0
       alpha_henne     = 1.0
+      mmax_henne      = -1
+      nmax_henne      = -1
+      nu_henne        = 16
+      nv_henne        = 16
       axis_init_option = "previous"
       lxval_opt       = .FALSE.
       lyval_opt       = .FALSE.
@@ -441,7 +445,7 @@
       lxics_v0_opt    = .FALSE.
       lextcur_opt(:)  = .FALSE.
       laphi_opt(:)    = .FALSE.
-      lb_henne_opt    = .FALSE.
+      lb_henne_opt(:) = .FALSE.
       lam_opt(:)      = .FALSE.
       lac_opt(:)      = .FALSE.
       lai_opt(:)      = .FALSE.
@@ -490,7 +494,7 @@
       dbcrit_opt      = -1.0
       dmix_ece_opt    = -1.0
       dxics_v0_opt    = -1.0
-      db_henne_opt    = -1.0
+      db_henne_opt(:) = -1.0
       dextcur_opt(:)  = -1.0
       daphi_opt(:)    = -1.0
       dam_opt(:)      = -1.0
@@ -1338,12 +1342,21 @@
         END DO
       END IF
 
-      IF (ANY(lrho_henne_opt) .or. lb_henne_opt .or. &
+      IF (ANY(lrho_henne_opt) .or. ANY(lb_henne_opt) .or. &
           ANY(lr0_henne_opt) .or. ANY(lz0_henne_opt)) THEN
          WRITE(iunit,outboo) 'LEXP_SCALE',lexp_scale
          WRITE(iunit,outflt) 'EXP_ALPHA',exp_alpha
-         WRITE(iunit,onevar) 'LB_HENNE_OPT',lb_henne_opt,'B_HENNE_MIN',b_henne_min,'B_HENNE_MAX',b_henne_max
-         IF (db_henne_opt > 0) WRITE(iunit,outflt) 'DB_HENNE_OPT',db_henne_opt
+         WRITE(iunit,outflt) 'ALPHA_HENNE',alpha_henne
+         WRITE(iunit,outint) 'MMAX_HENNE',mmax_henne
+         WRITE(iunit,outint) 'NMAX_HENNE',nmax_henne
+         DO n = LBOUND(lb_henne_opt,DIM=1), UBOUND(lb_henne_opt,DIM=1)
+            IF (lb_henne_opt(n)) &
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',1X,L1,3(2X,A,I4.3,A,1X,'=',1X,ES22.12E3))")&
+                  'LB_HENNE_OPT(',n,')',lb_henne_opt(n),&
+                  'B_HENNE_MIN(',n,')',b_henne_min(n),&
+                  'B_HENNE_MAX(',n,')',b_henne_max(n),&
+                  'DB_HENNE_OPT(',n,')',db_henne_opt(n)
+         END DO
          DO n = LBOUND(lr0_henne_opt,DIM=1), UBOUND(lr0_henne_opt,DIM=1)
             IF (lr0_henne_opt(n)) &
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',1X,L1,3(2X,A,I4.3,A,1X,'=',1X,ES22.12E3))")&

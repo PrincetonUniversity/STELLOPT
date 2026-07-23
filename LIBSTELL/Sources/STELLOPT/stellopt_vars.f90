@@ -157,18 +157,16 @@
       REAL(rprec), DIMENSION(-ntord:ntord,-mpol1d:mpol1d) ::  delta_min, delta_max
 
       ! Variables associated with Henneberg Represenation
-      INTEGER                                             ::  alpha_henne
-      REAL(rprec)                                         ::  b_henne
-      REAL(rprec), DIMENSION(0:ntord)                     ::  R0_henne, Z0_henne
+      INTEGER                                             ::  alpha_henne, mmax_henne, nmax_henne, &
+                                                              nu_henne, nv_henne
+      REAL(rprec), DIMENSION(0:ntord)                     ::  b_henne,R0_henne, Z0_henne
       REAL(rprec), DIMENSION(-ntord:ntord,0:mpol1d)       ::  rho_henne
-      LOGICAL                                             ::  lb_henne_opt
-      LOGICAL, DIMENSION(0:ntord)                         ::  lR0_henne_opt, lZ0_henne_opt
+      LOGICAL, DIMENSION(0:ntord)                         ::  lb_henne_opt, lR0_henne_opt, lZ0_henne_opt
       LOGICAL, DIMENSION(-ntord:ntord,0:mpol1d)           ::  lrho_henne_opt
-      REAL(rprec)                                         ::  db_henne_opt
-      REAL(rprec), DIMENSION(0:ntord)                     ::  dR0_henne_opt, dZ0_henne_opt
+      REAL(rprec), DIMENSION(0:ntord)                     ::  db_henne_opt, dR0_henne_opt, dZ0_henne_opt
       REAL(rprec), DIMENSION(-ntord:ntord,0:mpol1d)       ::  drho_henne_opt
-      REAL(rprec)                                         ::  b_henne_min, b_henne_max
-      REAL(rprec), DIMENSION(0:ntord)                     ::  R0_henne_min, R0_henne_max, &
+      REAL(rprec), DIMENSION(0:ntord)                     ::  b_henne_min, b_henne_max, &
+                                                              R0_henne_min, R0_henne_max, &
                                                               Z0_henne_min, Z0_henne_max
       REAL(rprec), DIMENSION(-ntord:ntord,0:mpol1d)       ::  rho_henne_min, rho_henne_max
 
@@ -515,7 +513,7 @@
             WRITE(iunit,out_format_2DB) 'ZBS_COILSURF(',var_dex1,',',var_dex2,'): Vertical Coil Surface Boundary Harmonics'
          ! HENNEBERG Boundary Representation
          CASE(ihenne_b)
-            WRITE(iunit,out_format) 'B_HENNE:  Henneberg B Coefficient'
+            WRITE(iunit,out_format_1D) 'B_HENNE(',var_dex1,'):  Henneberg B Coefficient'
          CASE(ihenne_R0)
             WRITE(iunit,out_format_1D) 'R0_HENNE(',var_dex1,'):  Henneberg R0 Coefficient'
          CASE(ihenne_Z0)
