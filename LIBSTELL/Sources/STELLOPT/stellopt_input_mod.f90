@@ -263,6 +263,11 @@
                          mboz, nboz, rho_exp, &
                          lxval_opt, xval, dxval_opt, xval_min, xval_max, &
                          lyval_opt, yval, dyval_opt, yval_min, yval_max, &
+                         alpha_henne, &
+                         lb_henne_opt, lr0_henne_opt, lz0_henne_opt, lrho_henne_opt, &
+                         db_henne_opt, dr0_henne_opt, dz0_henne_opt, drho_henne_opt, & 
+                         b_henne_min, b_henne_max, r0_henne_min, r0_henne_max, &
+                         z0_henne_min, z0_henne_max, rho_henne_min, rho_henne_max, &
                          target_x, sigma_x, target_y, sigma_y, &
                          target_phiedge, sigma_phiedge, &
                          target_rbtor, sigma_rbtor, &
@@ -422,6 +427,7 @@
       lexp_scale      = .FALSE.
       exp_alpha       = 0.0
       b0_vac          = 0.0
+      alpha_henne     = 1.0
       axis_init_option = "previous"
       lxval_opt       = .FALSE.
       lyval_opt       = .FALSE.
@@ -435,6 +441,7 @@
       lxics_v0_opt    = .FALSE.
       lextcur_opt(:)  = .FALSE.
       laphi_opt(:)    = .FALSE.
+      lb_henne_opt    = .FALSE.
       lam_opt(:)      = .FALSE.
       lac_opt(:)      = .FALSE.
       lai_opt(:)      = .FALSE.
@@ -463,12 +470,15 @@
       lah_f_opt(:)        = .FALSE.
       lat_f_opt(:)        = .FALSE.
       lemis_xics_f_opt(:) = .FALSE.
+      lr0_henne_opt       = .FALSE.
+      lz0_henne_opt       = .FALSE.
       lbound_opt(:,:)     = .FALSE.
       lrho_opt(:,:)       = .FALSE.
       ldeltamn_opt(:,:)   = .FALSE.
       lmode_opt(:,:)      = .FALSE.
       laxis_opt(:)        = .FALSE.
       lcoil_kts_opt(:,:)  = .FALSE.
+      lrho_henne_opt      = .FALSE.
       lpoincare           = .FALSE.
       lfix_rho_coil       = .FALSE.
       lfix_theta_coil     = .FALSE.
@@ -480,6 +490,7 @@
       dbcrit_opt      = -1.0
       dmix_ece_opt    = -1.0
       dxics_v0_opt    = -1.0
+      db_henne_opt    = -1.0
       dextcur_opt(:)  = -1.0
       daphi_opt(:)    = -1.0
       dam_opt(:)      = -1.0
@@ -511,9 +522,12 @@
       dat_f_opt(:)    = -1.0
       daxis_opt(:)    = -1.0
       demis_xics_f_opt(:) = -1.0
+      dr0_henne_opt   = -1.0
+      dz0_henne_opt   = -1.0
       dbound_opt(:,:)     = -1.0
       drho_opt(:,:)       = -1.0
       ddeltamn_opt(:,:)   = -1.0
+      drho_henne_opt      = -1.0
       dcoil_kts_opt(:,:)  = -1.0
       dcoilsurf_opt(:,:)  = -1.0
       ! Rosenbrock test function variables
@@ -549,6 +563,11 @@
          zbs_min         = -bigno;  zbs_max         = bigno
          bound_min       = -bigno;  bound_max       = bigno
          delta_min       = -bigno;  delta_max       = bigno
+         b_henne_min     = -bigno;  b_henne_max     = bigno
+         r0_henne_min    = -bigno;  r0_henne_max    = bigno
+         z0_henne_min    = -bigno;  z0_henne_max    = bigno
+         rho_henne_min   = -bigno;  rho_henne_max   = bigno
+
       END IF
       xval            = 0.0   ;  yval            = 0.0
       mix_ece_min     = 0.0   ;  mix_ece_max     = 1.0
@@ -1317,6 +1336,45 @@
                END IF
            END DO
         END DO
+      END IF
+
+      IF (ANY(lrho_henne_opt) .or. lb_henne_opt .or. &
+          ANY(lr0_henne_opt) .or. ANY(lz0_henne_opt)) THEN
+         WRITE(iunit,outboo) 'LEXP_SCALE',lexp_scale
+         WRITE(iunit,outflt) 'EXP_ALPHA',exp_alpha
+         WRITE(iunit,onevar) 'LB_HENNE_OPT',lb_henne_opt,'B_HENNE_MIN',b_henne_min,'B_HENNE_MAX',b_henne_max
+         IF (db_henne_opt > 0) WRITE(iunit,outflt) 'DB_HENNE_OPT',db_henne_opt
+         DO n = LBOUND(lr0_henne_opt,DIM=1), UBOUND(lr0_henne_opt,DIM=1)
+            IF (lr0_henne_opt(n)) &
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',1X,L1,3(2X,A,I4.3,A,1X,'=',1X,ES22.12E3))")&
+                  'LR0_HENNE_OPT(',n,')',lr0_henne_opt(n),&
+                  'R0_HENNE_MIN(',n,')',r0_henne_min(n),&
+                  'R0_HENNE_MAX(',n,')',r0_henne_max(n),&
+                  'DR0_HENNE_OPT(',n,')',dr0_henne_opt(n)
+         END DO
+         DO n = LBOUND(lz0_henne_opt,DIM=1), UBOUND(lz0_henne_opt,DIM=1)
+            IF (lz0_henne_opt(n)) &
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',1X,L1,3(2X,A,I4.3,A,1X,'=',1X,ES22.12E3))")&
+                  'LZ0_HENNE_OPT(',n,')',lz0_henne_opt(n),&
+                  'Z0_HENNE_MIN(',n,')',z0_henne_min(n),&
+                  'Z0_HENNE_MAX(',n,')',z0_henne_max(n),&
+                  'DZ0_HENNE_OPT(',n,')',dz0_henne_opt(n)
+         END DO
+         DO m = LBOUND(lrho_henne_opt,DIM=2), UBOUND(lrho_henne_opt,DIM=2)
+            DO n = LBOUND(lrho_henne_opt,DIM=1), UBOUND(lrho_henne_opt,DIM=1)
+               IF(lrho_henne_opt(n,m) .and. (rho_henne_min(n,m)>-bigno .or. rho_henne_max(n,m)<bigno)) THEN
+                  WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,ES22.12E3))")&
+                     'LRHO_HENNE_OPT(',n,',',m,')',lrho_henne_opt(n,m),&
+                     'RHO_HENNE_MIN(',n,',',m,')',rho_henne_min(n,m),&
+                     'RHO_HENNE_MAX(',n,',',m,')',rho_henne_max(n,m),&
+                     'DRHO_HENNE_OPT(',n,',',m,')',drho_henne_opt(n,m)
+               ELSEIF (ldeltamn_opt(n,m)) THEN
+                  WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,1(2X,A,I4.3,A,I4.3,A,1X,'=',1X,ES22.12E3))")&
+                     'LRHO_HENNE_OPT(',n,',',m,')',lrho_henne_opt(n,m),&
+                     'DRHO_HENNE_OPT(',n,',',m,')',drho_henne_opt(n,m)
+               END IF
+            END DO
+         END DO
       END IF
 
       
