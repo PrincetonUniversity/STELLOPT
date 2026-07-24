@@ -21,7 +21,7 @@ contains
         real(dp), intent(out) :: R0_out(0:nmax)
         real(dp), intent(out) :: Z0_out(0:nmax)
         real(dp), intent(out) :: bcoef_out(0:nmax)
-        real(dp), intent(out) :: rho_out(-ntor:ntor, 0:mpol)
+        real(dp), intent(out) :: rho_out(-nmax:nmax, 0:mmax)
 
         ! Local scalars
         integer  :: m, n, jphi, itheta, nmin, sign_flips_count
@@ -237,8 +237,6 @@ contains
         
         !integer, intent(out) :: ntor_out
         ! Must be sized to handle the resulting offset logic natively
-        !real(dp), intent(out) :: rc(0:mmax, -(nmax + abs(alpha_fac)) : (nmax + abs(alpha_fac)))
-        !real(dp), intent(out) :: zs(0:mmax, -(nmax + abs(alpha_fac)) : (nmax + abs(alpha_fac)))
         real(dp), intent(out) :: rc(-(nmax + abs(alpha_fac)) : (nmax + abs(alpha_fac)), 0:mmax)
         real(dp), intent(out) :: zs(-(nmax + abs(alpha_fac)) : (nmax + abs(alpha_fac)), 0:mmax)
 
@@ -270,8 +268,8 @@ contains
 
             zs( n, 1) = zs( n, 1) + 0.25_dp * b
             zs(-n, 1) = zs(-n, 1) + 0.25_dp * b
-            zs( n + alpha_fac, 1) = zs( n + alpha_fac, 1) - 0.25_dp * b
-            zs(-n + alpha_fac, 1) = zs(-n + alpha_fac, 1) - 0.25_dp * b
+            zs( n + alpha_fac, 1) = zs( n + alpha_fac, 1) + 0.25_dp * b
+            zs(-n + alpha_fac, 1) = zs(-n + alpha_fac, 1) + 0.25_dp * b
         end do
 
         ! Transform rho
