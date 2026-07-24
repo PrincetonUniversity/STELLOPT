@@ -1646,7 +1646,6 @@
             DO m = LBOUND(ldeltamn_opt,2), UBOUND(ldeltamn_opt,2)
                DO n = LBOUND(ldeltamn_opt,1), UBOUND(ldeltamn_opt,1)
                   IF (deltamn(n,m) /= 0.0_rprec) WRITE(iunit,*) n,m,deltamn(n,m)
-                  !WRITE(iunit,*) n,m,deltamn(n,m)
                END DO
             END DO
             CLOSE(iunit)
@@ -1673,24 +1672,25 @@
             CALL safe_open(iunit,ier,'henneberg.txt','unknown','formatted')
             WRITE(iunit,'(A,I2.2)') 'ALPHA: ',alpha_henne
             WRITE(iunit,'(A)') 'B(n): '
-            DO n = LBOUND(b_henne,1), UBOUND(b_henne,1)
+            DO n = 0, UBOUND(b_henne,1)
                IF (b_henne(n) /= 0.0_rprec) WRITE(iunit,*) n,b_henne(n)
             END DO
             WRITE(iunit,'(A)') 'R0(n): '
-            DO n = LBOUND(R0_henne,1), UBOUND(R0_henne,1)
+            DO n = 0, UBOUND(R0_henne,1)
                IF (R0_henne(n) /= 0.0_rprec) WRITE(iunit,*) n,R0_henne(n)
             END DO
             WRITE(iunit,'(A)') 'Z0(n): '
-            DO n = LBOUND(Z0_henne,1), UBOUND(Z0_henne,1)
+            DO n = 0, UBOUND(Z0_henne,1)
                IF (Z0_henne(n) /= 0.0_rprec) WRITE(iunit,*) n,Z0_henne(n)
             END DO
             WRITE(iunit,'(A)') 'RHO(n,m): '
             CALL FLUSH(iunit)
-            DO m = LBOUND(rho_henne,2), UBOUND(rho_henne,2)
+            DO m = 0, UBOUND(rho_henne,2)
                DO n = LBOUND(rho_henne,1), UBOUND(rho_henne,1)
                   IF (rho_henne(n,m) /= 0.0_rprec) WRITE(iunit,*) n,m,rho_henne(n,m)
                END DO
             END DO
+            CALL FLUSH(iunit)
             CLOSE(iunit)
          END IF
          WRITE(6,*) '   ======TARGETS====='
