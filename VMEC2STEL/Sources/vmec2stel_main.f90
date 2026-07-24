@@ -896,7 +896,7 @@
                                     Z0_HENNEBERG(0:ntor), &
                                     BCOEF_HENNEBERG(0:ntor), &
                                     rhobc(-ntor:ntor,0:mpol-1), &
-                                    alpha_fac, ntor, &
+                                    alpha_fac, &
                                     rbc_temp(-ntor:ntor,0:mpol-1), &
                                     zbs_temp(-ntor:ntor,0:mpol-1))
                IF (loutput_harm) THEN
