@@ -1346,7 +1346,7 @@
           ANY(lr0_henne_opt) .or. ANY(lz0_henne_opt)) THEN
          WRITE(iunit,outboo) 'LEXP_SCALE',lexp_scale
          WRITE(iunit,outflt) 'EXP_ALPHA',exp_alpha
-         WRITE(iunit,outflt) 'ALPHA_HENNE',alpha_henne
+         WRITE(iunit,outint) 'ALPHA_HENNE',alpha_henne
          WRITE(iunit,outint) 'MMAX_HENNE',mmax_henne
          WRITE(iunit,outint) 'NMAX_HENNE',nmax_henne
          DO n = LBOUND(lb_henne_opt,DIM=1), UBOUND(lb_henne_opt,DIM=1)
