@@ -505,11 +505,11 @@ class VMEC(FourierRep):
 		import numpy as np
 		nu = 64
 		nv = 128
-		theta = np.linspace(0,2*np.pi,nu)
-		phi   = np.linspace(0,2*np.pi,nv)
+		theta = np.linspace([0],[2*np.pi],nu)
+		phi   = np.linspace([0],[2*np.pi],nv)
 		# Create derivatives
-		xm2d  = np.broadcast_to(self.xm,(self.ns,self.mnmax))
-		xn2d  = np.broadcast_to(self.xn,(self.ns,self.mnmax))
+		xm2d  = np.broadcast_to(self.xm.T,(self.ns,self.mnmax))
+		xn2d  = np.broadcast_to(self.xn.T,(self.ns,self.mnmax))
 		rumns = - xm2d * self.rmnc
 		rvmns = - xn2d * self.rmnc
 		zumnc =   xm2d * self.zmns
@@ -523,33 +523,35 @@ class VMEC(FourierRep):
 			zvmns = - xn2d * self.zmnc
 			lumns = - xm2d * self.lmnc
 			lvmns = - xn2d * self.lmnc
-		r = self.cfunct(theta,zeta,self.rmnc,self.xm,self.xn)
-		g = self.cfunct(theta,zeta,self.gmnc,self.xm_nyq,self.xn_nyq)
-		ru = self.sfunct(theta,zeta,rumns,self.xm,self.xn)
-		rv = self.sfunct(theta,zeta,rvmns,self.xm,self.xn)
-		zu = self.cfunct(theta,zeta,zumnc,self.xm,self.xn)
-		zv = self.cfunct(theta,zeta,zvmnc,self.xm,self.xn)
-		lu = self.cfunct(theta,zeta,lumnc,self.xm,self.xn)
-		lv = self.cfunct(theta,zeta,lvmnc,self.xm,self.xn)
+		r = self.cfunct(theta,phi,self.rmnc,self.xm,self.xn)
+		g = self.cfunct(theta,phi,self.gmnc,self.xm_nyq,self.xn_nyq)
+		ru = self.sfunct(theta,phi,rumns,self.xm,self.xn)
+		rv = self.sfunct(theta,phi,rvmns,self.xm,self.xn)
+		zu = self.cfunct(theta,phi,zumnc,self.xm,self.xn)
+		zv = self.cfunct(theta,phi,zvmnc,self.xm,self.xn)
+		lu = self.cfunct(theta,phi,lumnc,self.xm,self.xn)
+		lv = self.cfunct(theta,phi,lvmnc,self.xm,self.xn)
 		if self.iasym==1:
-			r  = r  + self.sfunct(theta,zeta,self.rmns,self.xm,self.xn)
-			g  = g  + self.sfunct(theta,zeta,self.gmns,self.xm_nyq,self.xn_nyq)
-			ru = ru + self.cfunct(theta,zeta,rumnc,self.xm,self.xn)
-			rv = rv + self.cfunct(theta,zeta,rvmnc,self.xm,self.xn)
-			zu = zu + self.sfunct(theta,zeta,zumns,self.xm,self.xn)
-			zv = zv + self.sfunct(theta,zeta,zvmns,self.xm,self.xn)
-			lu = lu + self.sfunct(theta,zeta,lumns,self.xm,self.xn)
-			lv = lv + self.sfunct(theta,zeta,lvmns,self.xm,self.xn)
+			r  = r  + self.sfunct(theta,phi,self.rmns,self.xm,self.xn)
+			g  = g  + self.sfunct(theta,phi,self.gmns,self.xm_nyq,self.xn_nyq)
+			ru = ru + self.cfunct(theta,phi,rumnc,self.xm,self.xn)
+			rv = rv + self.cfunct(theta,phi,rvmnc,self.xm,self.xn)
+			zu = zu + self.sfunct(theta,phi,zumns,self.xm,self.xn)
+			zv = zv + self.sfunct(theta,phi,zvmns,self.xm,self.xn)
+			lu = lu + self.sfunct(theta,phi,lumns,self.xm,self.xn)
+			lv = lv + self.sfunct(theta,phi,lvmns,self.xm,self.xn)
 		# Calc suscpetance matrices
 		scale_fact = 1.0 / ( 4 * np.pi * np.pi )
 		S11 = ( ru * ru + zu * zu)
 		S21 = ( ru * rv + zu * zv)
-		S12 = ( S12 * ( 1.0 + lu ) - S11 * lv )
+		S12 = ( S21 * ( 1.0 + lu ) - S11 * lv )
 		S22 = ( ( rv * rv + zv * zv + r * r ) * ( 1.0 + lu ) - S21 * lv )
-		S11 = np.trapz(S11 / g, x=zeta, axis=2)
-		S12 = np.trapz(S12 / g, x=zeta, axis=2)
-		S21 = np.trapz(S21 / g, x=zeta, axis=2)
-		S22 = np.trapz(S22 / g, x=zeta, axis=2)
+		phi = np.squeeze(phi)
+		theta = np.squeeze(theta)
+		S11 = np.trapz(S11 / g, x=phi, axis=2)
+		S12 = np.trapz(S12 / g, x=phi, axis=2)
+		S21 = np.trapz(S21 / g, x=phi, axis=2)
+		S22 = np.trapz(S22 / g, x=phi, axis=2)
 		S11 = np.trapz(S11, x=theta, axis=1)*scale_fact
 		S12 = np.trapz(S12, x=theta, axis=1)*scale_fact
 		S21 = np.trapz(S21, x=theta, axis=1)*scale_fact
