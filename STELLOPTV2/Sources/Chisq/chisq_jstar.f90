@@ -112,6 +112,7 @@
          DO ik = 1, nsd
             IF (sigma(ik) < bigno) THEN
                lbooz(ik) = .TRUE.
+               lload_equil = .TRUE.
                DO v = 1, NumJstar
                   DO u = 1, nu_b, mskip
                      mtargets = mtargets + 1

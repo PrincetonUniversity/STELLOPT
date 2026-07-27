@@ -149,6 +149,8 @@ stellopt_write_header.o : \
 stellopt_write_auxfiles.o : \
       stellopt_runtime.o \
       equil_utils.o \
+      equil_vals.o \
+      $(BEAMS3D_DIR)/$(LOCTYPE)/beams3d_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_input_mod.o 
 
 stellopt_write_eqfile.o : \
@@ -807,6 +809,7 @@ stellopt_fcn.o : \
       
 stellopt_main.o : \
       stellopt_runtime.o \
+      equil_utils.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_input_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/mgrid_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_params.o
@@ -929,6 +932,7 @@ stellopt_paraexe.o : \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_input_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
       equil_vals.o \
+      equil_utils.o \
       $(VMEC_DIR)/$(LOCTYPE)/vmec_params.o \
       $(LIB_DIR)/$(LOCTYPE)/wall_mod.o \
       $(BEAMS3D_DIR)/$(LOCTYPE)/beams3d_runtime.o \
@@ -940,13 +944,11 @@ stellopt_paraexe.o : \
       
 stellopt_prof_refit.o : \
       stellopt_runtime.o \
-      $(LIB_DIR)/$(LOCTYPE)/stellopt_input_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_targets.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
-      $(LIB_DIR)/$(LOCTYPE)/vmec_input.o \
-      $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o \
-      $(LIB_DIR)/$(LOCTYPE)/diagno_input_mod.o \
-      $(LIB_DIR)/$(LOCTYPE)/diagno_runtime.o \
-      $(LIB_DIR)/$(LOCTYPE)/biotsavart.o
+      equil_utils.o \
+      $(BOOTSJ_DIR)/$(LOCTYPE)/parambs.o \
+      $(LIB_DIR)/$(LOCTYPE)/ezspline.o
       
 
 stellopt_clean_up.o : \

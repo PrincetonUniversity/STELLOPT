@@ -13,7 +13,7 @@ HOME_BIN = ../../
 MOD1_PATH = -I$(MYHOME)/libstell_dir
 MOD_PATH = 
 CLEAN_ARCH = 
-LIB_DIR = ../../LIBSTELL
+LIB_DIR = $(STELLOPT_PATH)/LIBSTELL
 LIB = libstell$(STATIC_EXT)
 
 # Handle third party code dependencies

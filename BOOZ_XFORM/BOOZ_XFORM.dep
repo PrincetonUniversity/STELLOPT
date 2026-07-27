@@ -31,8 +31,15 @@ boozer_coords.o : \
 
 boozer_xform.o : \
       ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
-      booz_params.o 
-      
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      booz_params.o
+
+
+boozer_setup.o : \
+      booz_params.o \
+      booz_persistent.o
+
 
 foranl.o : \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \

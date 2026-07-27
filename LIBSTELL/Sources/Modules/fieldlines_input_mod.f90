@@ -70,7 +70,8 @@
                                   mumaterial_lamthresh, mumaterial_padfactor, &
                                   mumaterial_convcheck, mumaterial_depth, &
                                   mumaterial_leaf, &
-                                  mumaterial_theta_iter, mumaterial_theta_eval
+                                  mumaterial_theta_iter, mumaterial_theta_eval, &
+                                  mumaterial_scale
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -123,11 +124,15 @@
       mumaterial_lamfactor = 0.75D+00
       mumaterial_padfactor = 1.0D+00
       mumaterial_convcheck = 99.0D+00
+<<<<<<< HEAD
       mumaterial_theta_iter = 0.33
       mumaterial_theta_eval = 0.10
       mumaterial_depth = 10
       mumaterial_leaf = 4
 
+=======
+      mumaterial_scale = 1.0_rprec
+>>>>>>> origin/develop
 
       int_type = "NAG"
       IF (TRIM(filename) == "") RETURN
@@ -205,6 +210,7 @@
       WRITE(iunit_out,outflt) 'MUMATERIAL_LAMFACTOR',mumaterial_lamfactor
       WRITE(iunit_out,outflt) 'MUMATERIAL_PADFACTOR',mumaterial_padfactor
       WRITE(iunit_out,outflt) 'MUMATERIAL_CONVCHECK',mumaterial_convcheck
+      WRITE(iunit_out,outflt) 'MUMATERIAL_SCALE',mumaterial_scale
       WRITE(iunit_out,'(A)') '!---------- Marker Tracking Parameters ------------'
       WRITE(iunit_out,outstr) 'INT_TYPE',TRIM(int_type)
       WRITE(iunit_out,outflt) 'FOLLOW_TOL',follow_tol
@@ -298,6 +304,7 @@
       CALL MPI_BCAST(mumaterial_tol,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
       CALL MPI_BCAST(mumaterial_lambda,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
       CALL MPI_BCAST(mumaterial_lamfactor,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(mumaterial_scale,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
 #endif
       END SUBROUTINE BCAST_FIELDLINES_INPUT
 

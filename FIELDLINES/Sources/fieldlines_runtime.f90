@@ -57,7 +57,8 @@
          mumaterial_lambdamin, mumaterial_lambdamax, &
          mumaterial_padfactor, mumaterial_convcheck, &
          mumaterial_depth, mumaterial_leaf, &
-         mumaterial_theta_iter, mumaterial_theta_eval
+         mumaterial_theta_iter, mumaterial_theta_eval, &
+         mumaterial_scale
 !-----------------------------------------------------------------------
 !     Module Variables
 !          lverb         Logical to control screen output

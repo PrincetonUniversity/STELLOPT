@@ -91,6 +91,35 @@
 
       CONTAINS
 
+      SUBROUTINE init_dkes_input
+      USE Vnamecl2, ONLY: zero
+      IMPLICIT NONE
+C-----------------------------------------------
+      MPOL = -1
+      NTOR = 0
+      LALPHA = 100
+      IPMB = 0
+      MMNN = 0
+      MESHTZ = 0
+      IDISK = 1
+      LFOUT = 0
+      IFSCL = 0
+      NRUN  = 0
+      CMUL  = zero
+      EFIELD = zero
+      NZPERIOD = 1
+      CHIP = zero
+      PSIP = zero
+      MPOLB = 0
+      NTORB = 0
+      NVALSB = -bigint-1
+      BORBI = zero
+      BTHETA = zero
+      BZETA = zero
+      IBBI = 1
+      RETURN
+      END SUBROUTINE init_dkes_input
+
       SUBROUTINE read_dkes_input
       USE safe_open_mod
       USE vimatrix, ONLY: ioout, ioout_opt

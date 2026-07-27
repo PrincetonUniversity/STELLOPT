@@ -122,9 +122,8 @@
       IF (lfusion_alpha) THEN
          DO s = mystart, myend
             i = MOD(s-1,nr1)+1
-            j = MOD(s-1,nr1*nphi1)
-            j = FLOOR(REAL(j) / REAL(nr1))+1
-            k = CEILING(REAL(s) / REAL(nr1*nphi1))
+            j = MOD(s-1,nr1*nphi1)/nr1+1
+            k = (s-1)/(nr1*nphi1)+1
             q = (/raxis(i), phiaxis(j), zaxis(k)/)+0.5*(/hr(i),hp(j),hz(k)/) ! Half grid
             CALL beams3d_DTRATE(q,rateDT(i,j,k))
             maxrateDT = MAX(rateDT(i,j,k),maxrateDT)
@@ -135,9 +134,8 @@
       IF (lfusion_tritium .or. lfusion_proton) THEN
          DO s = mystart, myend
             i = MOD(s-1,nr1)+1
-            j = MOD(s-1,nr1*nphi1)
-            j = FLOOR(REAL(j) / REAL(nr1))+1
-            k = CEILING(REAL(s) / REAL(nr1*nphi1))
+            j = MOD(s-1,nr1*nphi1)/nr1+1
+            k = (s-1)/(nr1*nphi1)+1
             q = (/raxis(i), phiaxis(j), zaxis(k)/)+0.5*(/hr(i),hp(j),hz(k)/) ! Half grid
             CALL beams3d_DDTRATE(q,rateDDT(i,j,k))
             maxrateDDT = MAX(rateDDT(i,j,k),maxrateDDT)
@@ -148,9 +146,8 @@
       IF (lfusion_He3) THEN
          DO s = mystart, myend
             i = MOD(s-1,nr1)+1
-            j = MOD(s-1,nr1*nphi1)
-            j = FLOOR(REAL(j) / REAL(nr1))+1
-            k = CEILING(REAL(s) / REAL(nr1*nphi1))
+            j = MOD(s-1,nr1*nphi1)/nr1+1
+            k = (s-1)/(nr1*nphi1)+1
             q = (/raxis(i), phiaxis(j), zaxis(k)/)+0.5*(/hr(i),hp(j),hz(k)/) ! Half grid
             CALL beams3d_DDHe3RATE(q,rateDDHe(i,j,k))
             maxrateDDHe = MAX(rateDDHe(i,j,k),maxrateDDHe)
@@ -161,9 +158,8 @@
       IF (lfusion_DHe3) THEN ! should probably be it's own thing
          DO s = mystart, myend
             i = MOD(s-1,nr1)+1
-            j = MOD(s-1,nr1*nphi1)
-            j = FLOOR(REAL(j) / REAL(nr1))+1
-            k = CEILING(REAL(s) / REAL(nr1*nphi1))
+            j = MOD(s-1,nr1*nphi1)/nr1+1
+            k = (s-1)/(nr1*nphi1)+1
             q = (/raxis(i), phiaxis(j), zaxis(k)/)+0.5*(/hr(i),hp(j),hz(k)/) ! Half grid
             CALL beams3d_DHe3RATE(q,rateDHe3(i,j,k))
             maxrateDHe3 = MAX(rateDHe3(i,j,k),maxrateDHe3)
@@ -173,9 +169,8 @@
       ! l3d array and volume normalization
       DO s = mystart, myend
          i = MOD(s-1,nr1)+1
-         j = MOD(s-1,nr1*nphi1)
-         j = FLOOR(REAL(j) / REAL(nr1))+1
-         k = CEILING(REAL(s) / REAL(nr1*nphi1))
+         j = MOD(s-1,nr1*nphi1)/nr1+1
+         k = (s-1)/(nr1*nphi1)+1
          q = (/raxis(i), phiaxis(j), zaxis(k)/)+0.5*(/hr(i),hp(j),hz(k)/) ! Half grid
          CALL beams3d_SFLX(q,sval)
          IF (sval < sfactor) l3d(i,j,k) = .true.
@@ -236,9 +231,8 @@
       ! Add volume back into neutrons
       DO s = mystart, myend
          i = MOD(s-1,nr1)+1
-         j = MOD(s-1,nr1*nphi1)
-         j = FLOOR(REAL(j) / REAL(nr1))+1
-         k = CEILING(REAL(s) / REAL(nr1*nphi1))
+         j = MOD(s-1,nr1*nphi1)/nr1+1
+         k = (s-1)/(nr1*nphi1)+1
          ! We have the n/s but we need to add the volume back in (dV=rdrdpdz)
          dV = (raxis(i)+0.5*hr(i))*hr(i)*hp(j)*hz(k)
          NEUTRONS_ARR(:,i,j,k) = NEUTRONS_ARR(:,i,j,k)/dV
@@ -349,9 +343,8 @@
             vpart = sqrt(2*E_BEAMS(l)/mHe4)
             DO s = 1,nr1*nphi1*nz1
                i = MOD(s-1,nr1)+1
-               j = MOD(s-1,nr1*nphi1)
-               j = FLOOR(REAL(j) / REAL(nr1))+1
-               k = CEILING(REAL(s) / REAL(nr1*nphi1))
+               j = MOD(s-1,nr1*nphi1)/nr1+1
+               k = (s-1)/(nr1*nphi1)+1
                IF (n3d(i,j,k)==0) CYCLE
                k2 = n3d(i,j,k)+k1-1
                R_start(k1:k2)   =   raxis(i) + X_rand(k1:k2)*hr(i)
@@ -375,9 +368,8 @@
             !E_NEUTRONS(l) = 3.02E6
             DO s = 1,nr1*nphi1*nz1
                i = MOD(s-1,nr1)+1
-               j = MOD(s-1,nr1*nphi1)
-               j = FLOOR(REAL(j) / REAL(nr1))+1
-               k = CEILING(REAL(s) / REAL(nr1*nphi1))
+               j = MOD(s-1,nr1*nphi1)/nr1+1
+               k = (s-1)/(nr1*nphi1)+1
                IF (n3d(i,j,k)==0) CYCLE
                k2 = n3d(i,j,k)+k1-1
                R_start(k1:k2)   =   raxis(i) + X_rand(k1:k2)*hr(i)
@@ -401,9 +393,8 @@
             !E_NEUTRONS(l) = 2.45E6
             DO s = 1,nr1*nphi1*nz1
                i = MOD(s-1,nr1)+1
-               j = MOD(s-1,nr1*nphi1)
-               j = FLOOR(REAL(j) / REAL(nr1))+1
-               k = CEILING(REAL(s) / REAL(nr1*nphi1))
+               j = MOD(s-1,nr1*nphi1)/nr1+1
+               k = (s-1)/(nr1*nphi1)+1
                IF (n3d(i,j,k)==0) CYCLE
                k2 = n3d(i,j,k)+k1-1
                R_start(k1:k2)   =   raxis(i) + X_rand(k1:k2)*hr(i)
@@ -426,9 +417,8 @@
             vpart = sqrt(2*E_BEAMS(l)/mHe3)
             DO s = 1,nr1*nphi1*nz1
                i = MOD(s-1,nr1)+1
-               j = MOD(s-1,nr1*nphi1)
-               j = FLOOR(REAL(j) / REAL(nr1))+1
-               k = CEILING(REAL(s) / REAL(nr1*nphi1))
+               j = MOD(s-1,nr1*nphi1)/nr1+1
+               k = (s-1)/(nr1*nphi1)+1
                IF (n3d(i,j,k)==0) CYCLE
                k2 = n3d(i,j,k)+k1-1
                R_start(k1:k2)   =   raxis(i) + X_rand(k1:k2)*hr(i)
@@ -452,9 +442,8 @@
             !E_NEUTRONS(l) = 2.45E6
             DO s = 1,nr1*nphi1*nz1
                i = MOD(s-1,nr1)+1
-               j = MOD(s-1,nr1*nphi1)
-               j = FLOOR(REAL(j) / REAL(nr1))+1
-               k = CEILING(REAL(s) / REAL(nr1*nphi1))
+               j = MOD(s-1,nr1*nphi1)/nr1+1
+               k = (s-1)/(nr1*nphi1)+1
                IF (n3d(i,j,k)==0) CYCLE
                k2 = n3d(i,j,k)+k1-1
                R_start(k1:k2)   =   raxis(i) + X_rand(k1:k2)*hr(i)
@@ -476,9 +465,8 @@
             !E_NEUTRONS(l) = 2.45E6
             DO s = 1,nr1*nphi1*nz1
                i = MOD(s-1,nr1)+1
-               j = MOD(s-1,nr1*nphi1)
-               j = FLOOR(REAL(j) / REAL(nr1))+1
-               k = CEILING(REAL(s) / REAL(nr1*nphi1))
+               j = MOD(s-1,nr1*nphi1)/nr1+1
+               k = (s-1)/(nr1*nphi1)+1
                IF (n3d(i,j,k)==0) CYCLE
                k2 = n3d(i,j,k)+k1-1
                R_start(k1:k2)   =   raxis(i) + X_rand(k1:k2)*hr(i)

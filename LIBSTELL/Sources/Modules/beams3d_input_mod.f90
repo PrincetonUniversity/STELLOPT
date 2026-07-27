@@ -457,6 +457,7 @@
       CHARACTER(LEN=*), PARAMETER :: outstr  = "(2X,A,1X,'=',1X,'''',A,'''')"
       CHARACTER(LEN=*), PARAMETER :: onevar  = "(2X,A,1X,'=',1X,L1,2(2X,A,1X,'=',1X,ES22.12E3))"
       CHARACTER(LEN=*), PARAMETER :: vecvar  = "(2X,A,'(',I3.3,')',1X,'=',1X,ES22.12E3)"
+      CHARACTER(LEN=*), PARAMETER :: vecint  = "(2X,A,'(',I3.3,')',1X,'=',1X,I3.3)"
       CHARACTER(LEN=*), PARAMETER :: vecvar2  = "(2X,A,'(',I3.3,',',I3.3,')',1X,'=',1X,ES22.12E3)"
       istat = 0
       WRITE(iunit_out,'(A)') '&BEAMS3D_INPUT'
@@ -548,9 +549,8 @@
          DO n = 1, nbeams
             WRITE(iunit_out,"(A,I2.2)") '!---- BEAM #',n
             IF (dex_beams(n)>0) &
-               WRITE(iunit_out,vecvar) 'DEX_BEAMS',n,dex_beams(n)
+               WRITE(iunit_out,vecint) 'DEX_BEAMS',n,dex_beams(n)
             WRITE(iunit_out,vecvar) 'T_END_IN',n,t_end_in(n)
-            WRITE(iunit_out,vecvar) 'DEX_BEAMS',n,dex_beams(n)
             WRITE(iunit_out,vecvar) 'DIV_BEAMS',n,div_beams(n)
             WRITE(iunit_out,vecvar) 'ADIST_BEAMS',n,adist_beams(n)
             WRITE(iunit_out,vecvar) 'ASIZE_BEAMS',n,asize_beams(n)
