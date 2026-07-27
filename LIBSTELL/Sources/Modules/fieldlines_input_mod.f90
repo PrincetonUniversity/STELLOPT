@@ -124,15 +124,11 @@
       mumaterial_lamfactor = 0.75D+00
       mumaterial_padfactor = 1.0D+00
       mumaterial_convcheck = 99.0D+00
-<<<<<<< HEAD
       mumaterial_theta_iter = 0.33
       mumaterial_theta_eval = 0.10
       mumaterial_depth = 10
       mumaterial_leaf = 4
-
-=======
       mumaterial_scale = 1.0_rprec
->>>>>>> origin/develop
 
       int_type = "NAG"
       IF (TRIM(filename) == "") RETURN
