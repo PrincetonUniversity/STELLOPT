@@ -149,8 +149,8 @@
       ALLOCATE(x_out(npoints_beams), y_out(npoints_beams), z_out(npoints_beams))
       DO s = 1, npoints_beams
       i = MOD(s-1,nr)+1
-      j = FLOOR(REAL(MOD(s-1,nr*nphi))/REAL(nr))+1
-      k = CEILING(REAL(s)/REAL(nr*nphi))
+      j = MOD(s-1,nr*nphi)/nr+1
+      k = (s-1)/(nr*nphi)+1
       x_out(s) = raxis(i)*cos(phiaxis(j))
       y_out(s) = raxis(i)*sin(phiaxis(j))
       z_out(s) = zaxis(k)
@@ -163,8 +163,8 @@
       IF (lissubmaster) THEN
         DO s = 1, npoints_beams
           i = MOD(s-1,nr)+1
-          j = FLOOR(REAL(MOD(s-1,nr*nphi))/REAL(nr))+1
-          k = CEILING(REAL(s)/REAL(nr*nphi))
+          j = MOD(s-1,nr*nphi)/nr+1
+          k = (s-1)/(nr*nphi)+1
           B_R(i,j,k)   = B_beams(1,s)*cos(phiaxis(j)) + B_beams(2,s)*sin(phiaxis(j))
           B_PHI(i,j,k) = B_beams(2,s)*cos(phiaxis(j)) - B_beams(1,s)*sin(phiaxis(j))
           B_Z(i,j,k)   = B_beams(3,s)
