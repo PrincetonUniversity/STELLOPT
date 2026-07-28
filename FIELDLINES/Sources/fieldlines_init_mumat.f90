@@ -158,8 +158,8 @@
       ALLOCATE(x_out(npoints_fieldlines), y_out(npoints_fieldlines), z_out(npoints_fieldlines))
       DO s = 1, npoints_fieldlines
       i = MOD(s-1,nr)+1
-      j = FLOOR(REAL(MOD(s-1,nr*nphi))/REAL(nr))+1
-      k = CEILING(REAL(s)/REAL(nr*nphi))
+      j = MOD(s-1,nr*nphi)/nr+1
+      k = (s-1)/(nr*nphi)+1
       x_out(s) = raxis(i)*cos(phiaxis(j))
       y_out(s) = raxis(i)*sin(phiaxis(j))
       z_out(s) = zaxis(k)
@@ -174,8 +174,8 @@
       IF (lissubmaster) THEN
         DO s = 1, npoints_fieldlines
           i = MOD(s-1,nr)+1
-          j = FLOOR(REAL(MOD(s-1,nr*nphi))/REAL(nr))+1
-          k = CEILING(REAL(s)/REAL(nr*nphi))
+          j = MOD(s-1,nr*nphi)/nr+1
+          k = (s-1)/(nr*nphi)+1
           B_R(i,j,k)   = B_fieldlines(1,s)*cos(phiaxis(j)) + B_fieldlines(2,s)*sin(phiaxis(j))
           B_PHI(i,j,k) = B_fieldlines(2,s)*cos(phiaxis(j)) - B_fieldlines(1,s)*sin(phiaxis(j))
           B_Z(i,j,k)   = B_fieldlines(3,s)
