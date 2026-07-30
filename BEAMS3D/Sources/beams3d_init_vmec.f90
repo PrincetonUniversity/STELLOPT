@@ -327,11 +327,9 @@
       CALL FLUSH(6)
       DO s = mystart, myend
          i = MOD(s-1,nr)+1
-         j = MOD(s-1,nr*nphi)
-         j = FLOOR(REAL(j) / REAL(nr))+1
-         k = CEILING(REAL(s) / REAL(nr*nphi))
-         sflx = 0.001
-         uflx = 0.0
+         j = MOD(s-1,nr*nphi)/nr+1
+         k = (s-1)/(nr*nphi)+1
+         sflx = MAX(0.001,MIN(0.999,sflx))
          CALL GetBcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
                       br, bphi, bz, SFLX=sflx,UFLX=uflx,info=ier)
          !PRINT *,i,j,k,raxis_g(i),phiaxis(j),zaxis_g(k), br, bphi, bz, sflx,uflx,ier
@@ -377,9 +375,17 @@
       nfailed = 0
       DO s = mystart, myend
          i = MOD(s-1,nr)+1
-         j = MOD(s-1,nr*nphi)
-         j = FLOOR(REAL(j) / REAL(nr))+1
-         k = CEILING(REAL(s) / REAL(nr*nphi))
+         j = MOD(s-1,nr*nphi)/nr+1
+         k = (s-1)/(nr*nphi)+1
+         ! First update progress
+         IF (MOD(s,nr) == 0) THEN
+            IF (lverb) THEN
+               CALL backspace_out(6,6)
+               WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*s)/(myend-mystart+1)),']%'
+            END IF
+         END IF
+         CALL FLUSH(6)
+         ! Don't do edge points
          IF ((i==1) .or. (i==nr) .or. (k==1) .or. (k==nz)) CYCLE
          IF (S_ARR(i,j,k) < 0.0) nfailed = nfailed + 1
       END DO
@@ -467,9 +473,8 @@
       CALL FLUSH(6)
       DO s = mystart, myend
          i = MOD(s-1,nr)+1
-         j = MOD(s-1,nr*nphi)
-         j = FLOOR(REAL(j) / REAL(nr))+1
-         k = CEILING(REAL(s) / REAL(nr*nphi))
+         j = MOD(s-1,nr*nphi)/nr+1
+         k = (s-1)/(nr*nphi)+1
          sflx = S_ARR(i,j,k)
          sflx = MAX(sflx,0.0)
          ! Do the potential everwhere
@@ -509,9 +514,8 @@
          CALL FLUSH(6)
          DO s = mystart, myend
             i = MOD(s-1,nr)+1
-            j = MOD(s-1,nr*nphi)
-            j = FLOOR(REAL(j) / REAL(nr))+1
-            k = CEILING(REAL(s) / REAL(nr*nphi))
+            j = MOD(s-1,nr*nphi)/nr+1
+            k = (s-1)/(nr*nphi)+1
             sflx = S_ARR(i,j,k)
             sflx = MAX(sflx,0.0)
             IF (sflx <= 1.0) CYCLE

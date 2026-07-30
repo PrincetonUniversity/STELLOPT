@@ -53,9 +53,10 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: iunit, ier, mn, im, in, ik , i, j, ns1, k1,mn0,&
-                 u,v
+                 mnmax_temp, u,v
       INTEGER :: bcs1(2)
       INTEGER, ALLOCATABLE :: xn_temp(:), xm_temp(:)
+      LOGICAL :: lnyquist
       REAL(rprec) :: val1, val2, dval, scale, rhomax, dr, f0_temp, dz,&
                      alvb, b1, c1, re, ae, r1, alub
       REAL(rprec), ALLOCATABLE :: mfact(:,:)
@@ -69,6 +70,8 @@
       REAL(rprec), ALLOCATABLE :: bsmns_temp(:,:)
       REAL(rprec), ALLOCATABLE :: bumnc_temp(:,:), bvmnc_temp(:,:)
       REAL(rprec), ALLOCATABLE :: bmnc_temp(:,:), bmns_temp(:,:)
+      REAL(rprec), ALLOCATABLE :: jumnc_temp(:,:), jvmnc_temp(:,:)
+      REAL(rprec), ALLOCATABLE :: jumns_temp(:,:), jvmns_temp(:,:)
       DOUBLE PRECISION, ALLOCATABLE :: rmnc_tempr(:,:), zmns_tempr(:,:)
       DOUBLE PRECISION, ALLOCATABLE :: rmns_tempr(:,:), zmnc_tempr(:,:)
       DOUBLE PRECISION, ALLOCATABLE :: bsupumnc_tempr(:,:), bsupvmnc_tempr(:,:)
@@ -130,7 +133,7 @@
 
       ! Now do grid
       DO ik = 2, ns-1
-         WHERE (MOD(NINT(REAL(xm_temp(:))),2) .eq. 0)
+         WHERE (MOD(NINT(REAL(xm_nyq(:))),2) .eq. 0)
             mfact(:,1)= 0.5
             mfact(:,2)= 0.5
          ELSEWHERE
@@ -142,15 +145,15 @@
       END DO
 
       ! Now do edgek = ns_vmec
-      WHERE (MOD(NINT(REAL(xm_temp(:))),2) .eq. 0)
+      WHERE (MOD(NINT(REAL(xm_nyq(:))),2) .eq. 0)
          mfact(:,1)= 2.0 ! ns (half grid point)
          mfact(:,2)=-1.0 ! ns-1 (full grid point)
       ELSEWHERE
          mfact(:,1)= 2.0*SQRT((ns-1)/(ns-1.5))
          mfact(:,2)=-1.0*SQRT((ns-1)/(ns-2.0))
       ENDWHERE
-      bsupumnc(:,ns) = mfact(:,ns)*bsupumnc(:,ns)+mfact(:,2)*bsupumnc(:,ns-1)
-      bsupvmnc(:,ns) = mfact(:,ns)*bsupvmnc(:,ns)+mfact(:,2)*bsupvmnc(:,ns-1)
+      bsupumnc(:,ns) = mfact(:,1)*bsupumnc(:,ns)+mfact(:,2)*bsupumnc(:,ns-1)
+      bsupvmnc(:,ns) = mfact(:,1)*bsupvmnc(:,ns)+mfact(:,2)*bsupvmnc(:,ns-1)
       DEALLOCATE(mfact)
 
       ! Get fields on full mesh
@@ -382,19 +385,81 @@
          IF (adapt_rel < 0.0) adapt_tol = -1.0
          MIN_CLS = 0
       ELSE IF (.not.lvac .and. .not.lvc_field .and. (bound_separation > 1)) THEN
-         ALLOCATE(xm_temp(mnmax),xn_temp(mnmax), STAT=ier)
-         xm_temp = xm
-         xn_temp = -xn
+         IF (SIZE(xm_nyq) > SIZE(xm)) THEN
+            mnmax_temp = SIZE(xm_nyq)
+            lnyquist = .true.
+         ELSE
+            mnmax_temp = mnmax
+            lnyquist = .false.
+         END IF
+         ALLOCATE(xm_temp(mnmax_temp),xn_temp(mnmax_temp), STAT=ier)
+         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'XM_TEMP XN_TEMP',ier)
+         ALLOCATE(rmnc_temp(mnmax_temp,ns),zmns_temp(mnmax_temp,ns),&
+                  jumnc_temp(mnmax_temp,ns),jvmnc_temp(mnmax_temp,ns),&
+                  STAT=ier)
+         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'VOLINT VMEC TEMP',ier)
+         rmnc_temp = 0; zmns_temp = 0
+         jumnc_temp = 0; jvmnc_temp = 0
+         IF (lasym) THEN
+            ALLOCATE(rmns_temp(mnmax_temp,ns),zmnc_temp(mnmax_temp,ns),&
+                     jumns_temp(mnmax_temp,ns),jvmns_temp(mnmax_temp,ns),&
+                     STAT=ier)
+            IF (ier /= 0) CALL handle_err(ALLOC_ERR,'VOLINT VMEC ASYM TEMP',ier)
+            rmns_temp = 0; zmnc_temp = 0
+            jumns_temp = 0; jvmns_temp = 0
+         END IF
+         IF (lnyquist) THEN
+            xm_temp = xm_nyq
+            ! init_volint reconstructs a full torus and expects full-torus
+            ! toroidal mode numbers.
+            xn_temp = -xn_nyq
+            DO u = 1, mnmax_temp
+               DO v = 1, mnmax
+                  IF ((xm(v) .eq. xm_nyq(u)) .and. (xn(v) .eq. xn_nyq(u))) THEN
+                     rmnc_temp(u,:) = rmnc(v,:)
+                     zmns_temp(u,:) = zmns(v,:)
+                     IF (lasym) THEN
+                        rmns_temp(u,:) = rmns(v,:)
+                        zmnc_temp(u,:) = zmnc(v,:)
+                     END IF
+                  END IF
+               END DO
+            END DO
+         ELSE
+            xm_temp = xm
+            ! init_volint reconstructs a full torus and expects full-torus
+            ! toroidal mode numbers.
+            xn_temp = -xn
+            rmnc_temp = rmnc
+            zmns_temp = zmns
+            IF (lasym) THEN
+               rmns_temp = rmns
+               zmnc_temp = zmnc
+            END IF
+         END IF
+         jumnc_temp = isigng*currumnc
+         jvmnc_temp = isigng*currvmnc
          MIN_CLS = 0
          IF (lasym) THEN
-             CALL init_volint(mnmax,nu_vc,nv_vc,ns,xm_temp,xn_temp,rmnc,zmns,nfp,&
-                              JUMNC=isigng*currumnc, JVMNC=isigng*currvmnc,&
-                              RMNS=rmns,ZMNC=zmnc,&
-                              JUMNS=isigng*currumns, JVMNS=isigng*currvmns)
+             jumns_temp = isigng*currumns
+             jvmns_temp = isigng*currvmns
+             CALL init_volint(mnmax_temp,nu_vc,nv_vc,ns,xm_temp,xn_temp,&
+                              rmnc_temp,zmns_temp,nfp,&
+                              JUMNC=jumnc_temp, JVMNC=jvmnc_temp,&
+                              RMNS=rmns_temp,ZMNC=zmnc_temp,&
+                              JUMNS=jumns_temp, JVMNS=jvmns_temp,&
+                              COMM=MPI_COMM_FIELDLINES)
+             DEALLOCATE(rmns_temp,zmnc_temp)
+             DEALLOCATE(jumns_temp,jvmns_temp)
          ELSE
-             CALL init_volint(mnmax,nu_vc,nv_vc,ns,xm_temp,xn_temp,rmnc,zmns,nfp,&
-                              JUMNC=isigng*currumnc, JVMNC=isigng*currvmnc)
+             CALL init_volint(mnmax_temp,nu_vc,nv_vc,ns,xm_temp,xn_temp,&
+                              rmnc_temp,zmns_temp,nfp,&
+                              JUMNC=jumnc_temp, JVMNC=jvmnc_temp,&
+                              COMM=MPI_COMM_FIELDLINES)
          END IF
+         DEALLOCATE(rmnc_temp,zmns_temp)
+         DEALLOCATE(jumnc_temp,jvmnc_temp)
+         DEALLOCATE(xm_temp,xn_temp)
          adapt_tol = 0.0
          adapt_rel = vc_adapt_tol
       END IF
@@ -440,7 +505,7 @@
       CALL MPI_BARRIER(MPI_COMM_SHARMEM,ierr_mpi)
 #endif
       DEALLOCATE(bsupumnc_temp,bsupvmnc_temp, bmnc_temp)
-      IF (ALLOCATED(rmns_temp)) DEALLOCATE(bsupumns_temp,bsupvmns_temp, bmns_temp)
+      IF (ALLOCATED(bsupumns_temp)) DEALLOCATE(bsupumns_temp,bsupvmns_temp, bmns_temp)
       ! Calculated the external surfaces
       IF (bound_separation > 1) THEN
          ! Try recalcing the exterior surfaces

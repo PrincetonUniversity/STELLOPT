@@ -164,6 +164,7 @@ spectrum.o : \
       
 
 symforce.o : \
+      timer_sub.o \
       parallel_include_module.o \
       realspace.o \
       vmec_main.o 
@@ -176,6 +177,7 @@ symrzl.o : \
       
 
 tomnsp_mod.o : \
+      timer_sub.o \
       fbal.o \
       parallel_include_module.o \
       precon2d.o \
@@ -186,6 +188,7 @@ tomnsp_mod.o : \
       
 
 totzsp_mod.o : \
+      timer_sub.o \
       parallel_include_module.o \
       precon2d.o \
       realspace.o \
@@ -414,6 +417,7 @@ eqfor.o : \
       ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/stel_constants.o \
       ../../LIBSTELL/$(LOCTYPE)/v3f_vmec_comm.o \
+      timer_sub.o \
       csplinx.o \
       fbal.o \
       parallel_include_module.o \
@@ -621,7 +625,8 @@ fourp.o : \
 greenf.o : \
       ../../LIBSTELL/$(LOCTYPE)/vparams.o \
       parallel_include_module.o \
-      vacmod.o 
+      vacmod.o \
+      timer_sub.o
       
 
 precal.o : \

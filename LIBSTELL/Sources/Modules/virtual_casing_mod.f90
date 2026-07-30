@@ -34,16 +34,17 @@
 !
 !                    To load an equilibrium using current density from VMEC
 !
-!                    ALLOCATE(xm_temp(mnmax),xn_temp(mnmax)) ! Integer Arrays
-!                    ALLOCATE(rmnc_temp(mnmax,ns),zmns_temp(mnmax,ns)) ! DOUBLE PRECISION
-!                    ALLOCATE(jumnc_temp(mnmax,ns),jvmnc_temp(mnmax,ns)) ! DOUBLE PRECISION
-!                    xm_temp = xm
-!                    xn_temp = -xn
-!                    rmnc_temp = rmnc
-!                    zmns_temp = zmns
+!                    ALLOCATE(xm_temp(mnmax_temp),xn_temp(mnmax_temp)) ! Integer Arrays
+!                    ALLOCATE(rmnc_temp(mnmax_temp,ns),zmns_temp(mnmax_temp,ns))
+!                    ALLOCATE(jumnc_temp(mnmax_temp,ns),jvmnc_temp(mnmax_temp,ns))
+!                    xm_temp = xm_nyq
+!                    xn_temp = -xn_nyq
+!                    ! Copy rmnc/zmns into matching rows of the Nyquist basis;
+!                    ! leave geometry rows with no matching VMEC mode at zero.
+!                    ! currumnc/currvmnc are contravariant current harmonics on the Nyquist grid.
 !                    jumnc_temp = isigng*currumnc
 !                    jvmnc_temp = isigng*currvmnc
-!                    CALL init_volint(mnmax,nu2,nv2,ns,xm_temp,xn_temp, &
+!                    CALL init_volint(mnmax_temp,nu2,nv2,ns,xm_temp,xn_temp, &
 !                                     rmnc_temp,zmns_temp,nfp,&
 !                                     JUMNC=jumnc_temp, JVMNC=jvmnc_temp)
 !
@@ -844,8 +845,8 @@
          uv = 1
          DO v = 1, nv
             DO u = 1, nu
-               xsurf(uv)   = rreal(u,v)*dcos(phi(nv))
-               ysurf(uv)   = rreal(u,v)*dsin(phi(nv))
+               xsurf(uv)   = rreal(u,v)*dcos(phi(v))
+               ysurf(uv)   = rreal(u,v)*dsin(phi(v))
                zsurf(uv)   = zreal(u,v)
                xreal(u,v)  = xsurf(uv)
                yreal(u,v)  = ysurf(uv)
@@ -2001,27 +2002,29 @@
          FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -rmnc(mn,:)*xm(mn)
          CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,ru,1,0)
          FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -rmnc(mn,:)*xn(mn)
-         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,rv,1,0)  
+         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,rv,1,0)
          FORALL(mn = 1:mnmax) fmn_temp(mn,:) = zmns(mn,:)*xm(mn)
-         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,zu,0,0) 
+         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,zu,0,0)
          FORALL(mn = 1:mnmax) fmn_temp(mn,:) = zmns(mn,:)*xn(mn)
-         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,zv,0,0)  
+         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,zv,0,0)
          IF (PRESENT(rmns)) THEN
             FORALL(mn = 1:mnmax) fmn_temp(mn,:) = rmns(mn,:)*xm(mn)
             CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,ru,0,0)
             FORALL(mn = 1:mnmax) fmn_temp(mn,:) = rmns(mn,:)*xn(mn)
-            CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,rv,0,0)  
+            CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,rv,0,0)
          END IF 
          IF (PRESENT(zmnc)) THEN
             FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -zmnc(mn,:)*xm(mn)
-            CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,zu,1,0)  
+            CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,zu,1,0)
             FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -zmnc(mn,:)*xn(mn)
             CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,zv,1,0)
          END IF
+         ! xv spans the full torus here, and xn already carries the full-torus
+         ! toroidal mode number, so rv/zv must not be scaled by nfp again.
          ! Calculate jr, jphi, jz, jx, jy
-         jr   = ju_temp*ru+jv_temp*rv*nfp
+         jr   = ju_temp*ru+jv_temp*rv
          jphi = r_temp * jv_temp
-         jz   = ju_temp*zu+jv_temp*zv*nfp
+         jz   = ju_temp*zu+jv_temp*zv
          DO u = 1, nu
             DO v = 1, nvp
                cop = DCOS(pi2*xv(v))
@@ -2202,7 +2205,7 @@
       ! non Hermite Quatitites
       cx = xparam*(xp2-1); cxi = xpi*(xpi2-1); hx2 = hx*hx
       cy = yparam*(yp2-1); cyi = ypi*(ypi2-1); hy2 = hy*hy
-      cy = zparam*(zp2-1); czi = zpi*(zpi2-1); hz2 = hz*hz
+      cz = zparam*(zp2-1); czi = zpi*(zpi2-1); hz2 = hz*hz
       xs  =  evaltri3D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, &
                        yparam, ypi, yp2, ypi2, cy, cyi, hy2, &
                        zparam, zpi, zp2, zpi2, cz, czi, hz2, &
@@ -2291,7 +2294,7 @@
       ! non Hermite Quatitites
       cx = xparam*(xp2-1); cxi = xpi*(xpi2-1); hx2 = hx*hx
       cy = yparam*(yp2-1); cyi = ypi*(ypi2-1); hy2 = hy*hy
-      cy = zparam*(zp2-1); czi = zpi*(zpi2-1); hz2 = hz*hz
+      cz = zparam*(zp2-1); czi = zpi*(zpi2-1); hz2 = hz*hz
       xs  =  evaltri3D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, &
                        yparam, ypi, yp2, ypi2, cy, cyi, hy2, &
                        zparam, zpi, zp2, zpi2, cz, czi, hz2, &
