@@ -335,48 +335,50 @@
       END IF
 
       ! If dirichlet boundary condition, need to read experimental current as a function of time from file
-      IF(trim(edge_bc_type) == 'dirichlet') THEN
-         WRITE(6,*) 'EDGE BC: dirichlet (read from file) '
-         !
-         CALL open_hdf5(TRIM(prof_string),fid,ier,LCREATE=.false.)
-         IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,TRIM(prof_string),ier)
-         !
-         CALL read_scalar_hdf5(fid,'total_current_edge_bc_ntimesteps',ier,INTVAR=total_current_edge_bc_ntimesteps)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'total_current_edge_bc_ntimesteps',ier)
-         !
-         ALLOCATE(total_current_edge_bc(total_current_edge_bc_ntimesteps),time_grid_edge_bc(total_current_edge_bc_ntimesteps))
-         !
-         CALL read_var_hdf5(fid,'total_current_edge_bc',total_current_edge_bc_ntimesteps,ier,DBLVAR=total_current_edge_bc)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'total_current_edge_bc',ier)
-         !
-         CALL read_var_hdf5(fid,'time_grid_edge_bc',total_current_edge_bc_ntimesteps,ier,DBLVAR=time_grid_edge_bc)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'time_grid_edge_bc',ier)
-         !
-         CALL close_hdf5(fid,ier)
-         
-         ! Now create spline and evaluate THRIFT_DIRICHLET_EDGE_BC at THRIFT_T
-         CALL mpialloc(THRIFT_DIRICHLET_EDGE_BC, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_dirichlet_edge_bc)
-         bcs0=(/ 0, 0/)
-         CALL EZspline_init(temp_spl,total_current_edge_bc_ntimesteps,bcs0,ier)
-         IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'init: edge BC spline',ier)
-         temp_spl%x1          = time_grid_edge_bc
-         temp_spl%isHermite   = 1
-         CALL EZspline_setup(temp_spl,total_current_edge_bc,ier,EXACT_DIM=.true.)
-         IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'setup: edge BC spline',ier)
-         CALL EZspline_interp(temp_spl,ntimesteps,THRIFT_T,THRIFT_DIRICHLET_EDGE_BC,ier)
-         IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'interp: edge BC spline',ier)
-         CALL EZspline_free(temp_spl,ier)
+      CALL mpialloc(THRIFT_DIRICHLET_EDGE_BC, ntimesteps, myid_sharmem, 0, MPI_COMM_SHARMEM, win_thrift_dirichlet_edge_bc)
+      IF (myid_sharmem == master) THEN
+         IF(trim(edge_bc_type) == 'dirichlet') THEN
+            WRITE(6,*) 'EDGE BC: dirichlet (read from file)'
+            !
+            CALL open_hdf5(TRIM(prof_string),fid,ier,LCREATE=.false.)
+            IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,TRIM(prof_string),ier)
+            !
+            CALL read_scalar_hdf5(fid,'total_current_edge_bc_ntimesteps',ier,INTVAR=total_current_edge_bc_ntimesteps)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'total_current_edge_bc_ntimesteps',ier)
+            !
+            ALLOCATE(total_current_edge_bc(total_current_edge_bc_ntimesteps),time_grid_edge_bc(total_current_edge_bc_ntimesteps))
+            !
+            CALL read_var_hdf5(fid,'total_current_edge_bc',total_current_edge_bc_ntimesteps,ier,DBLVAR=total_current_edge_bc)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'total_current_edge_bc',ier)
+            !
+            CALL read_var_hdf5(fid,'time_grid_edge_bc',total_current_edge_bc_ntimesteps,ier,DBLVAR=time_grid_edge_bc)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'time_grid_edge_bc',ier)
+            !
+            CALL close_hdf5(fid,ier)
+            
+            ! Now create spline and evaluate THRIFT_DIRICHLET_EDGE_BC at THRIFT_T
+            bcs0=(/ 0, 0/)
+            CALL EZspline_init(temp_spl,total_current_edge_bc_ntimesteps,bcs0,ier)
+            IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'init: edge BC spline',ier)
+            temp_spl%x1          = time_grid_edge_bc
+            temp_spl%isHermite   = 1
+            CALL EZspline_setup(temp_spl,total_current_edge_bc,ier,EXACT_DIM=.true.)
+            IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'setup: edge BC spline',ier)
+            CALL EZspline_interp(temp_spl,ntimesteps,THRIFT_T,THRIFT_DIRICHLET_EDGE_BC,ier)
+            IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'interp: edge BC spline',ier)
+            CALL EZspline_free(temp_spl,ier)
 
-         DEALLOCATE(total_current_edge_bc,time_grid_edge_bc)
+            DEALLOCATE(total_current_edge_bc,time_grid_edge_bc)
 
-      ELSEIF(trim(edge_bc_type) == 'robin') THEN
-         WRITE(6,*) 'EDGE BC: robin'
+         ELSEIF(trim(edge_bc_type) == 'robin') THEN
+            WRITE(6,*) 'EDGE BC: robin'
 
-      ELSE
-         WRITE(6,*) '!!!!!!!!!!!! ERROR !!!!!!!!!!!!!!'
-         WRITE(6,*) '  edge_bc_type must be either dirichlet or robin'
-         WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-         STOP
+         ELSE
+            WRITE(6,*) '!!!!!!!!!!!! ERROR !!!!!!!!!!!!!!'
+            WRITE(6,*) '  edge_bc_type must be either dirichlet or robin'
+            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            STOP
+         END IF
       END IF
 
       ! Extra variables (used in debugging process)
