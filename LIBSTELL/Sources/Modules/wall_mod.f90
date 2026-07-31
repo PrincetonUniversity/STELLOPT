@@ -233,7 +233,7 @@
       LOGICAL, INTENT(in), OPTIONAL :: verb
       INTEGER, INTENT(inout), OPTIONAL :: comm
       DOUBLE PRECISION :: xmin, ymin, zmin, xmax, ymax, zmax
-      INTEGER :: iunit, ik, i, dex1, dex2, dex3
+      INTEGER :: iunit, ik, i, dex1, dex2, dex3, iwal_zero, j
       INTEGER :: shar_comm
       LOGICAL :: shared, lwall_acc, lcomm
 
@@ -298,7 +298,6 @@
 
        ! Check for 0-based face indices and correct to 1-based
        IF (shar_rank == 0) THEN
-          INTEGER :: iwal_zero, j
           iwal_zero = 0
           DO ik = 1, nface
              DO j = 1, 3
