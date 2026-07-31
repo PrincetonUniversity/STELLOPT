@@ -19,7 +19,10 @@
   MPI_RUN_OPTS_MD ?= $(MPI_RUN_OPTS)
   MPI_RUN_OPTS_LG ?= $(MPI_RUN_OPTS)
 
-.PHONY: test_vmec
+.PHONY: test_indexing test_vmec
+
+test_indexing:
+	python3 -m unittest discover -s tests -v
 
 test_beams3d:
 	@echo "Beginning testing of BEAMS3D"
@@ -471,6 +474,7 @@ help:
 	@echo "      LTRAVIS:         " $(LTRAVIS)
 	@echo ""
 	@echo "   COMMANDS"
+	@echo "      test_indexing   Testing of linear to 3D indexing"
 	@echo "      test_beams3d    Tesing of BEAMS3D"
 	@echo "      test_diagno     Tesing of DIAGNO"
 	@echo "      test_fieldlines Tesing of FIELDLINES"

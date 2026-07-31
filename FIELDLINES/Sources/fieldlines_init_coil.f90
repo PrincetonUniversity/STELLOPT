@@ -108,9 +108,8 @@
       IF (lafield_only) THEN
          DO s = mystart, myend
             i = MOD(s-1,nr)+1
-            j = MOD(s-1,nr*nphi)
-            j = FLOOR(REAL(j) / REAL(nr))+1
-            k = CEILING(REAL(s) / REAL(nr*nphi))
+            j = MOD(s-1,nr*nphi)/nr+1
+            k = (s-1)/(nr*nphi)+1
             br = 0.; bphi = 0.; bz = 0.
             br_temp   = 0.0;
             bphi_temp = 0.0;
@@ -134,9 +133,8 @@
       ELSE
          DO s = mystart, myend
             i = MOD(s-1,nr)+1
-            j = MOD(s-1,nr*nphi)
-            j = FLOOR(REAL(j) / REAL(nr))+1
-            k = CEILING(REAL(s) / REAL(nr*nphi))
+            j = MOD(s-1,nr*nphi)/nr+1
+            k = (s-1)/(nr*nphi)+1
             br = 0.; bphi = 0.; bz = 0.
             br_temp   = 0.0;
             bphi_temp = 0.0;
