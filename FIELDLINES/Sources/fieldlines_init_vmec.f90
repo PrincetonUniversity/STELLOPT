@@ -262,9 +262,10 @@
             i = MOD(s-1,nr)+1
             j = MOD(s-1,nr*nphi)/nr+1
             k = (s-1)/(nr*nphi)+1
-            sflx = 0.0
+            sflx = 0.001
+            uflx = 0.0
             CALL GetAcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
-                         br, bphi, bz, SFLX=sflx,info=ier)
+                         br, bphi, bz, SFLX=sflx,UFLX=uflx,info=ier)
             IF (ier == 0 .and. bphi /= 0 .and. sflx<=1) THEN
                B_R(i,j,k)   = br
                B_PHI(i,j,k) = bphi
@@ -304,7 +305,8 @@
             i = MOD(s-1,nr)+1
             j = MOD(s-1,nr*nphi)/nr+1
             k = (s-1)/(nr*nphi)+1
-            sflx = 0.0
+            sflx = 0.001
+            uflx = 0.0
             ! The GetBcyl Routine returns -3 if cyl2flx thinks s>1
             ! however, if cyl2flx fails to converge then s may be
             ! greater than 1 but cyl2flux won't throw the -3 code.
@@ -312,7 +314,7 @@
             ! bphi == 0 or ier ==-3 indicate that a point is
             ! outside the VMEC domain.
             CALL GetBcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
-                               br, bphi, bz, SFLX=sflx,info=ier)
+                               br, bphi, bz, SFLX=sflx,UFLX=uflx,info=ier)
             IF (ier == 0 .and. bphi /= 0) THEN
                ! Handle equilibrium data
                IF (sflx <=1.0) THEN ! Inside equilibrium

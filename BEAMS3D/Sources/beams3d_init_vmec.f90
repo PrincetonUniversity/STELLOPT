@@ -42,11 +42,15 @@
       INTEGER :: MPI_COMM_LOCAL
       LOGICAL :: lnyquist, luse_vc, lcreate_wall, lverb_wall
       INTEGER :: ier, s, i, j, k, nu, nv, mystart, myend, mnmax_temp, u, v
+      INTEGER :: nfailed, ifailed
       INTEGER :: bcs1_s(2)
-      INTEGER, ALLOCATABLE :: xn_temp(:), xm_temp(:)
+      INTEGER, ALLOCATABLE :: xn_temp(:), xm_temp(:), failed_index(:)
+      LOGICAL, ALLOCATABLE :: retry_success(:)
       REAL :: br_vc, bphi_vc, bz_vc, xaxis_vc, yaxis_vc, zaxis_vc,&
               bx_vc, by_vc
       REAL(rprec) :: br, bphi, bz, sflx, uflx, xaxis, yaxis
+      REAL(rprec), ALLOCATABLE :: retry_s(:), retry_u(:), retry_br(:),&
+                                 retry_bphi(:), retry_bz(:)
       DOUBLE PRECISION, ALLOCATABLE :: mfact(:,:)
       DOUBLE PRECISION, ALLOCATABLE :: rmnc_temp(:,:),zmns_temp(:,:),&
                            bumnc_temp(:,:),bvmnc_temp(:,:),&
@@ -366,13 +370,9 @@
 #endif
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !! Perform the 2nd Pass only inside domain
+      !! Retry failed lookups from an interior-neighbor initial guess
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      IF (lverb) THEN
-         WRITE(6,*)
-         WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Plasma Field 2nd Pass [',0,']%'
-      END IF
-      CALL FLUSH(6)
+      nfailed = 0
       DO s = mystart, myend
          i = MOD(s-1,nr)+1
          j = MOD(s-1,nr*nphi)/nr+1
@@ -387,49 +387,71 @@
          CALL FLUSH(6)
          ! Don't do edge points
          IF ((i==1) .or. (i==nr) .or. (k==1) .or. (k==nz)) CYCLE
-         ! Now do the problematic parts
-         IF (S_ARR(i,j,k) < 0.0) THEN
-            sflx = 0; uflx = 0; br = 0; bphi = 0; bz = 0; u = 0
-            IF (S_ARR(i+1,j  ,k  )>=0.0) THEN
-               sflx = sflx + S_ARR(i+1,j  ,k  )
-               uflx = uflx + U_ARR(i+1,j  ,k  )
-               br   = br   +   B_R(i+1,j  ,k  )
-               bphi = bphi + B_PHI(i+1,j  ,k  )
-               bz   = bz   +   B_Z(i+1,j  ,k  )
-               u = u + 1
-            ENDIF
-            IF (S_ARR(i-1,j  ,k  )>=0.0) THEN
-               sflx = sflx + S_ARR(i-1,j  ,k  )
-               uflx = uflx + U_ARR(i-1,j  ,k  )
-               br   = br   +   B_R(i-1,j  ,k  )
-               bphi = bphi + B_PHI(i-1,j  ,k  )
-               bz   = bz   +   B_Z(i-1,j  ,k  )
-               u = u + 1
-            ENDIF
-            IF (S_ARR(i  ,j  ,k+1)>=0.0) THEN
-               sflx = sflx + S_ARR(i  ,j  ,k+1)
-               uflx = uflx + U_ARR(i  ,j  ,k+1)
-               br   = br   +   B_R(i  ,j  ,k+1)
-               bphi = bphi + B_PHI(i  ,j  ,k+1)
-               bz   = bz   +   B_Z(i  ,j  ,k+1)
-               u = u + 1
-            ENDIF
-            IF (S_ARR(i  ,j  ,k-1)>=0.0) THEN
-               sflx = sflx + S_ARR(i  ,j  ,k-1)
-               uflx = uflx + U_ARR(i  ,j  ,k-1)
-               br   = br   +   B_R(i  ,j  ,k-1)
-               bphi = bphi + B_PHI(i  ,j  ,k-1)
-               bz   = bz   +   B_Z(i  ,j  ,k-1)
-               u = u + 1
-            ENDIF
-            S_ARR(i,j,k) = sflx/DBLE(u)
-            U_ARR(i,j,k) = uflx/DBLE(u)
-            B_R(i,j,k)   =   br/DBLE(u)
-            B_PHI(i,j,k) = bphi/DBLE(u)
-            B_Z(i,j,k)   =   bz/DBLE(u)
-         ENDIF
-         CALL FLUSH(6)
+         IF (S_ARR(i,j,k) < 0.0) nfailed = nfailed + 1
       END DO
+
+      IF (nfailed > 0) THEN
+         ALLOCATE(failed_index(nfailed),retry_success(nfailed))
+         ALLOCATE(retry_s(nfailed),retry_u(nfailed),retry_br(nfailed),&
+                  retry_bphi(nfailed),retry_bz(nfailed))
+         retry_success = .false.
+         ifailed = 0
+         DO s = mystart, myend
+            i = MOD(s-1,nr)+1
+            j = MOD(s-1,nr*nphi)
+            j = FLOOR(REAL(j) / REAL(nr))+1
+            k = CEILING(REAL(s) / REAL(nr*nphi))
+            IF ((i==1) .or. (i==nr) .or. (k==1) .or. (k==nz)) CYCLE
+            IF (S_ARR(i,j,k) >= 0.0) CYCLE
+            ifailed = ifailed + 1
+            failed_index(ifailed) = s
+            sflx = -1.0
+            IF (S_ARR(i-1,j,k) >= 0.0 .and. S_ARR(i-1,j,k) <= 1.0) THEN
+               sflx = S_ARR(i-1,j,k)
+               uflx = U_ARR(i-1,j,k)
+            ELSE IF (S_ARR(i+1,j,k) >= 0.0 .and. S_ARR(i+1,j,k) <= 1.0) THEN
+               sflx = S_ARR(i+1,j,k)
+               uflx = U_ARR(i+1,j,k)
+            ELSE IF (S_ARR(i,j,k-1) >= 0.0 .and. S_ARR(i,j,k-1) <= 1.0) THEN
+               sflx = S_ARR(i,j,k-1)
+               uflx = U_ARR(i,j,k-1)
+            ELSE IF (S_ARR(i,j,k+1) >= 0.0 .and. S_ARR(i,j,k+1) <= 1.0) THEN
+               sflx = S_ARR(i,j,k+1)
+               uflx = U_ARR(i,j,k+1)
+            END IF
+            IF (sflx < 0.0) CYCLE
+            CALL GetBcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
+                         br,bphi,bz,SFLX=sflx,UFLX=uflx,info=ier)
+            IF (ier /= 0) CYCLE
+            retry_success(ifailed) = .true.
+            retry_s(ifailed) = MAX(sflx,0.0_rprec)
+            retry_u(ifailed) = MODULO(uflx,pi2)
+            retry_br(ifailed) = br
+            retry_bphi(ifailed) = bphi
+            retry_bz(ifailed) = bz
+         END DO
+      END IF
+
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
+#endif
+      IF (nfailed > 0) THEN
+         DO ifailed = 1, nfailed
+            IF (.not. retry_success(ifailed)) CYCLE
+            s = failed_index(ifailed)
+            i = MOD(s-1,nr)+1
+            j = MOD(s-1,nr*nphi)
+            j = FLOOR(REAL(j) / REAL(nr))+1
+            k = CEILING(REAL(s) / REAL(nr*nphi))
+            S_ARR(i,j,k) = retry_s(ifailed)
+            U_ARR(i,j,k) = retry_u(ifailed)
+            B_R(i,j,k) = retry_br(ifailed)
+            B_PHI(i,j,k) = retry_bphi(ifailed)
+            B_Z(i,j,k) = retry_bz(ifailed)
+         END DO
+         DEALLOCATE(failed_index,retry_success,retry_s,retry_u,retry_br,&
+                    retry_bphi,retry_bz)
+      END IF
       
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! Set S==-1 values to default
