@@ -1389,7 +1389,9 @@ wall_mod.o : \
 
 
 mumaterial_mod.o : \
+      mpi_inc.o \
       mpi_params.o \
+      mpi_sharmem.o \
       safe_open_mod.o 
       
 

@@ -36,10 +36,12 @@
                      vc_adapt_tol
 
       ! Added for mumaterials interface
-      INTEGER :: mumaterial_niter, mumaterial_nneighbor, mumaterial_lamthresh
+      INTEGER :: mumaterial_niter, mumaterial_nneighbor, mumaterial_lamthresh, &
+                 mumaterial_depth, mumaterial_leaf
       REAL(rprec) :: mumaterial_tol, mumaterial_lambda, mumaterial_lamfactor, &
-                     mumaterial_padfactor, mumaterial_convcheck
-      REAL(rprec) :: mumaterial_scale
+                     mumaterial_lambdamin, mumaterial_lambdamax, mumaterial_padfactor, &
+                     mumaterial_convcheck, mumaterial_theta_iter, mumaterial_theta_eval, &
+                     mumaterial_scale
 
 
       CONTAINS
