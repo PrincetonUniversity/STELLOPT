@@ -236,6 +236,7 @@
       INTEGER :: iunit, ik, i, dex1, dex2, dex3
       INTEGER :: shar_comm
       LOGICAL :: shared, lwall_acc, lcomm
+      INTEGER :: iwal_zero, j
 
       IF (PRESENT(verb)) lverb = verb
       IF (lverb) WRITE(6,*) '-----  Creating wall mesh  -----'
@@ -298,7 +299,6 @@
 
        ! Check for 0-based face indices and correct to 1-based
        IF (shar_rank == 0) THEN
-          INTEGER :: iwal_zero, j
           iwal_zero = 0
           DO ik = 1, nface
              DO j = 1, 3
