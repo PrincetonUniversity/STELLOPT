@@ -198,7 +198,7 @@
             ! Dirichlet BC for the plasma edge
             DIAGMID(nsj) = 1
             DIAGSUB(nsj-1) = 0
-            RHS(nsj) = THRIFT_DIRICHLET_EDGE_BC(mytimestep)
+            RHS(nsj) = THRIFT_DIRICHLET_EDGE_BC(mytimestep)*mu0/THRIFT_PHIEDGE(mytimestep)
       
       ELSE
          WRITE(6,*) '!!!!!!!!!!!! ERROR !!!!!!!!!!!!!!'
