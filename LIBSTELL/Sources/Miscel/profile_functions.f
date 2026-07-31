@@ -54,13 +54,14 @@
 !  using a 10-point Gauss-Legendre quadrature.
       USE stel_kinds
       USE stel_constants, ONLY: zero, one, pi
-      USE vmec_input, ONLY: ac, bloat, pcurr_type, ac_aux_s, ac_aux_f
+      USE vmec_input, ONLY: ac, bloat, pcurr_type, ac_aux_s, ac_aux_f,
+     & pcurr_file, curtor, phiedge
       USE line_segment
       USE functions
       IMPLICIT NONE
 ! ac assumed to be dimensioned (0:n), with n >= 20
 !-----------------------------------------------
-      INTEGER     :: i, ioff, iflag
+      INTEGER     :: i, ioff, iflag, na1
       REAL(rprec) :: xx, pcurr, x, xp, temp_num, temp_denom
       CHARACTER(len=20) :: pcurr_type_lc
 
@@ -90,7 +91,8 @@
      &   0.03333567215434407_rprec /)
       REAL(rprec) :: g1,g2,g3,g4,a8,a12
       REAL(rprec), dimension(21) :: xi, bsta, bend, wd
-      REAL(rprec) :: sqx,delx,delxsq,pisq
+      REAL(rprec) :: sqx,delx,delxsq,pisq, stemp(500),
+     & prestemp(500)
       INTEGER :: ni
       INTEGER :: ncssq
 
@@ -110,6 +112,21 @@
       pcurr_type_lc = pcurr_type
       CALL tolower(pcurr_type_lc)
       SELECT CASE(TRIM(pcurr_type_lc))
+
+      CASE ('file')
+!  read from file
+	  open(32,file=pcurr_file)
+	   read(32,*) na1
+	   do i=1,na1
+	    read (32,*) stemp(i),prestemp(i)
+	   enddo
+	   read(32,*) curtor,phiedge
+	  close(32)
+!interpolation onto x
+!
+	 call qinterp_profile_function(stemp(1:na1), 
+     & prestemp(1:na1), na1, x, pcurr, 1)
+
 
       CASE ('sum_cossq_s')
 ! 20180218, Joachim Geiger
@@ -580,14 +597,16 @@
 
       USE stel_kinds
       USE stel_constants, ONLY: zero, one, pi
-      USE vmec_input, ONLY: ai, piota_type, ai_aux_s, ai_aux_f, lRFP
+      USE vmec_input, ONLY: ai, piota_type, ai_aux_s, ai_aux_f, lRFP,
+     & piota_file
       USE line_segment
       IMPLICIT NONE
 ! ai assumed to be dimensioned (0:n), with n >= 20
 !-----------------------------------------------
-      INTEGER     :: i, iflag, ioff
+      INTEGER     :: i, iflag, ioff, na1
       REAL(rprec), INTENT(IN) :: x
-      REAL(rprec) :: piota, temp_num, temp_denom
+      REAL(rprec) :: piota, temp_num, temp_denom, stemp(500),
+     & prestemp(500)
       CHARACTER(len=20) :: piota_type_lc
 !-----------------------------------------------
       piota = 0
@@ -597,6 +616,20 @@
       piota_type_lc = piota_type
       CALL tolower(piota_type_lc)
       SELECT CASE(TRIM(piota_type_lc))
+
+      CASE ('file')
+!  read from file
+	open(32,file=piota_file)
+	 read(32,*) na1
+	 do i=1,na1
+	  read (32,*) stemp(i),prestemp(i)
+	 enddo
+	close(32)
+!interpolation onto x
+!
+	 call qinterp_profile_function(stemp(1:na1), 
+     & prestemp(1:na1), na1, x, piota, 1)
+
 
       CASE('sum_atan')
 !  Sum atan functions mapped to  [0:1], with an ai(0) offset
@@ -735,15 +768,16 @@
       USE stel_kinds
       USE stel_constants, ONLY: zero, one
       USE vmec_input, ONLY: am, bloat, pres_scale, pmass_type,                 &
-     &   am_aux_s, am_aux_f
+     &   am_aux_s, am_aux_f, pmass_file
 !  am is assumed to be dimensioned starting at zero.
       USE vparams, ONLY: mu0
       USE line_segment
       USE functions
       IMPLICIT NONE
 !-----------------------------------------------
-      INTEGER     :: i, iflag, ioff
-      REAL(rprec) :: xx, pmass, x, temp_num, temp_denom
+      INTEGER     :: i, iflag, ioff, na1
+      REAL(rprec) :: xx, pmass, x, temp_num, temp_denom, 
+     & prestemp(500),stemp(500)
       CHARACTER(len=20) :: pmass_type_lc
 !-----------------------------------------------
 !     NOTE: On entry, am is in pascals. pmass internal units are mu0*pascals (B**2 units)
@@ -767,6 +801,20 @@
          pmass = (am(0)/(one - exp(-(one / am(1)) ** 2))) *                    &
      &      (exp(-(x / am(1)) ** 2) - exp(-(one / am(1)) ** 2))
 
+      CASE ('file')
+!  read from file
+	open(32,file=pmass_file)
+	 read(32,*) na1
+	 do i=1,na1
+	  read (32,*) stemp(i),prestemp(i)
+	 enddo
+	close(32)
+!interpolation onto x
+!
+	 call qinterp_profile_function(stemp(1:na1), 
+     & prestemp(1:na1), na1, x, pmass, 1)
+!      write(*,*) 'pressure done',pmass
+	 
       CASE ('two_power')
 !  Two power profile
 !  p(s) = [1 - s**am(0)]**am(1)          !! Old as of 2010-05-26
@@ -1209,3 +1257,58 @@ C-----------------------------------------------
 
       END FUNCTION protf
 !!!!DEC$ ENDIF
+
+
+	subroutine qinterp_profile_function(x_in, y_in, 
+     & Nx_in, x_out, y_out, Nx_out)
+
+! Quadratic inerpolation
+
+	integer, intent(in) :: Nx_in, Nx_out
+	double precision, intent(in), dimension(Nx_in) :: x_in, y_in
+	double precision, intent(in)  :: x_out
+	double precision, intent(out) :: y_out
+
+	integer :: i, j
+	double precision :: A, B, C, x1, x2, x3, y1, y2, y3, xloc_out
+
+	do i=1, 1
+	xloc_out = x_out
+	do j=2, Nx_in-1
+	x1 = x_in(j-1)
+	x2 = x_in(j)
+	x3 = x_in(j+1)
+	y1 = y_in(j-1)
+	y2 = y_in(j)
+	y3 = y_in(j+1)
+	if (xloc_out == x1) then
+	y_out = y1
+                EXIT
+            else if (xloc_out == x2) then
+                y_out = y2
+                EXIT
+            else if (xloc_out == x3) then
+                y_out = y3
+                EXIT
+            else if (xloc_out < x1 .and. j == 2) then
+                x1 = x_in(j-1)**2
+                x2 = x_in(j)**2
+                B = (y1 - y2)/(x1 - x2)
+                C = y2 - B*x2
+                y_out = B * xloc_out**2 + C
+                EXIT
+            else if ( (xloc_out > x1 .and. xloc_out < x3) .or. 
+     &             (xloc_out > x3 .and. j == Nx_in-1) ) then
+                A = (y3 - y2 - (x3 - x2)*(y1 - y2)/(x1 - x2)) 
+     & / ((x3 - x2)*(x3 - x1))
+                B = (y1 - y2)/(x1 - x2) - A*(x1 + x2)
+                C = y2 - A* x2**2 - B*x2
+                y_out = A * xloc_out**2 + B*xloc_out + C
+                EXIT
+            endif
+	enddo
+	enddo
+
+	return
+	end subroutine qinterp_profile_function
+

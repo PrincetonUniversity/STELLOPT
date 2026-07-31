@@ -31,6 +31,9 @@
       CHARACTER(len=20) :: pcurr_type  !  len=12 -> len=20 J Hanson 2010-03-16
       CHARACTER(len=20) :: piota_type
       CHARACTER(len=20) :: pmass_type
+      CHARACTER(len=20) :: pcurr_file
+      CHARACTER(len=20) :: piota_file
+      CHARACTER(len=20) :: pmass_file
       REAL(rprec), DIMENSION(ndatafmax) :: am_aux_s, am_aux_f,                 &
      &   ai_aux_s, ai_aux_f, ac_aux_s, ac_aux_f
 
@@ -79,7 +82,8 @@
 
       NAMELIST /indata/ mgrid_file, time_slice, nfp, ncurr, nsin,
      1   niter, nstep, nvacskip, delt, ftol, gamma, am, ai, ac, aphi,
-     1   pcurr_type, pmass_type, piota_type,
+     1   pcurr_type, pcurr_file, pmass_type, 
+     1   piota_type, piota_file, pmass_file,
      1   am_aux_s, am_aux_f, ai_aux_s, ai_aux_f, ac_aux_s, ac_aux_f,  ! J Hanson 2010-03-16
      1   ah, at, bcrit,                                               ! WAC (anisotropic pres)
      1   ph_type, ah_aux_s, ah_aux_f,
@@ -173,7 +177,10 @@
       pcurr_type = 'power_series'
       piota_type = 'power_series'
       pmass_type = 'power_series'
-
+      pcurr_file = 'power_series'
+      piota_file = 'power_series'
+      pmass_file = 'power_series'
+      write(*,*) 'read init'
 !     ANISTROPY PARAMETERS
       bcrit = 1
       at(0) = 1;  at(1:) = 0
@@ -670,12 +677,20 @@
      1           MPI_DOUBLE_PRECISION, local_master, local_comm, iflag)
       CALL MPI_BARRIER(local_comm,iflag)
       ! Strings
+      write(*,*) 'bdcast ok'
       CALL MPI_BCAST(pcurr_type,      20,  MPI_CHARACTER, 
      1               local_master, local_comm, iflag)
       CALL MPI_BCAST(piota_type,      20,  MPI_CHARACTER, 
      1               local_master, local_comm, iflag)
       CALL MPI_BCAST(pmass_type,      20,  MPI_CHARACTER, 
      1               local_master, local_comm, iflag)
+!      CALL MPI_BCAST(pcurr_file,      20,  MPI_CHARACTER, 
+!     1               local_master, local_comm, iflag)
+!      CALL MPI_BCAST(piota_file,      20,  MPI_CHARACTER, 
+!     1               local_master, local_comm, iflag)
+!      CALL MPI_BCAST(pmass_file,      20,  MPI_CHARACTER, 
+!     1               local_master, local_comm, iflag)
+      write(*,*) 'bdcast ok2'
       CALL MPI_BCAST(pt_type,         20,  MPI_CHARACTER, 
      1               local_master, local_comm, iflag)
       CALL MPI_BCAST(ph_type,         20,  MPI_CHARACTER, 
