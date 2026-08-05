@@ -326,12 +326,12 @@
          WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Plasma Field Lookup [',0,']%'
       END IF
       CALL FLUSH(6)
+      sflx = 0.001
+      uflx = 0.0
       DO s = mystart, myend
          i = MOD(s-1,nr)+1
          j = MOD(s-1,nr*nphi)/nr+1
          k = (s-1)/(nr*nphi)+1
-         sflx = 0.001
-         uflx = 0.0
          CALL GetBcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
                       br, bphi, bz, SFLX=sflx,UFLX=uflx,info=ier)
          !PRINT *,i,j,k,raxis_g(i),phiaxis(j),zaxis_g(k), br, bphi, bz, sflx,uflx,ier
@@ -357,6 +357,8 @@
             END IF
          ELSE IF (ier == -1) THEN
             S_ARR(i,j,k) = -1
+            sflx = 0.001
+            uflx = 0.0
          END IF
          IF (MOD(s,nr) == 0) THEN
             IF (lverb) THEN
