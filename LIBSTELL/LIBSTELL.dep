@@ -1,5 +1,6 @@
 # Microsoft Developer Studio Generated Dependency File, included by LIBSTELL.mak      
 
+henneberg_mapping_mod.o : 
 
 nescoil_input_mod.o : \
       stel_kinds.o \

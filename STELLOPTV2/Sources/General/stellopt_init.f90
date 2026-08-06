@@ -28,6 +28,7 @@
 !                             animec_flag, flow_flag
       USE parallel_vmec_module, ONLY: PARVMEC, gnranks
       USE fieldlines_input_mod, ONLY: read_fieldlines_input
+      USE henneberg_mapping_mod
       USE mpi_params
       USE mpi_inc
 !-----------------------------------------------------------------------
@@ -36,7 +37,7 @@
 !        iunit       File unit number
 !----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER ::  i,n,m,ier, iunit,nvar_in,ctrl_dofs,nknots
+      INTEGER ::  i,n,m,ier, iunit,nvar_in,ctrl_dofs,nknots,n1,n2
       INTEGER ::  ictrl(5)
       REAL(rprec) :: norm, delta, scale
       REAL(rprec) :: fvec_temp(1)
@@ -209,6 +210,16 @@
                     END IF
                  END DO
               END DO
+              IF (ANY(lb_henne_opt)) nvars = nvars + COUNT(lb_henne_opt)
+              IF (ANY(lR0_henne_opt)) nvars = nvars + COUNT(lR0_henne_opt)
+              IF (ANY(lZ0_henne_opt)) nvars = nvars + COUNT(lZ0_henne_opt)
+              DO n = -ntord, ntord
+                 DO m = 0, mpol1d
+                    IF (lrho_henne_opt(n,m)) THEN
+                       nvars = nvars + 1
+                    END IF
+                 END DO
+              END DO
               nknots = 0
               IF (.not.lfix_rho_coil) nknots = nknots + 1
               IF (.not.lfix_theta_coil) nknots = nknots + 1
@@ -235,8 +246,21 @@
       CALL MPI_BARRIER( MPI_COMM_STEL, ierr_mpi )                   ! MPI
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'stellot_init',ierr_mpi)
 !DEC$ ENDIF
-      ! Read the Equilibrium Namelist and initalize the var arrays
-      ! Initialize nvar_in to 0
+
+      ! Convert to Henneberg if needed
+      IF (ANY(lb_henne_opt) .or. ANY(lR0_henne_opt) .or. ANY(lZ0_henne_opt) .or. ANY(lrho_henne_opt)) THEN
+         IF (mmax_henne < 0) mmax_henne = mpol-1
+         IF (nmax_henne < 0) nmax_henne = ntor
+         nu_henne = MAX(mmax_henne * 8,64)
+         nv_henne = MAX(nmax_henne * 8,1)
+         CALL vmec_to_henneberg(mpol1d, ntord, rbc, zbs, nfp, alpha_henne, &
+                                         mmax_henne, nmax_henne, nu_henne, nv_henne, &
+                                         R0_henne(0:nmax_henne), Z0_henne(0:nmax_henne), &
+                                         b_henne(0:nmax_henne), &
+                                         rho_henne(-nmax_henne:nmax_henne,0:mmax_henne))
+      ENDIF
+
+      ! Initialize nvar_in to 0 and load up the variables
       nvar_in=0
       SELECT CASE (TRIM(equil_type))
          CASE('vmec2000','animec','flow','satire','paravmec','parvmec','vboot','vmec2000_oneeq','vmec_provided')
@@ -1344,6 +1368,82 @@
                     END DO
                  END DO
               END IF
+              IF (ANY(lb_henne_opt)) THEN
+                 DO i = LBOUND(lb_henne_opt,DIM=1), UBOUND(lb_henne_opt,DIM=1)
+                    IF (lexp_scale) scale = 1.0/EXP(-exp_alpha*abs(i))
+                    IF (lb_henne_opt(i)) THEN
+                       IF (lauto_domain) THEN
+                          b_henne_min(i) = b_henne(i) - ABS(pct_domain*b_henne(i))
+                          b_henne_max(i) = b_henne(i) + ABS(pct_domain*b_henne(i))
+                       END IF
+                       nvar_in = nvar_in + 1
+                       vars(nvar_in) = b_henne(i)*scale
+                       vars_min(nvar_in) = b_henne_min(i)*scale
+                       vars_max(nvar_in) = b_henne_max(i)*scale
+                       var_dex(nvar_in) = ihenne_b
+                       diag(nvar_in)    = db_henne_opt(i)
+                       arr_dex(nvar_in,1) = i
+                    END IF
+                 END DO
+              END IF
+              IF (ANY(lR0_henne_opt)) THEN
+                 DO i = LBOUND(lR0_henne_opt,DIM=1), UBOUND(lR0_henne_opt,DIM=1)
+                    IF (lexp_scale) scale = 1.0/EXP(-exp_alpha*abs(i))
+                    IF (lR0_henne_opt(i)) THEN
+                       IF (lauto_domain) THEN
+                          R0_henne_min(i) = R0_henne(i) - ABS(pct_domain*R0_henne(i))
+                          R0_henne_max(i) = R0_henne(i) + ABS(pct_domain*R0_henne(i))
+                       END IF
+                       nvar_in = nvar_in + 1
+                       vars(nvar_in) = R0_henne(i)*scale
+                       vars_min(nvar_in) = R0_henne_min(i)*scale
+                       vars_max(nvar_in) = R0_henne_max(i)*scale
+                       var_dex(nvar_in) = ihenne_R0
+                       diag(nvar_in)    = dR0_henne_opt(i)
+                       arr_dex(nvar_in,1) = i
+                    END IF
+                 END DO
+              END IF
+              IF (ANY(lZ0_henne_opt)) THEN
+                 DO i = LBOUND(lZ0_henne_opt,DIM=1), UBOUND(lZ0_henne_opt,DIM=1)
+                    IF (lexp_scale) scale = 1.0/EXP(-exp_alpha*abs(i))
+                    IF (lZ0_henne_opt(i)) THEN
+                       IF (lauto_domain) THEN
+                          Z0_henne_min(i) = Z0_henne(i) - ABS(pct_domain*Z0_henne(i))
+                          Z0_henne_max(i) = Z0_henne(i) + ABS(pct_domain*Z0_henne(i))
+                       END IF
+                       nvar_in = nvar_in + 1
+                       vars(nvar_in) = Z0_henne(i)*scale
+                       vars_min(nvar_in) = Z0_henne_min(i)*scale
+                       vars_max(nvar_in) = Z0_henne_max(i)*scale
+                       var_dex(nvar_in) = ihenne_Z0
+                       diag(nvar_in)    = dZ0_henne_opt(i)
+                       arr_dex(nvar_in,1) = i
+                    END IF
+                 END DO
+              END IF
+              IF (ANY(lrho_henne_opt)) THEN
+                 DO n = LBOUND(lrho_henne_opt,1), UBOUND(lrho_henne_opt,1)
+                    DO m = 0, UBOUND(lrho_henne_opt,2)
+                       IF (lexp_scale) scale = 1.0/EXP(-exp_alpha*MAX(abs(n),m))
+                       IF (m==0 .and. n<=0) CYCLE
+                       IF (lrho_henne_opt(n,m)) THEN
+                          IF (lauto_domain) THEN
+                             rho_henne_min(n,m) = rho_henne(n,m) - ABS(pct_domain*rho_henne(n,m))
+                             rho_henne_max(n,m) = rho_henne(n,m) + ABS(pct_domain*rho_henne(n,m))
+                          END IF
+                          nvar_in = nvar_in + 1
+                          vars(nvar_in) = rho_henne(n,m)*scale
+                          vars_min(nvar_in) = rho_henne_min(n,m)*scale
+                          vars_max(nvar_in) = rho_henne_max(n,m)*scale
+                          var_dex(nvar_in) = ihenne_rho
+                          diag(nvar_in)    = drho_henne_opt(n,m)
+                          arr_dex(nvar_in,1) = n
+                          arr_dex(nvar_in,2) = m
+                       END IF
+                    END DO
+                 END DO
+              END IF
               IF (ANY(lcoilsurf_opt)) THEN
                  IF (lcoilsurf_opt(0,0)) THEN
                     IF (lauto_domain) THEN
@@ -1546,9 +1646,51 @@
             DO m = LBOUND(ldeltamn_opt,2), UBOUND(ldeltamn_opt,2)
                DO n = LBOUND(ldeltamn_opt,1), UBOUND(ldeltamn_opt,1)
                   IF (deltamn(n,m) /= 0.0_rprec) WRITE(iunit,*) n,m,deltamn(n,m)
-                  !WRITE(iunit,*) n,m,deltamn(n,m)
                END DO
             END DO
+            CLOSE(iunit)
+         END IF
+         ! Check Henneberg representation
+         IF (ANY(lb_henne_opt) .or. ANY(lR0_henne_opt) .or. ANY(lZ0_henne_opt) .or. ANY(lrho_henne_opt)) THEN
+            n1 = - (nmax_henne + ABS(alpha_henne))
+            n2 =   (nmax_henne + ABS(alpha_henne))
+            CALL henneberg_to_vmec(nmax_henne, mmax_henne, R0_henne(0:nmax_henne), &
+                                    Z0_henne(0:nmax_henne), b_henne(0:nmax_henne), &
+                                    rho_henne(-nmax_henne:nmax_henne,0:mmax_henne), &
+                                    alpha_henne, rbc_temp(n1:n2,0:mmax_henne), &
+                                    zbs_temp(n1:n2,0:mmax_henne))
+            delta = 0
+            DO m = 0, mpol
+               DO n = -ntor, ntor
+                  IF (rbc(n,m) /= 0) delta = delta + (rbc(n,m)-rbc_temp(n,m))**2/rbc(n,m)**2
+                  IF (zbs(n,m) /= 0) delta = delta + (zbs(n,m)-zbs_temp(n,m))**2/zbs(n,m)**2
+               END DO
+            END DO
+            delta = sqrt(delta)
+            WRITE(6,'(A,F7.2,A)')'    == Accuracy of conversion = ',100*(1-delta),'%  =='
+            iunit = 12; ier = 0
+            CALL safe_open(iunit,ier,'henneberg.txt','unknown','formatted')
+            WRITE(iunit,'(A,I2.2)') 'ALPHA: ',alpha_henne
+            WRITE(iunit,'(A)') 'B(n): '
+            DO n = 0, UBOUND(b_henne,1)
+               IF (b_henne(n) /= 0.0_rprec) WRITE(iunit,*) n,b_henne(n)
+            END DO
+            WRITE(iunit,'(A)') 'R0(n): '
+            DO n = 0, UBOUND(R0_henne,1)
+               IF (R0_henne(n) /= 0.0_rprec) WRITE(iunit,*) n,R0_henne(n)
+            END DO
+            WRITE(iunit,'(A)') 'Z0(n): '
+            DO n = 0, UBOUND(Z0_henne,1)
+               IF (Z0_henne(n) /= 0.0_rprec) WRITE(iunit,*) n,Z0_henne(n)
+            END DO
+            WRITE(iunit,'(A)') 'RHO(n,m): '
+            CALL FLUSH(iunit)
+            DO m = 0, UBOUND(rho_henne,2)
+               DO n = LBOUND(rho_henne,1), UBOUND(rho_henne,1)
+                  IF (rho_henne(n,m) /= 0.0_rprec) WRITE(iunit,*) n,m,rho_henne(n,m)
+               END DO
+            END DO
+            CALL FLUSH(iunit)
             CLOSE(iunit)
          END IF
          WRITE(6,*) '   ======TARGETS====='
