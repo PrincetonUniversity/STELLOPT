@@ -40,6 +40,8 @@ test_beams3d:
 	$(MAKE) test_beams3d_eqdsk
 	$(MAKE) test_beams3d_fusion
 	$(MAKE) test_beams3d_multiion
+	$(MAKE) test_beams3d_fullorbit
+	$(MAKE) test_beams3d_fullorbit_coll
 	@echo "Tesing of BEAMS3D complete"
 	@echo ""
 
@@ -258,7 +260,14 @@ test_beams3d_fullorbit:
 	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fullorbit -plasma
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fullorbit -plasma
-	#@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_fullorbit
+	@cd $(BEAMS3D_TEST_DIR); ./compare_energy.py --file ORBITS_fullorbit --tol 1.0E-5
+	@echo ""
+
+test_beams3d_fullorbit_coll:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt;
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fullorbit_coll -plasma -collisions
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fullorbit_coll -plasma -collisions
+	@cd $(BEAMS3D_TEST_DIR); ./compare_energy.py --file ORBITS_fullorbit_coll --tol 5.0E-4
 	@echo ""
 
 test_fieldlines_full:
