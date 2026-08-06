@@ -568,11 +568,17 @@ MODULE beams3d_physics_mod
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             BR4D(1,1,1,1),nr,nphi,nz)
+            br_temp = fval(1)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             OMEG4D(1,1,1,1),nr,nphi,nz)
-            omeg_temp = fval(1)                              
-            br_temp = fval(1)
+            omeg_temp = fval(1)
+            DO l = 1, NION
+               CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                  hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                  NI5D(1,1,1,1,l),nr,nphi,nz)
+               ni_temp(l) = max(fval(1),zero) !Set to one to prevent NaN Zeff later on
+            END DO
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             BPHI4D(1,1,1,1),nr,nphi,nz)
@@ -700,6 +706,12 @@ MODULE beams3d_physics_mod
             !------------------------------------------------------------
             !  Now update velocity
             !------------------------------------------------------------
+            ! Normalize Vperp
+            ! q(4:6) still holds the perpendicular vector for the pitch we had
+            ! before scattering; without rescaling it the scattering changes
+            ! |v| instead of rotating it.
+            vperp = SQRT(SUM(q(4:6)*q(4:6)))
+            q(4:6) = q(4:6)*sqrt(speed*speed-vll*vll)/vperp
             q(4) = q(4) + vll*br_temp
             q(5) = q(5) + vll*bphi_temp + omeg_temp*r_temp
             q(6) = q(6) + vll*bz_temp
