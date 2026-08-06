@@ -1,6 +1,8 @@
 # Microsoft Developer Studio Generated Dependency File, included by LIBSTELL.mak      
 
-henneberg_mapping_mod.o : 
+rng_seed_mod.o :
+
+henneberg_mapping_mod.o :
 
 nescoil_input_mod.o : \
       stel_kinds.o \
@@ -58,7 +60,8 @@ fieldlines_input_mod.o: \
       safe_open_mod.o \
       mpi_params.o \
       mpi_inc.o \
-      fieldlines_globals.o 
+      fieldlines_globals.o \
+      rng_seed_mod.o
 
 fieldlines_globals.o :  \
       stel_kinds.o 
@@ -68,7 +71,8 @@ beams3d_input_mod.o: \
       safe_open_mod.o \
       mpi_params.o \
       mpi_inc.o \
-      beams3d_globals.o 
+      beams3d_globals.o \
+      rng_seed_mod.o
 
 beams3d_globals.o :  \
       stel_kinds.o 
