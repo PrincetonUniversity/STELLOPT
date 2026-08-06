@@ -19,11 +19,7 @@
                                  BR4D, BPHI4D, BZ4D, &
                                  win_BR4D, win_BPHI4D, win_BZ4D, &
                                  small, eps1, eps2, eps3
-      USE mumaterial_mod, ONLY: mumaterial_load, mumaterial_init_new, &
-                                mumaterial_info, mumaterial_getbmag_scalar,&
-                                mumaterial_setverb, mumaterial_setd, &
-                                mumaterial_free, mumaterial_debug, &
-                                mumaterial_readmag, mumaterial_writemag
+      USE mumaterial_mod
       USE mpi_params  
       USE mpi_inc      
       USE mpi_sharmem
@@ -44,6 +40,10 @@
       INTEGER :: numprocs_local, mylocalid, mymasterid
       INTEGER :: MPI_COMM_MUSHARE, MPI_COMM_MUMASTER
       LOGICAL :: lismaster, lissubmaster
+      INTEGER :: npoints_fieldlines
+      DOUBLE PRECISION, ALLOCATABLE :: x_out(:), y_out(:), z_out(:)
+      DOUBLE PRECISION, ALLOCATABLE :: B_fieldlines(:,:)
+      
       TYPE(EZspline3_r8) :: BR_spl, BPHI_spl, BZ_spl
 !-----------------------------------------------------------------------
 !     External Functions
@@ -76,18 +76,20 @@
 
     ! Set mumaterial verbosity
       CALL mumaterial_setverb(lismaster)
-      !CALL mumaterial_debug(lismaster,lissubmaster,.TRUE.)
-      CALL mumaterial_debug(.FALSE.,.FALSE.,.FALSE.)
 
       ! Read the mu materials file
       CALL mumaterial_load(TRIM(mumat_string),istat, MPI_COMM_MUSHARE, MPI_COMM_MUMASTER, MPI_COMM_FIELDLINES)
 
       ! Set parameters
-      CALL mumaterial_setd(mumaterial_tol, mumaterial_niter, mumaterial_lambda, &
-                           mumaterial_lamfactor, mumaterial_lamthresh, & 
-                           mumaterial_padfactor, mumaterial_convcheck) 
+      CALL mumaterial_set_vars(max_error=mumaterial_tol, max_iter=mumaterial_niter, &
+      lambda_start=mumaterial_lambda, lambda_factor=mumaterial_lamfactor, &
+      lambda_threshold=mumaterial_lamthresh, pad_factor=mumaterial_padfactor, &
+      min_conv_perc=mumaterial_convcheck, lambda_min=mumaterial_lambdamin, &
+      lambda_max=mumaterial_lambdamax, max_depth=INT(mumaterial_depth), &
+      max_leafsize=INT(mumaterial_leaf), iter_theta=mumaterial_theta_iter, &
+      eval_theta=mumaterial_theta_eval) 
       ! Load magnetization file
-      IF (lmumat_readmag) CALL mumaterial_readmag(TRIM(mumat_magfile))
+      IF (lmumat_readmag) CALL mumaterial_magfile_read(TRIM(mumat_magfile))
 
       
 
@@ -95,13 +97,10 @@
       CALL MPI_BARRIER(MPI_COMM_MUSHARE,  ierr_mpi)
 #endif
       
-      IF (lverb) THEN
-         CALL mumaterial_info(6, lmumat_skipiter)
-         WRITE(6,'(A,A)') '   FILE: ',TRIM(mumat_string)
-         CALL FLUSH(6)
-      END IF
+      IF (lverb) CALL mumaterial_info(6, lmumat_skipiter)
 
-      ! Create the Splines 
+      ! Create the Splines
+      IF (lverb) WRITE(6,*) "Creating B-splines"
       IF (lissubmaster) THEN
          bcs1=(/ 0, 0/)
          bcs2=(/-1,-1/)
@@ -148,91 +147,46 @@
       eps3 = (zmax-zmin)*small
 
       ! Initialize the magnetic calculation
-      IF (.NOT.(lmumat_skipiter)) THEN
-            offset = 0.0
-            CALL MUMATERIAL_INIT_NEW(fieldlines_bcart, offset)
-      END IF
+      offset = 0.0
+      CALL MUMATERIAL_RUN(fieldlines_bcart, offset, lmumat_skipiter, .NOT.lmumat_readmag)
+            
       ! Output magnetics file
-      IF (lmumat_writemagfile) CALL mumaterial_writemag()
+      IF (lmumat_writemagfile) CALL mumaterial_magfile_write(id_string)
 
-      ! Break up the Work
-      CALL MPI_CALC_MYRANGE(MPI_COMM_FIELDLINES, 1, nr*nphi*nz, mystart, myend)
-
-      ! Find largest mystart in local
-      CALL MPI_ALLREDUCE(mystart, ourstart, 1, MPI_INTEGER, MPI_MIN, MPI_COMM_MUSHARE, ierr_mpi)
-      CALL MPI_ALLREDUCE(myend,     ourend, 1, MPI_INTEGER, MPI_MAX, MPI_COMM_MUSHARE, ierr_mpi)
-
-      ! Zero out non-work areas
-      IF (lissubmaster) THEN
-         DO s = 1, ourstart-1
-            i = MOD(s-1,nr)+1
-            j = MOD(s-1,nr*nphi)/nr+1
-            k = (s-1)/(nr*nphi)+1
-            B_R(i,j,k)   = 0.0
-            B_PHI(i,j,k) = 0.0
-            B_Z(i,j,k)   = 0.0
-         END DO
-         DO s = ourend+1, nr*nphi*nz
-            i = MOD(s-1,nr)+1
-            j = MOD(s-1,nr*nphi)/nr+1
-            k = (s-1)/(nr*nphi)+1
-            B_R(i,j,k)   = 0.0
-            B_PHI(i,j,k) = 0.0
-            B_Z(i,j,k)   = 0.0
-         END DO
-      END IF
-
-#if defined(MPI_OPT)
-      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
-#endif
-      IF (lverb) WRITE(6,*) 'Starting magnetic field calculation'
-      CALL FLUSH(6)
-      ! Start progress 
-      IF (lverb) THEN
-         WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Magnetic Field Calculation [',0,']%'
-         CALL FLUSH(6)
-      END IF
-      
-      ! Get the fields
-      DO s = mystart, myend
-         i = MOD(s-1,nr)+1
-         j = MOD(s-1,nr*nphi)/nr+1
-         k = (s-1)/(nr*nphi)+1
-         br_temp   = 0
-         bphi_temp = 0
-         bz_temp   = 0
-         x_temp    = raxis(i)*cos(phiaxis(j))
-         y_temp    = raxis(i)*sin(phiaxis(j))
-         z_temp    = zaxis(k)
-         CALL mumaterial_getbmag_scalar(x_temp, y_temp, z_temp, bx_temp, by_temp, bz_temp)
-         br_temp   = bx_temp*cos(phiaxis(j)) + by_temp*sin(phiaxis(j))
-         bphi_temp = by_temp*cos(phiaxis(j)) - bx_temp*sin(phiaxis(j))
-         B_R(i,j,k)   =  br_temp   + B_R(i,j,k) * mumaterial_scale
-         B_PHI(i,j,k) =  bphi_temp + B_PHI(i,j,k) * mumaterial_scale
-         B_Z(i,j,k)   =  bz_temp   + B_Z(i,j,k) * mumaterial_scale 
-         IF (lverb .and. (MOD(s,nr) == 0)) THEN
-            CALL backspace_out(6,6)
-            WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*s)/(myend-mystart+1)),']%'
-            CALL FLUSH(6)
-         END IF
+      ! Pack coordinates
+      npoints_fieldlines = nr*nphi*nz
+      ALLOCATE(x_out(npoints_fieldlines), y_out(npoints_fieldlines), z_out(npoints_fieldlines))
+      DO s = 1, npoints_fieldlines
+      i = MOD(s-1,nr)+1
+      j = MOD(s-1,nr*nphi)/nr+1
+      k = (s-1)/(nr*nphi)+1
+      x_out(s) = raxis(i)*cos(phiaxis(j))
+      y_out(s) = raxis(i)*sin(phiaxis(j))
+      z_out(s) = zaxis(k)
       END DO
-      
-      ! Clean up the progress bar
-      IF (lverb) THEN
-         CALL backspace_out(6,36)
-         WRITE(6,'(38X)',ADVANCE='no')
-         CALL backspace_out(6,36)
-         WRITE(6,*)
-         CALL FLUSH(6)
-      END IF    
 
-      ! Now have master threads share results
+
+      ! Batch evaluate
+      CALL mumaterial_getb_vector(x_out, y_out, z_out, B_fieldlines, linclvac=.TRUE.)
+
+
+      ! Unpack
+      IF (lissubmaster) THEN
+        DO s = 1, npoints_fieldlines
+          i = MOD(s-1,nr)+1
+          j = MOD(s-1,nr*nphi)/nr+1
+          k = (s-1)/(nr*nphi)+1
+          B_R(i,j,k)   = B_fieldlines(1,s)*cos(phiaxis(j)) + B_fieldlines(2,s)*sin(phiaxis(j))
+          B_PHI(i,j,k) = B_fieldlines(2,s)*cos(phiaxis(j)) - B_fieldlines(1,s)*sin(phiaxis(j))
+          B_Z(i,j,k)   = B_fieldlines(3,s)
+        END DO
+      END IF
+      DEALLOCATE(x_out, y_out, z_out, B_fieldlines)
+      
+      ! Clear communicators
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_MUSHARE, ierr_mpi)
       IF (lissubmaster) THEN
-         CALL MPI_ALLREDUCE(MPI_IN_PLACE, B_R,   nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MUMASTER, ierr_mpi)
-         CALL MPI_ALLREDUCE(MPI_IN_PLACE, B_PHI, nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MUMASTER, ierr_mpi)
-         CALL MPI_ALLREDUCE(MPI_IN_PLACE, B_Z,   nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_MUMASTER, ierr_mpi)
          CALL MPI_COMM_FREE(MPI_COMM_MUSHARE,ierr_mpi)
          CALL MPI_COMM_FREE(MPI_COMM_MUMASTER,ierr_mpi)
       END IF

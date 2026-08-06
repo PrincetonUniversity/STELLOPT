@@ -1,4 +1,5 @@
 ObjectFiles = \
+henneberg_mapping_mod.o \
 SA_Evolve.o \
 nescoil_input_mod.o \
 nescoil_globals.o \

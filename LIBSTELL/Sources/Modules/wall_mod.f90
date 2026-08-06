@@ -236,6 +236,7 @@
       INTEGER :: iunit, ik, i, dex1, dex2, dex3
       INTEGER :: shar_comm
       LOGICAL :: shared, lwall_acc, lcomm
+      INTEGER :: iwal_zero, j
 
       IF (PRESENT(verb)) lverb = verb
       IF (lverb) WRITE(6,*) '-----  Creating wall mesh  -----'
@@ -294,9 +295,32 @@
          DO ik=1,nface
             READ(iunit,*) face(ik,1),face(ik,2),face(ik,3)
          END DO
-      END IF
+       END IF
 
-      ! allocate memory for information about the mesh
+       ! Check for 0-based face indices and correct to 1-based
+       IF (shar_rank == 0) THEN
+          iwal_zero = 0
+          DO ik = 1, nface
+             DO j = 1, 3
+                IF (face(ik,j) == 0) THEN
+                   iwal_zero = iwal_zero + 1
+                   EXIT
+                END IF
+             END DO
+          END DO
+
+          IF (iwal_zero > 0) THEN
+             WRITE(6,*) 'WARNING: ', iwal_zero, ' wall faces found with vertex index == 0'
+             WRITE(6,*) '         Converting all wall face indices from 0-based to 1-based'
+             DO ik = 1, nface
+                face(ik,1) = face(ik,1) + 1
+                face(ik,2) = face(ik,2) + 1
+                face(ik,3) = face(ik,3) + 1
+             END DO
+          END IF
+       END IF
+
+       ! allocate memory for information about the mesh
       IF (ldebug) WRITE(6, *) 'Pre-calculation allocation & reading. MPI Rank: ', shar_rank
 #if defined(MPI_OPT)
       IF (lcomm) CALL MPI_BARRIER(shar_comm,istat)

@@ -11,6 +11,7 @@
 !-----------------------------------------------------------------------
       USE stel_kinds
       USE vmec_input, arg1_input => arg1
+      USE henneberg_mapping_mod
       USE safe_open_mod
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -30,6 +31,7 @@
       INTEGER, PARAMETER     :: nu = 64
       INTEGER, PARAMETER     :: nv = 64
       LOGICAL                :: lvmec, lexist, lminmax, lrbc, lrhomn,ldeltamn, &
+                                lhenneberg, &
                                 lfix_ntor, llmdif, lgade, lswarm, lmap, lbasic, &
                                 lqas, lneed_booz, lqps, lhelical, lballoon, lneo, &
                                 ldkes, lbootsj, lmap_plane, ljdotb0, liota, &
@@ -38,12 +40,13 @@
                                 lwell, lcurvature, lfieldlines, &
                                 ltxport, ltxport_tem, ltxport_ae, ldkes_erdiff, &
                                 lquasiiso, lgamma_c, lcoilopt
-      INTEGER                :: m,n,ns,j, ncoils, ncoilspline
+      INTEGER                :: m,n,ns,j, ncoils, ncoilspline, alpha_fac
       REAL(rprec)            :: bound_min, bound_max, var, var_min, var_max, &
                                 temp, rho_exp,r1t,r2t,z1t, delta, filter_harm, pi2, &
                                 cosmn, sinmn
-      REAL(rprec), DIMENSION(-ntord:ntord,-mpol1d:mpol1d) ::  deltamn
-      REAL(rprec), DIMENSION(-ntord:ntord,0:mpol1d)       ::  rhobc
+      REAL(rprec), DIMENSION(0:ntord)                     :: R0_HENNEBERG, Z0_HENNEBERG, BCOEF_HENNEBERG
+      REAL(rprec), DIMENSION(-ntord:ntord,-mpol1d:mpol1d) :: deltamn
+      REAL(rprec), DIMENSION(-ntord:ntord,0:mpol1d)       :: rhobc
       REAL(rprec), DIMENSION(-ntord:ntord,0:mpol1d)       :: rbc_temp,zbs_temp
       REAL(rprec), DIMENSION(nu,nv)                       :: rreal,zreal,rureal
       character(arg_len)     :: id_string, var_name
@@ -72,6 +75,7 @@
       lminmax = .FALSE.
       lrhomn = .TRUE.
       ldeltamn = .FALSE.
+      lhenneberg = .FALSE.
       lrbc = .FALSE.
       lmode = .FALSE.
       lac = .FALSE.
@@ -156,25 +160,35 @@
             CASE ("-phiedge")
                lphiedge = .TRUE.
             CASE ("-rbc")
-               lrbc     = .TRUE.
-               lrhomn   = .FALSE.
-               ldeltamn = .FALSE.
-               lmode    = .FALSE.
+               lrbc       = .TRUE.
+               lrhomn     = .FALSE.
+               ldeltamn   = .FALSE.
+               lmode      = .FALSE.
+               lhenneberg = .FALSE.
             CASE ("-rhomn")
-               lrbc     = .FALSE.
-               lrhomn   = .TRUE.
-               ldeltamn = .FALSE.
-               lmode    = .FALSE.
+               lrbc       = .FALSE.
+               lrhomn     = .TRUE.
+               ldeltamn   = .FALSE.
+               lmode      = .FALSE.
+               lhenneberg = .FALSE.
             CASE ("-deltamn")
-               lrbc     = .FALSE.
-               lrhomn   = .FALSE.
-               ldeltamn = .TRUE.
-               lmode    = .FALSE.
+               lrbc       = .FALSE.
+               lrhomn     = .FALSE.
+               ldeltamn   = .TRUE.
+               lmode      = .FALSE.
+               lhenneberg = .FALSE.
             CASE ("-mode")
-               lrbc     = .FALSE.
-               lrhomn   = .FALSE.
-               ldeltamn = .FALSE.
-               lmode    = .TRUE.
+               lrbc       = .FALSE.
+               lrhomn     = .FALSE.
+               ldeltamn   = .FALSE.
+               lmode      = .TRUE.
+               lhenneberg = .FALSE.
+            CASE ("-henneberg")
+               lrbc       = .FALSE.
+               lrhomn     = .FALSE.
+               ldeltamn   = .FALSE.
+               lmode      = .FALSE.
+               lhenneberg = .TRUE.
             CASE ("-lmdif")
                llmdif = .TRUE.
                lgade  = .FALSE.
@@ -293,6 +307,7 @@
                WRITE(6,*) '   -rhomn            H/B Boundary Representation (default)'
                WRITE(6,*) '   -deltamn          Garabedian Boundary Representation'
                WRITE(6,*) '   -mode             Mode pair targeting'
+               WRITE(6,*) '   -henneberg        Henneberg Boundary Representation'
                WRITE(6,*) '   -harm             Output Harmonics (RBC/ZBS) 1% filter'
                WRITE(6,*) '   -fix_ntor         Fix m=0 modes (fixed boundary)'
                WRITE(6,*) '   -lmdif            Levenberg Optimization'
@@ -843,6 +858,67 @@
                      WRITE(6,arrvar2) 'ZBS_MIN',n,m,var_min,'ZBS_MAX',n,m,var_max
                   END IF
                END DO
+            ELSEIF (lhenneberg) THEN
+               var_name = 'HENNEBERG'
+               deltamn = 0.0_rprec
+               rbc_temp = rbc
+               zbs_temp = zbs
+               alpha_fac = 1 ! 1 or 2
+               IF (ntor == 0) alpha_fac = 0
+               CALL vmec_to_henneberg(mpol-1, ntor, &
+                                      rbc(-ntor:ntor,0:mpol-1), &
+                                      zbs(-ntor:ntor,0:mpol-1), &
+                                      nfp, alpha_fac, &
+                                      mpol-1, ntor, MAX(mpol*8,16), MAX(ntor*8,16), &
+                                      R0_HENNEBERG(0:ntor), &
+                                      Z0_HENNEBERG(0:ntor), &
+                                      BCOEF_HENNEBERG(0:ntor), &
+                                      rhobc(-ntor:ntor,0:mpol-1))
+               WHERE(ABS(rhobc) < ABS(filter_harm*rhobc(0,1))) rhobc = 0
+               IF (loutput_harm) THEN
+                  DO n = 0,ntor
+                     IF (abs(R0_HENNEBERG(n)) > 0.0) &
+                        WRITE(6,'(1(A,I2,A,E22.12))') '!  R0_HENNEBERG(',n,') = ',R0_HENNEBERG(n)
+                     IF (abs(Z0_HENNEBERG(n)) > 0.0) &
+                        WRITE(6,'(1(A,I2,A,E22.12))') '!  Z0_HENNEBERG(',n,') = ',Z0_HENNEBERG(n)
+                     IF (abs(BCOEF_HENNEBERG(n)) > 0.0) &
+                        WRITE(6,'(1(A,I2,A,E22.12))') '!  BCOEF_HENNEBERG(',n,') = ',BCOEF_HENNEBERG(n)
+                  END DO
+                  DO n = -ntor,ntor
+                     DO m = 0, mpol-1
+                        IF (abs(rhobc(n,m)) > 0.0) &
+                            WRITE(6,'(1(A,I2,A,I2,A,E22.12))') '!  RHO_HENNEBERG(',n,',',m,') = ',rhobc(n,m)
+                     END DO
+                  END DO
+               END IF
+               CALL henneberg_to_vmec(ntor, mpol-1, &
+                                    R0_HENNEBERG(0:ntor), &
+                                    Z0_HENNEBERG(0:ntor), &
+                                    BCOEF_HENNEBERG(0:ntor), &
+                                    rhobc(-ntor:ntor,0:mpol-1), &
+                                    alpha_fac, &
+                                    rbc_temp(-ntor:ntor,0:mpol-1), &
+                                    zbs_temp(-ntor:ntor,0:mpol-1))
+               IF (loutput_harm) THEN
+                  DO n = -ntor,ntor
+                     DO m = 0, mpol
+                         IF (abs(rbc_temp(n,m)) > 0.0 .or. abs(zbs_temp(n,m)) > 0.0) &
+                         WRITE(6,'(2(A,I2,A,I2,A,E22.12))') '  RBC(',n,',',m,') = ',rbc_temp(n,m),'  ZBS(',n,',',m,') = ',zbs_temp(n,m)
+                     END DO
+                  END DO
+               END IF
+               delta = 0
+               DO m = 0, mpol
+                  DO n = -ntor, ntor
+                     IF (rbc(n,m) /= 0) delta = delta + (rbc(n,m)-rbc_temp(n,m))**2/rbc(n,m)**2
+                     IF (zbs(n,m) /= 0) delta = delta + (zbs(n,m)-zbs_temp(n,m))**2/zbs(n,m)**2
+                  END DO
+               END DO
+               delta = sqrt(delta)
+               WRITE(6,'(A)')'!-----------------------------------------------------------------------'
+               WRITE(6,'(A)')'!          HENNEBERG BOUNDARY REPRESENTATION'
+               WRITE(6,'(A,F10.2,A)')'!            BOUNDARY CONVERSION ACCURACY: ',100*(1-delta),'%'
+               WRITE(6,'(A)')'!-----------------------------------------------------------------------'
             END IF
          END IF
       ELSE IF (lvmec .and. lmap_plane) THEN
