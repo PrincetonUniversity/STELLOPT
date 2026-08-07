@@ -1053,7 +1053,7 @@ class COILSET():
 			yt = cy(s_new)
 			zt = cz(s_new)
 			for j in range(nknots):
-				rhot,ut,zetat=libs.spline_coils_xyz2rhothetazeta(xt[j],yt[j],zt[j],rhot,ut)
+				rhot,ut,zetat=libs.surface_extender_xyz2rhothetazeta(xt[j],yt[j],zt[j],rhot,ut)
 				rho_kts[i,j] = rhot
 				u_kts[i,j] = ut
 				zeta_kts[i,j] = zetat

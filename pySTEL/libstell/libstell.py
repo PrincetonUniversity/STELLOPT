@@ -1600,12 +1600,11 @@ class LIBSTELL():
 
 		return get_rhoscale()
 
-
-	def spline_coils_xyz2rhothetazeta(self,x,y,z,rhog,thetag):
+	def surface_extender_xyz2rhothetazeta(self,x,y,z,rhog,thetag):
 		"""Computes the rho,theta,zeta coil value given X,Y,Z
 
 		This routine wrappers xyz2rhothetazeta in 
-		LIBSTELL:spline_coils_mod.
+		LIBSTELL:surface_extender_mod.
 
 		Parameters
 		----------
@@ -1631,10 +1630,13 @@ class LIBSTELL():
 		"""
 
 		import ctypes as ct
-		module_name = self.s1+'spline_coils_mod_'+self.s2
+		module_name = self.s1+'surface_extender_mod_'+self.s2
 		xyz2rtz = getattr(self.libstell,module_name+'_xyz2rhothetazeta'+self.s3)
-		xyz2rtz.argtypes = [ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),ct.POINTER(ct.c_double), \
-			ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),ct.POINTER(ct.c_double)]
+		xyz2rtz.argtypes = [
+			ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),
+			ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),ct.POINTER(ct.c_double),
+			ct.POINTER(ct.c_int),
+		]
 		xyz2rtz.restype=None
 		zetag = 0.0
 		x_c = ct.c_double(x)
@@ -1643,8 +1645,18 @@ class LIBSTELL():
 		rho_c = ct.c_double(rhog)
 		theta_c = ct.c_double(thetag)
 		zeta_c = ct.c_double(zetag)
-		xyz2rtz(ct.byref(x_c),ct.byref(y_c),ct.byref(z_c), \
-			ct.byref(rho_c),ct.byref(theta_c),ct.byref(zeta_c))
+		iflag_c = ct.c_int(-1)
+		xyz2rtz(
+			ct.byref(x_c),ct.byref(y_c),ct.byref(z_c),
+			ct.byref(rho_c),ct.byref(theta_c),ct.byref(zeta_c),
+			ct.byref(iflag_c),
+		)
+		if iflag_c.value != 0:
+			raise RuntimeError(
+				"surface_extender_mod:xyz2rhothetazeta failed "
+				f"with status {iflag_c.value} at "
+				f"(x, y, z) = ({x}, {y}, {z})"
+			)
 		rho = rho_c.value
 		theta = theta_c.value
 		zeta = zeta_c.value
