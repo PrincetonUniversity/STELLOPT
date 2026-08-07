@@ -35,6 +35,7 @@ MODULE beams3d_physics_mod
                               zaxis, U4D,nzeff, dexionT, dexionD, dexionHe3, &
                               hr, hp, hz, hri, hpi, hzi, &
                               B_kick_min, B_kick_max, E_kick, freq_kick, &
+                              nsub_fullorbit, &
                               plasma_mass, NI5D, BR4D, BZ4D, BPHI4D,plasma_Zmean
       USE EZspline_obj
       USE EZspline
@@ -2356,7 +2357,7 @@ MODULE beams3d_physics_mod
          DOUBLE PRECISION :: vll, B, dt_temp
          DOUBLE PRECISION :: q(3)
 
-         INTEGER, PARAMETER :: NSUB = 8 ! Substeps per Gyroperiod
+         ! Substeps per gyroperiod, from the NSUB_FULLORBIT namelist variable.
 
          !--------------------------------------------------------------
          !     Begin Subroutine
@@ -2371,7 +2372,7 @@ MODULE beams3d_physics_mod
             q(1)=r; q(2) = phi; q(3)=z
             CALL beams3d_MODB(q,B)
             ! Calc Velocity
-            dt_temp = (pi2*mymass)/(mycharge*B*NSUB)
+            dt_temp = (pi2*mymass)/(mycharge*B*nsub_fullorbit)
          END IF
         
          ! Place bounds on dt
