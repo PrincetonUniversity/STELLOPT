@@ -80,7 +80,7 @@ endif
 #######################################################################
   LHDF5 = T
   HDF5_INC = -I/opt/local/include
-  HDF5_LIB = -L/opt/local/lib -lhdf5hl_fortran -lhdf5_hl \
+  HDF5_LIB = -L/opt/local/lib -lhdf5_hl_fortran -lhdf5_hl \
              -lhdf5_fortran -lhdf5 -lz -ldl -lm
 
 #######################################################################

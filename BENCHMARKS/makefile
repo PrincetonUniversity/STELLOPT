@@ -19,7 +19,10 @@
   MPI_RUN_OPTS_MD ?= $(MPI_RUN_OPTS)
   MPI_RUN_OPTS_LG ?= $(MPI_RUN_OPTS)
 
-.PHONY: test_vmec
+.PHONY: test_indexing test_vmec
+
+test_indexing:
+	python3 -m unittest discover -s tests -v
 
 test_beams3d:
 	@echo "Beginning testing of BEAMS3D"
@@ -100,6 +103,7 @@ test_stellopt:
 	$(MAKE) test_stellopt_iota_lmdif
 	$(MAKE) test_stellopt_tok_r0_delta
 	$(MAKE) test_stellopt_tok_r0_rho
+	$(MAKE) test_stellopt_tok_r0_henne
 	$(MAKE) test_stellopt_qhs_lmdif
 	$(MAKE) test_stellopt_beams3d
 	$(MAKE) test_stellopt_recon_tok
@@ -352,6 +356,12 @@ test_stellopt_tok_r0_rho:
 	@cd $(STELLOPT_TEST_DIR) && ./compare.py --file TOK_R0_RHO
 	@echo ""
 
+test_stellopt_tok_r0_henne:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TOK_R0_HENNE
+	@cd $(STELLOPT_TEST_DIR)/TOK_R0_HENNE; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TOK_R0_HENNE; rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR) && ./compare.py --file TOK_R0_HENNE
+	@echo ""
+
 test_stellopt_qhs_lmdif:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.QHS_LMDIF
 	@cd $(STELLOPT_TEST_DIR)/QHS_LMDIF; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.QHS_LMDIF; rm -f *_opt*
@@ -471,6 +481,7 @@ help:
 	@echo "      LTRAVIS:         " $(LTRAVIS)
 	@echo ""
 	@echo "   COMMANDS"
+	@echo "      test_indexing   Testing of linear to 3D indexing"
 	@echo "      test_beams3d    Tesing of BEAMS3D"
 	@echo "      test_diagno     Tesing of DIAGNO"
 	@echo "      test_fieldlines Tesing of FIELDLINES"

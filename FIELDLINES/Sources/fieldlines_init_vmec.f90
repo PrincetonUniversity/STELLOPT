@@ -37,7 +37,7 @@
       INTEGER :: MPI_COMM_LOCAL
       LOGICAL :: lnyquist, luse_vc
       INTEGER :: ier, s, i, j, k, nu, nv, mystart, myend, mnmax_temp, u, v
-      INTEGER, ALLOCATABLE :: xn_temp(:), xm_temp(:)
+      INTEGER, ALLOCATABLE :: xn_temp(:), xm_temp(:), inside(:,:,:)
       REAL :: br_vc, bphi_vc, bz_vc, xaxis_vc, yaxis_vc, zaxis_vc,&
               bx_vc, by_vc
       REAL(rprec) :: br, bphi, bz, sflx, uflx
@@ -58,6 +58,7 @@
       ! Divide up Work
       mylocalid = myworkid
       numprocs_local = 1
+      MPI_COMM_LOCAL = 0
 #if defined(MPI_OPT)
       CALL MPI_COMM_DUP( MPI_COMM_SHARMEM, MPI_COMM_LOCAL, ierr_mpi)
       CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
@@ -255,18 +256,21 @@
 
       ! Break up the Work
       CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL,1, nr*nphi*nz, mystart, myend)
+      ALLOCATE(inside(nr,nphi,nz))
+      inside = 0
 
 
       IF (lafield_only) THEN
          DO s = mystart, myend
             i = MOD(s-1,nr)+1
-            j = MOD(s-1,nr*nphi)
-            j = FLOOR(REAL(j) / REAL(nr))+1
-            k = CEILING(REAL(s) / REAL(nr*nphi))
-            sflx = 0.0
+            j = MOD(s-1,nr*nphi)/nr+1
+            k = (s-1)/(nr*nphi)+1
+            sflx = 0.001
+            uflx = 0.0
             CALL GetAcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
-                         br, bphi, bz, SFLX=sflx,info=ier)
+                         br, bphi, bz, SFLX=sflx,UFLX=uflx,info=ier)
             IF (ier == 0 .and. bphi /= 0 .and. sflx<=1) THEN
+               inside(i,j,k) = 1
                B_R(i,j,k)   = br
                B_PHI(i,j,k) = bphi
                B_Z(i,j,k)   = bz
@@ -303,10 +307,10 @@
       ELSE
          DO s = mystart, myend
             i = MOD(s-1,nr)+1
-            j = MOD(s-1,nr*nphi)
-            j = FLOOR(REAL(j) / REAL(nr))+1
-            k = CEILING(REAL(s) / REAL(nr*nphi))
-            sflx = 0.0
+            j = MOD(s-1,nr*nphi)/nr+1
+            k = (s-1)/(nr*nphi)+1
+            sflx = 0.001
+            uflx = 0.0
             ! The GetBcyl Routine returns -3 if cyl2flx thinks s>1
             ! however, if cyl2flx fails to converge then s may be
             ! greater than 1 but cyl2flux won't throw the -3 code.
@@ -314,10 +318,11 @@
             ! bphi == 0 or ier ==-3 indicate that a point is
             ! outside the VMEC domain.
             CALL GetBcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
-                               br, bphi, bz, SFLX=sflx,info=ier)
+                               br, bphi, bz, SFLX=sflx,UFLX=uflx,info=ier)
             IF (ier == 0 .and. bphi /= 0) THEN
                ! Handle equilibrium data
                IF (sflx <=1.0) THEN ! Inside equilibrium
+                  inside(i,j,k) = 1
                   B_R(i,j,k)   = br
                   B_PHI(i,j,k) = bphi
                   B_Z(i,j,k)   = bz
@@ -368,7 +373,15 @@
       
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
+      CALL MPI_ALLREDUCE(MPI_IN_PLACE,inside,nr*nphi*nz,MPI_INTEGER,&
+                         MPI_MAX,MPI_COMM_LOCAL,ierr_mpi)
 #endif
+
+      ! Centered Hermite derivatives need two exterior support layers.
+      ! These values support interpolation only; they are not a vacuum field.
+      IF (lplasma_only) CALL fieldlines_vmec_extend_exterior(&
+         mystart,myend,MPI_COMM_LOCAL,inside)
+      DEALLOCATE(inside)
       
       ! Free variables
       IF (luse_vc) CALL free_virtual_casing(MPI_COMM_FIELDLINES)
@@ -406,3 +419,170 @@
 !     End Subroutine
 !-----------------------------------------------------------------------    
       END SUBROUTINE fieldlines_init_vmec
+
+      SUBROUTINE fieldlines_vmec_extend_exterior(mystart,myend,comm,inside)
+      USE stel_kinds, ONLY: rprec
+      USE fieldlines_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z
+      USE mpi_inc
+      IMPLICIT NONE
+      INTEGER, INTENT(in) :: mystart, myend, comm
+      INTEGER, INTENT(in) :: inside(nr,nphi,nz)
+      INTEGER :: s, i, j, k, nsupport, isupport, ierr_mpi
+      INTEGER, ALLOCATABLE :: support_index(:)
+      LOGICAL :: success
+      REAL(rprec) :: br, bphi, bz
+      REAL(rprec), ALLOCATABLE :: support_br(:), support_bphi(:), support_bz(:)
+
+      ALLOCATE(support_index(myend-mystart+1),support_br(myend-mystart+1),&
+               support_bphi(myend-mystart+1),support_bz(myend-mystart+1))
+      nsupport = 0
+      DO s = mystart, myend
+         CALL fieldlines_vmec_support_index(s,i,j,k)
+         IF (inside(i,j,k) /= 0) CYCLE
+         CALL fieldlines_vmec_exterior_support(&
+            i,j,k,inside,success,br,bphi,bz)
+         IF (.not. success) CYCLE
+         nsupport = nsupport + 1
+         support_index(nsupport) = s
+         support_br(nsupport) = br
+         support_bphi(nsupport) = bphi
+         support_bz(nsupport) = bz
+      END DO
+
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(comm,ierr_mpi)
+#endif
+      DO isupport = 1, nsupport
+         CALL fieldlines_vmec_support_index(support_index(isupport),i,j,k)
+         B_R(i,j,k) = support_br(isupport)
+         B_PHI(i,j,k) = support_bphi(isupport)
+         B_Z(i,j,k) = support_bz(isupport)
+      END DO
+      DEALLOCATE(support_index,support_br,support_bphi,support_bz)
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(comm,ierr_mpi)
+#endif
+      END SUBROUTINE fieldlines_vmec_extend_exterior
+
+      SUBROUTINE fieldlines_vmec_support_index(s,i,j,k)
+      USE fieldlines_grid, ONLY: nr, nphi
+      IMPLICIT NONE
+      INTEGER, INTENT(in) :: s
+      INTEGER, INTENT(out) :: i, j, k
+      i = MOD(s-1,nr)+1
+      j = MOD(s-1,nr*nphi)/nr+1
+      k = (s-1)/(nr*nphi)+1
+      END SUBROUTINE fieldlines_vmec_support_index
+
+      SUBROUTINE fieldlines_vmec_exterior_support(&
+         i,j,k,inside,success,br,bphi,bz)
+      USE stel_kinds, ONLY: rprec
+      USE fieldlines_grid, ONLY: nr, nphi, nz, raxis_g => raxis,&
+                                zaxis_g => zaxis, B_R, B_PHI, B_Z
+      IMPLICIT NONE
+      INTEGER, INTENT(in) :: i, j, k, inside(nr,nphi,nz)
+      LOGICAL, INTENT(out) :: success
+      REAL(rprec), INTENT(out) :: br, bphi, bz
+      INTEGER :: ndir
+      LOGICAL :: found
+      REAL(rprec) :: candidate(3), field_sum(3)
+
+      success = .false.
+      br = 0.0_rprec
+      bphi = 0.0_rprec
+      bz = 0.0_rprec
+      field_sum = 0.0_rprec
+      ndir = 0
+
+      IF (i > 2) THEN
+         CALL fieldlines_vmec_support_pair(&
+            inside(i-1,j,k),inside(i-2,j,k),raxis_g(i),raxis_g(i-1),&
+            raxis_g(i-2),(/B_R(i-1,j,k),B_PHI(i-1,j,k),B_Z(i-1,j,k)/),&
+            (/B_R(i-2,j,k),B_PHI(i-2,j,k),B_Z(i-2,j,k)/),found,candidate)
+         IF (.not. found .and. i > 3) THEN
+            IF (inside(i-1,j,k) == 0) CALL fieldlines_vmec_support_pair(&
+               inside(i-2,j,k),inside(i-3,j,k),raxis_g(i),raxis_g(i-2),&
+               raxis_g(i-3),(/B_R(i-2,j,k),B_PHI(i-2,j,k),B_Z(i-2,j,k)/),&
+               (/B_R(i-3,j,k),B_PHI(i-3,j,k),B_Z(i-3,j,k)/),found,candidate)
+         END IF
+         CALL fieldlines_vmec_add_support(candidate,found,field_sum,ndir)
+      END IF
+
+      IF (i < nr-1) THEN
+         CALL fieldlines_vmec_support_pair(&
+            inside(i+1,j,k),inside(i+2,j,k),raxis_g(i),raxis_g(i+1),&
+            raxis_g(i+2),(/B_R(i+1,j,k),B_PHI(i+1,j,k),B_Z(i+1,j,k)/),&
+            (/B_R(i+2,j,k),B_PHI(i+2,j,k),B_Z(i+2,j,k)/),found,candidate)
+         IF (.not. found .and. i < nr-2) THEN
+            IF (inside(i+1,j,k) == 0) CALL fieldlines_vmec_support_pair(&
+               inside(i+2,j,k),inside(i+3,j,k),raxis_g(i),raxis_g(i+2),&
+               raxis_g(i+3),(/B_R(i+2,j,k),B_PHI(i+2,j,k),B_Z(i+2,j,k)/),&
+               (/B_R(i+3,j,k),B_PHI(i+3,j,k),B_Z(i+3,j,k)/),found,candidate)
+         END IF
+         CALL fieldlines_vmec_add_support(candidate,found,field_sum,ndir)
+      END IF
+
+      IF (k > 2) THEN
+         CALL fieldlines_vmec_support_pair(&
+            inside(i,j,k-1),inside(i,j,k-2),zaxis_g(k),zaxis_g(k-1),&
+            zaxis_g(k-2),(/B_R(i,j,k-1),B_PHI(i,j,k-1),B_Z(i,j,k-1)/),&
+            (/B_R(i,j,k-2),B_PHI(i,j,k-2),B_Z(i,j,k-2)/),found,candidate)
+         IF (.not. found .and. k > 3) THEN
+            IF (inside(i,j,k-1) == 0) CALL fieldlines_vmec_support_pair(&
+               inside(i,j,k-2),inside(i,j,k-3),zaxis_g(k),zaxis_g(k-2),&
+               zaxis_g(k-3),(/B_R(i,j,k-2),B_PHI(i,j,k-2),B_Z(i,j,k-2)/),&
+               (/B_R(i,j,k-3),B_PHI(i,j,k-3),B_Z(i,j,k-3)/),found,candidate)
+         END IF
+         CALL fieldlines_vmec_add_support(candidate,found,field_sum,ndir)
+      END IF
+
+      IF (k < nz-1) THEN
+         CALL fieldlines_vmec_support_pair(&
+            inside(i,j,k+1),inside(i,j,k+2),zaxis_g(k),zaxis_g(k+1),&
+            zaxis_g(k+2),(/B_R(i,j,k+1),B_PHI(i,j,k+1),B_Z(i,j,k+1)/),&
+            (/B_R(i,j,k+2),B_PHI(i,j,k+2),B_Z(i,j,k+2)/),found,candidate)
+         IF (.not. found .and. k < nz-2) THEN
+            IF (inside(i,j,k+1) == 0) CALL fieldlines_vmec_support_pair(&
+               inside(i,j,k+2),inside(i,j,k+3),zaxis_g(k),zaxis_g(k+2),&
+               zaxis_g(k+3),(/B_R(i,j,k+2),B_PHI(i,j,k+2),B_Z(i,j,k+2)/),&
+               (/B_R(i,j,k+3),B_PHI(i,j,k+3),B_Z(i,j,k+3)/),found,candidate)
+         END IF
+         CALL fieldlines_vmec_add_support(candidate,found,field_sum,ndir)
+      END IF
+
+      IF (ndir == 0) RETURN
+      br = field_sum(1)/REAL(ndir,rprec)
+      bphi = field_sum(2)/REAL(ndir,rprec)
+      bz = field_sum(3)/REAL(ndir,rprec)
+      success = .true.
+      END SUBROUTINE fieldlines_vmec_exterior_support
+
+      SUBROUTINE fieldlines_vmec_support_pair(&
+         inside1,inside2,x0,x1,x2,field1,field2,success,field)
+      USE stel_kinds, ONLY: rprec
+      IMPLICIT NONE
+      INTEGER, INTENT(in) :: inside1, inside2
+      REAL(rprec), INTENT(in) :: x0, x1, x2, field1(3), field2(3)
+      LOGICAL, INTENT(out) :: success
+      REAL(rprec), INTENT(out) :: field(3)
+      REAL(rprec) :: factor
+
+      success = inside1 /= 0 .and. inside2 /= 0
+      field = 0.0_rprec
+      IF (.not. success) RETURN
+      factor = (x0-x1)/(x1-x2)
+      field = field1 + factor*(field1-field2)
+      END SUBROUTINE fieldlines_vmec_support_pair
+
+      SUBROUTINE fieldlines_vmec_add_support(&
+         candidate,success,field_sum,count)
+      USE stel_kinds, ONLY: rprec
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: candidate(3)
+      LOGICAL, INTENT(in) :: success
+      REAL(rprec), INTENT(inout) :: field_sum(3)
+      INTEGER, INTENT(inout) :: count
+      IF (.not. success) RETURN
+      field_sum = field_sum + candidate
+      count = count + 1
+      END SUBROUTINE fieldlines_vmec_add_support

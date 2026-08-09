@@ -42,11 +42,15 @@
       INTEGER :: MPI_COMM_LOCAL
       LOGICAL :: lnyquist, luse_vc, lcreate_wall, lverb_wall
       INTEGER :: ier, s, i, j, k, nu, nv, mystart, myend, mnmax_temp, u, v
+      INTEGER :: nfailed, ifailed
       INTEGER :: bcs1_s(2)
-      INTEGER, ALLOCATABLE :: xn_temp(:), xm_temp(:)
+      INTEGER, ALLOCATABLE :: xn_temp(:), xm_temp(:), failed_index(:)
+      LOGICAL, ALLOCATABLE :: retry_success(:)
       REAL :: br_vc, bphi_vc, bz_vc, xaxis_vc, yaxis_vc, zaxis_vc,&
               bx_vc, by_vc
       REAL(rprec) :: br, bphi, bz, sflx, uflx, xaxis, yaxis
+      REAL(rprec), ALLOCATABLE :: retry_s(:), retry_u(:), retry_br(:),&
+                                 retry_bphi(:), retry_bz(:)
       DOUBLE PRECISION, ALLOCATABLE :: mfact(:,:)
       DOUBLE PRECISION, ALLOCATABLE :: rmnc_temp(:,:),zmns_temp(:,:),&
                            bumnc_temp(:,:),bvmnc_temp(:,:),&
@@ -62,6 +66,7 @@
       ! Divide up Work
       mylocalid = myworkid
       numprocs_local = 1
+      MPI_COMM_LOCAL = 0
 #if defined(MPI_OPT)
       CALL MPI_COMM_DUP( MPI_COMM_SHARMEM, MPI_COMM_LOCAL, ierr_mpi)
       CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
@@ -321,12 +326,12 @@
          WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Plasma Field Lookup [',0,']%'
       END IF
       CALL FLUSH(6)
+      sflx = 0.001
+      uflx = 0.0
       DO s = mystart, myend
          i = MOD(s-1,nr)+1
-         j = MOD(s-1,nr*nphi)
-         j = FLOOR(REAL(j) / REAL(nr))+1
-         k = CEILING(REAL(s) / REAL(nr*nphi))
-         sflx = MAX(0.001,MIN(0.999,sflx))
+         j = MOD(s-1,nr*nphi)/nr+1
+         k = (s-1)/(nr*nphi)+1
          CALL GetBcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
                       br, bphi, bz, SFLX=sflx,UFLX=uflx,info=ier)
          !PRINT *,i,j,k,raxis_g(i),phiaxis(j),zaxis_g(k), br, bphi, bz, sflx,uflx,ier
@@ -352,6 +357,8 @@
             END IF
          ELSE IF (ier == -1) THEN
             S_ARR(i,j,k) = -1
+            sflx = 0.001
+            uflx = 0.0
          END IF
          IF (MOD(s,nr) == 0) THEN
             IF (lverb) THEN
@@ -367,18 +374,13 @@
 #endif
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !! Perform the 2nd Pass only inside domain
+      !! Retry failed lookups from an interior-neighbor initial guess
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      IF (lverb) THEN
-         WRITE(6,*)
-         WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Plasma Field 2nd Pass [',0,']%'
-      END IF
-      CALL FLUSH(6)
+      nfailed = 0
       DO s = mystart, myend
          i = MOD(s-1,nr)+1
-         j = MOD(s-1,nr*nphi)
-         j = FLOOR(REAL(j) / REAL(nr))+1
-         k = CEILING(REAL(s) / REAL(nr*nphi))
+         j = MOD(s-1,nr*nphi)/nr+1
+         k = (s-1)/(nr*nphi)+1
          ! First update progress
          IF (MOD(s,nr) == 0) THEN
             IF (lverb) THEN
@@ -389,49 +391,69 @@
          CALL FLUSH(6)
          ! Don't do edge points
          IF ((i==1) .or. (i==nr) .or. (k==1) .or. (k==nz)) CYCLE
-         ! Now do the problematic parts
-         IF (S_ARR(i,j,k) < 0.0) THEN
-            sflx = 0; uflx = 0; br = 0; bphi = 0; bz = 0; u = 0
-            IF (S_ARR(i+1,j  ,k  )>=0.0) THEN
-               sflx = sflx + S_ARR(i+1,j  ,k  )
-               uflx = uflx + U_ARR(i+1,j  ,k  )
-               br   = br   +   B_R(i+1,j  ,k  )
-               bphi = bphi + B_PHI(i+1,j  ,k  )
-               bz   = bz   +   B_Z(i+1,j  ,k  )
-               u = u + 1
-            ENDIF
-            IF (S_ARR(i-1,j  ,k  )>=0.0) THEN
-               sflx = sflx + S_ARR(i-1,j  ,k  )
-               uflx = uflx + U_ARR(i-1,j  ,k  )
-               br   = br   +   B_R(i-1,j  ,k  )
-               bphi = bphi + B_PHI(i-1,j  ,k  )
-               bz   = bz   +   B_Z(i-1,j  ,k  )
-               u = u + 1
-            ENDIF
-            IF (S_ARR(i  ,j  ,k+1)>=0.0) THEN
-               sflx = sflx + S_ARR(i  ,j  ,k+1)
-               uflx = uflx + U_ARR(i  ,j  ,k+1)
-               br   = br   +   B_R(i  ,j  ,k+1)
-               bphi = bphi + B_PHI(i  ,j  ,k+1)
-               bz   = bz   +   B_Z(i  ,j  ,k+1)
-               u = u + 1
-            ENDIF
-            IF (S_ARR(i  ,j  ,k-1)>=0.0) THEN
-               sflx = sflx + S_ARR(i  ,j  ,k-1)
-               uflx = uflx + U_ARR(i  ,j  ,k-1)
-               br   = br   +   B_R(i  ,j  ,k-1)
-               bphi = bphi + B_PHI(i  ,j  ,k-1)
-               bz   = bz   +   B_Z(i  ,j  ,k-1)
-               u = u + 1
-            ENDIF
-            S_ARR(i,j,k) = sflx/DBLE(u)
-            U_ARR(i,j,k) = uflx/DBLE(u)
-            B_R(i,j,k)   =   br/DBLE(u)
-            B_PHI(i,j,k) = bphi/DBLE(u)
-            B_Z(i,j,k)   =   bz/DBLE(u)
-         ENDIF
-         CALL FLUSH(6)
+         IF (S_ARR(i,j,k) < 0.0) nfailed = nfailed + 1
       END DO
+
+      IF (nfailed > 0) THEN
+         ALLOCATE(failed_index(nfailed),retry_success(nfailed))
+         ALLOCATE(retry_s(nfailed),retry_u(nfailed),retry_br(nfailed),&
+                  retry_bphi(nfailed),retry_bz(nfailed))
+         retry_success = .false.
+         ifailed = 0
+         DO s = mystart, myend
+            i = MOD(s-1,nr)+1
+            j = MOD(s-1,nr*nphi)/nr+1
+            k = (s-1)/(nr*nphi)+1
+            IF ((i==1) .or. (i==nr) .or. (k==1) .or. (k==nz)) CYCLE
+            IF (S_ARR(i,j,k) >= 0.0) CYCLE
+            ifailed = ifailed + 1
+            failed_index(ifailed) = s
+            sflx = -1.0
+            IF (S_ARR(i-1,j,k) >= 0.0 .and. S_ARR(i-1,j,k) <= 1.0) THEN
+               sflx = S_ARR(i-1,j,k)
+               uflx = U_ARR(i-1,j,k)
+            ELSE IF (S_ARR(i+1,j,k) >= 0.0 .and. S_ARR(i+1,j,k) <= 1.0) THEN
+               sflx = S_ARR(i+1,j,k)
+               uflx = U_ARR(i+1,j,k)
+            ELSE IF (S_ARR(i,j,k-1) >= 0.0 .and. S_ARR(i,j,k-1) <= 1.0) THEN
+               sflx = S_ARR(i,j,k-1)
+               uflx = U_ARR(i,j,k-1)
+            ELSE IF (S_ARR(i,j,k+1) >= 0.0 .and. S_ARR(i,j,k+1) <= 1.0) THEN
+               sflx = S_ARR(i,j,k+1)
+               uflx = U_ARR(i,j,k+1)
+            END IF
+            IF (sflx < 0.0) CYCLE
+            CALL GetBcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
+                         br,bphi,bz,SFLX=sflx,UFLX=uflx,info=ier)
+            IF (ier /= 0) CYCLE
+            retry_success(ifailed) = .true.
+            retry_s(ifailed) = MAX(sflx,0.0_rprec)
+            retry_u(ifailed) = MODULO(uflx,pi2)
+            retry_br(ifailed) = br
+            retry_bphi(ifailed) = bphi
+            retry_bz(ifailed) = bz
+         END DO
+      END IF
+
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
+#endif
+      IF (nfailed > 0) THEN
+         DO ifailed = 1, nfailed
+            IF (.not. retry_success(ifailed)) CYCLE
+            s = failed_index(ifailed)
+            i = MOD(s-1,nr)+1
+            j = MOD(s-1,nr*nphi)/nr+1
+            k = (s-1)/(nr*nphi)+1
+            S_ARR(i,j,k) = retry_s(ifailed)
+            U_ARR(i,j,k) = retry_u(ifailed)
+            B_R(i,j,k) = retry_br(ifailed)
+            B_PHI(i,j,k) = retry_bphi(ifailed)
+            B_Z(i,j,k) = retry_bz(ifailed)
+         END DO
+         DEALLOCATE(failed_index,retry_success,retry_s,retry_u,retry_br,&
+                    retry_bphi,retry_bz)
+      END IF
       
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! Set S==-1 values to default
@@ -442,6 +464,11 @@
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
 #endif
+
+      ! Centered Hermite derivatives need two exterior B support layers;
+      ! flux labels, interior B, and wall coordinates remain unchanged.
+      IF (lplasma_only) CALL beams3d_vmec_extend_exterior(&
+         mystart,myend,MPI_COMM_LOCAL)
       
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! Evaluate the profile quantities on the background grid
@@ -453,9 +480,8 @@
       CALL FLUSH(6)
       DO s = mystart, myend
          i = MOD(s-1,nr)+1
-         j = MOD(s-1,nr*nphi)
-         j = FLOOR(REAL(j) / REAL(nr))+1
-         k = CEILING(REAL(s) / REAL(nr*nphi))
+         j = MOD(s-1,nr*nphi)/nr+1
+         k = (s-1)/(nr*nphi)+1
          sflx = S_ARR(i,j,k)
          sflx = MAX(sflx,0.0)
          ! Do the potential everwhere
@@ -495,9 +521,8 @@
          CALL FLUSH(6)
          DO s = mystart, myend
             i = MOD(s-1,nr)+1
-            j = MOD(s-1,nr*nphi)
-            j = FLOOR(REAL(j) / REAL(nr))+1
-            k = CEILING(REAL(s) / REAL(nr*nphi))
+            j = MOD(s-1,nr*nphi)/nr+1
+            k = (s-1)/(nr*nphi)+1
             sflx = S_ARR(i,j,k)
             sflx = MAX(sflx,0.0)
             IF (sflx <= 1.0) CYCLE
@@ -575,3 +600,170 @@
 !     End Subroutine
 !-----------------------------------------------------------------------    
       END SUBROUTINE beams3d_init_vmec
+
+      SUBROUTINE beams3d_vmec_extend_exterior(mystart,myend,comm)
+      USE stel_kinds, ONLY: rprec
+      USE beams3d_grid, ONLY: S_ARR, B_R, B_PHI, B_Z
+      USE mpi_inc
+      IMPLICIT NONE
+      INTEGER, INTENT(in) :: mystart, myend, comm
+      INTEGER :: s, i, j, k, nsupport, isupport, ierr_mpi
+      INTEGER, ALLOCATABLE :: support_index(:)
+      LOGICAL :: success
+      REAL(rprec) :: br, bphi, bz
+      REAL(rprec), ALLOCATABLE :: support_br(:), support_bphi(:), support_bz(:)
+
+      ALLOCATE(support_index(myend-mystart+1),support_br(myend-mystart+1),&
+               support_bphi(myend-mystart+1),support_bz(myend-mystart+1))
+      nsupport = 0
+      DO s = mystart, myend
+         CALL beams3d_vmec_support_index(s,i,j,k)
+         IF (S_ARR(i,j,k) <= 1.0) CYCLE
+         CALL beams3d_vmec_exterior_support(i,j,k,success,br,bphi,bz)
+         IF (.not. success) CYCLE
+         nsupport = nsupport + 1
+         support_index(nsupport) = s
+         support_br(nsupport) = br
+         support_bphi(nsupport) = bphi
+         support_bz(nsupport) = bz
+      END DO
+
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(comm,ierr_mpi)
+#endif
+      IF (nsupport > 0) THEN
+         DO isupport = 1, nsupport
+            CALL beams3d_vmec_support_index(support_index(isupport),i,j,k)
+            B_R(i,j,k) = support_br(isupport)
+            B_PHI(i,j,k) = support_bphi(isupport)
+            B_Z(i,j,k) = support_bz(isupport)
+         END DO
+      END IF
+      DEALLOCATE(support_index,support_br,support_bphi,support_bz)
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(comm,ierr_mpi)
+#endif
+      END SUBROUTINE beams3d_vmec_extend_exterior
+
+      SUBROUTINE beams3d_vmec_support_index(s,i,j,k)
+      USE beams3d_grid, ONLY: nr, nphi
+      IMPLICIT NONE
+      INTEGER, INTENT(in) :: s
+      INTEGER, INTENT(out) :: i, j, k
+      i = MOD(s-1,nr)+1
+      j = MOD(s-1,nr*nphi)/nr+1
+      k = (s-1)/(nr*nphi)+1
+      END SUBROUTINE beams3d_vmec_support_index
+
+      SUBROUTINE beams3d_vmec_exterior_support(i,j,k,success,br,bphi,bz)
+      USE stel_kinds, ONLY: rprec
+      USE beams3d_grid, ONLY: nr, nz, raxis_g => raxis, zaxis_g => zaxis,&
+                             S_ARR, B_R, B_PHI, B_Z
+      IMPLICIT NONE
+      INTEGER, INTENT(in) :: i, j, k
+      LOGICAL, INTENT(out) :: success
+      REAL(rprec), INTENT(out) :: br, bphi, bz
+      INTEGER :: ndir
+      LOGICAL :: found
+      REAL(rprec) :: candidate(3), field_sum(3)
+
+      success = .false.
+      br = 0.0_rprec
+      bphi = 0.0_rprec
+      bz = 0.0_rprec
+      field_sum = 0.0_rprec
+      ndir = 0
+
+      IF (i > 2) THEN
+         CALL beams3d_vmec_support_pair(S_ARR(i-1,j,k),S_ARR(i-2,j,k),&
+            raxis_g(i),raxis_g(i-1),raxis_g(i-2),&
+            (/B_R(i-1,j,k),B_PHI(i-1,j,k),B_Z(i-1,j,k)/),&
+            (/B_R(i-2,j,k),B_PHI(i-2,j,k),B_Z(i-2,j,k)/),found,candidate)
+         IF (.not. found .and. i > 3) THEN
+            IF (S_ARR(i-1,j,k) > 1.0) CALL beams3d_vmec_support_pair(&
+               S_ARR(i-2,j,k),S_ARR(i-3,j,k),raxis_g(i),raxis_g(i-2),&
+               raxis_g(i-3),(/B_R(i-2,j,k),B_PHI(i-2,j,k),B_Z(i-2,j,k)/),&
+               (/B_R(i-3,j,k),B_PHI(i-3,j,k),B_Z(i-3,j,k)/),found,candidate)
+         END IF
+         CALL beams3d_vmec_add_support(candidate,found,field_sum,ndir)
+      END IF
+
+      IF (i < nr-1) THEN
+         CALL beams3d_vmec_support_pair(S_ARR(i+1,j,k),S_ARR(i+2,j,k),&
+            raxis_g(i),raxis_g(i+1),raxis_g(i+2),&
+            (/B_R(i+1,j,k),B_PHI(i+1,j,k),B_Z(i+1,j,k)/),&
+            (/B_R(i+2,j,k),B_PHI(i+2,j,k),B_Z(i+2,j,k)/),found,candidate)
+         IF (.not. found .and. i < nr-2) THEN
+            IF (S_ARR(i+1,j,k) > 1.0) CALL beams3d_vmec_support_pair(&
+               S_ARR(i+2,j,k),S_ARR(i+3,j,k),raxis_g(i),raxis_g(i+2),&
+               raxis_g(i+3),(/B_R(i+2,j,k),B_PHI(i+2,j,k),B_Z(i+2,j,k)/),&
+               (/B_R(i+3,j,k),B_PHI(i+3,j,k),B_Z(i+3,j,k)/),found,candidate)
+         END IF
+         CALL beams3d_vmec_add_support(candidate,found,field_sum,ndir)
+      END IF
+
+      IF (k > 2) THEN
+         CALL beams3d_vmec_support_pair(S_ARR(i,j,k-1),S_ARR(i,j,k-2),&
+            zaxis_g(k),zaxis_g(k-1),zaxis_g(k-2),&
+            (/B_R(i,j,k-1),B_PHI(i,j,k-1),B_Z(i,j,k-1)/),&
+            (/B_R(i,j,k-2),B_PHI(i,j,k-2),B_Z(i,j,k-2)/),found,candidate)
+         IF (.not. found .and. k > 3) THEN
+            IF (S_ARR(i,j,k-1) > 1.0) CALL beams3d_vmec_support_pair(&
+               S_ARR(i,j,k-2),S_ARR(i,j,k-3),zaxis_g(k),zaxis_g(k-2),&
+               zaxis_g(k-3),(/B_R(i,j,k-2),B_PHI(i,j,k-2),B_Z(i,j,k-2)/),&
+               (/B_R(i,j,k-3),B_PHI(i,j,k-3),B_Z(i,j,k-3)/),found,candidate)
+         END IF
+         CALL beams3d_vmec_add_support(candidate,found,field_sum,ndir)
+      END IF
+
+      IF (k < nz-1) THEN
+         CALL beams3d_vmec_support_pair(S_ARR(i,j,k+1),S_ARR(i,j,k+2),&
+            zaxis_g(k),zaxis_g(k+1),zaxis_g(k+2),&
+            (/B_R(i,j,k+1),B_PHI(i,j,k+1),B_Z(i,j,k+1)/),&
+            (/B_R(i,j,k+2),B_PHI(i,j,k+2),B_Z(i,j,k+2)/),found,candidate)
+         IF (.not. found .and. k < nz-2) THEN
+            IF (S_ARR(i,j,k+1) > 1.0) CALL beams3d_vmec_support_pair(&
+               S_ARR(i,j,k+2),S_ARR(i,j,k+3),zaxis_g(k),zaxis_g(k+2),&
+               zaxis_g(k+3),(/B_R(i,j,k+2),B_PHI(i,j,k+2),B_Z(i,j,k+2)/),&
+               (/B_R(i,j,k+3),B_PHI(i,j,k+3),B_Z(i,j,k+3)/),found,candidate)
+         END IF
+         CALL beams3d_vmec_add_support(candidate,found,field_sum,ndir)
+      END IF
+
+      IF (ndir == 0) RETURN
+      br = field_sum(1)/REAL(ndir,rprec)
+      bphi = field_sum(2)/REAL(ndir,rprec)
+      bz = field_sum(3)/REAL(ndir,rprec)
+      success = .true.
+
+      END SUBROUTINE beams3d_vmec_exterior_support
+
+      SUBROUTINE beams3d_vmec_support_pair(flux1,flux2,x0,x1,x2,&
+                                           field1,field2,success,field)
+      USE stel_kinds, ONLY: rprec
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: flux1, flux2, x0, x1, x2
+      REAL(rprec), INTENT(in) :: field1(3), field2(3)
+      LOGICAL, INTENT(out) :: success
+      REAL(rprec), INTENT(out) :: field(3)
+      REAL(rprec) :: factor
+
+      success = flux1 >= 0.0_rprec .and. flux1 <= 1.0_rprec .and. &
+                flux2 >= 0.0_rprec .and. flux2 <= 1.0_rprec
+      field = 0.0_rprec
+      IF (.not. success) RETURN
+      factor = (x0-x1)/(x1-x2)
+      field = field1 + factor*(field1-field2)
+      END SUBROUTINE beams3d_vmec_support_pair
+
+      SUBROUTINE beams3d_vmec_add_support(candidate,success,field_sum,count)
+      USE stel_kinds, ONLY: rprec
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: candidate(3)
+      LOGICAL, INTENT(in) :: success
+      REAL(rprec), INTENT(inout) :: field_sum(3)
+      INTEGER, INTENT(inout) :: count
+      IF (.not. success) RETURN
+      field_sum = field_sum + candidate
+      count = count + 1
+      END SUBROUTINE beams3d_vmec_add_support

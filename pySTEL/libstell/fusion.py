@@ -94,6 +94,7 @@ class FUSION():
 		n : real
 			Density Limit [m^-3]
 		"""
+		import numpy as np
 		return 0.25E20*np.sqrt(P*B/(a*a*R*1E6))
 
 	def sigmaBH(self, ti, reaction='DT'):
