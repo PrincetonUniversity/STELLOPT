@@ -87,7 +87,7 @@ class TERPSICHORE(FourierRep):
 			f.write(f' {vmec.iotas[k,0]:22.14E}{vmec.mass[k,0]:22.14E}{rmu0*vmec.pres[k,0]:22.14E}{-vmec.phip[k,0]:22.14E}{vmec.vp[k,0]:22.14E}\n')
 		f.close()
 
-	def create_input(self,vmec,n=0,npertmax=3):
+	def create_input(self,vmec,n=0,npertmax=3,loutput_grid_info=True):
 		"""Computes TERPSICHORE input from VMEC data
 
 		This routine takes a VMEC output data class and toroidal mode
@@ -101,6 +101,8 @@ class TERPSICHORE(FourierRep):
 			Toroidal mode number (default = 1.0)
 		npertmax : integer (optional)
 			Number of NFPs to go left and right of n (default = 3)
+		loutput_grid_info : boolean (optional)
+			Output the tpr_modules_ap.f data which is not mode dependent (default = True)
 		"""
 		import numpy as np
 		rmu0 = np.pi*4E-7
@@ -109,8 +111,10 @@ class TERPSICHORE(FourierRep):
 		ni = vmec.ns-1
 		ivac = round(vmec.ns/4)
 		# Compute max m and n in Boozer transformation
-		mm = int(2**np.ceil(np.log2(2*np.max(vmec.xm))))
+		mm = int(2**np.ceil(np.log2(4*np.max(vmec.xm))))
 		mm = min(mm,mm_max)
+		ms = int(2**np.ceil(np.log2(4*np.max(vmec.xm))))
+		ms = min(ms,mms)
 		nmax = int(2**np.ceil(np.log2(2*np.max(vmec.xn/vmec.nfp))))
 		nmin = -nmax
 		# Compute max m and n in Stability calculation
@@ -138,11 +142,13 @@ class TERPSICHORE(FourierRep):
 			n0 = 1
 			ntemp = n+j*vmec.nfp
 			if ntemp > 0: n0 = 0
-			for m in range(n0,mms+1): lfrs[m,ntemp-nsmin] = 1
+			#for m in range(n0,mms+1): lfrs[m,ntemp-nsmin] = 1
+			for m in range(n0,ms+1): lfrs[m,ntemp-nsmin] = 1
 			n0 = 1
 			ntemp =-n+j*vmec.nfp
 			if ntemp > 0: n0 = 0
-			for m in range(n0,mms+1): lfrs[m,ntemp-nsmin] = 1
+			#for m in range(n0,mms+1): lfrs[m,ntemp-nsmin] = 1
+			for m in range(n0,ms+1): lfrs[m,ntemp-nsmin] = 1
 		# temporary fix
 		#lfrs[51:,:] = 0
 		mlmns = np.count_nonzero(lfrs)
@@ -175,7 +181,12 @@ class TERPSICHORE(FourierRep):
 		f.write('C\nC    PVAC        PARFAC      QONAX        QN         DSVAC       QVAC    NOWALL\n')
 		f.write(f'{1.0001:12.4E}{0.00:12.4E}{1./vmec.iotaf[0,0]:12.4E}{qn:12.4E}{1.00:12.4E}{1.0001:12.4E}     {-2:2d}\n')
 		f.write('C\nC    AWALL       EWALL       DWALL       GWALL       DRWAL       DZWAL   NPWALL\n')
-		f.write(f'{2.00:12.4E}{1.00:12.4E}{0.50:12.4E}{vmec.rmnc[0,vmec.mn00]:12.4E}{0.00:12.4E}{0.00:12.4E}     {vmec.nfp:2d}\n')
+		R = vmec.cfunct(np.array([[0]]),np.array([[0],[np.pi]]),vmec.rmnc,vmec.xm,vmec.xn/vmec.nfp)
+		dr = R[0,0,1]-R[0,0,0]
+		R0 = R[0,0,0]-dr
+		Z = vmec.sfunct(np.array([[0]]),np.linspace([0],[np.pi],256),vmec.zmns,vmec.xm,vmec.xn/vmec.nfp)
+		dz = np.max(Z[0,0,:])
+		f.write(f'{2.00:12.4E}{1.00:12.4E}{0.00:12.4E}{R0:12.4E}{dr:12.4E}{dz:12.4E}     {vmec.nfp:2d}\n')
 		f.write('C\nC    RPLMIN       XPLO      DELTAJP       WCT      CURFAC\n')
 		f.write(f'{1E-5:12.4E}{1E-6:12.4E}{4E-2:12.4E}{vmec.rmnc[0,1]:12.4E}{1.00:12.4E}\n')
 		f.write(f'C\nC                                                             MODELK = {1:6d}\n')
@@ -204,20 +215,22 @@ class TERPSICHORE(FourierRep):
 		mmaxdf=max(2*mms,2*mm)
 		nmaxdf=max(2*max(abs(nsmin),nsmax),2*max(abs(nmin),nmax))
 		# Output information for module file
-		print(f'!      {vmec.input_extension.strip()} (n={n:2d})')
-		print(f'       INTEGER :: NI = {ni:4d}')
-		print(f'       INTEGER :: IVAC = {ivac:4d}')
-		print(f'       INTEGER :: NVI = {ni+ivac:4d}')
-		print(f'       INTEGER :: NJ = {nj:4d}')
-		print(f'       INTEGER :: NK = {nk:4d}')
-		print(f'       INTEGER :: NJK = {nj*nk:6d}')
-		print(f'       INTEGER :: MLMNV = {vmec.mnmax_nyq:4d}')
-		print(f'       INTEGER :: MLMNB = {mlmnb:4d}')
-		print(f'       INTEGER :: LSSL = {lssl:4d}')
-		print(f'       INTEGER :: MMAXDF = {mmaxdf:6d}')
-		print(f'       INTEGER :: NMAXDF = {nmaxdf:6d}')
-		print(f'       INTEGER :: ND = {ni+ivac:4d}')
-		print(f'       INTEGER :: ND1 = {ni+ivac+1:4d}')
+		if loutput_grid_info:
+			print(f'!      EQUILIBRIUM {vmec.input_extension.strip()}')
+			print(f'       INTEGER :: NI = {ni:4d}')
+			print(f'       INTEGER :: IVAC = {ivac:4d}')
+			print(f'       INTEGER :: NVI = {ni+ivac:4d}')
+			print(f'       INTEGER :: NJ = {nj:4d}')
+			print(f'       INTEGER :: NK = {nk:4d}')
+			print(f'       INTEGER :: NJK = {nj*nk:6d}')
+			print(f'       INTEGER :: MLMNV = {vmec.mnmax_nyq:4d}')
+			print(f'       INTEGER :: MLMNB = {mlmnb:4d}')
+			print(f'       INTEGER :: LSSL = {lssl:4d}')
+			print(f'       INTEGER :: MMAXDF = {mmaxdf:6d}')
+			print(f'       INTEGER :: NMAXDF = {nmaxdf:6d}')
+			print(f'       INTEGER :: ND = {ni+ivac:4d}')
+			print(f'       INTEGER :: ND1 = {ni+ivac+1:4d}')
+		print(f'!      (n={n:2d})')
 		print(f'       INTEGER :: LSSD = {lssd:4d}')
 		print(f'       INTEGER :: MLMNS = {mlmns:4d}')
 		print(f'       INTEGER :: MD = {mlmns:4d}')
