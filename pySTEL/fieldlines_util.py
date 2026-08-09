@@ -26,6 +26,8 @@ if __name__=="__main__":
 		help="Plot a fieldline in 3D.", default = None, type=int)
 	parser.add_argument("--plotpoinc3d", dest="poinc3d",
 		help="Plot a 3D Poincare plot.", default = None, type=int)
+	parser.add_argument("--plotiota", dest="plot_iota", action='store_true',
+		help="Plot the iota profile.", default = False)
 	parser.add_argument("-v", "--vmec", dest="vmec_ext", 
 		help="Add VMEC equilbrium to plot", default = None)
 	parser.add_argument("--nescoil", dest="nescoil_file", 
@@ -121,6 +123,22 @@ if __name__=="__main__":
 				ax3.plot(r[j,:,2],z[j,:,2],'r')
 			if not args.lbackground:pyplot.show()
 			if (args.lsave): fig.savefig(f'poincare_{args.fieldlines_ext}.png', dpi=fig.dpi)
+		if args.plot_iota:
+			[r,iota,iota_err] = field_data.calc_iota()
+			fig,ax = pyplot.subplots(1,1,figsize=(1024*px,768*px))
+			ax.plot(r,iota,'ok',label='FIELDLINES')
+			#ax.set_xlim([0,1])
+			ax.set_ylim([0.75,1.25])
+			ax.set_xlabel('Average Minor Radius [m]')
+			ax.set_ylabel(r'$\iota$')
+			if args.vmec_ext:
+				vmec_wout = VMEC()
+				vmec_wout.read_wout(args.vmec_ext)
+				r = np.linspace(0,vmec_wout.aminor,vmec_wout.ns)
+				ax.plot(r,vmec_wout.iotaf,'r',linewidth=2.0,label='VMEC')
+				pyplot.legend()
+			if not args.lbackground:pyplot.show()
+			if (args.lsave): fig.savefig(f'iota_{args.fieldlines_ext}.png', dpi=fig.dpi)
 		if args.poinc3d:
 			plt3d = PLOT3D()
 			field_data.plot_poincare3D(args.poinc3d,plot3D=plt3d,pointsize=0.1)
