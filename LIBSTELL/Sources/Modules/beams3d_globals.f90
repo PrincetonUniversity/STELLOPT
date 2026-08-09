@@ -24,6 +24,7 @@
                  lfusion, lfusion_alpha, lfusion_He3, lfusion_proton, &
                  lfusion_tritium, lkick, lgcsim, lbeam, lbbnbi
       INTEGER :: npoinc, nbeams, nparticles_start,duplicate_factor, &
+                 nsub_fullorbit, &
                  mumaterial_niter, mumaterial_lamthresh, mumaterial_depth, mumaterial_leaf
       INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
       REAL(rprec) :: follow_tol, pi2, ne_scale, te_scale, ti_scale, &
