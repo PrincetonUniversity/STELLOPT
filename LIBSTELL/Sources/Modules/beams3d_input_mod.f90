@@ -51,6 +51,12 @@
 !                           (note set to negative value to use non-adaptive integration)
 !            int_type       Field line integration method
 !                           'NAG','LSODE','RKH68'
+!            rho_fullorbit  Follow markers with rho below this in full orbit
+!            nsub_fullorbit Full orbit integration substeps per gyroperiod.
+!                           Sets dt = 2*pi*m/(q*|B|*nsub_fullorbit) and so
+!                           fixes the accuracy of INT_TYPE='RKH68', which
+!                           takes a fixed step.  LSODE adapts within dt and
+!                           is governed by follow_tol instead.
 !            plasma_mass    Mean plasma mass in [kg]
 !            Zeff           <Z> = sum(n_k*Z_k^2)/sum(n_k*Z_k)
 !            plasma_Zmean   [Z] = sum(n_k*Z_k^2*(plasma_mass/m_k))/sum(n_k*Z_k)
@@ -83,7 +89,7 @@
                                partvmax, rho_max_dist, lendt_m, te_col_min, &
                                B_kick_min, B_kick_max, freq_kick, E_kick,&
                                vr_start_in, vphi_start_in, vz_start_in, &
-                               rho_fullorbit, duplicate_factor, &
+                               rho_fullorbit, nsub_fullorbit, duplicate_factor, &
                                B_kick_min, B_kick_max, freq_kick, E_kick, &
                                rmin_fida, rmax_fida, zmin_fida, &
                                zmax_fida,phimin_fida, phimax_fida, &
@@ -194,6 +200,7 @@
 
       ! Full Oribt model
       rho_fullorbit = 1.0E10 ! Default to off
+      nsub_fullorbit = 8 ! Integration substeps per gyroperiod
       duplicate_factor = 1 ! No particle duplication
 
       ! Distribution Function Defaults
@@ -430,6 +437,17 @@
          ! Assume three is one population if dex_beams is not set.
          IF (MAXVAL(Dex_beams) < 0) FORALL(ik=1:MAXBEAMS) Dex_beams(ik) = 1
 
+         ! A gyroperiod must be resolved by at least one substep.
+         IF (nsub_fullorbit < 1) THEN
+            nsub_fullorbit = 1
+            IF (lverb) THEN
+               WRITE(6,*) '======================================='
+               WRITE(6,*) '  NSUB_FULLORBIT must be >= 1;'
+               WRITE(6,*) '  Using NSUB_FULLORBIT = 1 instead.'
+               WRITE(6,*) '======================================='
+            END IF
+         END IF
+
 #if !defined(NAG)
       IF (int_type=='NAG') THEN
          int_type = 'LSODE'
@@ -479,6 +497,7 @@
       WRITE(iunit_out,outint) 'NPARTICLES_START',nparticles_start
       WRITE(iunit_out,outflt) 'LENDT_M',lendt_m
       WRITE(iunit_out,outflt) 'RHO_FULLORBIT',rho_fullorbit
+      WRITE(iunit_out,outint) 'NSUB_FULLORBIT',nsub_fullorbit
       WRITE(iunit_out,outint) 'DUPLICATE_FACTOR',duplicate_factor
       WRITE(iunit_out,'(A)') '!---------- Distribution Parameters ------------'
       WRITE(iunit_out,outint) 'NRHO_DIST',ns_prof1
@@ -654,6 +673,7 @@
       CALL MPI_BCAST(plasma_mass,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(lendt_m,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(rho_fullorbit,1,MPI_REAL8, local_master, comm,istat)
+      CALL MPI_BCAST(nsub_fullorbit,1,MPI_INTEGER, local_master, comm,istat)
       CALL MPI_BCAST(duplicate_factor,1,MPI_INTEGER, local_master, comm,istat)
 
       CALL MPI_BCAST(nte,1,MPI_INTEGER, local_master, comm,istat)
