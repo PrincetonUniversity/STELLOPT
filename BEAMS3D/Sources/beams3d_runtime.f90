@@ -76,7 +76,7 @@ MODULE beams3d_runtime
                               npoinc, follow_tol, int_type, ne_scale, &
                               te_scale, ti_scale, zeff_scale, &
                               fusion_scale, lendt_m, te_col_min, &
-                              duplicate_factor, ldebug, lbeam, &
+                              duplicate_factor, rng_seed, ldebug, lbeam, &
                               MAXBEAMS, lbeam, MAXBEAMS, nbeams, &
                               pi2, NION, &
                               MAXPROFLEN, MAXPARTICLES, lverb, &

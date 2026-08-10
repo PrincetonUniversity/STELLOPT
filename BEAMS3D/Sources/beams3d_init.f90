@@ -19,6 +19,7 @@
       USE beams3d_runtime
       USE beams3d_grid
       USE beams3d_input_mod, ONLY: read_beams3d_input, init_beams3d_input
+      USE rng_seed_mod, ONLY: init_rng_seed
       USE beams3d_lines, ONLY: nparticles, epower_prof, ipower_prof, &
                                ndot_prof, j_prof, dense_prof, &
                                partvmax, partpmax, rho_max_dist,&
@@ -545,8 +546,14 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!              Initialize Random Number Generator
+      !!    This is the only place BEAMS3D seeds the generator, so that
+      !!    a run with RNG_SEED >= 0 is reproducible end to end.  Each
+      !!    rank gets its own stream, otherwise the collisional noise
+      !!    would be identical on every rank.
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      CALL RANDOM_SEED
+      CALL init_rng_seed(rng_seed, myworkid)
+      IF (lverb .and. (rng_seed >= 0)) &
+         WRITE(6,'(A,I0)') '   RNG_SEED: ', rng_seed
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!              Initialize Number of Particles

@@ -12,6 +12,7 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE beams3d_globals
+      USE rng_seed_mod, ONLY: RNG_SEED_RANDOM
       USE safe_open_mod, ONLY: safe_open
       USE mpi_params
       USE mpi_inc
@@ -58,6 +59,12 @@
 !                           takes a fixed step.  LSODE adapts within dt and
 !                           is governed by follow_tol instead.
 !            plasma_mass    Mean plasma mass in [kg]
+!            rng_seed       Seed for the random number generator.  Any
+!                           value >= 0 makes every run which draws
+!                           random numbers (beam deposition, fusion
+!                           birth, collisions) reproducible for a fixed
+!                           number of MPI ranks.  Negative (default)
+!                           draws a fresh seed from the OS each run.
 !            Zeff           <Z> = sum(n_k*Z_k^2)/sum(n_k*Z_k)
 !            plasma_Zmean   [Z] = sum(n_k*Z_k^2*(plasma_mass/m_k))/sum(n_k*Z_k)
 !
@@ -102,7 +109,7 @@
                                mumaterial_convcheck, mumaterial_depth, &
                                mumaterial_leaf, &
                                mumaterial_theta_iter, mumaterial_theta_eval, &
-                               a5_marker_name, a5_run_name
+                               a5_marker_name, a5_run_name, rng_seed
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -114,6 +121,7 @@
       SUBROUTINE init_beams3d_input
       IMPLICIT NONE
       pi2 = 8.0 * ATAN(1.0)
+      rng_seed = RNG_SEED_RANDOM
       nr     = 101
       nphi   = 360
       nz     = 101
@@ -499,6 +507,7 @@
       WRITE(iunit_out,outflt) 'RHO_FULLORBIT',rho_fullorbit
       WRITE(iunit_out,outint) 'NSUB_FULLORBIT',nsub_fullorbit
       WRITE(iunit_out,outint) 'DUPLICATE_FACTOR',duplicate_factor
+      WRITE(iunit_out,outint) 'RNG_SEED',rng_seed
       WRITE(iunit_out,'(A)') '!---------- Distribution Parameters ------------'
       WRITE(iunit_out,outint) 'NRHO_DIST',ns_prof1
       WRITE(iunit_out,outint) 'NTHETA_DIST',ns_prof2
@@ -675,6 +684,7 @@
       CALL MPI_BCAST(rho_fullorbit,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(nsub_fullorbit,1,MPI_INTEGER, local_master, comm,istat)
       CALL MPI_BCAST(duplicate_factor,1,MPI_INTEGER, local_master, comm,istat)
+      CALL MPI_BCAST(rng_seed,1,MPI_INTEGER, local_master, comm,istat)
 
       CALL MPI_BCAST(nte,1,MPI_INTEGER, local_master, comm,istat)
       CALL MPI_BCAST(nne,1,MPI_INTEGER, local_master, comm,istat)
