@@ -134,9 +134,11 @@ if __name__=="__main__":
 			if args.vmec_ext:
 				vmec_wout = VMEC()
 				vmec_wout.read_wout(args.vmec_ext)
-				r = np.linspace(0,vmec_wout.aminor,vmec_wout.ns)
+				s = np.linspace(0,1.0,vmec_wout.ns)
+				r = np.sqrt(s)*vmec_wout.aminor
 				ax.plot(r,vmec_wout.iotaf,'r',linewidth=2.0,label='VMEC')
 				pyplot.legend()
+			ax.set_xlim([0,3.0])
 			if not args.lbackground:pyplot.show()
 			if (args.lsave): fig.savefig(f'iota_{args.fieldlines_ext}.png', dpi=fig.dpi)
 		if args.poinc3d:
