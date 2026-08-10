@@ -4,7 +4,7 @@
 # Plotting factors
 IOTA_MIN = 0.7
 IOTA_MAX = 1.1
-COIL_PLAMA_MIN = 2.5
+COIL_PLASMA_MIN = 2.5
 
 # Main routine
 if __name__=="__main__":
