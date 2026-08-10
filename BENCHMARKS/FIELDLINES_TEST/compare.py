@@ -97,8 +97,10 @@ if __name__=="__main__":
             div = np.where(act==0,1,act)
             print(f'  Quantity: {temp} -- CODE -- REF. -- %')
             for i in range(len(act)):
-                perct = 100*abs(act[i]-cal[i])/div[i]
-                print(f'  {i} {cal[i]:7.6f} {act[i]:7.6f} {round(perct)}')
+                print(f'  {i} {cal[i]:7.6f} {act[i]:7.6f} {round(100*abs(act[i]-cal[i])/div[i])}')
+            # The check below has to see the worst element.  Taking perct
+            # from the loop variable only ever tested the last one.
+            perct = np.max(100*abs(act-cal)/div) if len(act) > 0 else 0
         if perct > failtol:
             lfail = True
         print('=================')
