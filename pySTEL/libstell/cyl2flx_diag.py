@@ -438,10 +438,7 @@ def lcfs_from_wout(wout_file, phi_rad, ntheta=361, s_index=-1):
 	return Rb, Zb, int(v.nfp)
 
 
-if __name__ == '__main__':
+# Main routine
+if __name__=="__main__":
 	import sys
-	path = sys.argv[1] if len(sys.argv) > 1 else '.'
-	diag = Cyl2FlxDiag()
-	diag.read(path=path)
-	diag.summary()
-	diag.plot()
+	sys.exit(0)
