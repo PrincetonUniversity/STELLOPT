@@ -145,11 +145,6 @@ jobs:
           cd ${STELLOPT_PATH}
           ./build_all -o clean_debug -j 2 STELLOPTV2
 
-      - name: compile
-        run: |
-          cd ${STELLOPT_PATH}
-          ./build_all -o clean_debug -j 2
-
       - name: unit_test
         run: python3 -m unittest discover -s BENCHMARKS/tests -v
 
