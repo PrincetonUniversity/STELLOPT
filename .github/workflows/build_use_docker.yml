@@ -20,10 +20,130 @@ jobs:
           git config --global --add safe.directory "${{ github.workspace }}"
           chown -R $(id -u):$(id -g) .
 
-      - name: compile
+      - name: compile_LIBSTELL
         run: |
           cd ${STELLOPT_PATH}
-          ./build_all -o clean_debug -j 2
+          ./build_all -o clean_debug -j 2 LIBSTELL
+
+      - name: compile_BEAMS3D
+        run: |
+          cd ${STELLOPT_PATH}
+          ./build_all -o clean_debug -j 2 BEAMS3D
+
+      - name: compile_BCYCLIC
+        run: |
+          cd ${STELLOPT_PATH}
+          ./build_all -o clean_debug -j 2 BCYCLIC
+
+      - name: compile_BNORM
+        run: |
+          cd ${STELLOPT_PATH}
+          ./build_all -o clean_debug -j 2 BNORM
+
+      - name: compile_BOOTSJ
+        run: |
+          cd ${STELLOPT_PATH}
+          ./build_all -o clean_debug -j 2 BOOTSJ
+
+      - name: compile_BOOZ_XFORM
+        run: |
+          cd ${STELLOPT_PATH}
+          ./build_all -o clean_debug -j 2 BOOZ_XFORM
+
+      - name: compile_COBRAVMEC
+        run: |
+          cd ${STELLOPT_PATH}
+          ./build_all -o clean_debug -j 2 COBRAVMEC
+
+      - name: compile_DIAGNO
+        run: |
+          cd ${STELLOPT_PATH}
+          ./build_all -o clean_debug -j 2 DIAGNO
+
+      - name: compile_DKES
+        run: |
+          cd ${STELLOPT_PATH}
+          ./build_all -o clean_debug -j 2 DKES
+
+      - name: compile_FIELDLINES
+        run: |
+          cd ${STELLOPT_PATH}
+          ./build_all -o clean_debug -j 2 FIELDLINES
+
+      - name: compile_J_INVARIANT
+        run: |
+          cd ${STELLOPT_PATH}
+          ./build_all -o clean_debug -j 2 J_INVARIANT
+
+      - name: compile_MAKEGRID
+        run: |
+          cd ${STELLOPT_PATH}
+          ./build_all -o clean_debug -j 2 MAKEGRID
+
+      - name: compile_NEO
+        run: |
+          cd ${STELLOPT_PATH}
+          ./build_all -o clean_debug -j 2 NEO
+
+      - name: compile_NESCOIL
+        run: |
+          cd ${STELLOPT_PATH}
+          ./build_all -o clean_debug -j 2 NESCOIL
+
+      - name: compile_PENTA
+        run: |
+          cd ${STELLOPT_PATH}
+          ./build_all -o clean_debug -j 2 PENTA
+
+      - name: compile_TORLINES
+        run: |
+          cd ${STELLOPT_PATH}
+          ./build_all -o clean_debug -j 2 TORLINES
+
+      - name: compile_VMEC2000
+        run: |
+          cd ${STELLOPT_PATH}
+          ./build_all -o clean_debug -j 2 VMEC2000
+
+      - name: compile_VMEC2PIES
+        run: |
+          cd ${STELLOPT_PATH}
+          ./build_all -o clean_debug -j 2 VVMEC2PIES
+
+      - name: compile_VMEC2STEL
+        run: |
+          cd ${STELLOPT_PATH}
+          ./build_all -o clean_debug -j 2 VMEC2STEL
+
+      - name: compile_VMEC2V690
+        run: |
+          cd ${STELLOPT_PATH}
+          ./build_all -o clean_debug -j 2 VMEC2V690
+
+      - name: compile_VMEC2XGC
+        run: |
+          cd ${STELLOPT_PATH}
+          ./build_all -o clean_debug -j 2 VMEC2XGC
+
+      - name: compile_WALL_ACCELERATE
+        run: |
+          cd ${STELLOPT_PATH}
+          ./build_all -o clean_debug -j 2 WALL_ACCELERATE
+
+      - name: compile_COILOPT
+        run: |
+          cd ${STELLOPT_PATH}
+          ./build_all -o clean_debug -j 2 COILOPT
+
+      - name: compile_THRIFT
+        run: |
+          cd ${STELLOPT_PATH}
+          ./build_all -o clean_debug -j 2 THRIFT
+
+      - name: compile_STELLOPTV2
+        run: |
+          cd ${STELLOPT_PATH}
+          ./build_all -o clean_debug -j 2 STELLOPTV2
 
       - name: unit_test
         run: python3 -m unittest discover -s BENCHMARKS/tests -v

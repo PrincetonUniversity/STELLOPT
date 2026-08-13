@@ -16,7 +16,8 @@
                                  nne, nti,nzeff, nomeg,npot, plasma_mass, &
                                  plasma_Zmean, therm_factor, &
                                  B_kick_min, B_kick_max, freq_kick, &
-                                 E_kick, rho_fullorbit, rmin_fida, &
+                                 E_kick, rho_fullorbit, nsub_fullorbit, &
+                                 rmin_fida, &
                                  rmax_fida, zmin_fida, zmax_fida, &
                                  phimin_fida, phimax_fida, nr_fida, &
                                  nphi_fida, nz_fida, nenergy_fida, &

@@ -40,6 +40,9 @@ test_beams3d:
 	$(MAKE) test_beams3d_eqdsk
 	$(MAKE) test_beams3d_fusion
 	$(MAKE) test_beams3d_multiion
+	$(MAKE) test_beams3d_fullorbit
+	$(MAKE) test_beams3d_fullorbit_rkh68
+	$(MAKE) test_beams3d_fullorbit_coll
 	@echo "Tesing of BEAMS3D complete"
 	@echo ""
 
@@ -78,6 +81,7 @@ test_diagno:
 test_fieldlines:
 	@echo "Beginning testing of FIELDLINES"
 	$(MAKE) test_fieldlines_full
+	$(MAKE) test_fieldlines_plasma
 	$(MAKE) test_fieldlines_coll
 	@echo "Tesing of FIELDLINES complete"
 	@echo ""
@@ -255,38 +259,58 @@ test_beams3d_multiion:
 	@echo ""
 
 test_beams3d_fullorbit:
-	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt;
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fullorbit -plasma
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fullorbit -plasma
-	#@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_fullorbit
+	@cd $(BEAMS3D_TEST_DIR); ./compare_energy.py --file ORBITS_fullorbit --tol 1.0E-5
+	@echo ""
+
+test_beams3d_fullorbit_rkh68:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt;
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fullorbit_rkh68 -plasma
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fullorbit_rkh68 -plasma
+	@cd $(BEAMS3D_TEST_DIR); ./compare_energy.py --file ORBITS_fullorbit_rkh68 --tol 1.0E-6
+	@echo ""
+
+test_beams3d_fullorbit_coll:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt;
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fullorbit_coll -plasma -collisions
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fullorbit_coll -plasma -collisions
+	@cd $(BEAMS3D_TEST_DIR); ./compare_energy.py --file ORBITS_fullorbit_coll --tol 5.0E-4
 	@echo ""
 
 test_fieldlines_full:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xfieldlines -vmec NCSX_s1 -coil coils.NCSX -vac -full
-	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xfieldlines -vmec NCSX_s1 -vac -coil coils.NCSX -vac -full
+	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xfieldlines -vmec NCSX_s1 -coil coils.NCSX -vac -full
 	@cd $(FIELDLINES_TEST_DIR); ./compare.py --file NCSX_s1
+	@echo ""
+
+test_fieldlines_plasma:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xfieldlines -vmec NCSX_plasma -plasma -auto
+	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xfieldlines -vmec NCSX_plasma -plasma -auto
+	@cd $(FIELDLINES_TEST_DIR); ./compare.py --file NCSX_plasma
 	@echo ""
 
 test_fieldlines_mumat:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xfieldlines -vmec NCSX_s1_mumat -coil coils.NCSX -vac -full -mumat ball_shifted.dat
-	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xfieldlines -vmec NCSX_s1_mumat -vac -coil coils.NCSX -vac -full  -mumat ball_shifted.dat
+	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xfieldlines -vmec NCSX_s1_mumat -coil coils.NCSX -vac -full  -mumat ball_shifted.dat
 	@cd $(FIELDLINES_TEST_DIR); ./compare.py --file NCSX_s1_mumat
 	@echo ""
 
 test_fieldlines_backflow: FIELDLINES_TEST/fieldlines_NCSX_s1.h5
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll -coil coils.NCSX -vac -vessel NCSX_wall_trimesh.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114 -backflow
-	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll -vac -coil coils.NCSX -vac -vessel NCSX_wall_trimesh.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114 -backflow
+	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll -coil coils.NCSX -vac -vessel NCSX_wall_trimesh.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114 -backflow
 	@echo ""
 
 test_fieldlines_coll: FIELDLINES_TEST/fieldlines_NCSX_s1.h5
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll -coil coils.NCSX -vac -vessel NCSX_wall_trimesh_acc0.25v4.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114
-	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll -vac -coil coils.NCSX -vac -vessel NCSX_wall_trimesh_acc0.25v4.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114
+	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll -coil coils.NCSX -vac -vessel NCSX_wall_trimesh_acc0.25v4.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114
 	@cd $(FIELDLINES_TEST_DIR); ./compare.py --file NCSX_s1_coll
 	@echo ""
 
 test_fieldlines_coll_ef: FIELDLINES_TEST/fieldlines_NCSX_s1.h5
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll_ef -coil coils.NCSX_nfp1 -vac -vessel NCSX_wall_trimesh.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114
-	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll_ef -vac -coil coils.NCSX_nfp1 -vac -vessel NCSX_wall_trimesh.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114
+	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll_ef -coil coils.NCSX_nfp1 -vac -vessel NCSX_wall_trimesh.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114
 	@echo ""
 
 test_nescoil_tf:
