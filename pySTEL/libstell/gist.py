@@ -108,7 +108,7 @@ class GIST():
 		# This comes from GIST
 		if (shat < 0.15): shat = 0.0
 		dpdx   = np.squeeze(-4.0*np.sqrt(s)/Ba**2 * pressp*mu0)
-		theta = np.linspace(-np.pi,np.pi,maxpnt)
+		theta = np.linspace(-np.pi,np.pi,maxpnt,endpoint=False)
 		self.dpdx = dpdx
 		self.q0   = q
 		self.shat = shat
