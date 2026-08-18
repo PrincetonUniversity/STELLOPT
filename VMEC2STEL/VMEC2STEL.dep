@@ -3,6 +3,7 @@
 vmec2stel_main.o: \
       ../../LIBSTELL/$(LOCTYPE)/vmec_input.o \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/henneberg_mapping_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o 
       
       

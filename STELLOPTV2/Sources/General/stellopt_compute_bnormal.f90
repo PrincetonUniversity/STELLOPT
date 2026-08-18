@@ -142,8 +142,7 @@
       CALL MPI_CALC_MYRANGE(MPI_COMM_MYWORLD, 1, nuv, mystart, myend)
       DO uv = mystart, myend
          u = MOD(uv-1,nu)+1
-         v = MOD(uv-1,nuv)
-         v = FLOOR(REAL(v) / REAL(nu))+1
+         v = MOD(uv-1,nuv)/nu+1
          theta = pi2*DBLE(u-1)/DBLE(nu)
          phi = zeta(v)/nfp
          RU = 0.0; ZU = 0.0; RV = 0.0; ZV = 0.0
@@ -281,8 +280,7 @@
          WRITE(iunit,'(I8)') nuv
          DO uv = 1, nuv
             u = MOD(uv-1,nu)+1
-            v = MOD(uv-1,nuv)
-            v = FLOOR(REAL(v) / REAL(nu))+1
+            v = MOD(uv-1,nuv)/nu+1
             theta = pi2*DBLE(u-1)/DBLE(nu)
             phi = zeta(v)/nfp
             WRITE(iunit, '(3(1X,I6),11(1pe24.16))') &

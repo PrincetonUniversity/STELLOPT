@@ -27,7 +27,7 @@ SUBROUTINE fieldlines_BCYL(r,phi,z,Br,Bphi,Bz)
  !        ict        Spline output control
  !        fval       Spline output array
  !--------------------------------------------------------------
- DOUBLE PRECISION :: phi_temp, r_temp, z_temp
+ DOUBLE PRECISION :: phi_temp
  ! For splines
  INTEGER :: i,j,k
  REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
@@ -60,9 +60,9 @@ SUBROUTINE fieldlines_BCYL(r,phi,z,Br,Bphi,Bz)
     hxi    = one / hx
     hyi    = one / hy
     hzi    = one / hz
-    xparam = (r_temp - raxis(i)) * hxi
+    xparam = (r - raxis(i)) * hxi
     yparam = (phi_temp - phiaxis(j)) * hyi
-    zparam = (z_temp - zaxis(k)) * hzi
+    zparam = (z - zaxis(k)) * hzi
     ! Evaluate the Splines
     CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hx,hxi,hy,hyi,hz,hzi,&

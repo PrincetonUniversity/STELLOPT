@@ -16,7 +16,7 @@ EPS0 = 8.8541878188E-12 # Vacuum permittivity [F/m]
 class PLASMA_SOLVER:
     """Class for solving transport equations (density and pressure)
 
-	"""
+    """
     
     def __init__(self, list_of_species, solve_fast_alphas=False, tau_fast_alphas=0.5, constrain_nT=False, add_NEO=False):
         
@@ -166,7 +166,7 @@ class PLASMA_SOLVER:
             else:
                 self.Er_restart = restart_solver.Er[-1,:]
               
-    def set_equilibrium(self,type: str,wout_path=None,aminor=None,Rmajor=None,B=None):
+    def set_equilibrium(self,type: str,wout_path=None,aminor=None,Rmajor=None,B=None, iota23 = None):
         """
         Sets magnetic equilibrium
         Type can be 'VMEC' (need to provide path to wout file) 
@@ -202,7 +202,7 @@ class PLASMA_SOLVER:
                     
                     self.dVdr = CubicSpline(roa,dVdr_analytic)
                     
-                    self.Baxis = np.sqrt(np.squeeze(vmec_out.bdotb)[0])   
+                    self.Baxis = sum(np.squeeze(vmec_out.bmnc[0,:]))
                     self.iota23 = CubicSpline(roa,np.squeeze(vmec_out.iotaf))(2.0/3.0)
                     
                     self.Bsq_spline = CubicSpline(roa,np.squeeze(vmec_out.bdotb))
@@ -222,6 +222,7 @@ class PLASMA_SOLVER:
                     self.dVdr = CubicSpline(rho,dVdr(rho))
                     self.Baxis = B
                     self.Bref = B
+                    self.iota23 = iota23
                     
     def set_energy_source(self,species,source_type, total_power=None, sigma_rho=None, rho_0=None, 
         fraction_alpha_heating=None, cte_source=None, time_dependent_factor=None, lambda_function_2D=None,
@@ -331,6 +332,7 @@ class PLASMA_SOLVER:
     def set_particle_source(self,species,source_type, injected_particles_per_sec=None, rho_0=None, sigma_rho=None, 
         cte_source=None, time_dependent_factor=None, lambda_function_2D=None,
         max_injected_particles_per_sec=None, time_dependent_electron_dens_axis=None, time_dependent_fusion_power=None, time_dependent_DT_temp_axis=None,
+        pellet_size_mm=None, pellet_vel_ms=None, pellet_freq_Hz=None, pellet_LtoD=1.0, pellet_mass_amu = 2.014, pellet_density_kgm3 = 201.0,
         pidK=1.0,pidI=1.0E10,pidD=0.0,noise_level=0.0):
         """
         Sets particle sources for a given species. The source_type can be:
@@ -358,6 +360,13 @@ class PLASMA_SOLVER:
                     raise ValueError('ERROR: Need to provide injected_particles_per_sec, rho_0, sigma_rho and a time depenedent factor for time-dependent gaussian')
                 else:
                     self.particle_sources[species][source_type] = {'injected_particles_per_sec' : injected_particles_per_sec, 'rho_0' : rho_0, 'sigma_rho' : sigma_rho, 'time_factor': time_dependent_factor }
+            #
+            case 'pellet_model':
+                if((pellet_size_mm is None) or (pellet_vel_ms is None) or (pellet_freq_Hz is None) or (time_dependent_factor is None)):
+                    raise ValueError('ERROR: Need to provide pellet_size_mm, pellet_vel_ms, pellet_freq_Hz and a time depenedent factor for pellet model')
+                else:
+                    self.particle_sources[species][source_type] = {'pellet_size_mm' : pellet_size_mm, 'pellet_vel_ms' : pellet_vel_ms, 'pellet_freq_Hz' : pellet_freq_Hz, 'time_factor': time_dependent_factor ,
+                                                                    'pellet_LtoD' : pellet_LtoD, 'pellet_mass_amu' : pellet_mass_amu, 'pellet_density_kgm3' : pellet_density_kgm3 }
             #
             case 'PID_edense_gaussian':
                 if((rho_0 is None) or (sigma_rho is None) or (max_injected_particles_per_sec is None) or (time_dependent_electron_dens_axis is None)):
@@ -1189,7 +1198,26 @@ class PLASMA_SOLVER:
                     lambda_function_2D = self.particle_sources[species][source_type]['lambda_function_2D'] #func(r,t)
                     #
                     aux_source = [lambda_function_2D(r,self.time[it]) for r in self.r_grid]
-                    
+
+                case 'pellet_model':
+                    rp0mm = self.particle_sources[species]['pellet_model']['pellet_size_mm']
+                    v_pelms = self.particle_sources[species]['pellet_model']['pellet_vel_ms']
+                    f_pel_Hz = self.particle_sources[species]['pellet_model']['pellet_freq_Hz']
+                    time_fact = self.particle_sources[species]['pellet_model']['time_factor']
+                    pellet_density_kgm3 = self.particle_sources[species]['pellet_model']['pellet_density_kgm3']
+                    pellet_LtoD = self.particle_sources[species]['pellet_model']['pellet_LtoD']
+                    pellet_mass_amu = self.particle_sources[species]['pellet_model']['pellet_mass_amu']
+                    ne = self.N['electrons'][it,:]
+                    Te = self.T['electrons'][it,:]
+                    t = self.time[it]
+                    dVdrho = self.dVdr(rho_grid) * self.aminor
+                    dVdrho[0] = dVdrho[1]
+                    aux_source = self.run_pellet_simulation(rp0_mm=rp0mm, v_pel_ms=v_pelms, 
+                        ne_array=ne, te_array=Te/1000.0, aminor=self.aminor, 
+                        roa_array=rho_grid, rho_solid_kg_m3=pellet_density_kgm3,
+                        atomic_mass_amu=pellet_mass_amu, L_over_D=pellet_LtoD)
+                    aux_source = f_pel_Hz*time_fact(t)*aux_source/dVdrho
+
                 case 'PID_edense_gaussian':
                     rho_0 = self.particle_sources[species]['PID_edense_gaussian']['rho_0']
                     sigma_rho = self.particle_sources[species]['PID_edense_gaussian']['sigma_rho']
@@ -1368,6 +1396,122 @@ class PLASMA_SOLVER:
         derivative = (error - previous_error) / dt
         control = kp * (error + integral/tau_i + tau_d * derivative)
         return control, error, integral
+
+    def run_pellet_simulation(self, rp0_mm, v_pel_ms, ne_array, te_array, aminor, roa_array, 
+                              C_drift=0.00, injection_side='LFS',
+                              rho_solid_kg_m3=200.0, atomic_mass_amu=2.014, L_over_D=0.9):
+        """
+        Simulates a cylindrical pellet injection including full trans-axis flight,
+        custom material properties, and cross-field plasmoid drift.
+        
+        Parameters:
+        -----------
+        rp0_mm           : float, Initial pellet radius in mm
+        v_pel_ms         : float, Pellet velocity in m/s
+        ne_array         : array_like, Electron density profile (m^-3)
+        te_array         : array_like, Electron temperature profile (keV)
+        aminor           : float, Plasma minor radius in meters
+        roa_array        : array_like, Normalized minor radius flux coordinates (rho = r/a)
+        C_drift          : float, Scaling multiplier for drift distance
+        injection_side   : str, 'HFS' (starts at X=-1) or 'LFS' (starts at X=+1)
+        rho_solid_kg_m3  : float, Mass density of solid cryogenic ice (default: 200.0 for D2)
+        atomic_mass_amu  : float, Atomic mass of the fuel species (default: 2.014 for Deuterium)
+        L_over_D         : float, Aspect ratio (Length / Diameter) of the cylinder (default: 1.0)
+        
+        Returns:
+        --------
+        dndrhoa_final    : ndarray, Final drifted ablation profile in [atoms / delta(r/a)]
+        """
+        import numpy as np
+        from scipy.integrate import solve_ivp
+        from scipy.interpolate import interp1d
+        roa_input = np.asarray(roa_array)
+        ne_input = np.asarray(ne_array)
+        te_input = np.asarray(te_array)
+        
+        # 1. Grid sorting and bin edge definition
+        idx_sort = np.argsort(roa_input)
+        roa_sorted = roa_input[idx_sort]
+        
+        edges = np.zeros(len(roa_sorted) + 1)
+        edges[1:-1] = 0.5 * (roa_sorted[:-1] + roa_sorted[1:])
+        edges[0] = min(roa_sorted[0] - 1e-5, 0.0)
+        edges[-1] = max(roa_sorted[-1] + 1e-5, 1.0)
+        user_droa = np.diff(edges)
+        
+        # 2. Dynamic Material Property Calculations
+        AMU_KG = 1.6605390666e-27  # Atomic mass unit constant
+        rho_atoms = rho_solid_kg_m3 / (atomic_mass_amu * AMU_KG)
+        
+        # Kinetic NGS and atomic scaling coefficient
+        CRP_SI_KEV = 5.5e-14 * (1000.0**1.64) 
+        
+        ne_func = interp1d(roa_sorted, ne_input[idx_sort], bounds_error=False, fill_value="extrapolate")
+        te_func = interp1d(roa_sorted, te_input[idx_sort], bounds_error=False, fill_value="extrapolate")
+        
+        # 3. ODE Solution (u = rp^(5/3))
+        u0 = [(rp0_mm / 1000.0)**(5.0 / 3.0)]
+        
+        def pellet_ode(x, u):
+            if u[0] <= 0:
+                return [0.0]
+                
+            if injection_side.upper() == 'HFS':
+                X_geom = -1.0 + (x / aminor)
+            else:
+                X_geom = 1.0 - (x / aminor)
+                
+            roa = np.clip(np.abs(X_geom), 0.0, 1.0)
+            return [- (5.0 / 3.0) * (CRP_SI_KEV / v_pel_ms) * (ne_func(roa)**(1.0 / 3.0)) * (te_func(roa)**1.64)]
+
+        def burnout_event(x, u): return u[0]
+        burnout_event.terminal = True
+        burnout_event.direction = -1
+
+        x_eval = np.linspace(0.0, 2.0 * aminor, 2000)
+        sol = solve_ivp(pellet_ode, (0.0, 2.0 * aminor), u0, t_eval=x_eval, events=burnout_event, rtol=1e-7, atol=1e-9)
+        
+        t_steps = sol.t
+        u_steps = sol.y[0]
+        dt_intervals = np.diff(t_steps)
+        
+        if len(dt_intervals) == 0:
+            return np.zeros_like(roa_input)
+            
+        # 4. Midpoint evaluation along trajectory
+        t_mid = 0.5 * (t_steps[:-1] + t_steps[1:])
+        u_mid = 0.5 * (u_steps[:-1] + u_steps[1:])
+        rp_m_mid = np.maximum(u_mid, 0.0)**(3.0 / 5.0)
+        
+        if injection_side.upper() == 'HFS':
+            X_geom_mid = -1.0 + (t_mid / aminor)
+        else:
+            X_geom_mid = 1.0 - (t_mid / aminor)
+            
+        roa_geom_mid = np.clip(np.abs(X_geom_mid), 0.0, 1.0)
+        ne_mid = ne_func(roa_geom_mid)
+        te_mid = te_func(roa_geom_mid)
+        
+        # 5. Cylindrical mass liberation step
+        # V = 2 * pi * gamma * rp^3  =>  dV/dt = 6 * pi * gamma * rp^2 * drp/dt
+        dndt_mid = 6.0 * np.pi * L_over_D * rho_atoms * CRP_SI_KEV * (rp_m_mid**(4.0 / 3.0)) * (ne_mid**(1.0 / 3.0)) * (te_mid**1.64)
+        dN_particles = dndt_mid * (dt_intervals / v_pel_ms)
+        
+        # 6. Drift shift application
+        delta_drift_meters = C_drift * ((rp_m_mid * 1000.0)**(4.0 / 3.0)) * (te_mid**0.5)
+        delta_roa = delta_drift_meters / aminor
+        
+        X_dep = X_geom_mid + delta_roa
+        roa_dep = np.clip(np.abs(X_dep), 0.0, 1.0)
+        
+        # 7. Flux folding and histogram remapping
+        counts, _ = np.histogram(roa_dep, bins=edges, weights=dN_particles)
+        dndroa_sorted = counts / user_droa
+        
+        dndroa_final = np.zeros_like(roa_input)
+        dndroa_final[idx_sort] = dndroa_sorted
+        
+        return dndroa_final
             
     def compute_diffusive_heat_flux(self,it):
         """
@@ -2685,5 +2829,5 @@ def polyfit_derivative_fast(x, y, deg):
             
 # Main routine
 if __name__=="__main__":
-	import sys
-	sys.exit(0)      
+    import sys
+    sys.exit(0)      
