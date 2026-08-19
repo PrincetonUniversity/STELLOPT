@@ -6,10 +6,11 @@
   REL_PATH = $(PWD1)/$(REL)
   DBG_PATH = $(PWD1)/$(DBG)
   EXE_F = xpenta
+  EXE_F_SHARE = libpenta$(SHARED_EXT)
   MAKE = makepenta
   LIB_DIR = $(MYHOME)/libstell_dir
 
-.PHONY: release debug clean_release clean_debug static_release
+.PHONY: release debug clean_release clean_debug static_release shared_release
 
 release:
 	@echo "Beginning release compilation and linking of penta"
@@ -40,11 +41,21 @@ clean_debug:
 	@cd $(DBG); make -f $(MAKE) clean
 	@make debug
       
-static_release:      
+static_release:
 	@echo "MAKING STATIC (RELEASE) EXECUTABLE"
 	@cd $(REL); rm -f *.f *.f90 *.c; rm -f $(MAKE); ln -fs ../$(MAKE) .; make -f $(MAKE) $(EXE_F) FLAGS="$(FLAGS_R) $(MOD1_PATH)" SFLAGS="" TYPE="release"
 	@rm -f $(MYHOME)/$(EXE_F)
 	@-(umask 022; rm -f $(MYHOME)/$(EXE_F); ln -fs $(REL_PATH)/$(EXE_F) $(MYHOME) 2> /dev/null; umask 077)
 	@echo "Static Release version - xpenta - is now updated"
+	@echo "To free up space, delete all *.o files from Release"
+	@echo ""
+
+shared_release:
+	@echo "Beginning release compilation and archiving of shared libpenta"
+	@cd $(REL); rm -f *.f *.f90 *.c; rm -f $(MAKE); ln -fs ../$(MAKE) .; make -f $(MAKE) $(EXE_F_SHARE) FLAGS="$(FLAGS_R) $(MOD1_PATH)" TYPE="release" LOCTYPE="Release"
+	@rm -f $(REL)\*.f; rm -f $(REL)\*.f90
+	@rm -f $(MYHOME)/$(EXE_F_SHARE)
+	@-(umask 022; rm -f $(MYHOME)/$(EXE_F_SHARE); ln -fs $(REL_PATH)/$(EXE_F_SHARE) $(MYHOME) 2> /dev/null; umask 077)
+	@echo "Shared release version - "$(EXE_F_SHARE)"- is now updated"
 	@echo "To free up space, delete all *.o files from Release"
 	@echo ""
