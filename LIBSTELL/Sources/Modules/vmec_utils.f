@@ -8,10 +8,76 @@
       REAL(rprec), POINTER, PRIVATE :: rzl_array(:,:,:,:)
       REAL(rprec), POINTER, PRIVATE :: mscale_loc(:), nscale_loc(:)
       LOGICAL, PRIVATE :: lthreed_loc, lasym_loc, lscale
-      PRIVATE :: newt2d, get_flxcoord
+      PRIVATE :: newt2d, get_flxcoord, boundary_classify
 !
-!     THIS MODULE CONTAINS USEFUL UTILITIES FOR PROCESSING VMEC 
-!     DATA. MOST FUNCTIONS ARE OVERLOADED TO BE ABLE TO USE EITHER 
+!     ---- Convergence diagnostics for cyl2flx / newt2d ----------------
+!     Compile with -DDEBUG_CYL2FLX to emit a per-rank log of every point
+!     where the inverse map (R,Z)->(s,u) fails to converge cleanly
+!     (info=-1), together with the achieved residual, iteration count,
+!     number of degenerate-Jacobian hits and the smallest |Jacobian|
+!     encountered.
+!
+      INTEGER :: cyl2flx_rank = 0
+      LOGICAL :: cyl2flx_log_outside=.FALSE. ! also log clear-outside (info=-3)
+      REAL(rprec) :: cyl2flx_log_smax = 1.5_dp ! skip logging points outside
+      REAL(rprec), PRIVATE :: tau_min_diag   ! min |Jacobian| over a solve
+      INTEGER, PRIVATE     :: n_degen_diag   ! # degenerate-Jacobian hits
+!
+!     ---- Tunable inverse-map (cyl2flx/newt2d) solver controls --------
+!
+!     cyl2flx_ftol : convergence tolerance on the RELATIVE residual
+!         fmin = ((R-Rt)^2+(Z-Zt)^2)/(Rt^2+Zt^2).  The achieved
+!         geometric error is sqrt(ftol)*|x|.  The default matches the
+!         value cyl2flx used before this was made tunable: every caller
+!         without a namelist to opt back in (FIELDLINES, DIAGNO,
+!         TORLINES, VMEC2000, the STELLOPT targets) inherits it.
+!     cyl2flx_damp_floor : minimum Newton-step damping factor used when
+!         far from the solution (fmin>1e-3).  Only active for distant
+!         (cold-start) points; near a warm-started root it is inactive.
+!     cyl2flx_niter : per-restart iteration cap in newt2d.
+!     cyl2flx_nrestart : number of cold-start restarts ("angle jogs").
+!         Each restart re-seeds Newton twopi/cyl2flx_nrestart further
+!         round in u, so the tries always span the full poloidal circle
+!         whatever this is set to.  Interior points converge on the first
+!         try; exterior points cannot converge at all and therefore run
+!         every restart, so this multiplies the dominant cost on grids
+!         with a large vacuum region.  4 matches the historical value.
+!     cyl2flx_lbail_outside : stop restarting as soon as one try reports
+!         info=-3 ("clearly outside"), as develop did.  Continuing past
+!         the first -3 lets a point that overshoots on one cold start be
+!         found from another angle jog, which matters for equilibria whose
+!         mode count is low relative to their spectral condensation (the
+!         boundary is then rounded and tips fall outside).  It is not free:
+!         every exterior point pays the full restart sweep to re-confirm
+!         it is outside, which on a vacuum-heavy grid is most of the cost.
+!         Measured on AUG, NCSX and W7X the recovery gained no resolved
+!         cells while costing 27-45% of the grid build, so the default is
+!         .TRUE.  Set .FALSE. for a mode-starved equilibrium; the
+!         non-convergence warning BEAMS3D prints tells you when to.
+!
+      REAL(rprec) :: cyl2flx_ftol       = 1.0E-16_dp
+      REAL(rprec) :: cyl2flx_damp_floor = 0.1_dp
+      INTEGER     :: cyl2flx_niter      = 50
+      INTEGER     :: cyl2flx_nrestart   = 4
+      LOGICAL     :: cyl2flx_lbail_outside = .TRUE.
+!
+!     cyl2flx_lbndry : when .TRUE., a point the inverse map places just
+!         OUTSIDE the plasma (best s>1) but which is geometrically INSIDE
+!         the forward-mapped LCFS (the classic sharp-tip rounding) is
+!         recovered: Newton is re-seeded from the nearest boundary node,
+!         and failing that the point is accepted at the edge. The boundary
+!         is cached per toroidal plane - auto-invalidated when phi or the
+!         equilibrium changes.
+      LOGICAL :: cyl2flx_lbndry = .TRUE.
+      INTEGER, PARAMETER, PRIVATE :: nbndry_max = 512
+      REAL(rprec), PRIVATE :: rb_cache(nbndry_max), zb_cache(nbndry_max)
+      REAL(rprec), PRIVATE :: phi_cache = -1.0E30_dp
+      INTEGER, PRIVATE     :: nbndry_cache = 0
+      REAL(rprec), POINTER, PRIVATE :: rzl_cached(:,:,:,:) => NULL()
+!
+!
+!     THIS MODULE CONTAINS USEFUL UTILITIES FOR PROCESSING VMEC
+!     DATA. MOST FUNCTIONS ARE OVERLOADED TO BE ABLE TO USE EITHER
 !     INTERNALLY DATA (LOCAL FROM WITHIN VMEC) OR DATA FROM WOUT FILE
 !
 
@@ -37,7 +103,7 @@
 
       CONTAINS
 
-      SUBROUTINE GetBcyl_WOUT(R1, Phi, Z1, Br, Bphi, Bz, 
+      SUBROUTINE GetBcyl_WOUT(R1, Phi, Z1, Br, Bphi, Bz,
      1                        sflx, uflx, info)
       USE read_wout_mod, phi_wout=>phi, ns_w=>ns, ntor_w=>ntor,
      1     mpol_w=>mpol, ntmax_w=>ntmax, lthreed_w=>lthreed,
@@ -75,7 +141,7 @@ C-----------------------------------------------
 !
 !     INPUT
 !     R1, Phi, Z1  : cylindrical coordinates at which evaluation is to take place
-!     
+!
 !     OUTPUT
 !     Br, Bphi, Bz : computed cylindrical components of B at input point
 !     sflx, uflx   : computed flux and theta angle at the cylindrical point
@@ -87,21 +153,30 @@ C-----------------------------------------------
       c_flx(1) = 0;   c_flx(2) = 0;        c_flx(3) = r_cyl(2)
       IF (PRESENT(sflx)) c_flx(1) = sflx
       IF (PRESENT(uflx)) c_flx(2) = uflx
-      CALL cyl2flx(rzl_local, r_cyl, c_flx, ns_w, ntor_w, mpol_w, 
-     1     ntmax_w, lthreed_w, lasym_w, info_loc, nfe, fmin, 
+      CALL cyl2flx(rzl_local, r_cyl, c_flx, ns_w, ntor_w, mpol_w,
+     1     ntmax_w, lthreed_w, lasym_w, info_loc, nfe, fmin,
      2     RU=Ru1, ZU=Zu1, RV=Rv1, ZV=Zv1, RS=Rs1, ZS=Zs1)
 !
 !     If info == 0 then the point is found
 !     If info == -1 then the tollerance was not achieved
 !     If info < -1 then most likely the point is outside the eq.
 !
+      IF (info_loc.eq.-1 .and. (fmin .le. fmin_acceptable)) info_loc = 0
+
       IF (PRESENT(info)) info = info_loc
+!
+!     Always report the solved flux coordinate back to the caller, even
+!     when the point is outside the plasma (info=-3).  Without this,
+!     the caller's sflx stays at its cold-start value of 0, which causes
+!     virtual-casing dispatch (sflx > 1 test) to be silently skipped for
+!     true-exterior points.
+!
+      IF (PRESENT(sflx)) sflx = c_flx(1)
+      IF (PRESENT(uflx)) uflx = c_flx(2)
+
       IF (info_loc .lt. -1) RETURN
 
       Rv1 = nfp*Rv1;  Zv1 = nfp*Zv1
-
-      IF (PRESENT(sflx)) sflx = c_flx(1)  
-      IF (PRESENT(uflx)) uflx = c_flx(2)
 
       IF (c_flx(1) .ge. 2) THEN
          Br = 0;  Bphi = 0;  Bz = 0
@@ -113,7 +188,7 @@ C-----------------------------------------------
 !     OLD WAY
 !     2. Evaluate Bsupu, Bsupv at this point
 !
-      CALL tosuvspace (c_flx(1), c_flx(2), c_flx(3), 
+      CALL tosuvspace (c_flx(1), c_flx(2), c_flx(3),
      1                 BSUPU=bsupu1, BSUPV=bsupv1)
 
 !
@@ -128,7 +203,7 @@ C-----------------------------------------------
 !        The factor of pi2 comes from normalization on
 !        dchi/ds and dphi/ds
 !
-!      CALL tosuvspaceBsup (c_flx(1), c_flx(2), c_flx(3), 
+!      CALL tosuvspaceBsup (c_flx(1), c_flx(2), c_flx(3),
 !     1                 GBSUPU=bsupu1, GBSUPV=bsupv1)
 !
 !      bsupu1 = bsupu1/(ABS(g1)*pi2) ! Pi2 comes from chip and phip
@@ -139,10 +214,10 @@ C-----------------------------------------------
       Br   = Ru1*bsupu1 + Rv1*bsupv1
       Bphi = R1 *bsupv1
       Bz   = Zu1*bsupu1 + Zv1*bsupv1
-      
+
       END SUBROUTINE GetBcyl_WOUT
 
-      SUBROUTINE GetAcyl_WOUT(R1, Phi, Z1, Ar, Aphi, Az, 
+      SUBROUTINE GetAcyl_WOUT(R1, Phi, Z1, Ar, Aphi, Az,
      1                        sflx, uflx, info)
       USE read_wout_mod, phi_wout=>phi, ns_w=>ns, ntor_w=>ntor,
      1     mpol_w=>mpol, ntmax_w=>ntmax, lthreed_w=>lthreed,
@@ -186,7 +261,7 @@ C-----------------------------------------------
 !
 !     INPUT
 !     R1, Phi, Z1  : cylindrical coordinates at which evaluation is to take place
-!     
+!
 !     OUTPUT
 !     Ar, Aphi, Az : computed cylindrical components of A at input point
 !     sflx, uflx   : computed flux and theta angle at the cylindrical point
@@ -198,8 +273,8 @@ C-----------------------------------------------
       c_flx(1) = 0;   c_flx(2) = 0;        c_flx(3) = r_cyl(2)
       IF (PRESENT(sflx)) c_flx(1) = sflx
       IF (PRESENT(uflx)) c_flx(2) = uflx
-      CALL cyl2flx(rzl_local, r_cyl, c_flx, ns_w, ntor_w, mpol_w, 
-     1     ntmax_w, lthreed_w, lasym_w, info_loc, nfe, fmin, 
+      CALL cyl2flx(rzl_local, r_cyl, c_flx, ns_w, ntor_w, mpol_w,
+     1     ntmax_w, lthreed_w, lasym_w, info_loc, nfe, fmin,
      2     RU=Ru1, ZU=Zu1, RV=Rv1, ZV=Zv1, RS=Rs1, ZS=Zs1)
       Rv1 = nfp*Rv1;  Zv1 = nfp*Zv1
 
@@ -208,7 +283,7 @@ C-----------------------------------------------
       IF (PRESENT(info)) info = info_loc
       IF (info_loc .ne. 0) RETURN
 
-      IF (PRESENT(sflx)) sflx = c_flx(1)  
+      IF (PRESENT(sflx)) sflx = c_flx(1)
       IF (PRESENT(uflx)) uflx = c_flx(2)
 
       IF (c_flx(1) .gt. one) THEN
@@ -217,12 +292,18 @@ C-----------------------------------------------
       END IF
 !
 !     2. Interpolate Chi and phi
-!        Note that arrays are indexed from 1:ns
+!        phi, chi, phipf are full-grid radial profiles indexed 1:ns_w,
+!        with grid nodes at s_j = (j-1)/(ns_w-1) so that s=0 -> j=1 (axis)
+!        and s=1 -> j=ns_w (edge).  For s=c_flx(1) the real-valued index is
+!        1 + s*(ns_w-1); hence js_lo = FLOOR(s*(ns_w-1)) + 1 and the
+!        fractional weight wegt = s*(ns_w-1) - (js_lo-1) lies in [0,1).
+!        Clamp js_lo to [1, ns_w-1] so js_lo/js_hi stay within bounds.
 !
-      js_lo = FLOOR(c_flx(1)*(ns_w-1))
-      IF (js_lo .ge. ns_w) js_lo=ns_w-1
+      js_lo = FLOOR(c_flx(1)*(ns_w-1)) + 1
+      IF (js_lo .lt. 1)      js_lo = 1
+      IF (js_lo .ge. ns_w)   js_lo = ns_w-1
       js_hi = js_lo+1
-      wegt  = c_flx(1)*(ns_w-1) - js_lo+1
+      wegt  = c_flx(1)*(ns_w-1) - (js_lo-1)
       phi_flux =   (1.0-wegt)*phi_wout(js_lo)
      1            + wegt*phi_wout(js_hi)
       chi_flux =   (1.0-wegt)*chi_wout(js_lo)
@@ -266,9 +347,9 @@ C-----------------------------------------------
 !           e_i = d X / di
 !             g = det(g_ij)
 !
-      asubs1 = -lam1 * phip_flux*isigng_w    
-      asubu1 =  phi_flux*isigng_w  
-      asubv1 = -chi_flux*isigng_w 
+      asubs1 = -lam1 * phip_flux*isigng_w
+      asubu1 =  phi_flux*isigng_w
+      asubv1 = -chi_flux*isigng_w
       asups1 = (asubs1*g11i+asubu1*g12i+asubv1*g13i)/gdet
       asupu1 = (asubs1*g12i+asubu1*g22i+asubv1*g23i)/gdet
       asupv1 = (asubs1*g13i+asubu1*g23i+asubv1*g33i)/gdet
@@ -290,27 +371,27 @@ C-----------------------------------------------
 !      Ar   = Ar/sqrt(gdet)
 !      Az   = Az/sqrt(gdet)
 !      Aphi = Aphi/sqrt(gdet)
-      
+
       END SUBROUTINE GetAcyl_WOUT
 
 
-      SUBROUTINE GetBcyl_VMEC(R1, Phi, Z1, Br, Bphi, Bz, sflx, uflx, 
-     1     bsupu, bsupv, rzl_array, ns_in, ntor_in, mpol_in, ntmax_in, 
-     2     nzeta, ntheta3, nper, mscale, nscale, lthreed_in, lasym_in,  
+      SUBROUTINE GetBcyl_VMEC(R1, Phi, Z1, Br, Bphi, Bz, sflx, uflx,
+     1     bsupu, bsupv, rzl_array, ns_in, ntor_in, mpol_in, ntmax_in,
+     2     nzeta, ntheta3, nper, mscale, nscale, lthreed_in, lasym_in,
      3     info)
       IMPLICIT NONE
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
-      INTEGER, INTENT(in) :: ns_in, ntor_in, mpol_in, ntmax_in, 
+      INTEGER, INTENT(in) :: ns_in, ntor_in, mpol_in, ntmax_in,
      1                       nzeta, ntheta3, nper
       INTEGER, OPTIONAL, INTENT(out) :: info
       LOGICAL, INTENT(in) :: lthreed_in, lasym_in
       REAL(rprec), INTENT(in)  :: R1, Z1, Phi
-      REAL(rprec), INTENT(in)  :: 
+      REAL(rprec), INTENT(in)  ::
      1             rzl_array(ns_in,0:ntor_in,0:mpol_in-1,2*ntmax_in),
      2             mscale(0:mpol_in-1), nscale(0:ntor_in)
-      REAL(rprec), DIMENSION(ns_in,nzeta,ntheta3), INTENT(in) 
+      REAL(rprec), DIMENSION(ns_in,nzeta,ntheta3), INTENT(in)
      1                         :: bsupu, bsupv
       REAL(rprec), INTENT(out) :: Br, Bphi, Bz, sflx, uflx
 C-----------------------------------------------
@@ -318,9 +399,9 @@ C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       REAL(rprec), PARAMETER :: c1p5 = 1.5_dp
       REAL(rprec), PARAMETER :: fmin_acceptable = 1.E-12_dp
-      INTEGER     :: nfe, info_loc, jslo, jshi, julo, juhi, 
+      INTEGER     :: nfe, info_loc, jslo, jshi, julo, juhi,
      1               kvlo, kvhi, ntheta1
-      REAL(rprec) :: r_cyl(3), c_flx(3), vflx, vflx_norm, 
+      REAL(rprec) :: r_cyl(3), c_flx(3), vflx, vflx_norm,
      1               uflx_norm, fmin
       REAL(rprec) :: wgt_s, wgt_u, wgt_v, hs1, hu1, hv1
       REAL(rprec) :: Ru1, Zu1, Rv1, Zv1
@@ -340,8 +421,8 @@ C-----------------------------------------------
 !
       r_cyl(1) = R1;  r_cyl(2) = nper*Phi;  r_cyl(3) = Z1
       c_flx(1) = 0;   c_flx(2) = 0;         c_flx(3) = r_cyl(2)
-      CALL cyl2flx(rzl_array, r_cyl, c_flx, ns_in, ntor_in, mpol_in, 
-     1     ntmax_in, lthreed_in, lasym_in, info_loc, nfe, fmin, 
+      CALL cyl2flx(rzl_array, r_cyl, c_flx, ns_in, ntor_in, mpol_in,
+     1     ntmax_in, lthreed_in, lasym_in, info_loc, nfe, fmin,
      2     mscale, nscale, RU=Ru1, ZU=Zu1, RV=Rv1, ZV=Zv1)
       Rv1 = nper*Rv1;  Zv1 = nper*Zv1
 
@@ -368,7 +449,7 @@ C-----------------------------------------------
       wgt_s = (sflx - hs1*(jslo-c1p5))/hs1
       IF (jslo .eq. ns_in) THEN
 !        USE Xhalf(ns+1) = 2*Xhalf(ns) - Xhalf(ns-1) FOR "GHOST" POINT VALUE hs/2 OUTSIDE EDGE
-!        THEN, X = wlo*Xhalf(ns) + whi*Xhalf(ns+1) == Xhalf(ns) + whi*(Xhalf(ns) - Xhalf(ns-1)) 
+!        THEN, X = wlo*Xhalf(ns) + whi*Xhalf(ns+1) == Xhalf(ns) + whi*(Xhalf(ns) - Xhalf(ns-1))
 !        WHERE wlo = 1 - wgt_s, whi = wgt_s
          jshi = jslo-1
          wgt_s = 1+wgt_s
@@ -381,9 +462,9 @@ C-----------------------------------------------
       ELSE
          ntheta1 = 2*(ntheta3 - 1)
       END IF
-      
+
       uflx = MOD(uflx, twopi)
-      DO WHILE (uflx .lt. zero) 
+      DO WHILE (uflx .lt. zero)
          uflx = uflx+twopi
       END DO
 
@@ -408,8 +489,8 @@ C-----------------------------------------------
       IF (julo .eq. ntheta3) juhi = 1         !Periodic point at u = 0
       wgt_u = (uflx_norm - hu1*(julo-1))/hu1
 
-      
-      DO WHILE (vflx .lt. zero) 
+
+      DO WHILE (vflx .lt. zero)
          vflx = vflx+twopi
       END DO
       vflx = MOD(vflx, twopi)
@@ -455,11 +536,11 @@ C-----------------------------------------------
       Br   = Ru1*bsupu1 + Rv1*bsupv1
       Bphi = R1 *bsupv1
       Bz   = Zu1*bsupu1 + Zv1*bsupv1
-      
+
       END SUBROUTINE GetBcyl_VMEC
 
 
-      SUBROUTINE GetJcyl_WOUT(R1, Phi, Z1, JR, JPHI, JZ, 
+      SUBROUTINE GetJcyl_WOUT(R1, Phi, Z1, JR, JPHI, JZ,
      1                        sflx, uflx, info)
       USE read_wout_mod, phi_wout1=>phi, ns_w1=>ns, ntor_w1=>ntor,
      1     mpol_w1=>mpol, ntmax_w1=>ntmax, lthreed_w1=>lthreed,
@@ -496,7 +577,7 @@ C-----------------------------------------------
 !
 !     INPUT
 !     R1, Phi, Z1  : cylindrical coordinates at which evaluation is to take place
-!     
+!
 !     OUTPUT
 !     Br, Bphi, Bz : computed cylindrical components of B at input point
 !     sflx, uflx   : computed flux and theta angle at the cylindrical point
@@ -506,8 +587,8 @@ C-----------------------------------------------
 !
       r_cyl(1) = R1;  r_cyl(2) = nfp*Phi;  r_cyl(3) = Z1
       c_flx(1) = 0;   c_flx(2) = 0;        c_flx(3) = r_cyl(2)
-      CALL cyl2flx(rzl_local, r_cyl, c_flx, ns_w1, ntor_w1, mpol_w1, 
-     1     ntmax_w1, lthreed_w1, lasym_w1, info_loc, nfe, fmin, 
+      CALL cyl2flx(rzl_local, r_cyl, c_flx, ns_w1, ntor_w1, mpol_w1,
+     1     ntmax_w1, lthreed_w1, lasym_w1, info_loc, nfe, fmin,
      2     RU=Ru1, ZU=Zu1, RV=Rv1, ZV=Zv1)
       Rv1 = nfp*Rv1;  Zv1 = nfp*Zv1
 
@@ -516,7 +597,7 @@ C-----------------------------------------------
       IF (PRESENT(info)) info = info_loc
       IF (info_loc .ne. 0) RETURN
 
-      IF (PRESENT(sflx)) sflx = c_flx(1)  
+      IF (PRESENT(sflx)) sflx = c_flx(1)
       IF (PRESENT(uflx)) uflx = c_flx(2)
 
       IF (c_flx(1) .gt. one) THEN
@@ -525,7 +606,7 @@ C-----------------------------------------------
       END IF
 
 !     3. Evaluate d(Bsubs)/du and d(Bsubs)/dv, d(Bsubu)/ds, d(Bsubv)/ds at this point
-      CALL tosuvspace (c_flx(1), c_flx(2), c_flx(3), 
+      CALL tosuvspace (c_flx(1), c_flx(2), c_flx(3),
      1                 GSQRT=gsqrt1, JSUPU=jsupu1, JSUPV=jsupv1)
 
 !      WRITE (36, '(1p4e12.4)') R1*jsupv1, dbsubuds1, dbsubsdu1, gsqrt1
@@ -535,7 +616,7 @@ C-----------------------------------------------
       Jr   = Ru1*jsupu1 + Rv1*jsupv1
       Jphi =              R1 *jsupv1
       Jz   = Zu1*jsupu1 + Zv1*jsupv1
-      
+
       END SUBROUTINE GetJcyl_WOUT
 
 
@@ -577,27 +658,27 @@ C-----------------------------------------------
       CALL GetBcyl_WOUT(r1, phi1, z1, br, bphi, bz, INFO=info)
 
       MSE_pitch_WOUT = (acoef(1)*Bz   + acoef(5)*Er)/
-     1                 (acoef(2)*Bphi + acoef(3)*Br 
+     1                 (acoef(2)*Bphi + acoef(3)*Br
      2               + acoef(4)*Bz   + acoef(6)*Ez)
 
       END FUNCTION MSE_pitch_WOUT
 
-      FUNCTION MSE_pitch_VMEC(r1, phi1, z1, acoef, efield, sflx, uflx, 
-     1     bsupu, bsupv, rzl_array, ns_in, ntor_in, mpol_in, ntmax_in, 
-     2     nzeta, ntheta3, nper, mscale, nscale, lthreed_in, lasym_in,  
+      FUNCTION MSE_pitch_VMEC(r1, phi1, z1, acoef, efield, sflx, uflx,
+     1     bsupu, bsupv, rzl_array, ns_in, ntor_in, mpol_in, ntmax_in,
+     2     nzeta, ntheta3, nper, mscale, nscale, lthreed_in, lasym_in,
      3     info)
       IMPLICIT NONE
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
       REAL(rprec), INTENT(in) :: r1, phi1, z1, acoef(6), efield(2)
-      INTEGER, INTENT(in) :: ns_in, ntor_in, mpol_in, ntmax_in, 
+      INTEGER, INTENT(in) :: ns_in, ntor_in, mpol_in, ntmax_in,
      1                       nzeta, ntheta3, nper
       LOGICAL, INTENT(in) :: lthreed_in, lasym_in
-      REAL(rprec), INTENT(in)  :: 
+      REAL(rprec), INTENT(in)  ::
      1             rzl_array(ns_in,0:ntor_in,0:mpol_in-1,2*ntmax_in),
      2             mscale(0:mpol_in-1), nscale(0:ntor_in)
-      REAL(rprec), DIMENSION(ns_in,nzeta,ntheta3), INTENT(in) 
+      REAL(rprec), DIMENSION(ns_in,nzeta,ntheta3), INTENT(in)
      1                         :: bsupu, bsupv
       REAL(rprec), INTENT(out) :: sflx, uflx
       INTEGER, INTENT(out) :: info
@@ -624,19 +705,19 @@ C-----------------------------------------------
 !
 !     Compute cylindrical components of B-field at given point R1, phi=f1, Z1
 !
-      CALL GetBcyl_VMEC(r1, phi1, z1, br, bphi, bz, sflx, uflx, 
-     1     bsupu, bsupv, rzl_array, ns_in, ntor_in, mpol_in, ntmax_in, 
-     2     nzeta, ntheta3, nper, mscale, nscale, lthreed_in, lasym_in,  
+      CALL GetBcyl_VMEC(r1, phi1, z1, br, bphi, bz, sflx, uflx,
+     1     bsupu, bsupv, rzl_array, ns_in, ntor_in, mpol_in, ntmax_in,
+     2     nzeta, ntheta3, nper, mscale, nscale, lthreed_in, lasym_in,
      3     info)
 
       MSE_pitch_VMEC = (acoef(1)*Bz   + acoef(5)*Er)/
-     1                 (acoef(2)*Bphi + acoef(3)*Br 
+     1                 (acoef(2)*Bphi + acoef(3)*Br
      2               +  acoef(4)*Bz   + acoef(6)*Ez)
 
       END FUNCTION MSE_pitch_VMEC
 
 
-      SUBROUTINE flx2cyl(rzl_array, c_flux, r_cyl, ns, ntor, 
+      SUBROUTINE flx2cyl(rzl_array, c_flux, r_cyl, ns, ntor,
      1                   mpol, ntmax, lthreed, lasym, iflag,
      2                   mscale, nscale, Ru, Rv, Zu, Zv, Rs, Zs)
       IMPLICIT NONE
@@ -650,7 +731,7 @@ C-----------------------------------------------
      1   INTENT(in) :: rzl_array
       REAL(rprec), INTENT(in) :: c_flux(3)
       REAL(rprec), INTENT(out) :: r_cyl(3)
-      REAL(rprec), INTENT(in), OPTIONAL :: 
+      REAL(rprec), INTENT(in), OPTIONAL ::
      1                            mscale(0:mpol-1), nscale(0:ntor)
       REAL(rprec), INTENT(out), OPTIONAL :: Ru, Rv, Zu, Zv, Rs, Zs
 C-----------------------------------------------
@@ -667,7 +748,7 @@ C-----------------------------------------------
      2           rmncs, rmnsc, zmncc, zmnss,
      1           drmncc, drmnss, dzmncs, dzmnsc,
      2           drmncs, drmnsc, dzmncc, dzmnss
-      REAL(rprec) :: wlo, whi, wlo_odd, whi_odd, hs1, 
+      REAL(rprec) :: wlo, whi, wlo_odd, whi_odd, hs1,
      1               si, ui, vi, r11, z11
       REAL(rprec) :: slo, shi, rho, rholo, rhohi, dwlo, dwhi, dwlo_odd,
      1               dwhi_odd
@@ -677,7 +758,7 @@ C-----------------------------------------------
      3               dwplus(0:ntor,0:mpol-1)
       REAL(rprec) :: cosu, sinu, cosv, sinv,
      1               cosmu(0:mpol-1), sinmu(0:mpol-1),
-     2               cosnv(0:ntor),  sinnv(0:ntor), 
+     2               cosnv(0:ntor),  sinnv(0:ntor),
      3               cosnvn(0:ntor), sinnvn(0:ntor)
       REAL(rprec) :: work1(0:mpol-1,16)
       LOGICAL :: lrs, lzs, lru, lrv, lzu, lzv
@@ -739,7 +820,7 @@ C-----------------------------------------------
       ! Derivative values
       dwlo = -DBLE(ns-1)
       dwhi =  DBLE(ns-1)
-              
+
       ! Adjust near axis
       IF (jslo .eq. 1) THEN
          wlo_odd = 0
@@ -785,7 +866,7 @@ C-----------------------------------------------
       dwmins(:,1:mpol1:2) = dwlo_odd
       dwplus(:,1:mpol1:2) = dwhi_odd
 
-      zcs = 0; zcc =  0; zss = 0 ! 11.21.2023 - SAL  
+      zcs = 0; zcc =  0; zss = 0 ! 11.21.2023 - SAL
       IF (.not.lasym) THEN
          IF (lthreed) THEN
             IF (ntmax .ne. 2) STOP 'ntmax != 2 in flx2cyl!'
@@ -806,25 +887,25 @@ C-----------------------------------------------
 
       zsc = 1+ntmax; zcs = zcs+ntmax; zcc = zcc+ntmax; zss = zss+ntmax
 
-      rmncc = wmins*rzl_array(jslo,:,:,rcc) 
+      rmncc = wmins*rzl_array(jslo,:,:,rcc)
      1      + wplus*rzl_array(jshi,:,:,rcc)        !!COS(mu) COS(nv)
-      zmnsc = wmins*rzl_array(jslo,:,:,zsc) 
+      zmnsc = wmins*rzl_array(jslo,:,:,zsc)
      1      + wplus*rzl_array(jshi,:,:,zsc)        !!SIN(mu) COS(nv)
 
       IF (lthreed) THEN
-         rmnss = wmins*rzl_array(jslo,:,:,rss) 
+         rmnss = wmins*rzl_array(jslo,:,:,rss)
      1         + wplus*rzl_array(jshi,:,:,rss)     !!SIN(mu) SIN(nv)
          zmncs = wmins*rzl_array(jslo,:,:,zcs)
      1         + wplus*rzl_array(jshi,:,:,zcs)     !!COS(mu) SIN(nv)
       END IF
 
-      drmncc = dwmins*rzl_array(jslo,:,:,rcc) 
+      drmncc = dwmins*rzl_array(jslo,:,:,rcc)
      1       + dwplus*rzl_array(jshi,:,:,rcc)        !!COS(mu) COS(nv)
-      dzmnsc = dwmins*rzl_array(jslo,:,:,zsc) 
+      dzmnsc = dwmins*rzl_array(jslo,:,:,zsc)
      1       + dwplus*rzl_array(jshi,:,:,zsc)        !!SIN(mu) COS(nv)
 
       IF (lthreed) THEN
-         drmnss = dwmins*rzl_array(jslo,:,:,rss) 
+         drmnss = dwmins*rzl_array(jslo,:,:,rss)
      1          + dwplus*rzl_array(jshi,:,:,rss)     !!SIN(mu) SIN(nv)
          dzmncs = dwmins*rzl_array(jslo,:,:,zcs)
      1          + dwplus*rzl_array(jshi,:,:,zcs)     !!COS(mu) SIN(nv)
@@ -871,7 +952,7 @@ C-----------------------------------------------
 !     FIRST, INVERSE TRANSFORM IN N-V SPACE, FOR FIXED M
 !
       DO m = 0, mpol1
- 
+
          work1(m,1) = SUM(rmncc(:,m)*cosnv(:))
          work1(m,2) = SUM(zmnsc(:,m)*cosnv(:))
          IF (lru) work1(m,3) =-m*work1(m,1)
@@ -905,7 +986,7 @@ C-----------------------------------------------
          IF (lzv) zv = SUM(work1(:,6)*sinmu(:) + work1(:,12)*cosmu(:))
          IF (lrs) rs = SUM(work1(:,13)*cosmu(:) + work1(:,15)*sinmu(:))
          IF (lzs) zs = SUM(work1(:,14)*sinmu(:) + work1(:,16)*cosmu(:))
-      ELSE          
+      ELSE
          r11 = SUM(work1(:,1)*cosmu(:))
          z11 = SUM(work1(:,2)*sinmu(:))
          IF (lru) ru = SUM(work1(:,3)*sinmu(:))
@@ -917,25 +998,25 @@ C-----------------------------------------------
 
       IF (.not.lasym) GOTO 1000
 
-      rmnsc = wmins*rzl_array(jslo,:,:,rsc) 
+      rmnsc = wmins*rzl_array(jslo,:,:,rsc)
      1      + wplus*rzl_array(jshi,:,:,rsc)        !!SIN(mu) COS(nv)
-      zmncc = wmins*rzl_array(jslo,:,:,zcc) 
+      zmncc = wmins*rzl_array(jslo,:,:,zcc)
      1      + wplus*rzl_array(jshi,:,:,zcc)        !!COS(mu) COS(nv)
 
       IF (lthreed) THEN
-         rmncs = wmins*rzl_array(jslo,:,:,rcs) 
+         rmncs = wmins*rzl_array(jslo,:,:,rcs)
      1         + wplus*rzl_array(jshi,:,:,rcs)     !!COS(mu) SIN(nv)
          zmnss = wmins*rzl_array(jslo,:,:,zss)
      1         + wplus*rzl_array(jshi,:,:,zss)     !!SIN(mu) SIN(nv)
       END IF
 
-      drmnsc = dwmins*rzl_array(jslo,:,:,rsc) 
+      drmnsc = dwmins*rzl_array(jslo,:,:,rsc)
      1       + dwplus*rzl_array(jshi,:,:,rsc)        !!SIN(mu) COS(nv)
-      dzmncc = dwmins*rzl_array(jslo,:,:,zcc) 
+      dzmncc = dwmins*rzl_array(jslo,:,:,zcc)
      1       + dwplus*rzl_array(jshi,:,:,zcc)        !!COS(mu) COS(nv)
 
       IF (lthreed) THEN
-         drmncs = dwmins*rzl_array(jslo,:,:,rcs) 
+         drmncs = dwmins*rzl_array(jslo,:,:,rcs)
      1          + dwplus*rzl_array(jshi,:,:,rcs)     !!COS(mu) SIN(nv)
          dzmnss = dwmins*rzl_array(jslo,:,:,zss)
      1          + dwplus*rzl_array(jshi,:,:,zss)     !!SIN(mu) SIN(nv)
@@ -947,7 +1028,7 @@ C-----------------------------------------------
 !     FIRST, INVERSE TRANSFORM IN N-V SPACE, FOR FIXED M
 !
       DO m = 0, mpol1
- 
+
          work1(m,1) = SUM(rmnsc(:,m)*cosnv(:))
          work1(m,2) = SUM(zmncc(:,m)*cosnv(:))
          IF (lru) work1(m,3) = m*work1(m,1)
@@ -976,19 +1057,19 @@ C-----------------------------------------------
       IF (lthreed) THEN
          r11 = r11 + SUM(work1(:,1)*sinmu(:) + work1(:,7)*cosmu(:))
          z11 = z11 + SUM(work1(:,2)*cosmu(:) + work1(:,8)*sinmu(:))
-         IF (lru) ru = ru + 
+         IF (lru) ru = ru +
      1                 SUM(work1(:,3)*cosmu(:) + work1(:,9)*sinmu(:))
-         IF (lzu) zu = zu + 
+         IF (lzu) zu = zu +
      1                 SUM(work1(:,4)*sinmu(:) + work1(:,10)*cosmu(:))
-         IF (lrv) rv = rv + 
+         IF (lrv) rv = rv +
      1                 SUM(work1(:,5)*sinmu(:) + work1(:,11)*cosmu(:))
          IF (lzv) zv = zv +
      1                 SUM(work1(:,6)*cosmu(:) + work1(:,12)*sinmu(:))
-         IF (lrs) rs = rs + 
+         IF (lrs) rs = rs +
      1                 SUM(work1(:,13)*sinmu(:) + work1(:,15)*cosmu(:))
-         IF (lzs) zs = zs + 
+         IF (lzs) zs = zs +
      1                 SUM(work1(:,14)*cosmu(:) + work1(:,16)*sinmu(:))
-      ELSE          
+      ELSE
          r11 = r11 + SUM(work1(:,1)*sinmu(:))
          z11 = z11 + SUM(work1(:,2)*cosmu(:))
          IF (lru) ru = ru + SUM(work1(:,3)*cosmu(:))
@@ -1003,8 +1084,8 @@ C-----------------------------------------------
 
       END SUBROUTINE flx2cyl
 
-      SUBROUTINE cyl2flx(rzl_in, r_cyl, c_flx, ns_in, ntor_in, mpol_in, 
-     1      ntmax_in, lthreed_in, lasym_in, info, nfe, fmin, 
+      SUBROUTINE cyl2flx(rzl_in, r_cyl, c_flx, ns_in, ntor_in, mpol_in,
+     1      ntmax_in, lthreed_in, lasym_in, info, nfe, fmin,
      1      mscale, nscale, ru, zu, rv, zv, rs, zs)
       IMPLICIT NONE
 C-----------------------------------------------
@@ -1014,9 +1095,9 @@ C-----------------------------------------------
       INTEGER, INTENT(in)        :: ns_in, ntor_in, mpol_in, ntmax_in
       REAL(rprec), INTENT(in)    :: r_cyl(3)
       REAL(rprec), INTENT(inout) :: c_flx(3)
-      REAL(rprec), INTENT(in), TARGET :: 
+      REAL(rprec), INTENT(in), TARGET ::
      1                 rzl_in(ns_in,0:ntor_in,0:mpol_in-1,2*ntmax_in)
-      REAL(rprec), TARGET, OPTIONAL :: 
+      REAL(rprec), TARGET, OPTIONAL ::
      1                 mscale(0:mpol_in-1), nscale(0:ntor_in)
       REAL(rprec), INTENT(out), OPTIONAL :: ru, zu, rv, zv, rs, zs
       REAL(rprec), INTENT(out)   :: fmin
@@ -1025,23 +1106,25 @@ C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s
 C-----------------------------------------------
       INTEGER, PARAMETER :: nvar = 2
-      REAL(rprec), PARAMETER :: ftol = 1.e-16_dp
+      REAL(rprec) :: ftol
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
-      REAL(rprec) :: xc_opt(nvar), r_cyl_out(3), fmin0
-      INTEGER     :: iflag, itry, nfe_out
+      REAL(rprec) :: xc_opt(nvar), r_cyl_out(3)
+      REAL(rprec) :: xc_best(nvar), fmin_best, u_star
+      INTEGER     :: iflag, itry, nfe_out, info_best
+      LOGICAL     :: lin_geo
 C-----------------------------------------------
 !     LOCAL PARAMETERS:
 !     ftol    :   nominally, set to 1.E-16. Gives a maximum (relative)
-!                 error in matching R and Z of sqrt(ftol), or 1.E-8. 
-!                 To increase accuracy, ftol should be lowered, but this 
+!                 error in matching R and Z of sqrt(ftol), or 1.E-8.
+!                 To increase accuracy, ftol should be lowered, but this
 !                 may require more Newton iterations (slows code).
-!       
+!
 !     INPUT:
 !     rzl_in  :   4D array with r,z (lambda) Fourier coefficients vs. radius
-!                 
-!     r_cyl   :   vector specifying cylindrical point to match, R = r_cyl(1), 
+!
+!     r_cyl   :   vector specifying cylindrical point to match, R = r_cyl(1),
 !                 N*phi = r_cyl(2), Z = r_cyl(3)
 !                 NOTE: N*phi (N=no. field periods) is input, NOT phi!
 !     ns_in   :   number of radial nodes in input array rzl_in
@@ -1050,7 +1133,7 @@ C-----------------------------------------------
 !     ntor_in :   number of toroidal modes = ntor_in+1 (0:ntor)
 !     lthreed_in :true if this is a 3D plasma
 !     lasym_in:   true if this is an asymmetric plasma
-!     mscale  (nscale) : 
+!     mscale  (nscale) :
 !                 optional scaling arrays for cos, sin arrays. Used
 !                 only if this routine is called from within VMEC.
 !
@@ -1061,7 +1144,7 @@ C-----------------------------------------------
 !     fmin    :   minimum value of f = (r - Rin)**2 + (z - Zin)**2 at c_flx
 
 !     INPUT/OUTPUT:
-!     c_flx   :   array of flux coordinates (s = c_flx(1), u=theta= c_flx(2), 
+!     c_flx   :   array of flux coordinates (s = c_flx(1), u=theta= c_flx(2),
 !                 v = N*phi= c_flx(3))
 !                 on input, initial guess (recommend magnetic axis if "cold" start)
 !                 on output, s, u values corresponding to r_cyl
@@ -1081,35 +1164,80 @@ C-----------------------------------------------
       xc_opt(1) = c_flx(1); xc_opt(2) = c_flx(2)
 
 !     Avoid exact magnetic axis, which is singular point
-      IF (c_flx(1) .eq. zero) xc_opt(1) = one/(ns_loc-1)   
+      IF (c_flx(1) .eq. zero) xc_opt(1) = one/(ns_loc-1)
 
       fnorm = r_target**2 + z_target**2
       IF (fnorm .lt. EPSILON(fnorm)) fnorm = 1
       fnorm = one/fnorm
 
+      ftol = cyl2flx_ftol
 
       nfe = 0
-      fmin0 = 1
+      tau_min_diag = HUGE(tau_min_diag)
+      n_degen_diag = 0
 
-      DO itry = 1, 4
+!     Track the BEST (lowest-fmin) result across all restarts.
+      fmin_best = HUGE(fmin_best)
+      xc_best   = xc_opt
+      info_best = -1
+
+      DO itry = 1, cyl2flx_nrestart
 
          CALL newt2d(xc_opt, fmin, ftol, nfe_out, nvar, info)
          nfe = nfe + nfe_out
 
-         IF (fmin.le.ftol .or. info.eq.-3) EXIT
+!        Keep this try only if it lowered the residual.
+         IF (fmin .lt. fmin_best) THEN
+            fmin_best = fmin;  xc_best = xc_opt;  info_best = info
+         END IF
+
+         IF (fmin_best .le. ftol) EXIT
+
+!        Optional early bail on a single "clearly outside" verdict, which
+!        is what develop did.  Off by default: a deep, highly-shaped point
+!        (divertor leg / bean tip) can overshoot on one cold-start
+!        trajectory yet still be reachable from a different angle jog, so
+!        bailing on the first -3 silently zeroes those points.  Enable it
+!        to trade that recovery for exterior-rejection speed.
+         IF (cyl2flx_lbail_outside .and. info .eq. -3) EXIT
 !
 !        JOG POINT (BY ROTATING ANGLE) TO IMPROVE CONVERGENCE
 !
-         IF (fmin .gt. 1.E-3*fmin0) THEN
-            xc_opt(2) = xc_opt(2) + twopi/20
-         ELSE 
-            xc_opt(2) = xc_opt(2) + twopi/40
-         END IF
+         xc_opt(2) = xc_opt(2) + twopi/cyl2flx_nrestart
+         IF (MOD(itry,2).eq.0) xc_opt(1) = one/(2*(ns_loc-1))
 
-         fmin0 = MIN(fmin, fmin0)
-            
       END DO
-         
+
+!     BOUNDARY RECOVERY. If the inverse map placed
+!     this point just OUTSIDE the plasma (best s>1) but it is in fact
+!     geometrically INSIDE the forward-mapped LCFS, re-seed Newton from
+!     the nearest boundary node. The geometric test is a cheap ray-cast
+!     against the (cached) s=1 polygon, so the cost for ordinary
+!     exterior points is negligible.
+!
+!     The re-seeded try competes on residual like any other, so if it
+!     does not come inside the point simply stays outside. Do NOT snap
+!     it onto the s=1 node as a fallback: that moves the coordinate away
+!     from where fmin was measured, which is the defect this routine now
+!     avoids everywhere else.
+      IF (cyl2flx_lbndry .and. xc_best(1) .gt. one) THEN
+         CALL boundary_classify(u_star, lin_geo)
+         IF (lin_geo) THEN
+            xc_opt(1) = one - one/(2*(ns_loc-1))
+            xc_opt(2) = u_star
+            CALL newt2d(xc_opt, fmin, ftol, nfe_out, nvar, info)
+            nfe = nfe + nfe_out
+            IF (fmin .lt. fmin_best) THEN
+               fmin_best = fmin;  xc_best = xc_opt;  info_best = info
+            END IF
+         END IF
+      END IF
+
+!     Return the best result found
+      xc_opt = xc_best
+      fmin   = fmin_best
+      info   = info_best
+
       c_flx(1) = xc_opt(1); c_flx(2) = xc_opt(2); c_flx(3) = phi_target
 !SPH      IF (info.eq.0 .and. c_flx(1).gt.one) c_flx(1) = one
 
@@ -1118,26 +1246,33 @@ C-----------------------------------------------
          c_flx(2) = c_flx(2) + twopi
       END DO
 
+#if defined(DEBUG_CYL2FLX)
+      IF (info .ne. 0 .and. c_flx(1) .lt. cyl2flx_log_smax) THEN
+         IF (info .eq. -1 .or. cyl2flx_log_outside)
+     1      CALL cyl2flx_diag_write(c_flx, fmin, nfe, info)
+      END IF
+#endif
+
 !
 !     COMPUTE Ru, Zu, Rv, Zv IF REQUIRED
 !
-      IF ((PRESENT(ru) .or. PRESENT(zu) .or. 
+      IF ((PRESENT(ru) .or. PRESENT(zu) .or.
      1     PRESENT(rv) .or. PRESENT(zv) .or.
      2     PRESENT(rs) .or. PRESENT(zs)) .and. info.ge.-1) THEN
          IF (lscale) THEN
-            CALL flx2cyl(rzl_in, c_flx, r_cyl_out, ns_loc, ntor_loc, 
-     1         mpol_loc, ntmax_loc, lthreed_loc, lasym_loc, 
-     2         iflag, MSCALE=mscale_loc, NSCALE=nscale_loc, 
+            CALL flx2cyl(rzl_in, c_flx, r_cyl_out, ns_loc, ntor_loc,
+     1         mpol_loc, ntmax_loc, lthreed_loc, lasym_loc,
+     2         iflag, MSCALE=mscale_loc, NSCALE=nscale_loc,
      3         RU=ru, ZU=zu, RV=rv, ZV=zv, RS=rs, ZS=zs)
          ELSE
-            CALL flx2cyl(rzl_in, c_flx, r_cyl_out, ns_loc, ntor_loc, 
-     1         mpol_loc, ntmax_loc, lthreed_loc, lasym_loc, 
-     2         iflag, 
+            CALL flx2cyl(rzl_in, c_flx, r_cyl_out, ns_loc, ntor_loc,
+     1         mpol_loc, ntmax_loc, lthreed_loc, lasym_loc,
+     2         iflag,
      3         RU=ru, ZU=zu, RV=rv, ZV=zv, RS=rs, ZS=zs)
          END IF
       END IF
 
-    
+
       END SUBROUTINE cyl2flx
 
       SUBROUTINE newt2d(xc_opt, fmin, ftol, nfe, nvar, iflag)
@@ -1153,13 +1288,13 @@ C-----------------------------------------------
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
-      INTEGER, PARAMETER :: niter = 50
-      !INTEGER, PARAMETER :: niter = 500
+      INTEGER     :: niter
       INTEGER     :: ieval
-      REAL(rprec) :: c_flx(3), r_cyl_out(3), 
+      REAL(rprec) :: c_flx(3), r_cyl_out(3),
      1               eps0, eps, xc_min(nvar), factor
       REAL(rprec) :: x0(3), xs(3), xu(3), dels, delu, tau, fmin0,
-     1               ru1, zu1, edge_value, snew, rs1, zs1, z_small
+     1               ru1, zu1, edge_value, snew, rs1, zs1, z_small,
+     2               damp
 C-----------------------------------------------
 !
 !     INPUT/OUTPUT:
@@ -1182,11 +1317,14 @@ C-----------------------------------------------
 !
 !     The algorithm used here modifies this slightly to improve "faltering" convergence
 !     by choosing a steepest-descent path when the step size has been decreased sufficiently
-!     without yielding a lower value of F.
+!     without yielding a lower value of F. An adaptive damping is applied depending on the
+!     achieved tolerance. An attempt is made to also find a valid solution close to a
+!     degenerate Jacobian.
 !
-      iflag = -1      
+      iflag = -1
       z_small=TINY(1.0_rprec)
       eps0 = SQRT(EPSILON(eps))
+      niter = cyl2flx_niter
 
       c_flx(3) = phi_target
       fmin0 = 1.E10_dp
@@ -1205,7 +1343,7 @@ C-----------------------------------------------
 !     Minimization Loop
       DO WHILE ((nfe .lt. niter) .and. (fmin .gt. ftol))
          nfe = nfe + 1
-         
+
          c_flx(1) = xc_opt(1);  c_flx(2) = xc_opt(2)
 
 !        COMPUTE R,Z, Ru, Zu, Rs, Zs
@@ -1222,6 +1360,14 @@ C-----------------------------------------------
          IF (fmin .gt. fmin0) THEN
             factor = (2*factor)/3
             xc_opt = xc_min
+!           RE-EVALUATE AT BEST POINT FOR CORRECT GRADIENT
+            c_flx(1) = xc_opt(1);  c_flx(2) = xc_opt(2)
+            CALL get_flxcoord(x0, c_flx, rs=rs1, zs=zs1,
+     1                        ru=ru1, zu=zu1)
+            xu(1) = ru1; xu(3) = zu1
+            xs(1) = rs1; xs(3) = zs1
+            x0(1) = x0(1) - r_target
+            x0(3) = x0(3) - z_target
 !           REDIRECT ALONG STEEPEST-DESCENT PATH
             IF (6*factor .lt. one) THEN
                dels =-(x0(1)*xs(1) + x0(3)*xs(3))/(xs(1)**2 + xs(3)**2)
@@ -1234,16 +1380,25 @@ C-----------------------------------------------
 
 !           NEWTON STEP
             tau = xu(1)*xs(3) - xu(3)*xs(1)
-            IF (ABS(tau) .le. ABS(z_small)*r_target**2) THEN
-               iflag = -2
-               EXIT
+#if defined(DEBUG_CYL2FLX)
+            tau_min_diag = MIN(tau_min_diag, ABS(tau))
+#endif
+            IF (ABS(tau) .le. eps0*r_target**2) THEN
+#if defined(DEBUG_CYL2FLX)
+               n_degen_diag = n_degen_diag + 1
+#endif
+               xc_opt(2) = xc_opt(2) + twopi/20
+               xc_opt(1) = MAX(xc_opt(1), one/(ns_loc-1))
+               CYCLE
             END IF
             dels = ( x0(1)*xu(3) - x0(3)*xu(1))/tau
             delu = (-x0(1)*xs(3) + x0(3)*xs(1))/tau
             IF (fmin .gt. 1.E-3_dp) THEN
-               dels = dels*0.5; delu = delu*0.5
+               damp = MIN(one, 1.E-3_dp/fmin)
+               damp = MAX(damp, cyl2flx_damp_floor)
+               dels = dels*damp; delu = delu*damp
             END IF
- 
+
          END IF
 
 !        Limit change in parameters
@@ -1274,7 +1429,7 @@ C-----------------------------------------------
       ELSE
          iflag = -1
       END IF
-      
+
       fmin = fmin0
 !     Return the result
       xc_opt = xc_min
@@ -1296,17 +1451,75 @@ C-----------------------------------------------
       INTEGER :: iflag
 C-----------------------------------------------
       IF (lscale) THEN
-         CALL flx2cyl(rzl_array, c_flx, x1, ns_loc, ntor_loc, mpol_loc, 
-     1              ntmax_loc, lthreed_loc, lasym_loc, iflag, 
+         CALL flx2cyl(rzl_array, c_flx, x1, ns_loc, ntor_loc, mpol_loc,
+     1              ntmax_loc, lthreed_loc, lasym_loc, iflag,
      2              MSCALE=mscale_loc, NSCALE=nscale_loc, RU=ru, ZU=zu,
      3              RS = rs, ZS = zs)
       ELSE
-         CALL flx2cyl(rzl_array, c_flx, x1, ns_loc, ntor_loc, mpol_loc, 
-     1              ntmax_loc, lthreed_loc, lasym_loc, iflag, 
+         CALL flx2cyl(rzl_array, c_flx, x1, ns_loc, ntor_loc, mpol_loc,
+     1              ntmax_loc, lthreed_loc, lasym_loc, iflag,
      2              RU=ru, ZU=zu, Rs=rs, Zs=zs)
       END IF
 
       END SUBROUTINE get_flxcoord
+
+      SUBROUTINE boundary_classify(u_star, lin_geo)
+C-----------------------------------------------
+C   D u m m y   A r g u m e n t s
+C-----------------------------------------------
+      REAL(rprec), INTENT(out) :: u_star
+      LOGICAL, INTENT(out)     :: lin_geo
+C-----------------------------------------------
+C   L o c a l   V a r i a b l e s
+C-----------------------------------------------
+      INTEGER     :: nb, k, k2, ncross
+      REAL(rprec) :: cf(3), xb(3), dd, dmin, xcr
+C-----------------------------------------------
+!     Returns the poloidal angle u_star of the nearest point on the s=1
+!     surface to the target (a Newton seed), and lin_geo = .TRUE. if the
+!     target lies geometrically INSIDE the forward-mapped boundary.
+!
+!     (Re)build the s=1 boundary polygon for this toroidal plane only if
+!     the cached one is for a different phi, resolution, or equilibrium.
+      nb = MAX(120, 4*mpol_loc)
+      IF (nb .gt. nbndry_max) nb = nbndry_max
+      IF (phi_target .ne. phi_cache .or. nb .ne. nbndry_cache .or.
+     1    .not. ASSOCIATED(rzl_array, rzl_cached)) THEN
+         cf(1) = one;  cf(3) = phi_target
+         DO k = 1, nb
+            cf(2) = twopi*(k-1)/nb
+            CALL get_flxcoord(xb, cf)
+            rb_cache(k) = xb(1);  zb_cache(k) = xb(3)
+         END DO
+         phi_cache = phi_target;  nbndry_cache = nb
+         rzl_cached => rzl_array
+      END IF
+      nb = nbndry_cache
+
+!     Nearest boundary node -> Newton seed angle
+      dmin = HUGE(dmin);  u_star = zero
+      DO k = 1, nb
+         dd = (rb_cache(k)-r_target)**2 + (zb_cache(k)-z_target)**2
+         IF (dd .lt. dmin) THEN
+            dmin = dd;  u_star = twopi*(k-1)/nb
+         END IF
+      END DO
+
+!     Inside/outside by ray casting (odd # of crossings => inside)
+      ncross = 0
+      DO k = 1, nb
+         k2 = MOD(k,nb) + 1
+         IF ((zb_cache(k) .gt. z_target) .neqv.
+     1       (zb_cache(k2) .gt. z_target)) THEN
+            xcr = rb_cache(k) + (z_target - zb_cache(k))
+     1            / (zb_cache(k2) - zb_cache(k))
+     2            * (rb_cache(k2) - rb_cache(k))
+            IF (r_target .lt. xcr) ncross = ncross + 1
+         END IF
+      END DO
+      lin_geo = (MOD(ncross,2) .eq. 1)
+
+      END SUBROUTINE boundary_classify
 
       SUBROUTINE get_flxcoord_python(x1, c_flx, rs, zs, ru, zu, rv, zv)
       USE read_wout_mod, phi_wout=>phi, ns_w=>ns, ntor_w=>ntor,
@@ -1326,16 +1539,53 @@ C-----------------------------------------------
 C-----------------------------------------------
       iflag = 0
       CALL LoadRZL
-      ! becasue we call from outside VMEC only 
+      ! becasue we call from outside VMEC only
       ! we only use the lscale=.False. branch of
       ! the logic tree.  Also we use rzl_local
       ! since that's what we need to pass.
-      CALL flx2cyl(rzl_local, c_flx, x1, ns_w, ntor_w, mpol_w, 
+      CALL flx2cyl(rzl_local, c_flx, x1, ns_w, ntor_w, mpol_w,
      1              ntmax_w, lthreed_w, lasym_w, iflag,
      2              RU=ru, ZU=zu, Rs=rs, Zs=zs, Rv=rv, Zv=zv)
       RETURN
       END SUBROUTINE get_flxcoord_python
 
+#if defined(DEBUG_CYL2FLX)
+      SUBROUTINE cyl2flx_diag_write(c_flx, fmin, nfe, info)
+C-----------------------------------------------
+C   D u m m y   A r g u m e n t s
+C-----------------------------------------------
+      REAL(rprec), INTENT(in) :: c_flx(3), fmin
+      INTEGER, INTENT(in)     :: nfe, info
+C-----------------------------------------------
+C   L o c a l   V a r i a b l e s
+C-----------------------------------------------
+      LOGICAL, SAVE :: lopen = .FALSE.
+      INTEGER, SAVE :: iunit = -1
+      CHARACTER(LEN=64) :: fname
+      REAL(rprec) :: dist
+C-----------------------------------------------
+!     Open one append-mode file per MPI rank on first use.  fnorm holds
+!     1/(R_target^2 + Z_target^2), so the geometric matching error is
+!     dist = SQRT(fmin/fnorm).
+      IF (.not. lopen) THEN
+         iunit = 7000 + cyl2flx_rank
+         WRITE(fname,'(A,I5.5,A)') 'cyl2flx_diag_', cyl2flx_rank, '.dat'
+         OPEN(UNIT=iunit, FILE=TRIM(fname), STATUS='unknown',
+     1        POSITION='append', FORM='formatted')
+         WRITE(iunit,'(A)')
+     1    '#       R_target        Nphi          Z_target'//
+     2    '             s             u          fmin       dist[m]'//
+     3    '    nfe   info ndegen      taumin'
+         lopen = .TRUE.
+      END IF
+      dist = SQRT(MAX(fmin,zero)/fnorm)
+      WRITE(iunit,'(7ES14.6,3(1X,I6),1X,ES12.4)')
+     1     r_target, phi_target, z_target, c_flx(1), c_flx(2),
+     2     fmin, dist, nfe, info, n_degen_diag, tau_min_diag
+      FLUSH(iunit)
+
+      END SUBROUTINE cyl2flx_diag_write
+#endif
 
 
       END MODULE vmec_utils

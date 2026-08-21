@@ -51,7 +51,7 @@
       ier_flag_init = 0
 !     Adjust vaccum grid file
       IF (lfreeb) THEN
-         CALL free_mgrid(iflag)
+         CALL free_mgrid(iflag,MPI_COMM_MYWORLD)
          mgrid_path_old = " "
          CALL read_mgrid(mgrid_file,extcur,nzeta,nfp,.false.,iflag,MPI_COMM_MYWORLD)
       END IF

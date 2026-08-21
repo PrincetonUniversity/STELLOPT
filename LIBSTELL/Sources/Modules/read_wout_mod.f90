@@ -2492,7 +2492,8 @@
       IF (ALLOCATED(potsin)) DEALLOCATE (potsin)
       IF (ALLOCATED(potcos)) DEALLOCATE (potcos)
 
-      IF (ALLOCATED(chipf)) DEALLOCATE (chipf, chi)
+      IF (ALLOCATED(chi)) DEALLOCATE (chi)
+      IF (ALLOCATED(qfact)) DEALLOCATE (qfact)
 
       IF (ALLOCATED(am_aux_s)) DEALLOCATE (am_aux_s, am_aux_f,          &
           ac_aux_s, ac_aux_f, ai_aux_s, ai_aux_f, stat=istat(6)) 
