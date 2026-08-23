@@ -8,6 +8,7 @@ if __name__=="__main__":
 	from argparse import ArgumentParser
 	import numpy as np
 	import matplotlib.pyplot as pyplot
+	import matplotlib.colors as colors
 	from libstell.vmec import VMEC, VMEC_INDATA
 	from libstell.libstell import LIBSTELL
 	parser = ArgumentParser(description= 
@@ -36,6 +37,10 @@ if __name__=="__main__":
 	parser.add_argument("--scale_B0", dest="new_B0",
 		help="Write indata with Baxis rescaled to new_B0 [T]", 
 		default = 0.0, type=float)
+	parser.add_argument("--save", dest="lsave", action='store_true',
+		help="Save the plots with ext names.", default = False)
+	parser.add_argument("--background", dest="lbackground", action='store_true',
+		help="Supress rendering window on plot.", default = False)
 	args = parser.parse_args()
 	vmec_wout = VMEC()
 	vmec_input = VMEC_INDATA()
@@ -48,17 +53,11 @@ if __name__=="__main__":
 			linput = True
 		else:
 			print(f'Could not find input file: input.{args.vmec_ext}')
-		#try:
-		#	vmec_input.read_indata('input.'+args.vmec_ext)
-		#	linput = True
-		#except:
-		#	print(f'Could not file input file: input.{args.vmec_ext}')
 		try:
 			vmec_wout.read_wout(args.vmec_ext)
 			loutput = True
 		except:
-			#vmec_wout.read_wout(args.vmec_ext)
-			print(f'Could not file input file: wout_{args.vmec_ext}.nc or wout.{args.vmec_ext}')
+			print(f'Could not file output file: wout_{args.vmec_ext}.nc or wout.{args.vmec_ext}')
 		if not (linput or loutput): sys.exit(-1)
 		# Write rescaled indata
 		if (linput and (args.new_vol != 0.0 or args.new_vol_rfix != 0.0 or args.new_B0 != 0.0)):
@@ -189,7 +188,8 @@ if __name__=="__main__":
 				verticalalignment='center', transform=ax.transAxes)
 			ax.text(0.02,0.12,rf'VOLUME: {vmec_input.calcVolume():.2f} m^3', horizontalalignment='left',\
 				verticalalignment='center', transform=ax.transAxes)
-			pyplot.show()
+			if not args.lbackground:pyplot.show()
+			if (args.lsave): fig.savefig(f'indata_{args.vmec_ext}.png', dpi=fig.dpi)
 		# Do wout file plot
 		if (args.lplot and loutput):
 			px = 1/pyplot.rcParams['figure.dpi']
@@ -256,10 +256,6 @@ if __name__=="__main__":
 			ax.text(0.02,0.05,rf'NFP: {vmec_wout.nfp}', horizontalalignment='left',\
 				verticalalignment='center', transform=ax.transAxes)
 			ax=fig.add_subplot(224)
-			#theta = np.ndarray((256,1))
-			#zeta  = np.ndarray((256,1))
-			#for j in range(256): theta[j]=2.0*np.pi*j/255.0
-			#for j in range(256):  zeta[j]=2.0*np.pi*j/255.0
 			theta = np.linspace([0],[2.0*np.pi],256)
 			zeta  = np.linspace([0],[2.0*np.pi],256)
 			b = vmec_wout.cfunct(theta,zeta,vmec_wout.bmnc,vmec_wout.xm_nyq,vmec_wout.xn_nyq/vmec_wout.nfp)
@@ -272,7 +268,47 @@ if __name__=="__main__":
 			ax.set_ylabel(r"$\theta_{VMEC}$ [rad]")
 			ax.set_title("|B| at mid radius")
 			fig.colorbar(h,label='[T]')
-			pyplot.show()
+			if not args.lbackground:pyplot.show()
+			if (args.lsave): fig.savefig(f'wout_{args.vmec_ext}.png', dpi=fig.dpi)
+			if (vmec_wout.lfreeb):
+				m = int(max(vmec_wout.xm))
+				n = int(max(vmec_wout.xn)/vmec_wout.nfp)
+				temp = np.zeros((n*2+1,m+1))
+				mvec = np.arange(0,m+1,1)
+				nvec = np.arange(-n,n+1,1)
+				fig=pyplot.figure(figsize=(2048*px,768*px))
+				pyplot.subplots_adjust(left=0.05, right=0.95, top=0.9, bottom=0.1, wspace=0.12, hspace=0.2)
+				# R
+				ax=fig.add_subplot(131)
+				for mn in range(vmec_wout.mnmax):
+					i = int(vmec_wout.xn[mn,0]/vmec_wout.nfp)+n
+					j = int(vmec_wout.xm[mn,0])
+					temp[i,j] = vmec_wout.rmnc[-1,mn]
+				h=ax.pcolormesh(nvec,mvec,abs(temp.T),norm=colors.LogNorm(vmin=1E-6,vmax=1.),shading='auto')
+				pyplot.colorbar(h,label=r'$R_{mn}~[m]$',ax=ax)
+				ax.set_xlabel('Toroidal Modes (n)'); ax.set_ylabel('Poloidal Modes (m)'); ax.set_title('R Boundary Modes')
+				# Z
+				ax=fig.add_subplot(132)
+				for mn in range(vmec_wout.mnmax):
+					i = int(vmec_wout.xn[mn,0]/vmec_wout.nfp)+n
+					j = int(vmec_wout.xm[mn,0])
+					temp[i,j] = vmec_wout.zmns[-1,mn]
+				#temp[n+1,0]=1.0
+				h=ax.pcolormesh(nvec,mvec,abs(temp.T),norm=colors.LogNorm(vmin=1E-6,vmax=1.),shading='auto')
+				pyplot.colorbar(h,label=r'$Z_{mn}~[m]$',ax=ax)
+				ax.set_xlabel('Toroidal Modes (n)'); ax.set_ylabel('Poloidal Modes (m)'); ax.set_title('Z Boundary Modes')
+				# Lambda
+				ax=fig.add_subplot(133)
+				for mn in range(vmec_wout.mnmax):
+					i = int(vmec_wout.xn[mn,0]/vmec_wout.nfp)+n
+					j = int(vmec_wout.xm[mn,0])
+					temp[i,j] = vmec_wout.lmns[-1,mn]
+				#temp[n+1,0]=1.0
+				h=ax.pcolormesh(nvec,mvec,abs(temp.T),norm=colors.LogNorm(vmin=1E-6,vmax=1.),shading='auto')
+				pyplot.colorbar(h,label=r'$\lambda_{mn}~[-]$',ax=ax)
+				ax.set_xlabel('Toroidal Modes (n)'); ax.set_ylabel('Poloidal Modes (m)'); ax.set_title(r'$\lambda$ Boundary Modes')
+				if not args.lbackground:pyplot.show()
+				if (args.lsave): fig.savefig(f'wout_bound_modes_{args.vmec_ext}.png', dpi=fig.dpi)
 		# Output an input file from wout
 		if (loutput and args.lwout2indata):
 			vmec_wout.wout_to_indata()
