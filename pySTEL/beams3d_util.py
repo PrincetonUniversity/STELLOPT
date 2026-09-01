@@ -184,7 +184,7 @@ if __name__=="__main__":
 			ax[1,1].set_xlabel('R [m]'); ax[1,1].set_ylabel('Z [m]'); 
 			h3.set_clim(vmin=0.0,vmax=10.0); fig.colorbar(h3,label=r'$|B|$ [T]')
 			if not args.lbackground:pyplot.show()
-			if (args.lsave): fig.savefig(f'brz_{args.brz_index_phi:0.3d}_{args.beams3d_ext}.png', dpi=fig.dpi)
+			if (args.lsave): fig.savefig(f'brz_{args.brz_index_phi:03d}_{args.beams3d_ext}.png', dpi=fig.dpi)
 		if type(args.su_index_phi) is not type(None):
 			fig,ax = pyplot.subplots(1,2,sharey=True,figsize=(1024*px,768*px))
 			j = args.su_index_phi
@@ -197,7 +197,7 @@ if __name__=="__main__":
 			ax[1].set_xlabel('R [m]'); ax[1].set_ylabel('Z [m]'); 
 			h1.set_clim(vmin=0,vmax=2.*np.pi); fig.colorbar(h1,label=r'$Pol. Angle$ [rad]')
 			if not args.lbackground:pyplot.show()
-			if (args.lsave): fig.savefig(f'surz_{args.su_index_phi:0.3d}_{args.beams3d_ext}.png', dpi=fig.dpi)
+			if (args.lsave): fig.savefig(f'surz_{args.su_index_phi:03d}_{args.beams3d_ext}.png', dpi=fig.dpi)
 		if type(args.brphi_index_phi) is not type(None):
 			fig,ax = pyplot.subplots(2,2,sharey=True,figsize=(1024*px,768*px))
 			j = args.brphi_index_phi
@@ -217,5 +217,5 @@ if __name__=="__main__":
 			ax[1,1].set_xlabel('R [m]'); ax[1,1].set_ylabel(r'$\phi$ [rad]'); 
 			h3.set_clim(vmin=0.0,vmax=10.0); fig.colorbar(h3,label=r'$|B|$ [T]')
 			if not args.lbackground:pyplot.show()
-			if (args.lsave): fig.savefig(f'brphi_{args.brphi_index_phi:0.3d}_{args.beams3d_ext}.png', dpi=fig.dpi)
+			if (args.lsave): fig.savefig(f'brphi_{args.brphi_index_phi:03d}_{args.beams3d_ext}.png', dpi=fig.dpi)
 	sys.exit(0)
