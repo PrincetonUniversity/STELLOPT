@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+# Plotting factors
+IOTA_MIN = 0.7
+IOTA_MAX = 1.1
+COIL_PLASMA_MIN = 2.5
+
 # Main routine
 if __name__=="__main__":
 	import sys
@@ -30,6 +35,8 @@ if __name__=="__main__":
 		help="Plot the plams surface and coil in 3D", default = False)
 	parser.add_argument("--plotcoildist", dest="lplotcoildist", action='store_true',
 		help="Plot the coil-plasma distance.", default = False)
+	parser.add_argument("--plotcoilcoil", dest="lplotcoilcoil", action='store_true',
+		help="Plot the coil-coil distance.", default = False)
 	parser.add_argument("--gensurf", dest="lgensurf", action='store_true',
 		help="Generate plasma.boundary VMEC or Boozer.", default = False)
 	parser.add_argument("--limiter_dist", dest="lim_dist",
@@ -141,7 +148,7 @@ if __name__=="__main__":
 			focus_data.plotBNormal(ax2)
 			focus_data.plotPoincare(ax3)
 			focus_data.plotIota(ax4)
-			ax4.set_ylim([0.5,1.5])
+			ax4.set_ylim([IOTA_MIN,IOTA_MAX])
 			if (args.lsave): fig.savefig(f'overview_{args.focus_ext}.png', dpi=fig.dpi)
 			pyplot.show()
 		if args.lplot3d:
@@ -162,8 +169,41 @@ if __name__=="__main__":
 					focus_data.ysurf.flatten(),\
 					focus_data.zsurf.flatten())
 			plt3d = PLOT3D()
-			coil_data.plotcoilplasmaDist(cmin=2.5,plot3D=plt3d)
+			coil_data.plotcoilplasmaDist(cmin=COIL_PLASMA_MIN,plot3D=plt3d)
 			plt3d.setCamera(pos=[0,0,0.0],focus=[np.cos(phi_plt3d),np.sin(phi_plt3d),0],camup=[0,0,1],angle=70)
 			plt3d.render()
 			if (args.lsave): plt3d.saveImage(f'coildist3D_{args.focus_ext}.png')
+		if args.lplotcoilcoil:
+			coil_data.read_coils_file(args.focus_ext+'.coils')
+			dlmin,i1min,i2min,j1min,j2min,l1min,l2min = coil_data.calc_coilcoil_dist()
+			plt3d = PLOT3D()
+			coil_data.plotcoils(plot3D=plt3d,color=['grey'])
+			color_txt=['red','green','blue','yellow','magenta','cyan','aqua']
+			dex = [0, coil_data.ngroups-1]
+			for k in range(coil_data.ngroups-1):
+				dex.append(k+coil_data.ngroups)
+			for k in dex:
+				i = i1min[k]; j = j1min[k]
+				coil_data.plotcoil(i,j,plot3D=plt3d,color=color_txt[i % len(color_txt)])
+				i = i2min[k]; j = j2min[k]
+				coil_data.plotcoil(i,j,plot3D=plt3d,color=color_txt[i % len(color_txt)])
+				# Draw line
+				points_array = np.zeros((2,3))
+				i = i1min[k]; j = j1min[k]; l = l1min[k]
+				points_array[0,0] =coil_data.groups[i].coils[j].x[l]
+				points_array[0,1] =coil_data.groups[i].coils[j].y[l]
+				points_array[0,2] =coil_data.groups[i].coils[j].z[l]
+				i = i2min[k]; j = j2min[k]; l = l2min[k]
+				points_array[1,0] =coil_data.groups[i].coils[j].x[l]
+				points_array[1,1] =coil_data.groups[i].coils[j].y[l]
+				points_array[1,2] =coil_data.groups[i].coils[j].z[l]
+				# Convert numpy array to VTK points
+				points = vtk.vtkPoints()
+				for point in points_array:
+					points.InsertNextPoint(point)
+				# Add to render
+				plt3d.add3Dline(points,color='black',linewidth=5)
+			plt3d.setCamera(pos=[0,0,0.0],focus=[np.cos(phi_plt3d),np.sin(phi_plt3d),0],camup=[0,0,1],angle=70)
+			plt3d.render()
+			if (args.lsave): plt3d.saveImage(f'coilcoil3D_{args.focus_ext}.png')
 	sys.exit(0)

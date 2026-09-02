@@ -36,11 +36,11 @@
 #######################################################################
 #            Check for Accelerate Framework/OpenBLAS
 #######################################################################
-ifneq ("$(wildcard /opt/local/lib/libopenblas*)","")
-    LIBS += -L/opt/local/lib -lopenblas
-else
+#ifneq ("$(wildcard /opt/local/lib/libopenblas*)","")
+#    LIBS += -L/opt/local/lib -lopenblas
+#else
     LIBS += -framework Accelerate
-endif
+#endif
 
   
 #######################################################################
