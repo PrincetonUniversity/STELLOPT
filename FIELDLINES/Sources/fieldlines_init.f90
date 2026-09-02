@@ -166,9 +166,9 @@
       ! Output some information
       IF (lverb .and. .not.lrestart) THEN
          WRITE(6,'(A)') '----- Input Parameters -----'
-         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   R   = [',rmin,',',rmax,'];  NR:   ',nr
-         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',phimin,',',phimax,'];  NPHI: ',nphi
-         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',zmin,',',zmax,'];  NZ:   ',nz
+         WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R   = [',rmin,',',rmax,'];  NR:   ',nr
+         WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   PHI = [',phimin,',',phimax,'];  NPHI: ',nphi
+         WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   Z   = [',zmin,',',zmax,'];  NZ:   ',nz
          IF (lauto) WRITE(6,'(A)') '   AUTO CALCULATED STARTING POINTS!'
          WRITE(6,'(A,I6)')               '   # of Fieldlines: ',nlines
          IF (lvac) WRITE(6,'(A)') '   VACUUM FIELDS ONLY!'
@@ -247,9 +247,9 @@
          stop 'ERROR: B_PHI = 0 Found'
       END IF
       
-      ! Handle outputting the B-FIELD
-      IF (lemc3 .or. lbfield_only .or. lafield_only) THEN
-         IF (lemc3 .and. myworkid==master) CALL fieldlines_write_emc3
+      ! Handle EMC3
+      IF (lemc3) THEN
+         CALL fieldlines_write_emc3
 #if defined(MPI_OPT)
          CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init:Bfield',ierr_mpi)
@@ -324,7 +324,7 @@
       END IF
 
       ! Now we need to reformulate B_R and B_Z as functions of phi
-      IF (myid_sharmem == master .and. .not. lrestart) THEN
+      IF ((myid_sharmem == master) .and. (.not. lrestart) .and. (.not. lafield_only)) THEN
          DO k = 1, nz
             DO j = 1, nphi
                DO i = 1, nr
