@@ -86,6 +86,8 @@
             CALL write_scalar_hdf5(fid,'npoinc',ier,INTVAR=npoinc,ATT='Number of steps per field period',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'npoinc',ier)
          END IF
+         CALL write_scalar_hdf5(fid,'iota0',ier,DBLVAR=iota0,ATT='Axis Rotational Transform',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'iota0',ier)
          ! Wall Data
          IF (ASSOCIATED(vertex)) THEN
             CALL write_var_hdf5(fid,'wall_vertex',nvertex,3,ier,DBLVAR=vertex,ATT='Wall Verticies (x,y,z) [m]',ATT_NAME='description')
@@ -101,78 +103,41 @@
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_strikes',ier)
          END IF
          ! Here we output the grid
-         IF (ladvanced) THEN
-         ELSEIF (lafield_only) THEN
-            CALL write_scalar_hdf5(fid,'nr',ier,INTVAR=nr,ATT='Number of Radial Gridpoints',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nr',ier)
-            CALL write_scalar_hdf5(fid,'nphi',ier,INTVAR=nphi,ATT='Number of Toroidal Gridpoints',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nphi',ier)
-            CALL write_scalar_hdf5(fid,'nz',ier,INTVAR=nz,ATT='Number of Vertical Gridpoints',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nz',ier)
-            CALL write_var_hdf5(fid,'raxis',nr,ier,DBLVAR=raxis,ATT='Radial Axis [m]',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'raxis',ier)
-            CALL write_var_hdf5(fid,'phiaxis',nphi,ier,DBLVAR=phiaxis,ATT='Toroidal Axis [rad]',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'phiaxis',ier)
-            CALL write_var_hdf5(fid,'zaxis',nz,ier,DBLVAR=zaxis,ATT='Vertical Axis [m]',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'zaxis',ier)
+         CALL write_scalar_hdf5(fid,'nr',ier,INTVAR=nr,ATT='Number of Radial Gridpoints',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nr',ier)
+         CALL write_scalar_hdf5(fid,'nphi',ier,INTVAR=nphi,ATT='Number of Toroidal Gridpoints',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nphi',ier)
+         CALL write_scalar_hdf5(fid,'nz',ier,INTVAR=nz,ATT='Number of Vertical Gridpoints',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nz',ier)
+         CALL write_var_hdf5(fid,'raxis',nr,ier,DBLVAR=raxis,ATT='Radial Axis [m]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'raxis',ier)
+         CALL write_var_hdf5(fid,'phiaxis',nphi,ier,DBLVAR=phiaxis,ATT='Toroidal Axis [rad]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'phiaxis',ier)
+         CALL write_var_hdf5(fid,'zaxis',nz,ier,DBLVAR=zaxis,ATT='Vertical Axis [m]',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'zaxis',ier)
+         IF (lafield_only) THEN
             CALL write_var_hdf5(fid,'A_R',nr,nphi,nz,ier,DBLVAR=B_R,ATT='Radial Fieldline Eq. (AR)',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'A_R',ier)
             CALL write_var_hdf5(fid,'A_Z',nr,nphi,nz,ier,DBLVAR=B_Z,ATT='Vertical Fieldline Eq. (AZ)',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'A_Z',ier)
             CALL write_var_hdf5(fid,'A_PHI',nr,nphi,nz,ier,DBLVAR=B_PHI,ATT='Toroidal Vector Potential (APHI)',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'A_PHI',ier)
-         ELSEIF (lbfield_only) THEN
-            CALL write_scalar_hdf5(fid,'nr',ier,INTVAR=nr,ATT='Number of Radial Gridpoints',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nr',ier)
-            CALL write_scalar_hdf5(fid,'nphi',ier,INTVAR=nphi,ATT='Number of Toroidal Gridpoints',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nphi',ier)
-            CALL write_scalar_hdf5(fid,'nz',ier,INTVAR=nz,ATT='Number of Vertical Gridpoints',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nz',ier)
-            CALL write_var_hdf5(fid,'raxis',nr,ier,DBLVAR=raxis,ATT='Radial Axis [m]',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'raxis',ier)
-            CALL write_var_hdf5(fid,'phiaxis',nphi,ier,DBLVAR=phiaxis,ATT='Toroidal Axis [rad]',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'phiaxis',ier)
-            CALL write_var_hdf5(fid,'zaxis',nz,ier,DBLVAR=zaxis,ATT='Vertical Axis [m]',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'zaxis',ier)
-            CALL write_var_hdf5(fid,'B_R',nr,nphi,nz,ier,DBLVAR=B_R,ATT='Radial Fieldline Eq. (BR)',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_R',ier)
-            CALL write_var_hdf5(fid,'B_Z',nr,nphi,nz,ier,DBLVAR=B_Z,ATT='Vertical Fieldline Eq. (BZ)',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_Z',ier)
-            CALL write_var_hdf5(fid,'B_PHI',nr,nphi,nz,ier,DBLVAR=B_PHI,ATT='Toroidal Field (BPHI)',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_PHI',ier)
-            IF (lpres) THEN
-               CALL write_var_hdf5(fid,'PRES',nr,nphi,nz,ier,DBLVAR=PRES_G,ATT='Plasma Pressure (PRES)',ATT_NAME='description')
-               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'PRES',ier)
-            END IF
          ELSE
-            CALL write_scalar_hdf5(fid,'nr',ier,INTVAR=nr,ATT='Number of Radial Gridpoints',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nr',ier)
-            CALL write_scalar_hdf5(fid,'nphi',ier,INTVAR=nphi,ATT='Number of Toroidal Gridpoints',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nphi',ier)
-            CALL write_scalar_hdf5(fid,'nz',ier,INTVAR=nz,ATT='Number of Vertical Gridpoints',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nz',ier)
-            CALL write_var_hdf5(fid,'raxis',nr,ier,DBLVAR=raxis,ATT='Radial Axis [m]',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'raxis',ier)
-            CALL write_var_hdf5(fid,'phiaxis',nphi,ier,DBLVAR=phiaxis,ATT='Toroidal Axis [rad]',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'phiaxis',ier)
-            CALL write_var_hdf5(fid,'zaxis',nz,ier,DBLVAR=zaxis,ATT='Vertical Axis [m]',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'zaxis',ier)
             CALL write_var_hdf5(fid,'B_R',nr,nphi,nz,ier,DBLVAR=B_R,ATT='Radial Fieldline Eq. (R*BR/BPHI)',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_R',ier)
             CALL write_var_hdf5(fid,'B_Z',nr,nphi,nz,ier,DBLVAR=B_Z,ATT='Vertical Fieldline Eq. (R*BZ/BPHI)',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_Z',ier)
             CALL write_var_hdf5(fid,'B_PHI',nr,nphi,nz,ier,DBLVAR=B_PHI,ATT='Toroidal Field (BPHI)',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_PHI',ier)
-            CALL write_scalar_hdf5(fid,'iota0',ier,DBLVAR=iota0,ATT='Axis Rotational Transform',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nr',ier)
+         ENDIF
+         IF (lpres) THEN
+            CALL write_var_hdf5(fid,'PRES',nr,nphi,nz,ier,DBLVAR=PRES_G,ATT='Plasma Pressure (PRES)',ATT_NAME='description')
+            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'PRES',ier)
          END IF
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'fieldlines_'//TRIM(id_string)//'.h5',ier)
       END IF
       
-      ! Wait for everyone to catch up
-!      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
-!      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_follow',ierr_mpi)
       !  This is the parallel call.
       IF (.not. lbfield_only .and. .not. lafield_only .and. .not. lemc3) THEN
          mystart = LBOUND(R_lines,1)
