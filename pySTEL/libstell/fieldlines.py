@@ -68,8 +68,8 @@ class FIELDLINES():
 					setattr(self, temp, np.array(array))
 		# Make derived arrays
 		self.nfp     = round(2*np.pi/self.phiaxis[-1])
-		if hasattr(self,'X_lines'): self.X_lines = self.R_lines*np.cos(self.PHI_lines)
-		if hasattr(self,'Y_lines'):self.Y_lines = self.R_lines*np.sin(self.PHI_lines)
+		if hasattr(self,'R_lines'): self.X_lines = self.R_lines*np.cos(self.PHI_lines)
+		if hasattr(self,'R_lines'): self.Y_lines = self.R_lines*np.sin(self.PHI_lines)
 		# Fix B_R and B_Z
 		for i in range(self.nr):
 			self.B_R[i,:,:] = self.B_R[i,:,:]*self.B_PHI[i,:,:]/self.raxis[i]
