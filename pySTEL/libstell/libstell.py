@@ -1993,6 +1993,139 @@ class LIBSTELL():
 		val = pcurr_func(ct.byref(s_temp))
 		return val
 
+	def vmec_to_henneberg(self,mpol,ntor,rbc,zbs,nfp,alpha,mpol_out,ntor_out,nu,nv):
+		"""Wrapper to the vmec_to_henneberg function
+
+		This routine wrappers the vmec_to_henneberg function which
+		returns the Henneberg representation Fourier Harmonics.
+
+		Parameters
+		----------
+		mpol : int
+			Maximum poloidal mode
+		ntor : int
+			Maximum toroidal mode
+		rbc : ndarray
+			R-cos harmoincs (-ntor:ntor,0:mpol)
+		zbs : ndarray
+			Z-sin harmoincs (-ntor:ntor,0:mpol)
+		alpha : int
+			Alpha factor
+		mpol_out : int
+			Maximum poloidal mode in output arrays
+		ntor_out : int
+			Maximum toroidal mode in output arrays
+		nu : int
+			Number of poloidal gridpoints to use
+		nv : int
+			Number of toroidal gridpoints to use
+		Returns
+		-------
+		R0 : ndarray
+			R0 Henneberg array (0:ntor_out)
+		Z0 : ndarray
+			Z0 Henneberg array (0:ntor_out)
+		BCOEF : ndarray
+			BCOEF Henneberg array (0:ntor_out)
+		RHOBC : ndarray
+			RHOBC Henneberg array (-ntor_out:ntor_out,0:mpol_out)
+		"""
+		import ctypes as ct
+		import numpy as np
+		# Load Libraries
+		module_name = self.s1+'henneberg_mapping_mod_'+self.s2
+		henne_func = getattr(self.libstell,module_name+'_vmec_to_henneberg'+self.s3)
+		henne_func.argtypes = [ct.POINTER(ct.c_int), ct.POINTER(ct.c_int),
+			ct.POINTER(ct.c_double), ct.POINTER(ct.c_double),
+			ct.POINTER(ct.c_int), ct.POINTER(ct.c_int),
+			ct.POINTER(ct.c_int), ct.POINTER(ct.c_int),
+			ct.POINTER(ct.c_int), ct.POINTER(ct.c_int),
+			ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double)]
+		henne_func.restype=None
+		mpol_c = ct.c_int(mpol)
+		ntor_c = ct.c_int(ntor)
+		num_modes = (2*ntor+1)*(mpol+1)
+		rbc_c = rbc.ctypes.data_as(ct.POINTER(ct.c_double))
+		zbs_c = zbs.ctypes.data_as(ct.POINTER(ct.c_double))
+		nfp_c = ct.c_int(nfp)
+		alpha_c = ct.c_int(alpha)
+		mpol_out_c = ct.c_int(mpol_out)
+		ntor_out_c = ct.c_int(ntor_out)
+		nu_c = ct.c_int(nu)
+		nv_c = ct.c_int(nv)
+		nout_modes = (ntor_out+1)
+		num_modes_out = (2*ntor_out+1)*(mpol_out+1)
+		R0_out = np.zeros(nout_modes, dtype=np.float64)
+		Z0_out = np.zeros(nout_modes, dtype=np.float64)
+		Bcoef_out = np.zeros(nout_modes, dtype=np.float64)
+		RHOBC_out = np.zeros((2*ntor_out+1,mpol_out+1), order='F', dtype=np.float64)
+		r0_c = R0_out.ctypes.data_as(ct.POINTER(ct.c_double))
+		z0_c = Z0_out.ctypes.data_as(ct.POINTER(ct.c_double))
+		bcoef_c = Bcoef_out.ctypes.data_as(ct.POINTER(ct.c_double))
+		rhobc_c = RHOBC_out.ctypes.data_as(ct.POINTER(ct.c_double))
+		henne_func(ct.byref(mpol_c),ct.byref(ntor_c), rbc_c, zbs_c, 
+			ct.byref(nfp_c), ct.byref(alpha_c), 
+			ct.byref(mpol_out_c), ct.byref(ntor_out_c), ct.byref(nu_c), ct.byref(nv_c),
+			r0_c, z0_c, bcoef_c, rhobc_c)
+		return R0_out,Z0_out,Bcoef_out,RHOBC_out
+
+	def henneberg_to_vmec(self,nmax,mmax,R0,Z0,BCOEF,RHOBC,alpha):
+		"""Wrapper to the henneberg_to_vmec function
+
+		This routine wrappers the henneberg_to_vmec function which
+		returns the VMEC representation Fourier Harmonics.
+
+		Parameters
+		----------
+		nmax : int
+			Maximum toroidal mode
+		mmax : int
+			Maximum poloidal mode
+		R0 : ndarray
+			R0 Henneberg array (0:nmax)
+		Z0 : ndarray
+			Z0 Henneberg array (0:nmax)
+		BCOEF : ndarray
+			BCOEF Henneberg array (0:ntor_out)
+		RHOBC : ndarray
+			RHOBC Henneberg array (-ntor_out:ntor_out,0:mpol_out)
+		alpha : int
+			Alpha factor
+		Returns
+		-------
+		rbc : ndarray
+			R-cos harmoincs (-ntor:ntor,0:mpol)
+		zbs : ndarray
+			Z-sin harmoincs (-ntor:ntor,0:mpol)
+		"""
+		import ctypes as ct
+		import numpy as np
+		# Load Libraries
+		module_name = self.s1+'henneberg_mapping_mod_'+self.s2
+		henne_func = getattr(self.libstell,module_name+'_henneberg_to_vmec'+self.s3)
+		henne_func.argtypes = [ct.POINTER(ct.c_int), ct.POINTER(ct.c_int),
+			ct.POINTER(ct.c_double), ct.POINTER(ct.c_double),
+			ct.POINTER(ct.c_double), ct.POINTER(ct.c_double),
+			ct.POINTER(ct.c_int), 
+			ct.POINTER(ct.c_double), ct.POINTER(ct.c_double)]
+		henne_func.restype=None
+		nmax_c = ct.c_int(nmax)
+		mmax_c = ct.c_int(mmax)
+		R0_c = R0.ctypes.data_as(ct.POINTER(ct.c_double))
+		Z0_c = Z0.ctypes.data_as(ct.POINTER(ct.c_double))
+		BCOEF_c = ct.c_double(BCOEF)
+		RHOBC_c = RHOBC.ctypes.data_as(ct.POINTER(ct.c_double))
+		alpha_c = ct.c_int(alpha)
+		rbc_out = np.zeros((2*nmax+1,mmax+1), order='F', dtype=np.float64)
+		zbs_out = np.zeros((2*nmax+1,mmax+1), order='F', dtype=np.float64)
+		rbc_c = rbc_out.ctypes.data_as(ct.POINTER(ct.c_double))
+		zbs_c = zbs_out.ctypes.data_as(ct.POINTER(ct.c_double))
+		henne_func(ct.byref(nmax_c),ct.byref(mmax_c),
+			R0_c, Z0_c, BCOEF_c, RHOBC_c, 
+			ct.byref(alpha_c), 
+			rbc_c,zbs_c)
+		return rbc_out,zbs_out
+
 	def parse_coils_file(self,filename):
 		"""Parses a coils file
 

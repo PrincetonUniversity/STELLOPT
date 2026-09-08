@@ -24,7 +24,7 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       LOGICAL :: lline_in_box
-      INTEGER :: ier, l, nl, i, j, k, m, s
+      INTEGER :: ier, l, nl, i, j, k, m, s, nrm1, nphim1
       DOUBLE PRECISION :: x0, y0, z0, x1, y1, z1, hr2, hz2, hp2, d, &
                           denbeam, dl, dV
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: xl,yl,zl,rl,sl,pl
@@ -94,12 +94,13 @@
       CALL MPI_BARRIER(MPI_COMM_SHARMEM,ierr_mpi)
 #endif
       ! Now Divide by the grid volumes
-      CALL MPI_CALC_MYRANGE(MPI_COMM_SHARMEM, 1, (nr-1)*(nphi-1)*(nz-1), mystart, myend)
+      nrm1 = nr - 1
+      nphim1 = nphi - 1
+      CALL MPI_CALC_MYRANGE(MPI_COMM_SHARMEM, 1, nrm1*nphim1*(nz-1), mystart, myend)
       DO s = mystart,myend
-         i = MOD(s-1,nr-1)+1
-         j = MOD(s-1,(nr-1)*(nphi-1))
-         j = FLOOR(REAL(j) / REAL(nr-1))+1
-         k = CEILING(REAL(s) / REAL((nr-1)*(nphi-1)))
+         i = MOD(s-1,nrm1)+1
+         j = MOD(s-1,nrm1*nphim1)/nrm1+1
+         k = (s-1)/(nrm1*nphim1)+1
          dV = raxis(i)*hr(i)*hp(j)*hz(k)
          BEAM_DENSITY(:,i,j,k) = BEAM_DENSITY(:,i,j,k) / dV
       END DO

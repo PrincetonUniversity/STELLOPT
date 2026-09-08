@@ -179,7 +179,7 @@ SUBROUTINE beams3d_follow_gc
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)
                     moment = moment_lines(mytdex-1,l)
-                    t_nag = tf_nag - dt
+                    t_nag = tf_nag
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
@@ -198,19 +198,17 @@ SUBROUTINE beams3d_follow_gc
                     tf_nag = t_nag+dt
                     ndt = 1
                     ! Setup DRKHVG parameters
-                    iopt = 0 
+                    iopt = 0
                     DO
                         CALL drkhvg(t_nag, q, neqs_nag, dt, 2, fgc_rkh68, rkh_work, iopt, ier)
                         IF (ier < 0) CALL handle_err(RKH68_ERR, 'beams3d_follow', ier)
-                        q(1)=rkh_work(1,2)
-                        q(2)=rkh_work(2,2)
-                        q(3)=rkh_work(3,2)
-                        q(4)=rkh_work(4,2)
-                        t_nag = t_nag+dt
-                        tf_nag = tf_nag+dt
+                        q(1:neqs_nag) = rkh_work(1:neqs_nag,2)
+                        ! q is now the state at tf_nag; out_beams3d_gc
+                        ! advances tf_nag by dt for the next step.
+                        t_nag = tf_nag
                         t_last(l) = tf_nag ! Save the value here in case out_beams3d changes it
                         CALL out_beams3d_gc(tf_nag,q)
-                        IF ((istate == -1) .or. (istate ==-2) .or. (ABS(tf_nag) > ABS(my_end)) ) EXIT
+                        IF (ABS(tf_nag) > ABS(my_end)) EXIT
                     END DO
                 END DO
             CASE ("LSODE","DLSODE")

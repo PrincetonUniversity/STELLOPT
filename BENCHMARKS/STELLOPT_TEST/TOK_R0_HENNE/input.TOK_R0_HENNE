@@ -1,0 +1,70 @@
+&INDATA
+!----- Runtime Parameters -----
+  DELT =  1.00000000000000E+00
+  NITER = 20000
+  NSTEP = 200
+!  TCON0 =  0.00000000000000E+00
+  NS_ARRAY =  16  32  64  128
+  NITER_ARRAY =  1000 2000 4000 10000
+  FTOL_ARRAY =  1.0E-30  1.0E-30  1.0E-30  1.0E-14
+!----- Grid Parameters -----
+  LASYM = F
+  NFP = 1
+  MPOL = 10
+  NTOR = 0
+  PHIEDGE =  7.85
+!----- Free Boundary Parameters -----
+  LFREEB = F
+!----- Pressure Parameters -----
+  GAMMA =  0.00000000000000E+00
+  BLOAT =  0.00000000000000E+00
+  SPRES_PED =  0.00000000000000E+00
+  PRES_SCALE = 0.00000000000000E+00
+  PMASS_TYPE = 'power_series'
+  AM =  1.00000000000000E+00 -1.00000000000000E+00  0.00000000000000E+00
+        0.00000000000000E+00 -1.00000000000000E+00  1.00000000000000E+00
+!----- Current/Iota Parameters -----
+  NCURR = 0
+  PIOTA_TYPE = 'power_series'
+  AI =  1.0 0.0 -0.7
+!----- Axis Parameters -----
+  RAXIS =  3.00000000000000E+00
+  ZAXIS =  0.00000000000000E+00
+!----- Boundary Parameters -----
+RBC(  0,  0) =  3.0000000000e+00  ZBS(  0,  0) =  0.0000000000e+00
+RBC(  0,  1) =  1.0000000000e+00  ZBS(  0,  1) = -1.0000000000e+00
+!----- Created by write_vmec 13-Jan-2012 15:12:17 -----
+/
+&OPTIMUM
+!-----------------------------------------------------------------------
+!          OPTIMIZER RUN CONTROL PARAMETERS
+!-----------------------------------------------------------------------
+  NFUNC_MAX = 20
+  EQUIL_TYPE = 'VMEC2000'
+  OPT_TYPE   = 'GADE'
+  FTOL   =   1.0E-4
+  XTOL   =   1.0E-2
+  GTOL   =   1.0E-30
+  FACTOR =   0.5
+  EPSFCN =   1.0
+  CR_STRATEGY = 0
+  NPOPULATION = 16
+  NOPTIMIZERS = 8
+  LKEEP_MINS = T
+  MODE = 3
+!-----------------------------------------------------------------------
+!          OPTIMIZED QUANTITIES
+!-----------------------------------------------------------------------
+  LEXP_SCALE = F
+  EXP_ALPHA =    0.000000000000E+000
+  ALPHA_HENNE = 0
+  MMAX_HENNE = 9
+  NMAX_HENNE = 0
+  LB_HENNE_OPT( 000) = T  B_HENNE_MIN( 000) =   0.5  B_HENNE_MAX( 000) =    1.5  DB_HENNE_OPT( 000) =   -1.000000000000E+000
+  LR0_HENNE_OPT( 000) = T  R0_HENNE_MIN( 000) =   1.5  R0_HENNE_MAX( 000) =    20.0  DR0_HENNE_OPT( 000) =   -1.000000000000E+000
+!-----------------------------------------------------------------------
+!          PLASMA PROPERTIES
+!-----------------------------------------------------------------------
+  TARGET_R0      = 10.0  SIGMA_R0      = 1.0
+  TARGET_ASPECT  = 10.0  SIGMA_ASPECT  = 1.0
+/

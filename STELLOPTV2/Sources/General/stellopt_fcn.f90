@@ -26,6 +26,7 @@
 !                             animec_flag, flow_flag
       USE vmec_main, ONLY:  multi_ns_grid
       USE read_wout_mod, ONLY: read_wout_file, write_wout_file, read_wout_deallocate
+      USE henneberg_mapping_mod
       USE mpi_params                                                    ! MPI
       IMPLICIT NONE
       
@@ -49,7 +50,7 @@
 !        iunit       File unit number
 !----------------------------------------------------------------------
       LOGICAL ::  lscreen
-      INTEGER ::  nvar_in, dex, dex2, ik, istat, iunit, pass, mf,nf
+      INTEGER ::  nvar_in, dex, dex2, ik, istat, iunit, pass, mf,nf, n1, n2
       INTEGER ::  vctrl_array(5)
       REAL(rprec) :: norm_aphi, norm_am, norm_ac, norm_ai, norm_ah,&
                      norm_at, norm_ne, norm_te, norm_ti, norm_th, &
@@ -171,6 +172,22 @@
             IF (lexp_scale) scale = EXP(-exp_alpha*MAX(ABS(arr_dex(nvar_in,1)),arr_dex(nvar_in,2)))
             deltamn(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)*scale
          END IF
+         IF (var_dex(nvar_in) == ihenne_b) THEN
+            IF (lexp_scale) scale = EXP(-exp_alpha*ABS(arr_dex(nvar_in,1)))
+            b_henne(arr_dex(nvar_in,1)) = x(nvar_in)*scale
+         END IF
+         IF (var_dex(nvar_in) == ihenne_R0) THEN
+            IF (lexp_scale) scale = EXP(-exp_alpha*ABS(arr_dex(nvar_in,1)))
+            R0_henne(arr_dex(nvar_in,1)) = x(nvar_in)*scale
+         END IF
+         IF (var_dex(nvar_in) == ihenne_Z0) THEN
+            IF (lexp_scale) scale = EXP(-exp_alpha*ABS(arr_dex(nvar_in,1)))
+            Z0_henne(arr_dex(nvar_in,1)) = x(nvar_in)*scale
+         END IF
+         IF (var_dex(nvar_in) == ihenne_rho) THEN
+            IF (lexp_scale) scale = EXP(-exp_alpha*MAX(ABS(arr_dex(nvar_in,1)),arr_dex(nvar_in,2)))
+            rho_henne(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)*scale
+         END IF
       END DO
 
       ! Adust Boundary Representation
@@ -179,6 +196,16 @@
       END IF
       IF (ANY(var_dex == ideltamn)) THEN
          CALL unique_boundary_PG(rbc,zbs,deltamn,ntord,mpol1d,mpol-1,ntor)
+      END IF
+      IF (ANY(lb_henne_opt) .or. ANY(lR0_henne_opt) &
+         .or. ANY(lZ0_henne_opt) .or. ANY(lrho_henne_opt)) THEN
+            n1 = - (nmax_henne + ABS(alpha_henne))
+            n2 =   (nmax_henne + ABS(alpha_henne))
+            CALL henneberg_to_vmec(nmax_henne, mmax_henne, R0_henne(0:nmax_henne), &
+                                    Z0_henne(0:nmax_henne), b_henne(0:nmax_henne), &
+                                    rho_henne(-nmax_henne:nmax_henne,0:mmax_henne), &
+                                    alpha_henne, rbc(n1:n2,0:mmax_henne), &
+                                    zbs(n1:n2,0:mmax_henne))
       END IF
 
       ! Unpack RBC/ZBS/RBS/ZBC

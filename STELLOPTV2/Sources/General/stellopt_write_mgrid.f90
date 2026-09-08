@@ -177,15 +177,10 @@
       DO ig = 1, nextcur
          br = 0.0; bp = 0.0; bz = 0.0
          DO s = mystart, myend
-            !i = MOD(s-1,nr)+1
-            !j = MOD(s-1,nr*nphi)
-            !j = FLOOR(REAL(j) / REAL(nr))+1
-            !k = CEILING(REAL(s) / REAL(nr*nphi))
-            ! Changed from nr,nphi,nz to nr,nz,nphi ordering
+            ! Ordering nr,nz,nphi
             i = MOD(s-1,nr)+1
-            j = MOD(s-1,nr*nz)
-            j = FLOOR(REAL(j) / REAL(nr))+1
-            k = CEILING(REAL(s) / REAL(nr*nz))
+            j = MOD(s-1,nr*nz)/nr+1
+            k = (s-1)/(nr*nz)+1
             r = rmin + dr*(i-1)
             z = zmin + dz*(j-1)
             phi = dphi*(k-1)

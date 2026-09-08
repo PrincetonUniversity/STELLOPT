@@ -156,6 +156,20 @@
       REAL(rprec), DIMENSION(-ntord:ntord,-mpol1d:mpol1d) ::  ddeltamn_opt
       REAL(rprec), DIMENSION(-ntord:ntord,-mpol1d:mpol1d) ::  delta_min, delta_max
 
+      ! Variables associated with Henneberg Represenation
+      INTEGER                                             ::  alpha_henne, mmax_henne, nmax_henne, &
+                                                              nu_henne, nv_henne
+      REAL(rprec), DIMENSION(0:ntord)                     ::  b_henne,R0_henne, Z0_henne
+      REAL(rprec), DIMENSION(-ntord:ntord,0:mpol1d)       ::  rho_henne
+      LOGICAL, DIMENSION(0:ntord)                         ::  lb_henne_opt, lR0_henne_opt, lZ0_henne_opt
+      LOGICAL, DIMENSION(-ntord:ntord,0:mpol1d)           ::  lrho_henne_opt
+      REAL(rprec), DIMENSION(0:ntord)                     ::  db_henne_opt, dR0_henne_opt, dZ0_henne_opt
+      REAL(rprec), DIMENSION(-ntord:ntord,0:mpol1d)       ::  drho_henne_opt
+      REAL(rprec), DIMENSION(0:ntord)                     ::  b_henne_min, b_henne_max, &
+                                                              R0_henne_min, R0_henne_max, &
+                                                              Z0_henne_min, Z0_henne_max
+      REAL(rprec), DIMENSION(-ntord:ntord,0:mpol1d)       ::  rho_henne_min, rho_henne_max
+
       CHARACTER(256)  ::  equil_type, te_type, ne_type, ti_type, th_type, &
                           beamj_type, bootj_type, zeff_type, emis_xics_type, &
                           bootcalc_type, phi_type
@@ -254,6 +268,10 @@
       INTEGER, PARAMETER ::  irhobc     = 95
       INTEGER, PARAMETER ::  ideltamn   = 96
       INTEGER, PARAMETER ::  imodemn    = 97
+      INTEGER, PARAMETER ::  ihenne_b   = 981
+      INTEGER, PARAMETER ::  ihenne_R0  = 982
+      INTEGER, PARAMETER ::  ihenne_Z0  = 983
+      INTEGER, PARAMETER ::  ihenne_rho = 984
       INTEGER, PARAMETER ::  iraxis_cc  = 911
       INTEGER, PARAMETER ::  iraxis_cs  = 912
       INTEGER, PARAMETER ::  izaxis_cc  = 913
@@ -493,6 +511,15 @@
          ! ZBS Coil Surface
          CASE(izbs_coilsurf)
             WRITE(iunit,out_format_2DB) 'ZBS_COILSURF(',var_dex1,',',var_dex2,'): Vertical Coil Surface Boundary Harmonics'
+         ! HENNEBERG Boundary Representation
+         CASE(ihenne_b)
+            WRITE(iunit,out_format_1D) 'B_HENNE(',var_dex1,'):  Henneberg B Coefficient'
+         CASE(ihenne_R0)
+            WRITE(iunit,out_format_1D) 'R0_HENNE(',var_dex1,'):  Henneberg R0 Coefficient'
+         CASE(ihenne_Z0)
+            WRITE(iunit,out_format_1D) 'Z0_HENNE(',var_dex1,'):  Henneberg Z0 Coefficient'
+         CASE(ihenne_rho)
+            WRITE(iunit,out_format_2DB) 'RHO_HENNE(',var_dex1,',',var_dex2,'): Henneberg Rho Coefficient'
       END SELECT
       END SUBROUTINE write_vars
 

@@ -87,7 +87,10 @@ MODULE beams3d_runtime
                               mumaterial_niter, &
                               mumaterial_lamthresh, mumaterial_tol, &
                               mumaterial_lambda, mumaterial_lamfactor, &
-                              mumaterial_padfactor, mumaterial_convcheck
+                              mumaterial_lambdamin, mumaterial_lambdamax, &
+                              mumaterial_padfactor, mumaterial_convcheck, &
+                              mumaterial_depth, mumaterial_leaf, &
+                              mumaterial_theta_iter, mumaterial_theta_eval
     !-----------------------------------------------------------------------
     !     Module Variables
     !          lverb         Logical to control screen output

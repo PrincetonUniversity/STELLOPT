@@ -119,38 +119,48 @@ SUBROUTINE beams3d_follow_fo
                 ALLOCATE(w(neqs_nag * 21 + 28), STAT = ier)
                 IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'W', ier)
                 DO l = mystart_save, myend_save
-                    tf_nag = t_last(l)
-                    ! Don't do particle if stopped or beyond the full_orbit limit
-                    IF (tf_nag>t_end(l)) CYCLE
+                    t_nag = t_last(l)
                     ! Particle indicies
                     myline = l
-                    mytdex = 1; ndt = 1
-                    IF (lbeam) mytdex = 3
-                    ! Don't do full_orbit particles
-                    !IF (sqrt(S_lines(mytdex-1,l))>rho_fullorbit) CYCLE
+                    mytdex = MAX(COUNT(R_lines(0:npoinc,l)>0,DIM=1),1)
+                    ! Don't do particle if stopped
+                    IF ((mytdex>=npoinc) .or. end_state(l) /= 0) CYCLE
                     ! Particle Parameters
-                    q(1) = R_lines(mytdex-1,l)
-                    q(2) = PHI_lines(mytdex-1,l)
-                    q(3) = Z_lines(mytdex-1,l)
-                    q(4) = vr_lines(mytdex-1,l)
-                    q(5) = vphi_lines(mytdex-1,l)
-                    q(6) = vz_lines(mytdex-1,l)
-                    xlast = q(1)*cos(q(2))
-                    ylast = q(1)*sin(q(2))
-                    zlast = q(3)
-                    !moment = moment_lines(mytdex-1,l)
-                    t_nag = tf_nag - dt
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
                     E_by_v=mymass*0.5d-3/e_charge
                     mybeam = Beam(l)
                     my_end = t_end(l)
+                    myqm  = mycharge/mymass
                     ltherm = .false.
                     lneut  = .false.
                     ! Collision parameters
+                    fact_kick = 2*E_kick*mycharge/(mymass*pi2*pi2*freq_kick*freq_kick*SQRT(pi*1E-7*plasma_mass))
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     CALL SET_COULOMB_FACTOR(mymass,myZ,plasma_mass)
+                    ! Now handle Coordinate conversion
+                    IF (lbeam .and. mytdex == 3) mytdex = 2 ! BEAM -> FO Run
+                    IF (lboxsim)  mytdex = 1
+                    q(1) = R_lines(mytdex-1,l)
+                    q(2) = PHI_lines(mytdex-1,l)
+                    q(3) = Z_lines(mytdex-1,l)
+                    IF (lgc2fo_start(l)) THEN
+                       q(4) = vll_lines(mytdex-1,l)
+                       q(5) = moment_lines(mytdex-1,l)
+                       CALL beams3d_gc2fo(q)
+                    ELSE
+                       q(4) = vr_lines(mytdex-1,l)
+                       q(5) = vphi_lines(mytdex-1,l)
+                       q(6) = vz_lines(mytdex-1,l)
+                    END IF
+                    xlast = q(1)*cos(q(2))
+                    ylast = q(1)*sin(q(2))
+                    zlast = q(3)
+                    ! Now calc dt (also sets ndt_max, the output cadence)
+                    CALL beams3d_calc_dt(2,q(1),q(2),q(3),dt)
+                    tf_nag = t_nag+dt
+                    ndt = 1
                     DO ! Must do it this way becasue lbeam changes q(4) values
 #if defined(NAG)
                        CALL D02CJF(t_nag,tf_nag,neqs_nag,q,fpart_eom,tol_nag,relab,out_beams3d_part,D02CJW,w,ier)
@@ -165,51 +175,61 @@ SUBROUTINE beams3d_follow_fo
                 ier = 0
                 DO l = mystart_save, myend_save
                     t_nag = t_last(l)
-                    ! Don't do particle if stopped
-                    IF (t_nag>t_end(l)) CYCLE
                     ! Particle indicies
                     myline = l
-                    mytdex = 1; ndt = 1
-                    IF (lbeam) mytdex = 3
-                    ! Don't do full_orbit particles
-                    !IF (sqrt(S_lines(mytdex-1,l))>rho_fullorbit) CYCLE
+                    mytdex = MAX(COUNT(R_lines(0:npoinc,l)>0,DIM=1),1)
+                    ! Don't do particle if stopped
+                    IF ((mytdex>=npoinc) .or. end_state(l) /= 0) CYCLE
                     ! Particle Parameters
-                    q(1) = R_lines(mytdex-1,l)
-                    q(2) = PHI_lines(mytdex-1,l)
-                    q(3) = Z_lines(mytdex-1,l)
-                    q(4) = vr_lines(mytdex-1,l)
-                    q(5) = vphi_lines(mytdex-1,l)
-                    q(6) = vz_lines(mytdex-1,l)
-                    xlast = q(1)*cos(q(2))
-                    ylast = q(1)*sin(q(2))
-                    zlast = q(3)
-                    !moment = moment_lines(mytdex-1,l)
-                    t_nag = tf_nag - dt
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
                     E_by_v=mymass*0.5d-3/e_charge
                     mybeam = Beam(l)
                     my_end = t_end(l)
+                    myqm  = mycharge/mymass
                     ltherm = .false.
                     lneut  = .false.
                     ! Collision parameters
+                    fact_kick = 2*E_kick*mycharge/(mymass*pi2*pi2*freq_kick*freq_kick*SQRT(pi*1E-7*plasma_mass))
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     CALL SET_COULOMB_FACTOR(mymass,myZ,plasma_mass)
+                    ! Now handle Coordinate conversion
+                    IF (lbeam .and. mytdex == 3) mytdex = 2 ! BEAM -> FO Run
+                    IF (lboxsim)  mytdex = 1
+                    q(1) = R_lines(mytdex-1,l)
+                    q(2) = PHI_lines(mytdex-1,l)
+                    q(3) = Z_lines(mytdex-1,l)
+                    IF (lgc2fo_start(l)) THEN
+                       q(4) = vll_lines(mytdex-1,l)
+                       q(5) = moment_lines(mytdex-1,l)
+                       CALL beams3d_gc2fo(q)
+                    ELSE
+                       q(4) = vr_lines(mytdex-1,l)
+                       q(5) = vphi_lines(mytdex-1,l)
+                       q(6) = vz_lines(mytdex-1,l)
+                    END IF
+                    xlast = q(1)*cos(q(2))
+                    ylast = q(1)*sin(q(2))
+                    zlast = q(3)
+                    ! Now calc dt (also sets ndt_max, the output cadence)
+                    CALL beams3d_calc_dt(2,q(1),q(2),q(3),dt)
+                    tf_nag = t_nag+dt
+                    ndt = 1
                     ! Setup DRKHVG parameters
-                    iopt = 0 
+                    iopt = 0
                     DO
                         CALL drkhvg(t_nag, q, neqs_nag, dt, 2, fpart_rkh68, rkh_work, iopt, ier)
                         IF (ier < 0) CALL handle_err(RKH68_ERR, 'beams3d_follow', ier)
-                        q(1)=rkh_work(1,2)
-                        q(2)=rkh_work(2,2)
-                        q(3)=rkh_work(3,2)
-                        q(4)=rkh_work(4,2)
-                        t_nag = t_nag+dt
-                        tf_nag = tf_nag+dt
+                        ! All neqs_nag components must be copied back; the
+                        ! velocity lives in q(4:6) for full orbit.
+                        q(1:neqs_nag) = rkh_work(1:neqs_nag,2)
+                        ! q is now the state at tf_nag; out_beams3d_part
+                        ! advances tf_nag by dt for the next step.
+                        t_nag = tf_nag
                         t_last(l) = tf_nag ! Save the value here in case out_beams3d changes it
                         CALL out_beams3d_part(tf_nag,q)
-                        IF ((istate == -1) .or. (istate ==-2) .or. (ABS(tf_nag) > ABS(my_end)) ) EXIT
+                        IF (ABS(tf_nag) > ABS(my_end)) EXIT
                     END DO
                 END DO
             CASE ("LSODE","DLSODE")

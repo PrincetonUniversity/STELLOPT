@@ -17,6 +17,11 @@ VPATH = $(SPATH)
 .SUFFIXES : .f .f90 .o
 xpenta:  $(LIB) $(ObjectFiles)
 	$(LINK) $@ $(ObjectFiles) $(LIB_LINK)
+
+libpenta.so : $(LIB) $(ObjectFiles)
+	$(LINK_C) -o $@ $(ObjectFiles) $(LIB_LINK)
+	$(CLEAN_ARCH)
+
 #Compile object files defined in OBJLIST.
 .f.o :
 	@if grep -q '^!DEC\$$' $<; \
