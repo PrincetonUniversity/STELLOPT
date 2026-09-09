@@ -109,16 +109,16 @@
       ! Print out some info
       IF (lscreen) THEN
          WRITE(6,'(A,A)')                '   COILS FILE: ',TRIM(coil_string)
+         IF (mgrid_mode == 'S') THEN
+            WRITE(6,'(A,A)')             '   SCALING: UNIT CURRENT'
+         ELSE
+            WRITE(6,'(A,A)')             '   SCALING: RAW'
+         ENDIF
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   R   = [',rmin,',',rmax,'];  NR:   ',nr
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',0.0,',',pi2/nfp,'];  NPHI: ',nphi
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',zmin,',',zmax,'];  NZ:   ',nz
-         IF (mgrid_mode == 'S') THEN
-            WRITE(6,'(A)') '   Scaling to unit current.'
-         ELSE
-            WRITE(6,'(A)') '   Treating currents as raw.'
-         ENDIF
-         IF (lstell_sym) WRITE(6,'(A)') '   Assuming stellarator symmetry.'
          WRITE(6,'(A,A)')                '   MGRID FILE: ','mgrid_'//TRIM(proc_string)// '.nc'
+         IF (lstell_sym) WRITE(6,'(A)') '   Assuming stellarator symmetry.'
          CALL FLUSH(6)
       END IF
 
