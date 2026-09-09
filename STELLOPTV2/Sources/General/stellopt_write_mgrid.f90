@@ -65,6 +65,13 @@
       CALL MPI_COMM_SIZE( COMM_LOCAL, numprocs_local, ierr_mpi )
       CALL MPI_COMM_RANK( COMM_LOCAL, myworkid, ierr_mpi )
       ALLOCATE(lfile_found_global(numprocs_local))
+      CALL MPI_BCAST(nr, 1, MPI_INTEGER, master, COMM_LOCAL, ierr_mpi)
+      CALL MPI_BCAST(nphi, 1, MPI_INTEGER, master, COMM_LOCAL, ierr_mpi)
+      CALL MPI_BCAST(nz, 1, MPI_INTEGER, master, COMM_LOCAL, ierr_mpi)
+      CALL MPI_BCAST(rmin, 1, MPI_REAL8, master, COMM_LOCAL, ierr_mpi)
+      CALL MPI_BCAST(rmax, 1, MPI_REAL8, master, COMM_LOCAL, ierr_mpi)
+      CALL MPI_BCAST(zmin, 1, MPI_REAL8, master, COMM_LOCAL, ierr_mpi)
+      CALL MPI_BCAST(zmax, 1, MPI_REAL8, master, COMM_LOCAL, ierr_mpi)
 !DEC$ ENDIF
 
       IF (lscreen) WRITE(6,*) '---------------------------  WRITING MGRID  ------------------------'
@@ -101,9 +108,17 @@
 
       ! Print out some info
       IF (lscreen) THEN
+         WRITE(6,'(A,A)')                '   COILS FILE: ',TRIM(coil_string)
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   R   = [',rmin,',',rmax,'];  NR:   ',nr
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',0.0,',',pi2/nfp,'];  NPHI: ',nphi
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',zmin,',',zmax,'];  NZ:   ',nz
+         IF (mgrid_mode == 'S') THEN
+            WRITE(6,'(A)') '   Scaling to unit current.'
+         ELSE
+            WRITE(6,'(A)') '   Treating currents as raw.'
+         ENDIF
+         IF (lstell_sym) WRITE(6,'(A)') '   Assuming stellarator symmetry.'
+         WRITE(6,'(A,A)')                '   MGRID FILE: ','mgrid_'//TRIM(proc_string)// '.nc'
          CALL FLUSH(6)
       END IF
 
@@ -190,14 +205,14 @@
          ! Gather the Results
 !DEC$ IF DEFINED (MPI_OPT)
          CALL MPI_BARRIER(COMM_LOCAL,ierr_mpi)
-         IF (myid_sharmem == master) THEN
-            CALL MPI_REDUCE(MPI_IN_PLACE, br, nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
-            CALL MPI_REDUCE(MPI_IN_PLACE, bp, nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
-            CALL MPI_REDUCE(MPI_IN_PLACE, bz, nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
+         IF (myworkid == master) THEN
+            CALL MPI_REDUCE(MPI_IN_PLACE, br, nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, master, COMM_LOCAL, ierr_mpi)
+            CALL MPI_REDUCE(MPI_IN_PLACE, bp, nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, master, COMM_LOCAL, ierr_mpi)
+            CALL MPI_REDUCE(MPI_IN_PLACE, bz, nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, master, COMM_LOCAL, ierr_mpi)
          ELSE
-            CALL MPI_REDUCE(br,           br, nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
-            CALL MPI_REDUCE(bp,           bp, nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
-            CALL MPI_REDUCE(bz,           bz, nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
+            CALL MPI_REDUCE(br,           br, nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, master, COMM_LOCAL, ierr_mpi)
+            CALL MPI_REDUCE(bp,           bp, nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, master, COMM_LOCAL, ierr_mpi)
+            CALL MPI_REDUCE(bz,           bz, nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, master, COMM_LOCAL, ierr_mpi)
          END IF
 !DEC$ ENDIF
   
