@@ -165,7 +165,6 @@
 !-----------------------------------------------------------------------
   NFUNC_MAX   = 5
   OPT_TYPE    = 'GADE'
-  EQUIL_TYPE  = 'VMEC2000_ONEEQ'
   EQUIL_TYPE  = 'VMEC2000'
   FACTOR      =    0.5
   EPSFCN      =    0.3
