@@ -251,9 +251,8 @@
 
       END DO
 
-      ! Clsoe file
+      ! Close file
       IF (myworkid == master) CALL cdf_close(ngrid)
-      CALL cleanup_biotsavart
 
       ! Free memory
       IF (ALLOCATED(br)) DEALLOCATE(br)

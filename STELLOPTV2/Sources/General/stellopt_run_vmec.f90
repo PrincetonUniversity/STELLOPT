@@ -12,8 +12,10 @@
       USE stel_kinds, ONLY: rprec
       USE stellopt_runtime
       USE stellopt_globals, ONLY: b0_vac
+      USE stellopt_vars, ONLY: lcreate_coils
       USE equil_utils, ONLY: eval_prof_spline, Baxis
-      USE vmec_input, ONLY: curtor, pres_scale,phiedge
+      USE vmec_input, ONLY: curtor, pres_scale,phiedge, lfreeb
+      USE biotsavart, ONLY: parse_coils_file
       IMPLICIT NONE
       
 !-----------------------------------------------------------------------
@@ -60,6 +62,8 @@
          CALL stellopt_paraexe('paravmec_run',proc_string,lscreen)
          iflag = ier_paraexe
       END IF
+      ! VMEC deallocates the coil_group structure in STELLOPT
+      IF (lfreeb .and. lcreate_coils) CALL parse_coils_file('coils.'//TRIM(proc_string))
       IF (lscreen) WRITE(6,*)  '-------------------------  PARAVMEC CALCULATION DONE  -----------------------'
       RETURN
 !-----------------------------------------------------------------------
