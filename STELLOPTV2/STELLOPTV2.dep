@@ -13,7 +13,9 @@ stellopt_run_vmec.o : \
       stellopt_runtime.o  \
       equil_utils.o  \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_globals.o \
+      $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
       $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \
+      $(LIB_DIR)/$(LOCTYPE)/biotsavart.o \
       $(LIB_DIR)/$(LOCTYPE)/vmec_input.o 
 
 stellopt_generate_coilsurf.o : \

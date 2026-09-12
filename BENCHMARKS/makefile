@@ -112,6 +112,8 @@ test_stellopt:
 	$(MAKE) test_stellopt_beams3d
 	$(MAKE) test_stellopt_recon_tok
 	$(MAKE) test_stellopt_vboot_tokamak_bootsj
+	$(MAKE) test_stellopt_coil
+	$(MAKE) test_stellopt_coil_free
 	@if [ $LCOILOPT ]; then\
 		echo "----COILOPT OPTION----"; \
 		$(MAKE) test_stellopt_coilopt;\
@@ -313,6 +315,12 @@ test_fieldlines_coll_ef: FIELDLINES_TEST/fieldlines_NCSX_s1.h5
 	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll_ef -coil coils.NCSX_nfp1 -vac -vessel NCSX_wall_trimesh.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114
 	@echo ""
 
+test_makegrid_coil_opt_free:
+	@cd $(STELLOPT_TEST_DIR)/COIL_OPT_FREE;
+	@echo $(MYHOME)/xgrid input.COIL_OPT_FREE
+	@cd $(STELLOPT_TEST_DIR)/COIL_OPT_FREE; $(MYHOME)/xgrid input.COIL_OPT_FREE
+	@echo ""
+
 test_nescoil_tf:
 	@cd $(NESCOIL_TEST_DIR); rm -f nescout.*; 
 	@echo $(MYHOME)/xnescoil nescin.TF_ONLY
@@ -403,9 +411,15 @@ test_stellopt_tok_vboot_sfincs:
 	@echo ""
 
 test_stellopt_coil:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.COIL_TEST
-	@cd $(STELLOPT_TEST_DIR)/COIL_TEST; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.COIL_TEST; rm -f *_opt*
-	@cd $(STELLOPT_TEST_DIR) && ./compare.py --file COIL_TEST
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.COIL_OPT
+	@cd $(STELLOPT_TEST_DIR)/COIL_OPT; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.COIL_OPT; rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR) && ./compare.py --file COIL_OPT
+	@echo ""
+
+test_stellopt_coil_free: test_makegrid_coil_opt_free
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.COIL_OPT_FREE
+	@cd $(STELLOPT_TEST_DIR)/COIL_OPT_FREE; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.COIL_OPT_FREE; rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR) && ./compare.py --file COIL_OPT_FREE
 	@echo ""
 
 test_stellopt_availenergy:
@@ -479,9 +493,9 @@ clean_test:
 
 stellopt_cleanup_dir:
 	@cd $(SUBDIR); rm -f answers* auto* beams3d* b_norm_eq_* b_norm_init_* b_norm_final_* bnorm.* boot_fit.* boozmn* checkpoint_* \
-		coilopt_params.* coils.* coil_spline*.out curv* dcon* deltamn.* diagno_flux.* diagno_bth.* diagno_seg.* \
+		coilopt_params.* coils.*.***** coils.*_opt* coil_curvature_* coil_spline*.out curv* dcon* deltamn.* diagno_flux.* diagno_bth.* diagno_seg.* \
 		dkes* dprof* fevals* field* fort.* gade* gist* eigenvalues* input.*_min input.*.***** input_dkes.* jacobian.* jprof.* \
-		jxb* jBbs* LMsave* log_gene.* map.* map_plane.* mgrid_*.nc mercier* mom* neo* nrg* opt* parameters_* \
+		jxb* jBbs* LMsave* log_gene.* map.* map_plane.* mgrid_*_opt*.nc mgrid_*.*****.nc mercier* mom* neo* nrg* opt* parameters_* \
 		parvmecinfo* results* rhomn* RZ* stellopt.* stellopt_mpi tprof* wout* temp_input.* terpsichore_eq.* terpsichore_16.* \
 		terpsichore_17.* terpsichore_19.* terpsichore_22.* terpsichore_23.* threed1.* tv_out_* txport* xvec.* uv_* \
 		var_* vsp*
