@@ -14,7 +14,7 @@
       USE stellopt_globals, ONLY: b0_vac
       USE stellopt_vars, ONLY: lcreate_coils
       USE equil_utils, ONLY: eval_prof_spline, Baxis
-      USE vmec_input, ONLY: curtor, pres_scale,phiedge, lfreeb
+      USE vmec_input, ONLY: curtor, pres_scale,phiedge, lfreeb, extcur
       USE biotsavart, ONLY: parse_coils_file
       IMPLICIT NONE
       
@@ -47,16 +47,27 @@
       iflag = ier_paraexe
       IF (ABS(B0_VAC) > 0) THEN
          CALL stellopt_load_equil(.FALSE.,iflag)
-         phiedge_new = (b0_vac/Baxis)*phiedge
-         IF (lscreen .and. lverb) THEN 
-            WRITE(6,*)  '----- Recomputing PHIEDGE ------'
-            WRITE(6,'(A,F7.3)') '      PHIEDGE(OLD): ', phiedge
-            WRITE(6,'(A,F7.3)') '     BVACAXIS(OLD): ', Baxis
-            WRITE(6,'(A,F7.3)') '  BVACAXIS(TARGET): ', b0_vac
-            WRITE(6,'(A,F7.3)') '      PHIEDGE(NEW): ', phiedge_new
-            WRITE(6,*)  '--------------------------------'
+         IF (lfreeb) THEN
+            extcur = (b0_vac/Baxis)*extcur
+            IF (lscreen .and. lverb) THEN 
+               WRITE(6,*)  '----- Recomputing EXTCUR ------'
+               WRITE(6,'(A,F7.3)') '     BVACAXIS(OLD): ', Baxis
+               WRITE(6,'(A,F7.3)') '  BVACAXIS(TARGET): ', b0_vac
+               WRITE(6,'(A,F7.3)') '     EXTCUR_FACTOR: ', b0_vac/Baxis
+               WRITE(6,*)  '--------------------------------'
+            END IF
+         ELSE
+            phiedge_new = (b0_vac/Baxis)*phiedge
+            IF (lscreen .and. lverb) THEN 
+               WRITE(6,*)  '----- Recomputing PHIEDGE ------'
+               WRITE(6,'(A,F7.3)') '      PHIEDGE(OLD): ', phiedge
+               WRITE(6,'(A,F7.3)') '     BVACAXIS(OLD): ', Baxis
+               WRITE(6,'(A,F7.3)') '  BVACAXIS(TARGET): ', b0_vac
+               WRITE(6,'(A,F7.3)') '      PHIEDGE(NEW): ', phiedge_new
+               WRITE(6,*)  '--------------------------------'
+            END IF
+            phiedge = phiedge_new
          END IF
-         phiedge = phiedge_new
          curtor = curtor_save
          pres_scale = pres_scale_save
          CALL stellopt_paraexe('paravmec_run',proc_string,lscreen)
