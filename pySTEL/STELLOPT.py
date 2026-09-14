@@ -1005,10 +1005,11 @@ class MyApp(QMainWindow):
 		# Handle Coil
 		if any('coils' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- Coils -----')
+			self.ui.ComboBoxOPTplot_type.addItem('Coil Shape')
+			self.ui.ComboBoxOPTplot_type.addItem('Coil-Coil Distance')
 			self.ui.ComboBoxOPTplot_type.addItem('Coil Length')
 			self.ui.ComboBoxOPTplot_type.addItem('Coil Curvature')
 			self.ui.ComboBoxOPTplot_type.addItem('Coil Torsion')
-			self.ui.ComboBoxOPTplot_type.addItem('Coil Shape')
 			coils_files = sorted([k for k in files if 'coils.' in k])
 			self.coils_files = sorted([k for k in coils_files if '_opt' not in k])
 		# Handle Current Density Profiles
@@ -1148,6 +1149,12 @@ class MyApp(QMainWindow):
 				self.stel_data.read_stellopt_baxis(test_file)
 				self.plt_sopt.clear_scene()
 				self.stel_data.plot_stellopt_baxis(plot3D=self.plt_sopt)
+			elif plot_name in ['Coil-Coil Distance']:
+				self.plt_sopt.clear_scene()
+				coil_data = coils.COILSET()
+				coil_data.read_coils_file(test_file)
+				coil_data.coilCoilDist()
+				coil_data.plotcoilcoilDist(plot3D=self.plt_sopt)
 			elif plot_name in ['Coil Curvature']:
 				self.stel_data.read_stellopt_coil_curvature(test_file)
 				self.plt_sopt.clear_scene()
@@ -2189,7 +2196,14 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('Iterations')
 			self.ax2.set_ylabel('Length [m]')
 			self.ax2.set_title('Coil Length')
-
+		elif (plot_name == 'Coil-Coil Distance'):
+			file_list = sorted(glob.glob("coils.*"))
+			for item in file_list:
+				self.ui.ComboBoxOPTplot_iter.addItem(item)
+			self.canvas2.hide()
+			self.vtkWidget_sopt.show()
+			self.plt_sopt.renderer.RemoveAllViewProps()
+			self.UpdateIterFile()
 		elif (plot_name == 'Coil Curvature'):
 			file_list = sorted(glob.glob("coil_curvature.*"))
 			for item in file_list:
