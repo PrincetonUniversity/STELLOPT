@@ -12,6 +12,7 @@ stellopt_penta.o : \
 stellopt_run_vmec.o : \
       stellopt_runtime.o  \
       equil_utils.o  \
+      equil_vals.o  \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_globals.o \
       $(LIB_DIR)/$(LOCTYPE)/stellopt_vars.o \
       $(LIB_DIR)/$(LOCTYPE)/stel_kinds.o \

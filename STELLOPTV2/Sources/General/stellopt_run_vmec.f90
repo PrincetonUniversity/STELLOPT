@@ -14,7 +14,9 @@
       USE stellopt_globals, ONLY: b0_vac
       USE stellopt_vars, ONLY: lcreate_coils
       USE equil_utils, ONLY: eval_prof_spline, Baxis
-      USE vmec_input, ONLY: curtor, pres_scale,phiedge, lfreeb, extcur
+      USE equil_vals, ONLY: volume
+      USE vmec_input, ONLY: curtor, pres_scale,phiedge, lfreeb, extcur, &
+         tvolume
       USE biotsavart, ONLY: parse_coils_file
       IMPLICIT NONE
       
@@ -42,9 +44,11 @@
       IF (ABS(B0_VAC) > 0) THEN
          curtor = 0.0
          pres_scale = 0.0
+         IF (lscreen .and. lverb) WRITE(6,*)  '----- Runing zero beta VMEC ------'
       END IF
       CALL stellopt_paraexe('paravmec_run',proc_string,lscreen)
       iflag = ier_paraexe
+      ! First 
       IF (ABS(B0_VAC) > 0) THEN
          CALL stellopt_load_equil(.FALSE.,iflag)
          IF (lfreeb) THEN
@@ -54,6 +58,7 @@
                WRITE(6,'(A,F7.3)') '     BVACAXIS(OLD): ', Baxis
                WRITE(6,'(A,F7.3)') '  BVACAXIS(TARGET): ', b0_vac
                WRITE(6,'(A,F7.3)') '     EXTCUR_FACTOR: ', b0_vac/Baxis
+               WRITE(6,'(A,F7.3)') '      PHIEDGE(OLD): ', phiedge
                WRITE(6,*)  '--------------------------------'
             END IF
          ELSE
@@ -70,6 +75,24 @@
          END IF
          curtor = curtor_save
          pres_scale = pres_scale_save
+         IF (lscreen .and. lverb) WRITE(6,*)  '----- Runing finite beta VMEC ------'
+         CALL stellopt_paraexe('paravmec_run',proc_string,lscreen)
+         iflag = ier_paraexe
+      END IF
+      ! Now adjust volume via PHIEDGE if in free boundary at full parameters
+      IF (lfreeb .and. (tvolume .gt. 0.0)) THEN
+         CALL stellopt_load_equil(.FALSE.,iflag)
+         phiedge_new = phiedge * (tvolume/volume)
+         IF (lscreen .and. lverb) THEN 
+            WRITE(6,*)  '----- Recomputing PHIEDGE ------'
+            WRITE(6,'(A,F7.3)') '      PHIEDGE(OLD): ', phiedge
+            WRITE(6,'(A,F7.2)') '       VOLUME(OLD): ', volume
+            WRITE(6,'(A,F7.2)') '    VOLUME(TARGET): ', tvolume
+            WRITE(6,'(A,F7.3)') '      PHIEDGE(NEW): ', phiedge_new
+            WRITE(6,*)  '--------------------------------'
+         END IF
+         phiedge = phiedge_new
+         IF (lscreen .and. lverb) WRITE(6,*)  '----- Runing finite beta VMEC ------'
          CALL stellopt_paraexe('paravmec_run',proc_string,lscreen)
          iflag = ier_paraexe
       END IF
