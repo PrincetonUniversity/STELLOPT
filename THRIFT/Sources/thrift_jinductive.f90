@@ -31,6 +31,8 @@
                      BP_temp, CP_temp, DP_temp,temp_arr,  &
                      alpha1,alpha2,alpha3,alpha4,&
                      DIAGSUB,DIAGMID,DIAGSUP,RHS
+      !
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: S11dot, S12dot, src_sec, dia_sec
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !======================================================================
@@ -112,10 +114,22 @@
       ALLOCATE(alpha1(nsj-2),alpha2(nsj-2),alpha3(nsj-2),alpha4(nsj-2))
       alpha1 = 0; alpha2 = 0; alpha3 = 0; alpha4 = 0
 
+      ! Secular terms from the evolving susceptance matrix:
+      !   u_t = A*d/ds[...] + u*dln(S11)/dt + S11*d/dt(S12/S11)
+      ALLOCATE(S11dot(nsj),S12dot(nsj),src_sec(nsj),dia_sec(nsj))
+      S11dot = 0; S12dot = 0; src_sec = 0; dia_sec = 0
+      !
+      S11dot = (THRIFT_S11(:,mytimestep) - THRIFT_S11(:,prevtimestep))/dt
+      S12dot = (THRIFT_S12(:,mytimestep) - THRIFT_S12(:,prevtimestep))/dt
+      !WHERE (ABS(THRIFT_S11(:,mytimestep)) > small)
+      dia_sec = S11dot/THRIFT_S11(:,mytimestep)
+      !END WHERE
+      src_sec = S12dot - THRIFT_S12(:,mytimestep)*dia_sec
+
       DO i = 1, nsj-2
          j = i + 1 ! ABCD in [0,1], alphas in (0,1), so index shifts
-         alpha1(i) = A_temp(j)* DP_temp(j)
-         alpha2(i) = A_temp(j)* CP_temp(j)
+         alpha1(i) = A_temp(j)* DP_temp(j) + src_sec(j)
+         alpha2(i) = A_temp(j)* CP_temp(j) + dia_sec(j)
          alpha3(i) = A_temp(j)*(BP_temp(j)+C_temp(j))            
          alpha4(i) = A_temp(j)*  B_temp(j)  
       END DO
@@ -230,6 +244,7 @@
       ! Store solution
       THRIFT_UGRID(:,mytimestep) = RHS
       DEALLOCATE(alpha1,alpha2,alpha3,alpha4,DIAGSUB,DIAGMID,DIAGSUP,RHS)
+      DEALLOCATE(S11dot,S12dot,src_sec,dia_sec)
 !----------------------------------------------------------------------
 !     Bookkeeping
 !----------------------------------------------------------------------
