@@ -13,7 +13,7 @@
       USE thrift_vars
       USE read_wout_mod, ONLY: read_wout_deallocate, read_wout_file, &
                                betatot, Aminor, Rmajor,phi, Volume, ns
-      USE thrift_globals, ONLY : vmec_done
+      USE thrift_globals, ONLY : vmec_done, update_equilibrium
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag

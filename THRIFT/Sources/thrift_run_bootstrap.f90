@@ -15,7 +15,7 @@ SUBROUTINE thrift_run_bootstrap
    USE thrift_profiles_mod
    USE thrift_funcs
    USE booz_params, ONLY: lsurf_boz
-   USE thrift_globals, ONLY: look_for_ambipolar,update_thrift_vars,update_transport_vars,dkes_done
+   USE thrift_globals, ONLY: look_for_ambipolar,update_thrift_vars,update_transport_vars,dkes_done,update_equilibrium
    !-----------------------------------------------------------------------
    !     Local Variables
    !        ier         Error flag
