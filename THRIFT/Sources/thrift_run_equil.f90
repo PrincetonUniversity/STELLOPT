@@ -13,6 +13,7 @@
       USE thrift_vars
       USE read_wout_mod, ONLY: read_wout_deallocate, read_wout_file, &
                                betatot, Aminor, Rmajor,phi, Volume, ns
+      USE thrift_globals, ONLY : vmec_done
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
@@ -23,7 +24,7 @@
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
 
-      IF (lvmec) THEN
+      IF (lvmec .AND. .NOT. vmec_done) THEN
          ! Run VMEC
          CALL thrift_paraexe('paravmec_run',proc_string,lscreen_subcodes)
          ! Check for error
@@ -41,6 +42,8 @@
          eq_volume    = Volume
          ! Load equil_utils for helpers later on
          CALL thrift_load_vmec
+
+         IF(.NOT. update_equilibrium) vmec_done = .TRUE.
       END IF
 
       RETURN

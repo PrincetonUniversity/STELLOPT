@@ -13,6 +13,7 @@
       USE thrift_vars
       USE thrift_funcs
       USE safe_open_mod
+      USE thrift_globals, ONLY :  dkes_done, vmec_done
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
@@ -75,6 +76,11 @@
       jold   = 1E3 ! so on loop 1 we don't divide by zero
       lscreen_subcodes = .TRUE.
       lfirst_pass = .TRUE.
+      
+      ! These only get TRUE if the namelist variable update_equilibrium is set by the user to False
+      ! They get TRUE after the first pass and both VMEC and DKES are never computed again
+      vmec_done = .FALSE.
+      dkes_done = .FALSE.
       
       ! Loop over timesteps
       DO mytimestep = 1, ntimesteps
