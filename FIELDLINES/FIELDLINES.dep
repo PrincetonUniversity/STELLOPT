@@ -16,6 +16,7 @@ fieldlines_calc_surface_fit.o: \
 
 
 fieldlines_main.o: \
+      fieldlines_interface_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/vessel_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
       fieldlines_grid.o \
