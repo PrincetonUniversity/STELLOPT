@@ -49,7 +49,7 @@
                               alpha_beurskens, frac_alpha_heating, alpha_chi_external, &
                               tau_fast_alphas, mass_ref_species, dt_Er_ambipolar, &
                               dt_plasma_write, save_subiterations, init_profiles_type, &
-                              update_equilibrium
+                              update_equilibrium, add_susceptance_time_derivatives
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -83,6 +83,7 @@
       lverbj             = .FALSE.
       save_subiterations = .FALSE.
       update_equilibrium = .TRUE.
+      add_susceptance_time_derivatives = .FALSE.
       ! For BOOTSJ
       boot_factor        = 1
       ! For ecrh simple model

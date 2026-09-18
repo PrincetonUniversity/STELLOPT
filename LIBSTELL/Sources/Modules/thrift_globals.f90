@@ -18,7 +18,7 @@
 
       ! Moved from thrift_vars
       LOGICAL ::  lverbj, leccd, lnbcd, lohmic, save_subiterations
-      LOGICAL :: update_equilibrium, vmec_done, dkes_done
+      LOGICAL :: update_equilibrium, vmec_done, dkes_done, add_susceptance_time_derivatives
       INTEGER ::  nrho, ntimesteps, n_eq, npicard, nsj
       REAL(rprec) :: tstart, tend, jtol, picard_factor, boot_factor
 
