@@ -65,8 +65,8 @@
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = $(shell nc-config --cflags) $(shell nf-config --fflags)
-  NETCDF_LIB = $(shell nc-config --libs) $(shell nf-config --flibs)
+  NETCDF_INC = $(shell nf-config --fflags)
+  NETCDF_LIB = $(shell nf-config --flibs) -L$(shell brew --prefix netcdf)/lib
 
 #######################################################################
 #            FFTW3 Options
