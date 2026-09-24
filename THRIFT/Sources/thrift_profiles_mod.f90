@@ -17,16 +17,17 @@ MODULE thrift_profiles_mod
     !          lverb         Logical to control screen output
     !-------------------------------------------------------------------
     IMPLICIT NONE
+    LOGICAL :: USE_ZEFF_FROM_FILE
     INTEGER :: nrho_prof, nt_prof, nion_prof
     INTEGER, DIMENSION(:), POINTER :: Zatom_prof
     REAL(rprec) :: rhomin, rhomax, tmin, tmax, eps1, eps2
     REAL(rprec), DIMENSION(:), POINTER :: raxis_prof, taxis_prof, &
                                           Matom_prof, hr, hri, ht, hti
-    REAL(rprec), DIMENSION(:,:,:), POINTER :: NE3D, TE3D, P3D, JBS3D, eta3D
+    REAL(rprec), DIMENSION(:,:,:), POINTER :: NE3D, TE3D, P3D, JBS3D, eta3D, ZEFF3D
     REAL(rprec), DIMENSION(:,:,:,:), POINTER :: NI4D, TI4D 
     INTEGER :: win_raxis_prof, win_taxis_prof, win_NE3D, win_TE3D, &
                win_NI4D, win_TI4D, win_hr, win_ht, win_hri, win_hti, &
-               win_Matom_prof, win_Zatom_prof, win_P3D, win_JBS3D, win_eta3D          
+               win_Matom_prof, win_Zatom_prof, win_P3D, win_JBS3D, win_eta3D, win_Zeff3D       
     REAL(rprec), PARAMETER :: AMU = 1.66053906892D-27
     ! Used when solving plasma eqs
     REAL(rprec), DIMENSION(:,:), POINTER :: NE_spl, TE_spl, P_spl
@@ -85,6 +86,8 @@ MODULE thrift_profiles_mod
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nt_prof',ier)
          CALL read_scalar_hdf5(fid,'nion',ier,INTVAR=nion_prof)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nion_prof',ier)
+         ! If Zeff exists in file:
+         USE_ZEFF_FROM_FILE = dataset_exists(fid,'Zeff_prof')
       END IF
       CALL MPI_BARRIER(MPI_COMM_SHARMEM,ierr_mpi)
       ! Broadcast the helpers
@@ -94,6 +97,8 @@ MODULE thrift_profiles_mod
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'read_thrift_profh5: nt_prof',ierr_mpi)
       CALL MPI_BCAST(nion_prof,1,MPI_INTEGER,master,MPI_COMM_SHARMEM,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'read_thrift_profh5: nion_prof',ierr_mpi)
+      CALL MPI_BCAST(USE_ZEFF_FROM_FILE,1,MPI_LOGICAL,master,MPI_COMM_SHARMEM,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'read_thrift_profh5: USE_ZEFF_FROM_FILE',ierr_mpi)
       ! Allocate the shared memory objects
       CALL mpialloc(raxis_prof, nrho_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis_prof)
       CALL mpialloc(taxis_prof, nt_prof,   myid_sharmem, 0, MPI_COMM_SHARMEM, win_taxis_prof)
@@ -104,6 +109,8 @@ MODULE thrift_profiles_mod
       CALL mpialloc(P3D,  4, nt_prof, nrho_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_P3D)
       CALL mpialloc(NI4D, 4, nt_prof, nrho_prof, nion_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI4D)
       CALL mpialloc(TI4D, 4, nt_prof, nrho_prof, nion_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TI4D)
+      IF(USE_ZEFF_FROM_FILE) CALL mpialloc(ZEFF3D, 4, nt_prof, nrho_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_Zeff3D)
+      !
       IF( bootstrap_type == 'read_from_file' ) CALL mpialloc(JBS3D, 4, nt_prof, nrho_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_JBS3D)
       IF( etapar_type == 'read_from_file' ) CALL mpialloc(eta3D, 4, nt_prof, nrho_prof, myid_sharmem, 0, MPI_COMM_SHARMEM, win_eta3D)
       IF (myid_sharmem == master) THEN
@@ -220,6 +227,21 @@ MODULE thrift_profiles_mod
             eta3D = temp_spl2d%fspl
             CALL EZspline_free(temp_spl2d,ier)
          END IF
+
+         IF(USE_ZEFF_FROM_FILE) THEN
+            CALL read_var_hdf5(fid,'Zeff_prof',nt_prof,nrho_prof,ier,DBLVAR=temp2d)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'Zeff_prof',ier)
+            IF (lverb) WRITE(6,'(A,F9.3,A,F9.3,A)') '   Zeff   = [', &
+                        MINVAL(temp2d),',',MAXVAL(temp2d),']'
+            CALL EZspline_init(temp_spl2d,nt_prof,nrho_prof,bcs0,bcs0,ier)
+            temp_spl2d%x1          = taxis_prof
+            temp_spl2d%x2          = raxis_prof
+            temp_spl2d%isHermite   = 1
+            CALL EZspline_setup(temp_spl2d,temp2d,ier,EXACT_DIM=.true.)
+            ZEFF3D = temp_spl2d%fspl
+            CALL EZspline_free(temp_spl2d,ier)
+         END IF
+
          DEALLOCATE(temp2d)
 
          ! Close the HDF5 file
@@ -578,15 +600,22 @@ MODULE thrift_profiles_mod
       REAL(rprec), INTENT(out) :: val
       INTEGER     :: i
       REAL(rprec) :: f_top, f_bot, nk
-      val = 0; f_top = 0; f_bot = 0
-      DO i = 1, nion_prof
-         CALL get_prof_ni(rho_val,t_val,i,nk)
-!         f_top = f_top + nk*nk*Zatom_prof(i)
-!         f_bot = f_bot + nk*nk
-         f_top = f_top + nk*(Zatom_prof(i)**2)
-         f_bot = f_bot + nk*Zatom_prof(i)
-      END DO
-      IF (f_bot > 0) val = f_top/f_bot
+      val = 0; 
+      ! Consider the case where a Zeff profile is given in the profiles file
+      ! (usually when experimental profiles are in use)
+      IF(USE_ZEFF_FROM_FILE) THEN
+         CALL get_prof_f(rho_val,t_val,ZEFF3D,val)
+      ELSE
+         f_top = 0; f_bot = 0
+         DO i = 1, nion_prof
+            CALL get_prof_ni(rho_val,t_val,i,nk)
+   !         f_top = f_top + nk*nk*Zatom_prof(i)
+   !         f_bot = f_bot + nk*nk
+            f_top = f_top + nk*(Zatom_prof(i)**2)
+            f_bot = f_bot + nk*Zatom_prof(i)
+         END DO
+         IF (f_bot > 0) val = f_top/f_bot
+      END IF
       val = MAX(val,1.0)
       RETURN
       END SUBROUTINE get_prof_zeff
