@@ -144,7 +144,12 @@
             CALL set_plasmaSize_f77(1.0, 0)
 
             ! Load the equilibrium
-            equiname = 'wout_'//TRIM(proc_string)//'.nc'
+            IF( .NOT. update_equilibrium) THEN
+               equiname = 'wout_'//TRIM(id_string)//'.001_001.nc'
+            ELSE
+               equiname = 'wout_'//TRIM(proc_string)//'.nc'
+            END IF
+            !
             CALL set_EquiFile_f77(equiname)
 
             ! Set Profiles
