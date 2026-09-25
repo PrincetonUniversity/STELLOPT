@@ -87,7 +87,7 @@ MODULE thrift_profiles_mod
          CALL read_scalar_hdf5(fid,'nion',ier,INTVAR=nion_prof)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nion_prof',ier)
          ! If Zeff exists in file:
-         USE_ZEFF_FROM_FILE = dataset_exists(fid,'Zeff_prof')
+         USE_ZEFF_FROM_FILE = dataset_exists(fid,'zeff_prof')
       END IF
       CALL MPI_BARRIER(MPI_COMM_SHARMEM,ierr_mpi)
       ! Broadcast the helpers
@@ -229,8 +229,8 @@ MODULE thrift_profiles_mod
          END IF
 
          IF(USE_ZEFF_FROM_FILE) THEN
-            CALL read_var_hdf5(fid,'Zeff_prof',nt_prof,nrho_prof,ier,DBLVAR=temp2d)
-            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'Zeff_prof',ier)
+            CALL read_var_hdf5(fid,'zeff_prof',nt_prof,nrho_prof,ier,DBLVAR=temp2d)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'zeff_prof',ier)
             IF (lverb) WRITE(6,'(A,F9.3,A,F9.3,A)') '   Zeff   = [', &
                         MINVAL(temp2d),',',MAXVAL(temp2d),']'
             CALL EZspline_init(temp_spl2d,nt_prof,nrho_prof,bcs0,bcs0,ier)
