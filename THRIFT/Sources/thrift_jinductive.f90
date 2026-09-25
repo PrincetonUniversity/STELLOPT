@@ -114,10 +114,10 @@
       ALLOCATE(alpha1(nsj-2),alpha2(nsj-2),alpha3(nsj-2),alpha4(nsj-2))
       alpha1 = 0; alpha2 = 0; alpha3 = 0; alpha4 = 0
 
+      ALLOCATE(S11dot(nsj),S12dot(nsj),src_sec(nsj),dia_sec(nsj))
       IF(add_susceptance_time_derivatives) THEN
             ! Secular terms from the evolving susceptance matrix:
             !   u_t = A*d/ds[...] + u*dln(S11)/dt + S11*d/dt(S12/S11)
-            ALLOCATE(S11dot(nsj),S12dot(nsj),src_sec(nsj),dia_sec(nsj))
             S11dot = 0; S12dot = 0; src_sec = 0; dia_sec = 0
             !
             S11dot = (THRIFT_S11(:,mytimestep) - THRIFT_S11(:,prevtimestep))/dt
@@ -127,7 +127,6 @@
             !END WHERE
             src_sec = S12dot - THRIFT_S12(:,mytimestep)*dia_sec
       ELSE
-            ALLOCATE(src_sec(nsj),dia_sec(nsj))
             dia_sec = 0.0_rprec
             src_sec = 0.0_rprec
       END IF
