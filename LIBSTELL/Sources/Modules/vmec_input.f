@@ -792,7 +792,7 @@
       SUBROUTINE RESCALE_BOUNDARY
       IMPLICIT NONE
       REAL(rprec) :: AVolume, AArea, AR00, TArea
-      IF (tvolume .gt. 0.0) THEN
+      IF (tvolume .gt. 0.0 .and. (.not. lfreeb)) THEN
          CALL INDATA_VOLUME(AVolume)
          IF (lvolume_rfix) THEN
             CALL INDATA_AREA(AArea)

@@ -64,6 +64,7 @@
       IF (lneed_magdiag) CALL write_diagno_input(iunit_out,ier)
       IF (ANY(sigma_bootstrap < bigno) .or. (sigma_totalbootstrap < bigno)) CALL write_bootsj_input(iunit_out,ier)
       IF (lpoincare) CALL write_fieldlines_namelist(iunit_out,ier)
+      IF (lfreeb .and. lcreate_coils) CALL write_mgrid_namelist(iunit_out,ier)
 !DEC$ IF DEFINED (NEO_OPT)
       IF (ANY(sigma_neo < bigno)) CALL write_neoin_namelist(iunit_out,ier)
 !DEC$ ENDIF
