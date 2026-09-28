@@ -414,8 +414,8 @@ class VMEC(FourierRep):
 		if(self.iasym==1):
 			J = J + self.sfunct(theta,phi,self.gmns,self.xm_nyq,self.xn_nyq)
 		integrand = (guu*gvv - guv*guv) / (np.abs(J))
-		integral = np.trapz(integrand,x=phi.ravel(),  axis=2)
-		integral = np.trapz(integral, x=theta.ravel(),axis=1)
+		integral = np.trapezoid(integrand,x=phi.ravel(),  axis=2)
+		integral = np.trapezoid(integral, x=theta.ravel(),axis=1)
 		# Since at rho=0 there is an indetermination, we linearly interpolate:
 		avgrho2 = np.zeros_like(rho)
 		avgrho2[1:] = integral[1:] / (4.0 * dVds[1:] * rho[1:]**2)
@@ -476,8 +476,8 @@ class VMEC(FourierRep):
 		# It's important to keep rho inside the integrand instead of diving afterwards
 		# otherwise the integral will diverge close to the axis
 		integrand = np.sqrt(guu*gvv - guv*guv)
-		integral = np.trapz(integrand,x=phi.ravel(),  axis=2)
-		integral = np.trapz(integral, x=theta.ravel(),axis=1)
+		integral = np.trapezoid(integrand,x=phi.ravel(),  axis=2)
+		integral = np.trapezoid(integral, x=theta.ravel(),axis=1)
 		# Because at rho=0 the integrand is Nan, we linearly interpolate:
 		avgrho = np.zeros_like(rho)
 		avgrho[1:] = integral[1:] / (2*dVds[1:]*rho[1:])
@@ -548,14 +548,14 @@ class VMEC(FourierRep):
 		S22 = ( ( rv * rv + zv * zv + r * r ) * ( 1.0 + lu ) - S21 * lv )
 		phi = np.squeeze(phi)
 		theta = np.squeeze(theta)
-		S11 = np.trapz(S11 / g, x=phi, axis=2)
-		S12 = np.trapz(S12 / g, x=phi, axis=2)
-		S21 = np.trapz(S21 / g, x=phi, axis=2)
-		S22 = np.trapz(S22 / g, x=phi, axis=2)
-		S11 = np.trapz(S11, x=theta, axis=1)*scale_fact
-		S12 = np.trapz(S12, x=theta, axis=1)*scale_fact
-		S21 = np.trapz(S21, x=theta, axis=1)*scale_fact
-		S22 = np.trapz(S22, x=theta, axis=1)*scale_fact
+		S11 = np.trapezoid(S11 / g, x=phi, axis=2)
+		S12 = np.trapezoid(S12 / g, x=phi, axis=2)
+		S21 = np.trapezoid(S21 / g, x=phi, axis=2)
+		S22 = np.trapezoid(S22 / g, x=phi, axis=2)
+		S11 = np.trapezoid(S11, x=theta, axis=1)*scale_fact
+		S12 = np.trapezoid(S12, x=theta, axis=1)*scale_fact
+		S21 = np.trapezoid(S21, x=theta, axis=1)*scale_fact
+		S22 = np.trapezoid(S22, x=theta, axis=1)*scale_fact
 		return S11,S12,S21,S22
 
 	def calcNormals2D(self,theta,phi,ns=None):

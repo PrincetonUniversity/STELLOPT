@@ -960,7 +960,7 @@ class PLASMA_SOLVER:
                     integrand = np.exp(-(r-r0)**2/sigma_r**2) * self.dVdr(self.rho_grid)
                     integrand = integrand.flatten()
                     #
-                    cte = P_IN / np.trapz(integrand,r)
+                    cte = P_IN / np.trapezoid(integrand,r)
                     #
                     aux_source = cte * np.exp(-(r-r0)**2/sigma_r**2)
                     
@@ -975,7 +975,7 @@ class PLASMA_SOLVER:
                     integrand = np.exp(-(r-r0)**2/sigma_r**2) * self.dVdr(self.rho_grid)
                     integrand = integrand.flatten()
                     #
-                    cte = P_IN / np.trapz(integrand,r)
+                    cte = P_IN / np.trapezoid(integrand,r)
                     #
                     time_fact = self.energy_sources[species]['time_dependent_gaussian']['time_factor']
                     t = self.time[it]
@@ -1146,7 +1146,7 @@ class PLASMA_SOLVER:
                     integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
                     integrand = integrand.flatten()
                     #
-                    cte = injected_particles_per_sec / np.trapz(integrand,self.r_grid)
+                    cte = injected_particles_per_sec / np.trapezoid(integrand,self.r_grid)
                     #
                     aux_source = cte * np.exp(-(rho_grid-rho_0)**2/sigma_rho**2)
                     
@@ -1159,7 +1159,7 @@ class PLASMA_SOLVER:
                     integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
                     integrand = integrand.flatten()
                     #
-                    cte = injected_particles_per_sec / np.trapz(integrand,self.r_grid)
+                    cte = injected_particles_per_sec / np.trapezoid(integrand,self.r_grid)
                     #
                     t = self.time[it]
                     aux_source = time_fact(t) * cte * np.exp(-(rho_grid-rho_0)**2/sigma_rho**2)

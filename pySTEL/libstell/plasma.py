@@ -503,8 +503,8 @@ class PLASMA:
         for species in self.list_of_species:
             total_press += self.get_density(species,roa)*self.get_temperature(species,roa)*EC   #Pascal (SI) units
         
-        volume = np.trapz(dVdrho,roa)
-        beta_avg = np.trapz(total_press/Bsq * dVdrho,roa) / volume
+        volume = np.trapezoid(dVdrho,roa)
+        beta_avg = np.trapezoid(total_press/Bsq * dVdrho,roa) / volume
         
         beta_averaged = 2*MU0 * beta_avg
         
