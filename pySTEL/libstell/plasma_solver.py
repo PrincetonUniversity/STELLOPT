@@ -1779,6 +1779,7 @@ class PLASMA_SOLVER:
         are not safe to share across concurrent calls within a single process.
         """
         from concurrent.futures import ProcessPoolExecutor
+        import multiprocessing as mp
         from libstell.libpenta import _init_NEO_worker
         self.DKES_nuv, self.DKES_Erv, self.DKES_D11, self.DKES_D31, self.DKES_D33, self.dkes_k, self.roa_dkes_k = process_DKES_file(DKES_coeffs_file,surfaces_k)
 
@@ -1787,7 +1788,7 @@ class PLASMA_SOLVER:
 
         self.n_workers_NEO = n_workers_NEO
         if(n_workers_NEO is not None and n_workers_NEO > 1):
-            self.neo_pool = ProcessPoolExecutor(max_workers=n_workers_NEO, initializer=_init_NEO_worker)
+            self.neo_pool = ProcessPoolExecutor(max_workers=n_workers_NEO, initializer=_init_NEO_worker, mp_context=mp.get_context("fork"))
             print(f'Using {n_workers_NEO} worker processes for NEO (PENTA) surface calculations')
         else:
             self.neo_pool = None
