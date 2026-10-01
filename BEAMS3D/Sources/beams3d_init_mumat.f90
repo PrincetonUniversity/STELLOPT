@@ -83,7 +83,7 @@
                            max_depth=INT(mumaterial_depth), max_leafsize=INT(mumaterial_leaf), &
                            iter_theta=mumaterial_theta_iter,eval_theta=mumaterial_theta_eval) 
       ! Load magnetization file
-      IF (lmumat_readmag) CALL mumaterial_magfile_read(TRIM(mumat_magfile))
+      IF (lmumat_readmag) CALL mumaterial_state_read(TRIM(mumat_magfile))
 
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_MUSHARE,  ierr_mpi)
@@ -142,8 +142,8 @@
       offset = 0.0d0
       CALL MUMATERIAL_RUN(beams3d_BCART, offset, lmumat_skipiter, .NOT.lmumat_readmag)
       ! Output magnetics file
-      IF (lmumat_writemagfile) CALL mumaterial_magfile_write(id_string)
-
+      IF (lmumat_writemagfile) CALL mumaterial_state_write(id_string)
+      
       ! Pack coordinates
       npoints_beams = nr*nphi*nz
       ALLOCATE(x_out(npoints_beams), y_out(npoints_beams), z_out(npoints_beams))

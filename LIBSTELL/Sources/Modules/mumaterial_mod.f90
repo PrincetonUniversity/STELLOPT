@@ -10,7 +10,7 @@
 !                    ferromagnetic materials, modelled as a mesh of
 !                    tetrahedrons, to magnetic fields.
 !------------------------------------------------------------------------------
-      MODULE mumaterial_mod
+MODULE mumaterial_mod
 !------------------------------------------------------------------------------
 !     Libraries
 !------------------------------------------------------------------------------
@@ -25,6 +25,21 @@
             DOUBLE PRECISION, PRIVATE, ALLOCATABLE :: M(:) !! M-values 
             DOUBLE PRECISION, PRIVATE, ALLOCATABLE :: b(:) !! Spline slopes
       END TYPE stateFunctionType
+
+      TYPE jaType
+        SEQUENCE
+        DOUBLE PRECISION :: Ms !! Saturation magnetization
+        DOUBLE PRECISION :: a  !! effective thermal-like shape parameter
+        DOUBLE PRECISION :: k  !! pinning site energy
+        DOUBLE PRECISION :: alpha !! interdomain coupling
+        DOUBLE PRECISION :: c !! reversibility
+      END TYPE
+      
+      INTEGER, PARAMETER, PRIVATE :: NTAB_JA = 50
+      TYPE ja_table_type
+        DOUBLE PRECISION :: H_up(NTAB_JA), M_up(NTAB_JA), Mb_up(NTAB_JA), Mirr_up(NTAB_JA), Mirrb_up(NTAB_JA)
+        DOUBLE PRECISION :: H_dn(NTAB_JA), M_dn(NTAB_JA), Mb_dn(NTAB_JA), Mirr_dn(NTAB_JA), Mirrb_dn(NTAB_JA)
+      END TYPE ja_table_type
 
       PROCEDURE(externalFieldFunc), POINTER :: ext_Bfld !! Background field function
       ABSTRACT INTERFACE
@@ -49,15 +64,23 @@
       ! Magnetics variables
       INTEGER, PRIVATE :: nstate !! Number of state functions
       TYPE(stateFunctionType), PRIVATE, ALLOCATABLE :: stateFunction(:) !! (nstate) array of state functions
+      TYPE(jaType), ALLOCATABLE :: JA_params(:) !! 
+      TYPE(ja_table_type), ALLOCATABLE, PRIVATE :: JA_tables_loc(:)  !!
       INTEGER, POINTER, PRIVATE :: state_dex(:) !! (ntet) index into nstate of an element
-      INTEGER, POINTER, PRIVATE :: state_type(:) !! (nstate) array of state types (1-3)
+      INTEGER, POINTER, PRIVATE :: state_type(:) !! (nstate) array of state types (1-4)
       DOUBLE PRECISION, POINTER, PRIVATE :: constant_mu(:) !! (nstate) Overall relative permeability (stype=3) or along easy axis (stype=1)
       DOUBLE PRECISION, POINTER, PRIVATE :: constant_mu_o(:) !! (nstate) relative permeability along off axis (stype=1)
       DOUBLE PRECISION, POINTER, PRIVATE ::  M(:,:) !! (3,ntet) Magnetization of element
       DOUBLE PRECISION, POINTER, PRIVATE ::  Mrem(:,:) !! (3,nstate) Remanent magnetization of istate (stype=1)
+      DOUBLE PRECISION, ALLOCATABLE, PRIVATE :: u_ref_JA(:,:)    !! (3, ntet) fixed reference direction
+      DOUBLE PRECISION, ALLOCATABLE, PRIVATE :: H_anchor_JA(:)    !! (ntet) last committed field
+      DOUBLE PRECISION, ALLOCATABLE, PRIVATE :: Mirr_anchor_JA(:) !! (ntet) last committed M_irr
+      DOUBLE PRECISION, ALLOCATABLE, PRIVATE :: M_anchor_JA(:) !! ntet
+      LOGICAL,          ALLOCATABLE, PRIVATE :: axis_set_JA(:)    !! (ntet) bool for if u_ref has been fixed
       INTEGER, PRIVATE, PARAMETER :: STATE_HARD   = 1 !! Hard magnet with remanent magnetization
       INTEGER, PRIVATE, PARAMETER :: STATE_SOFT   = 2 !! Soft medium (nonlinear state function)
       INTEGER, PRIVATE, PARAMETER :: STATE_LINEAR = 3 !! Linear medium (constant permeability)
+      INTEGER, PRIVATE, PARAMETER :: STATE_JA     = 4 !! Jiles-Atherton model of hysteresis
 
       ! Iterations
       DOUBLE PRECISION, PRIVATE :: eps_max = 1.0d-6 !! Threshold error for convergence
@@ -354,12 +377,12 @@
       END IF
       READ(iunit,NML=mumat_input,IOSTAT=istat)
       IF (istat /= 0) THEN
-         WRITE(6,'(A)') 'ERROR reading namelist MUMAT_INPUT from file: ',TRIM(filename)
-         backspace(iunit)
-         read(iunit,fmt='(A)') line
-         write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
-         CALL FLUSH(6)
-         STOP
+          WRITE(6,'(A)') 'ERROR reading namelist MUMAT_INPUT from file: ',TRIM(filename)
+          backspace(iunit)
+          read(iunit,fmt='(A)') line
+          write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
+          CALL FLUSH(6)
+          STOP
       END IF
 
       CLOSE(iunit)
@@ -415,9 +438,9 @@
       istat = 0
       INQUIRE(FILE=TRIM(filename),exist=lexists)
       IF (lexists) THEN
-         OPEN(unit=iunit, file=TRIM(filename), iostat=istat, status="old", position="append")
+          OPEN(unit=iunit, file=TRIM(filename), iostat=istat, status="old", position="append")
       ELSE
-         OPEN(unit=iunit, file=TRIM(filename), iostat=istat, status="new")
+          OPEN(unit=iunit, file=TRIM(filename), iostat=istat, status="new")
       END IF
       IF (istat .ne. 0) RETURN
       CALL mumaterial_write_nml(iunit,istat)
@@ -544,11 +567,18 @@
       IF (ASSOCIATED(Mrem))          CALL mpidealloc(Mrem,win_Mrem)
 
       DO ik = 1, nstate
-         IF (ALLOCATED(stateFunction(ik)%H)) DEALLOCATE(stateFunction(ik)%H)
-         IF (ALLOCATED(stateFunction(ik)%M)) DEALLOCATE(stateFunction(ik)%M)
-         IF (ALLOCATED(stateFunction(ik)%b)) DEALLOCATE(stateFunction(ik)%b)
+          IF (ALLOCATED(stateFunction(ik)%H)) DEALLOCATE(stateFunction(ik)%H)
+          IF (ALLOCATED(stateFunction(ik)%M)) DEALLOCATE(stateFunction(ik)%M)
+          IF (ALLOCATED(stateFunction(ik)%b)) DEALLOCATE(stateFunction(ik)%b)
       END DO
       IF (ALLOCATED(stateFunction)) DEALLOCATE(stateFunction)
+      IF (ALLOCATED(JA_params))     DEALLOCATE(JA_params)
+      IF (ALLOCATED(JA_tables_loc)) DEALLOCATE(JA_tables_loc)
+      IF (ALLOCATED(u_ref_JA))       DEALLOCATE(u_ref_JA)
+      IF (ALLOCATED(H_anchor_JA))    DEALLOCATE(H_anchor_JA)
+      IF (ALLOCATED(M_anchor_JA))    DEALLOCATE(M_anchor_JA)
+      IF (ALLOCATED(Mirr_anchor_JA)) DEALLOCATE(Mirr_anchor_JA)
+      IF (ALLOCATED(axis_set_JA))    DEALLOCATE(axis_set_JA)
 
       IF (ASSOCIATED(node_level))     CALL mpidealloc(node_level,win_node_level)
       IF (ASSOCIATED(node_child))     CALL mpidealloc(node_child,win_node_child)
@@ -643,9 +673,9 @@
       IF (istat/= 0) RETURN
       ! master reads info
       IF (lismaster) THEN
-         READ(iunit,'(A)') mesh_name
-         READ(iunit,'(A)') mesh_date
-         READ(iunit,*) nvertex, ntet, nstate
+          READ(iunit,'(A)') mesh_name
+          READ(iunit,'(A)') mesh_date
+          READ(iunit,*) nvertex, ntet, nstate
       END IF
 
       ! Broadcast info to MPI and allocate vertex and face info
@@ -674,14 +704,18 @@
         CALL mpialloc(constant_mu_o,nstate,shar_rank,0,comm_shar,win_constant_mu_o)
         CALL mpialloc(M,            3,ntet,shar_rank,0,comm_shar,win_m)
         CALL mpialloc(Mrem,3,ntet,         shar_rank,0,comm_shar,win_Mrem)  ! TODO: Allocate locally
-        ALLOCATE(stateFunction(nstate))
+        ALLOCATE(stateFunction(nstate),JA_params(nstate))
+        ALLOCATE(u_ref_JA(3,ntet), H_anchor_JA(ntet), M_anchor_JA(ntet), &
+          Mirr_anchor_JA(ntet), axis_set_JA(ntet))
       ELSE
 #endif
-         ! if no MPI, allocate everything on one node
-         ALLOCATE(vertex(3,nvertex),tet(4,ntet),state_dex(ntet), &
+          ! if no MPI, allocate everything on one node
+          ALLOCATE(vertex(3,nvertex),tet(4,ntet),state_dex(ntet), &
                   state_type(nstate),constant_mu(nstate), &
                   tet_cen(3,ntet),tet_vol(ntet),M(3,ntet), &
                   constant_mu_o(nstate),Mrem(3,ntet),stateFunction(nstate), &
+                  JA_params(nstate),u_ref_JA(3,ntet), H_anchor_JA(ntet), M_anchor_JA(ntet), &
+                  Mirr_anchor_JA(ntet), axis_set_JA(ntet),&
                   STAT=istat)
           ALLOCATE(tet_P(3,3,4,ntet))
           ALLOCATE(tet_D(3,4,ntet))
@@ -691,51 +725,64 @@
 #endif
       IF (istat/=0) RETURN
       M(:,:) = 0.0
-
+      u_ref_JA = 0.0d0
+      H_anchor_JA = 0.0d0
+      M_anchor_JA = 0.0d0
+      Mirr_anchor_JA = 0.0d0
+      axis_set_JA = .FALSE.
       ! read in the mesh
       IF (lismaster) THEN
-         DO ik = 1, nvertex
+          DO ik = 1, nvertex
             READ(iunit,*) vertex(1,ik),vertex(2,ik),vertex(3,ik)
-         END DO
-
-         DO ik = 1, ntet
+          END DO
+          DO ik = 1, ntet
             READ(iunit,*) tet(1,ik),tet(2,ik),tet(3,ik),tet(4,ik),state_dex(ik)
-         END DO
+          END DO
 
-         DO ik = 1, nstate
+          DO ik = 1, nstate
             READ(iunit,*) state_type(ik)
-            IF (state_type(ik) == STATE_HARD) THEN
-               READ(iunit,*) constant_mu(ik), constant_mu_o(ik)
-               READ(iunit,*) Mrem(1,ik),Mrem(2,ik),Mrem(3,ik)
-            ELSEIF (state_type(ik) == STATE_SOFT) THEN
-               READ(iunit,*) nMH
-               ALLOCATE(stateFunction(ik)%H(nMH), &
+            SELECT CASE (state_type(ik))
+              CASE (STATE_HARD)
+                READ(iunit,*) constant_mu(ik), constant_mu_o(ik)
+                READ(iunit,*) Mrem(1,ik),Mrem(2,ik),Mrem(3,ik)
+              CASE (STATE_SOFT)
+                READ(iunit,*) nMH
+                ALLOCATE(stateFunction(ik)%H(nMH), &
                         stateFunction(ik)%M(nMH), &
                         stateFunction(ik)%b(nMH))
-               READ(iunit,*) stateFunction(ik)%H(:)
-               READ(iunit,*) stateFunction(ik)%M(:)
-               CALL get_spline_slopes(stateFunction(ik)%H,&
-                                               stateFunction(ik)%M,&
-                                               stateFunction(ik)%b)
-            ELSEIF (state_type(ik) == STATE_LINEAR) THEN
-               READ(iunit,*) constant_mu(ik)
-            ELSE
-               PRINT *, '!!! UNKNOWN STATE_TYPE == ',state_type(ik)
-            END IF
-         END DO
+                READ(iunit,*) stateFunction(ik)%H(:)
+                READ(iunit,*) stateFunction(ik)%M(:)
+                CALL get_spline_slopes(stateFunction(ik)%H,&
+                                                stateFunction(ik)%M,&
+                                                stateFunction(ik)%b)
+              CASE (STATE_LINEAR)
+                READ(iunit,*) constant_mu(ik)
+              CASE (STATE_JA)
+                READ(iunit,*) JA_params(ik)%Ms,    JA_params(ik)%a, &
+                              JA_params(ik)%k,     JA_params(ik)%alpha, &
+                              JA_params(ik)%c
+              CASE DEFAULT
+                PRINT *, '!!! UNKNOWN STATE_TYPE == ',state_type(ik)
+            END SELECT
+          END DO
       END IF
 
 #if defined(MPI_OPT)
-      IF ((lcomm).AND.(shar_rank.EQ.0)) THEN
-        CALL MPI_Bcast(vertex,       3*nvertex,MPI_DOUBLE_PRECISION,0,comm_master,ierr_mpi)
-        CALL MPI_Bcast(tet,          4*ntet,   MPI_INTEGER,         0,comm_master,ierr_mpi)
-        CALL MPI_Bcast(state_dex,    ntet,     MPI_INTEGER,         0,comm_master,ierr_mpi)
-        CALL MPI_Bcast(state_type,   nstate,   MPI_INTEGER,         0,comm_master,ierr_mpi)
-        CALL MPI_Bcast(constant_mu,  nstate,   MPI_DOUBLE_PRECISION,0,comm_master,ierr_mpi)
-        CALL MPI_Bcast(constant_mu_o,nstate,   MPI_DOUBLE_PRECISION,0,comm_master,ierr_mpi)
-        CALL MPI_Bcast(Mrem,         3*ntet,   MPI_DOUBLE_PRECISION,0,comm_master,ierr_mpi) ! TODO: Remove once allocated locally (make sure code works beforehand)
-      END IF
-      IF (lcomm) THEN ! Transfer state functions
+      IF (lcomm) THEN
+        IF (shar_rank.EQ.0) THEN
+          CALL MPI_Bcast(vertex,       3*nvertex,MPI_DOUBLE_PRECISION,0,comm_master,ierr_mpi)
+          CALL MPI_Bcast(tet,          4*ntet,   MPI_INTEGER,         0,comm_master,ierr_mpi)
+          CALL MPI_Bcast(state_dex,    ntet,     MPI_INTEGER,         0,comm_master,ierr_mpi)
+          CALL MPI_Bcast(state_type,   nstate,   MPI_INTEGER,         0,comm_master,ierr_mpi)
+          CALL MPI_Bcast(constant_mu,  nstate,   MPI_DOUBLE_PRECISION,0,comm_master,ierr_mpi)
+          CALL MPI_Bcast(constant_mu_o,nstate,   MPI_DOUBLE_PRECISION,0,comm_master,ierr_mpi)
+          CALL MPI_Bcast(JA_params,  5*nstate,   MPI_DOUBLE_PRECISION,0,comm_master,ierr_mpi)
+          CALL MPI_Bcast(Mrem,         3*ntet,   MPI_DOUBLE_PRECISION,0,comm_master,ierr_mpi) ! TODO: Remove once allocated locally (make sure code works beforehand)
+        END IF
+        ! Transfer Jiles-Atherton types
+        CALL MPI_Bcast(JA_params, 5*nstate, MPI_DOUBLE_PRECISION, 0, comm_shar, ierr_mpi)
+      
+        ! Transfer state functions
         DO ik = 1, nstate
           ! First from master to submasters
           IF (shar_rank.EQ.0) THEN
@@ -750,8 +797,8 @@
             IF (nMH .gt. 0) THEN
               IF (master_rank .ne. 0) THEN
                 ALLOCATE(stateFunction(ik)%H(nMH), &
-                         stateFunction(ik)%M(nMH), &
-                         stateFunction(ik)%b(nMH))
+                          stateFunction(ik)%M(nMH), &
+                          stateFunction(ik)%b(nMH))
               END IF
               CALL MPI_Bcast(stateFunction(ik)%H,nMH,MPI_DOUBLE_PRECISION,0,comm_master,ierr_mpi)
               CALL MPI_Bcast(stateFunction(ik)%M,nMH,MPI_DOUBLE_PRECISION,0,comm_master,ierr_mpi)
@@ -763,8 +810,8 @@
           IF (nMH .gt. 0) THEN
             IF (shar_rank .ne. 0) THEN
               ALLOCATE(stateFunction(ik)%H(nMH), &
-                       stateFunction(ik)%M(nMH), &
-                       stateFunction(ik)%b(nMH))
+                        stateFunction(ik)%M(nMH), &
+                        stateFunction(ik)%b(nMH))
             END IF
             CALL MPI_Bcast(stateFunction(ik)%H,nMH,MPI_DOUBLE_PRECISION,0,comm_shar,ierr_mpi)
             CALL MPI_Bcast(stateFunction(ik)%M,nMH,MPI_DOUBLE_PRECISION,0,comm_shar,ierr_mpi)
@@ -775,8 +822,8 @@
 #endif
 
       CLOSE(iunit) ! close file
-      
-      CONTAINS
+    
+      END SUBROUTINE mumaterial_load
 
       SUBROUTINE get_spline_slopes(fx, fy, b)
 !!-----------------------------------------------------------------------
@@ -855,11 +902,8 @@
       END DO
       DEALLOCATE(h, delta, dl, d, du)
 
-      
-
       END SUBROUTINE get_spline_slopes
-        
-      END SUBROUTINE mumaterial_load
+
 
 !------------------------------------------------------------------------------
 ! mumaterial_load_serial: Loads magnetic material file (no MPI for Python)
@@ -921,6 +965,13 @@
           CASE (STATE_LINEAR) 
             WRITE(iunit,'(6X,I3,A)') istate,'. Linear material'
             WRITE(iunit,'(9X,A,EN12.3)')    '└ mu    :',constant_mu(istate)
+          CASE (STATE_JA)
+            WRITE(iunit,'(6X,I3,A)') istate, '. Jiles-Atherton model (hysteresis)'
+            WRITE(iunit,'(9X,A,EN12.3)')    '├ Ms    :',JA_params(istate)%Ms
+            WRITE(iunit,'(9X,A,EN12.3)')    '├ a     :',JA_params(istate)%a
+            WRITE(iunit,'(9X,A,EN12.3)')    '├ k     :',JA_params(istate)%k
+            WRITE(iunit,'(9X,A,EN12.3)')    '├ alpha :',JA_params(istate)%alpha
+            WRITE(iunit,'(9X,A,EN12.3)')    '└ c     :',JA_params(istate)%c
           CASE DEFAULT
             WRITE(iunit,'(6X,I3,A,I3)') istate,'. UNKNOWN STATE TYPE:',state_type(istate)
         END SELECT
@@ -940,7 +991,7 @@
 
       END SUBROUTINE mumaterial_info
 
-     
+      
 !-----------------------------------------------------------------------------
       SUBROUTINE mumaterial_run(Bfld,  offset, lskip, linitM)
 !!------------------------------------------------------------------------------
@@ -952,8 +1003,16 @@
       LOGICAL, INTENT(in), OPTIONAL :: lskip !! True to skip iterations
       LOGICAL, INTENT(in), OPTIONAL :: linitM !! True to initialize M from Happ
       LOGICAL :: lskip_loc, linitM_loc
+      INTEGER :: k
 
       EXTERNAL:: Bfld
+      IF (world_rank==0) THEN
+        DO k = 1, n_watch
+          WRITE(6,'(A,I8,A,3ES14.6,A,L2)') ' DBG[A:run_start] tile=', watch_tiles(k), &
+            '  u_ref=', u_ref_JA(:,watch_tiles(k)), '  locked=', axis_set_JA(watch_tiles(k))
+        END DO
+      END IF
+
       lskip_loc = .FALSE.; IF (PRESENT(lskip)) lskip_loc = lskip
       linitM_loc = .FALSE.; IF(PRESENT(linitM)) linitM_loc = linitM
 
@@ -962,6 +1021,7 @@
 
       ! Build tree
       CALL mumaterial_init_tree()
+      CALL mumaterial_init_ja()      ! initialize any JA tables
       CALL mumaterial_init_demag()   ! Get N for nearby leaf-leaf pairs
 
       ! Synchronization setup
@@ -975,6 +1035,7 @@
 #endif
       CALL mumaterial_init_Happ(linitM_loc)  ! Calculate static background field at local elements
       CALL mumaterial_propagate_nodes(lverb) ! Calculate moments at every node
+      CALL mumaterial_reconcile_JA_axis() 
 
       ! Finally, run
       IF (.NOT.lskip_loc) THEN
@@ -1073,7 +1134,7 @@
       INTEGER :: nN, iN, iNself, ileaf_loc, itile_loc, itile_src, tile_src, tile_targ, inode
       INTEGER :: tile_loc_idx
       INTEGER :: csr, ptr1, ptr2
-      DOUBLE PRECISION :: N(3,3), pos(3,max_leaf_size_seen)
+      DOUBLE PRECISION :: N(3,3), pos(3,max_leaf_size_seen), isqrt1_src(2,4)
 
       CALL init_demag() ! Get helpers first
 
@@ -1112,12 +1173,14 @@
             inode = interact_list(csr)
             DO itile_src = 1, leaf_size(inode) ! Loop over source leaf elements
               tile_src = leaf_tile(itile_src, inode)            ! global index
+              isqrt1_src = mumaterial_get_isqrt1(tet_v(:,:,:,tile_src))
               DO itile_loc = 1, leaf_size_loc(ileaf_loc)
                 tile_targ = leaf_tile_loc(itile_loc, ileaf_loc) ! global index
                 N = mumaterial_get_N(tet_P(:,:,:,tile_src), &
                           tet_D(:,:,tile_src), &
                           tet_v(:,:,:,tile_src), &
-                          pos(:,itile_loc))
+                          pos(:,itile_loc), &
+                          isqrt1_src)
                 IF (tile_targ==tile_src) THEN ! Self N goes into different array
                   tile_loc_idx = leaf_offset_loc(ileaf_loc) + itile_loc
                   Nself_loc(tile_loc_idx,:,:) = N
@@ -1267,7 +1330,7 @@
       END SUBROUTINE mumaterial_init_demag
 !------------------------------------------------------------------------------
 !------------------------------------------------------------------------------
-      PURE FUNCTION mumaterial_get_N(P, D, v_tile, pos) result(N)
+      PURE FUNCTION mumaterial_get_N(P, D, v_tile, pos, isqrt1_top) result(N)
 !!-----------------------------------------------------------------------
 !! Determines demagnetization tensor for a tile at position using existing helper arrays
 !!-----------------------------------------------------------------------
@@ -1276,6 +1339,7 @@
       DOUBLE PRECISION, INTENT(in) :: D(3,4) !! Face base array of tile
       DOUBLE PRECISION, INTENT(in) :: v_tile(3,3,4) !! Vertex array of tile
       DOUBLE PRECISION, INTENT(in) :: pos(3) !! Evaluation position
+      DOUBLE PRECISION, INTENT(in) :: isqrt1_top(2,4) !! Inverse sqrt
       DOUBLE PRECISION :: N(3,3) !! Result
       DOUBLE PRECISION, PARAMETER :: d_min = 1.0D-6
 
@@ -1299,12 +1363,13 @@
         ! Difficult math
         larr_in = (/v_loc(1,1), v_loc(1,3)/)
         N_loc = 0.0d0
-        N_loc(:,3) =  GET_NLOC(r_in, larr_in, v_loc(2,2))
+        !N_loc(:,3) =  GET_NLOC(r_in, larr_in, v_loc(2,2))
+        N_loc(:,3) = GET_NLOC(r_in, larr_in, v_loc(2,2), isqrt1_top(:,i_f))
         N = N + MATMUL(MATMUL(Ptmp, N_loc), Pinv)
       END DO
       CONTAINS
 
-      PURE FUNCTION GET_NLOC(r, larr, h) RESULT(N_temp)
+      PURE FUNCTION GET_NLOC(r, larr, h, isqrt1_in) RESULT(N_temp)
 !!-----------------------------------------------------------------------
 !! Helper function to determine the demagnetization tensor.
 !! Combines earlier functions of get_box_nxz, get_Nyz, get_Nzz to reduce
@@ -1313,7 +1378,7 @@
       IMPLICIT NONE
 
       DOUBLE PRECISION :: N_temp(3)
-      DOUBLE PRECISION, INTENT(IN) :: r(3), larr(2), h
+      DOUBLE PRECISION, INTENT(IN) :: r(3), larr(2), h, isqrt1_in(2)
 
       DOUBLE PRECISION :: r1, r2, r3, ir3
       DOUBLE PRECISION :: r1_2, r2_2, r3_2
@@ -1328,6 +1393,10 @@
       DOUBLE PRECISION :: F1, F2, K1, K2, F12, K12
       DOUBLE PRECISION :: L1, L2, Q1, Q2
       DOUBLE PRECISION :: G1, G2, P1, P2
+
+      DOUBLE PRECISION :: arg_K, arg_F
+      DOUBLE PRECISION :: a_arg, b_arg, P12
+      DOUBLE PRECISION, PARAMETER :: eps_atanh = 1.0d-13
 
       DOUBLE PRECISION :: Nlocx, Nlocy, Nlocz, s
       INTEGER :: i
@@ -1362,32 +1431,53 @@
         C4 = h_2 + l * r1 - h * r2
         C5 = h * (r1_2 + r3_2) / l
 
-        sqrt1 = sqrt(C1)
+        !sqrt1 = sqrt(C1)
         sqrt3 = sqrt(C3)
 
-        isqrt1 = 1.0d0 / sqrt1
+        !isqrt1 = 1.0d0 / sqrt1
+        isqrt1 = isqrt1_in(i)
+
         isqrt3 = 1.0d0 / sqrt3
         isqrt13 = isqrt1*isqrt3
         isqrt16 = isqrt1*isqrt6
         div1 = h * isqrt1
         div2 = l * isqrt1
 
-        F1 = div1 * ATANH((C2 - C1)*isqrt16)
-        F2 = div1 * ATANH(C2*isqrt13)
+        !! Old separate ATANH calls
+        ! F1 = div1 * ATANH((C2 - C1)*isqrt16)
+        ! F2 = div1 * ATANH(C2*isqrt13)
+        !! F1 - F2, combined:
+        arg_F = ((C2 - C1)*isqrt16 - C2*isqrt13) / (1.0d0 - (C2 - C1)*isqrt16 * C2*isqrt13)
+        arg_F = MAX(-1.0d0+eps_atanh, MIN(1.0d0-eps_atanh, arg_F))
+        F12   = div1 * ATANH(arg_F)             ! exactly F1 - F2
 
-        K1 = div2 * ATANH((C4 - C1)*isqrt13)
-        K2 = div2 * ATANH(C4*isqrt16)
+        !! Old separate ATANH calls
+        ! K1 = div2 * ATANH((C4 - C1)*isqrt13)
+        ! K2 = div2 * ATANH(C4*isqrt16)
+        !! K1 - K2, combined:
+        arg_K = ((C4 - C1)*isqrt13 - C4*isqrt16) / (1.0d0 - (C4 - C1)*isqrt13 * C4*isqrt16)
+        arg_K = MAX(-1.0d0+eps_atanh, MIN(1.0d0-eps_atanh, arg_K))
+        K12   = div2 * ATANH(arg_K)             ! exactly K1 - K2
 
         L1 = ATANH((r1 - l) * isqrt3)
-
-        P1 = ATAN((r1 * (h - r2) - (h * (l - r1) - r2 * l) - C5) * ir3 * isqrt3)
-        P2 = ATAN((r1 * (h - r2) - C5) * ir3*isqrt6)
-
         Q1 = -ATAN((r1 - l) * r2  * ir3 * isqrt3)
 
-        Nlocx = Nlocx - INV4PI*s*(F1 - F2)
-        Nlocy = Nlocy - INV4PI*s*(K1 - K2 - L1)
-        Nlocz = Nlocz - INV4PI*s*(P1 - P2 - Q1)
+        !Nlocx = Nlocx - INV4PI*s*(F1 - F2)
+        !Nlocy = Nlocy - INV4PI*s*(K1 - K2 - L1)
+        !Nlocz = Nlocz - INV4PI*s*(P1 - P2 - Q1)
+      
+        Nlocx = Nlocx - INV4PI*s*(F12)
+        Nlocy = Nlocy - INV4PI*s*(K12 - L1)
+
+        !! Old separate ATAN calls
+        ! P1 = ATAN((r1 * (h - r2) - (h * (l - r1) - r2 * l) - C5) * ir3 * isqrt3)
+        ! P2 = ATAN((r1 * (h - r2) - C5) * ir3*isqrt6)
+        !! New:
+        a_arg = (r1 * (h - r2) - (h * (l - r1) - r2 * l) - C5) * ir3 * isqrt3   
+        b_arg = (r1 * (h - r2) - C5) * ir3 * isqrt6                             
+        P12   = ATAN2(a_arg - b_arg, 1.0d0 + a_arg*b_arg)                       ! exactly P1 - P2
+        Nlocz = Nlocz - INV4PI*s*(P12 - Q1)
+
       END DO
 
       N_temp = (/Nlocx, Nlocy, Nlocz/)
@@ -1399,6 +1489,17 @@
       END FUNCTION mumaterial_get_N
 !-----------------------------------------------------------------------
 !--------------------------------------------------------------------
+      PURE FUNCTION mumaterial_get_isqrt1(v_tile) RESULT(isqrt1)
+      DOUBLE PRECISION, INTENT(in) :: v_tile(3,3,4)
+      DOUBLE PRECISION :: isqrt1(2,4)
+      INTEGER :: i_f
+      DOUBLE PRECISION :: h_f
+      DO i_f = 1, 4
+        h_f = v_tile(2,2,i_f)
+        isqrt1(1,i_f) = 1.0d0/SQRT(v_tile(1,1,i_f)**2 + h_f*h_f)
+        isqrt1(2,i_f) = 1.0d0/SQRT(v_tile(1,3,i_f)**2 + h_f*h_f)
+      END DO
+      END FUNCTION
 
       SUBROUTINE mumaterial_init_tree()
 !!----------------------------------------------------------------
@@ -1953,6 +2054,11 @@
         DO ii = 1,3
           bounds(2*(ii-1)+1) = MINVAL(tet_cen(ii,:))
           bounds(2*ii)       = MAXVAL(tet_cen(ii,:))
+          ! Guard against a degenerate (zero-extent) box 
+          IF (bounds(2*ii) - bounds(2*(ii-1)+1) < 1.0d-9) THEN
+            bounds(2*(ii-1)+1) = bounds(2*(ii-1)+1) - 1.0d-6
+            bounds(2*ii)       = bounds(2*ii)       + 1.0d-6
+          END IF
         END DO
 
         ! Create root
@@ -2239,7 +2345,7 @@
       IMPLICIT NONE
 
       LOGICAL, INTENT(in) :: linitM !! True to initialize M from Happ
-      INTEGER :: ileaf_loc, ntile, itile, leaf(max_leaf_size_seen)
+      INTEGER :: ileaf_loc, itile_loc, itile_leaf
 
       DOUBLE PRECISION :: pos(3), Bx, By, Bz
 
@@ -2251,17 +2357,17 @@
       Happ_loc(:,:,:) = 0.0d0
 
       DO ileaf_loc = 1, nleaf_loc ! Loop over leaves
-        ntile = leaf_size_loc(ileaf_loc)
-        leaf = leaf_tile_loc(:,ileaf_loc)
-        DO itile = 1, ntile ! Loop over tiles
-          pos = tet_cen(:,leaf(itile))
+        DO itile_leaf = 1, leaf_size_loc(ileaf_loc) ! Loop over tiles
+          itile_loc = leaf_offset_loc(ileaf_loc) + itile_leaf
+          pos = tet_cen(:,leaf_tile_loc(itile_leaf,ileaf_loc))
           CALL ext_Bfld(pos(1), pos(2), pos(3), Bx, By, Bz)
-          Happ_loc(:,itile,ileaf_loc) = invmu0*(/Bx, By, Bz/)
+          Happ_loc(:,itile_leaf,ileaf_loc) = invmu0*(/Bx, By, Bz/)
           ! Initialize M if necessary
           IF (linitM) THEN
-            tile = leaf(itile)
+            tile = leaf_tile_loc(itile_leaf,ileaf_loc)
             sdex = state_dex(tile)
-            CALL mumaterial_get_M(sdex, Happ_loc(:,itile,ileaf_loc), M(:,tile), chi)
+            CALL mumaterial_get_M(sdex, tile, Happ_loc(:,itile_leaf,ileaf_loc), M(:,tile), chi, &
+                                  tbl=JA_tables_loc(itile_loc))
           END IF
         END DO
       END DO
@@ -2273,6 +2379,198 @@
       END SUBROUTINE mumaterial_init_Happ
 !------------------------------------------------------------------------------
 !------------------------------------------------------------------------------
+      SUBROUTINE mumaterial_init_ja()
+      IMPLICIT NONE
+      INTEGER :: ileaf_loc, itile_leaf, itile_loc, tile, sdex
+
+      IF (ALLOCATED(JA_tables_loc)) DEALLOCATE(JA_tables_loc)
+      ALLOCATE(JA_tables_loc(ntile_loc))
+
+      DO ileaf_loc = 1, nleaf_loc
+        DO itile_leaf = 1, leaf_size_loc(ileaf_loc)
+          itile_loc = leaf_offset_loc(ileaf_loc) + itile_leaf
+          tile = leaf_tile_loc(itile_leaf, ileaf_loc)
+          sdex = state_dex(tile)
+          IF (state_type(sdex) == STATE_JA) THEN
+            CALL ja_build_table(H_anchor_JA(tile), M_anchor_JA(tile), Mirr_anchor_JA(tile), &
+                                  JA_params(sdex), JA_tables_loc(itile_loc))
+          END IF
+        END DO
+      END DO
+
+      CONTAINS 
+
+      SUBROUTINE ja_build_table(H_anchor, M_anchor, Mirr_anchor, p, tbl)
+      IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(in) :: H_anchor, M_anchor, Mirr_anchor
+      TYPE(jaType), INTENT(in) :: p
+      TYPE(ja_table_type), INTENT(out) :: tbl
+      DOUBLE PRECISION, PARAMETER :: RATIO = 1.25d0
+      DOUBLE PRECISION, PARAMETER :: N_SAT = 1000.0d0   ! ~99.9% Ms via anhysteretic asymptote coth(x)-1/x -> 1-1/x
+      DOUBLE PRECISION :: M_cur, Mirr_cur, dummy, h0, step, R_needed
+      INTEGER :: i
+
+      R_needed = N_SAT * p%a
+
+      h0 = R_needed*(RATIO-1.0d0)/(RATIO**(NTAB_JA-1)-1.0d0)
+
+      ! UP: H_anchor -> growing geometrically outward
+      tbl%H_up(1) = H_anchor
+      step = h0
+      DO i = 2, NTAB_JA
+        tbl%H_up(i) = tbl%H_up(i-1) + step
+        step = step * RATIO
+      END DO
+      M_cur = M_anchor; Mirr_cur = Mirr_anchor
+      tbl%M_up(1) = M_anchor; tbl%Mirr_up(1) = Mirr_anchor
+      DO i = 2, NTAB_JA
+        CALL ja_integrate(tbl%H_up(i-1), tbl%H_up(i), M_cur, Mirr_cur, p, &
+                            tbl%M_up(i), tbl%Mirr_up(i), dummy)
+        M_cur = tbl%M_up(i); Mirr_cur = tbl%Mirr_up(i)
+      END DO
+      CALL get_spline_slopes(tbl%H_up, tbl%M_up,    tbl%Mb_up)
+      CALL get_spline_slopes(tbl%H_up, tbl%Mirr_up, tbl%Mirrb_up)
+
+      ! DOWN: same grading, mirrored
+      BLOCK
+        DOUBLE PRECISION :: Ht(NTAB_JA), Mt(NTAB_JA), Mit(NTAB_JA)
+        Ht(1) = H_anchor
+        step = h0
+        DO i = 2, NTAB_JA
+          Ht(i) = Ht(i-1) - step
+          step = step * RATIO
+        END DO
+        M_cur = M_anchor; Mirr_cur = Mirr_anchor
+        Mt(1) = M_anchor; Mit(1) = Mirr_anchor
+        DO i = 2, NTAB_JA
+          CALL ja_integrate(Ht(i-1), Ht(i), M_cur, Mirr_cur, p, Mt(i), Mit(i), dummy)
+          M_cur = Mt(i); Mirr_cur = Mit(i)
+        END DO
+        tbl%H_dn    = Ht(NTAB_JA:1:-1)
+        tbl%M_dn    = Mt(NTAB_JA:1:-1)
+        tbl%Mirr_dn = Mit(NTAB_JA:1:-1)
+      END BLOCK
+      CALL get_spline_slopes(tbl%H_dn, tbl%M_dn,    tbl%Mb_dn)
+      CALL get_spline_slopes(tbl%H_dn, tbl%Mirr_dn, tbl%Mirrb_dn)
+
+      END SUBROUTINE ja_build_table
+      PURE SUBROUTINE ja_integrate(H0, H1, M0, Mirr0, p, M1, Mirr1, dMdH1)
+!!-------------------------------------------------------------------
+!! Fixed-step RK4 integration of the scalar Jiles-Atherton ODE from
+!! (H0, M0, Mirr0) to H1. Returns the endpoint state and the exact
+!! tangent dM/dH at H1
+!!-------------------------------------------------------------------
+      IMPLICIT NONE
+      DOUBLE PRECISION,   INTENT(in)  :: H0, H1, M0, Mirr0
+      TYPE(jaType),  INTENT(in)  :: p
+      DOUBLE PRECISION,   INTENT(out) :: M1, Mirr1, dMdH1
+
+      DOUBLE PRECISION :: dH, h, delta, dummy
+      DOUBLE PRECISION :: y(2), k1(2), k2(2), k3(2), k4(2)
+      DOUBLE PRECISION, PARAMETER :: H_STEP_TARGET = 100.0d0  ! A/m per substep
+      INTEGER,          PARAMETER :: NSUB_MAX = 500
+      INTEGER :: nsub, i
+
+      dH = H1 - H0
+
+      IF (ABS(dH) < 1.0d-12) THEN
+        M1 = M0; Mirr1 = Mirr0
+        CALL ja_rhs(H1, M0, Mirr0, 1.0d0, p, dMdH1, dummy)
+        RETURN
+      END IF
+
+      delta = SIGN(1.0d0, dH)
+      nsub  = MIN(NSUB_MAX, MAX(1, CEILING(ABS(dH) / H_STEP_TARGET)))
+      h     = dH / DBLE(nsub)
+
+      y = [M0, Mirr0]
+      DO i = 1, nsub
+        CALL ja_rhs(H0 + DBLE(i-1)*h,         y(1),           y(2),           delta, p, k1(1), k1(2))
+        CALL ja_rhs(H0 + (DBLE(i-1)+0.5d0)*h, y(1)+0.5d0*h*k1(1), y(2)+0.5d0*h*k1(2), delta, p, k2(1), k2(2))
+        CALL ja_rhs(H0 + (DBLE(i-1)+0.5d0)*h, y(1)+0.5d0*h*k2(1), y(2)+0.5d0*h*k2(2), delta, p, k3(1), k3(2))
+        CALL ja_rhs(H0 + DBLE(i)*h,           y(1)+h*k3(1),       y(2)+h*k3(2),       delta, p, k4(1), k4(2))
+        y = y + (h/6.0d0) * (k1 + 2.0d0*k2 + 2.0d0*k3 + k4)
+      END DO
+
+      M1    = y(1)
+      Mirr1 = y(2)
+
+      ! Exact tangent at the endpoint 
+      CALL ja_rhs(H1, M1, Mirr1, delta, p, dMdH1, dummy)
+
+      END SUBROUTINE ja_integrate
+
+      PURE SUBROUTINE ja_rhs(H_in, M_in, Mirr, delta, p, dMdH, dMirrdH)
+      IMPLICIT NONE
+      DOUBLE PRECISION,  INTENT(in)  :: H_in, M_in, Mirr, delta
+      TYPE(jaType), INTENT(in)  :: p
+      DOUBLE PRECISION,  INTENT(out) :: dMdH, dMirrdH
+
+      DOUBLE PRECISION :: He, Man, dMandHe, denom
+
+      He = H_in + p%alpha * M_in
+      CALL ja_anhysteretic(He, p%Ms, p%a, Man, dMandHe)
+
+      dMirrdH = (Man - Mirr) / (p%k * delta)
+      IF (dMirrdH < 0.0d0) dMirrdH = 0.0d0    
+
+      denom = 1.0d0 - p%c * p%alpha * dMandHe
+      dMdH  = ((1.0d0 - p%c) * dMirrdH + p%c * dMandHe) / denom
+
+      END SUBROUTINE ja_rhs
+
+      PURE SUBROUTINE ja_anhysteretic(He, Ms, a, Man, dMandHe)
+      IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(in)  :: He, Ms, a
+      DOUBLE PRECISION, INTENT(out) :: Man, dMandHe
+
+      DOUBLE PRECISION :: x, cothx
+
+      x = He / a
+      IF (ABS(x) < 1.0d-4) THEN
+        Man     = Ms * (x/3.0d0 - x**3/45.0d0 + 2.0d0*x**5/945.0d0)
+        dMandHe = (Ms/a) * (1.0d0/3.0d0 - x**2/15.0d0 + 2.0d0*x**4/189.0d0)
+      ELSE
+        cothx   = 1.0d0 / TANH(x)
+        Man     = Ms * (cothx - 1.0d0/x)
+        dMandHe = (Ms/a) * (1.0d0/x**2 - cothx**2 + 1.0d0)
+      END IF
+
+      END SUBROUTINE ja_anhysteretic
+        
+      END SUBROUTINE mumaterial_init_ja
+
+      SUBROUTINE mumaterial_reconcile_JA_axis()
+!!-----------------------------------------------------------------------------
+!! Compares J-A axis against the current scenario's applied field. For elements 
+!! with axis_set_JA TRUE, checks whether u_ref_JA lies ithin a cone of the new 
+!! field direction. If so, left untouched. Otherwise, re-derive from current 
+!! field and loc.
+!!-----------------------------------------------------------------------------
+      IMPLICIT NONE
+      INTEGER :: ileaf_loc, itile_leaf, tile
+      DOUBLE PRECISION :: Hn, cos_angle, u_new(3)
+      DOUBLE PRECISION, PARAMETER :: cos_release_threshold = 0.5d0 
+      DOUBLE PRECISION, PARAMETER :: Hn_min = 1.0d0 
+      
+      DO ileaf_loc = 1, nleaf_loc
+        DO itile_leaf = 1, leaf_size_loc(ileaf_loc)
+          tile = leaf_tile_loc(itile_leaf, ileaf_loc)
+          IF (.NOT. axis_set_JA(tile)) CYCLE
+
+          Hn = NORM2(Happ_loc(:,itile_leaf,ileaf_loc))
+          IF (Hn < Hn_min) CYCLE
+
+          u_new = Happ_loc(:,itile_leaf,ileaf_loc) / Hn
+          cos_angle = DOT_PRODUCT(u_ref_JA(:,tile), u_new)
+
+          IF (ABS(cos_angle) < cos_release_threshold) THEN
+            u_ref_JA(:,tile) = u_new  
+          END IF
+        END DO
+      END DO
+
+      END SUBROUTINE mumaterial_reconcile_JA_axis
 
       SUBROUTINE mumaterial_iterate_M
 !!-----------------------------------------------------------------------------
@@ -2294,9 +2592,13 @@
       INTEGER :: csr_N
       INTEGER :: lev
       DOUBLE PRECISION :: t0, t1
+      INTEGER :: k
 
       INTEGER, PARAMETER :: nt = 5
       DOUBLE PRECISION :: t_max(nt), t_min(nt), t_avg(nt), tbuf(nt)
+
+      DOUBLE PRECISION :: H_scratch(3,ntile_loc), Mirr_scratch(ntile_loc)
+      INTEGER :: sdex
 
       LOGICAL :: ldone(ntile_loc), lalldone
 
@@ -2307,6 +2609,7 @@
       ! START OF CONVERGENCE LOOP
       !---------------------------
       DO iter = 1, maxiter
+
         rM_bad = 0.0d0; 
         Vconv = 0.0d0; Pconv = 0.0d0; Vres = 0.0d0
         tile_bad = 1
@@ -2347,8 +2650,11 @@
             ! Calculate self-field of each element
             itile_loc = leaf_offset_loc(ileaf_loc) + itile_leaf
             tile = leaf_temp(itile_leaf) ! global index
-            CALL mumaterial_solve_MH_NR(H_tiles(:,itile_leaf), Nself_loc(itile_loc,:,:), tile, M_targ, H_targ)
-
+            CALL mumaterial_solve_MH_NR(H_tiles(:,itile_leaf), Nself_loc(itile_loc,:,:), &
+                                        tile, M_targ, H_targ, Mirr_scratch(itile_loc), &
+                                        JA_tables_loc(itile_loc))
+            H_scratch(:,itile_loc) = H_targ
+            
             ! Update magnetization
             M_old = M(:,tile)
             res = M_targ - M_old
@@ -2410,9 +2716,9 @@
           CALL MPI_BCAST(info_bad, 4, MPI_DOUBLE_PRECISION, INT(pair_out(2)), comm_world, ierr_mpi)
           ! Convergence
           pair_in(1) = Vconv; pair_in(2) = Vres
-          CALL MPI_ALLREDUCE(MPI_IN_PLACE, pair_in, 1, MPI_DOUBLE_PRECISION, MPI_SUM, comm_world, ierr_mpi)
-#endif
+          CALL MPI_ALLREDUCE(MPI_IN_PLACE, pair_in, 2, MPI_DOUBLE_PRECISION, MPI_SUM, comm_world, ierr_mpi)   
         END IF
+#endif
         Pconv = pair_in(1)/tet_vol_tot*100.0d0
         rM_rel_avg = pair_in(2)/tet_vol_tot
         IF (lverb) THEN
@@ -2440,6 +2746,22 @@
         END IF
 
       END DO
+
+      ! Commit any hysteresis information
+      DO ileaf_loc = 1, nleaf_loc
+        ntiles_leaf = leaf_size_loc(ileaf_loc)
+        leaf_temp = leaf_tile_loc(:,ileaf_loc)
+        DO itile_leaf = 1, ntiles_leaf
+          tile      = leaf_temp(itile_leaf)
+          sdex = state_dex(tile)
+          IF (state_type(sdex) == STATE_JA) THEN
+            itile_loc = leaf_offset_loc(ileaf_loc) + itile_leaf
+            CALL mumaterial_commit_JA(tile, H_scratch(:,itile_loc), M(:,tile), Mirr_scratch(itile_loc))
+          END IF
+        END DO
+      END DO
+      CALL mumaterial_sync_JAstate()
+
 #if defined(MPI_OPT)
       IF (ldosync) THEN ! Final M & node sync after iterations finish
         CALL mumaterial_sync_M()
@@ -2472,11 +2794,10 @@
         WRITE(6,'(A,3F10.2)') '  Sync M:      ', t_min(4), t_avg(4), t_max(4)
         WRITE(6,'(A,3F10.2)') '  Sync nodes:  ', t_min(5), t_avg(5), t_max(5)
       END IF
-      
 
       END SUBROUTINE mumaterial_iterate_M
 
-      SUBROUTINE mumaterial_solve_MH_NR(H_app, N_self, i_tile, M_out, H_out)
+      SUBROUTINE mumaterial_solve_MH_NR(H_app, N_self, i_tile, M_out, H_out, Mirr_out, tbl)
 !!-------------------------------------------------------------------
 !! Uses a Newton-Rhapson approach to solve for the self-consistent M
 !! and H of a single element
@@ -2489,6 +2810,11 @@
       INTEGER,          INTENT(in)  :: i_tile !! Index of our tile
       DOUBLE PRECISION, INTENT(out) :: M_out(3) !! Self-consistent M
       DOUBLE PRECISION, INTENT(out) :: H_out(3) !! Self-consistent H
+      DOUBLE PRECISION, INTENT(out), OPTIONAL :: Mirr_out
+      TYPE(ja_table_type), INTENT(in), OPTIONAL :: tbl
+      DOUBLE PRECISION :: H_scalar_trial_dbg, Hlo_dbg, Hhi_dbg
+      LOGICAL :: clamped_dbg
+
       INTEGER :: iter
       
       INTEGER :: stype, sdex
@@ -2498,21 +2824,27 @@
       DOUBLE PRECISION :: c1, c2, c3
 
       DOUBLE PRECISION :: u_ea(3), u_oa_1(3), u_oa_2(3), chi_o, Mrem_norm
+      DOUBLE PRECISION :: u_JA(3)
 
       DOUBLE PRECISION, PARAMETER :: eps_NR = 1.0d-8
+      INTEGER, PARAMETER :: maxiter_NR = 10000
       INTEGER :: i1, i2
       DOUBLE PRECISION :: alpha
 
+      DOUBLE PRECISION :: F0
+      DOUBLE PRECISION :: H_trial(3), M_trial(3), H_self_trial(3), F_trial(3)
+      DOUBLE PRECISION :: chi_trial, Mirr_trial
+      DOUBLE PRECISION :: u_JA_trial(3)
       ! Initial guess of H
       H_out = H_app
         
       ! Material info
       sdex  = state_dex(i_tile)
       stype = state_type(sdex)
-      DO iter = 1, maxiter  
-        CALL mumaterial_get_M(sdex, H_out, M_out, chi)
-        Hnorm = NORM2(H_out)
-
+      DO iter = 1, maxiter_NR
+        CALL mumaterial_get_M(sdex, i_tile, H_out, M_out, chi, Mirr_out, u_JA, tbl)
+          Hnorm = NORM2(H_out)
+        ! Get dMdH
         SELECT CASE (stype)
           CASE (STATE_LINEAR)
             dMdH_mat = chi * I3
@@ -2561,6 +2893,31 @@
                               + chi_o  * u_oa_2(i1)*u_oa_2(i2)
               END DO
             END DO
+          CASE (STATE_JA)
+            IF (axis_set_JA(i_tile)) THEN
+              DO i1 = 1, 3
+                DO i2 = 1, 3
+                  dMdH_mat(i1,i2) = chi * u_JA(i1) * u_JA(i2)
+                END DO
+              END DO
+            ELSE
+              IF (Hnorm < 1.0d-12) THEN
+                dMdH_mat = 0.0d0
+              ELSE
+                Mnorm = NORM2(M_out)
+                c1 = chi - Mnorm/Hnorm
+                c2 = Mnorm/Hnorm
+                c3 = c1/Hnorm**2
+                DO i1 = 1, 3
+                  DO i2 = 1, 3
+                    dMdH_mat(i1,i2) = c3*H_out(i1)*H_out(i2)
+                  END DO
+                END DO
+                dMdH_mat(1,1) = dMdH_mat(1,1) + c2
+                dMdH_mat(2,2) = dMdH_mat(2,2) + c2
+                dMdH_mat(3,3) = dMdH_mat(3,3) + c2
+              END IF
+            END IF
         END SELECT
       
         ! Jacobian: JAC = I - N_self * dMdH_mat
@@ -2591,13 +2948,18 @@
         CALL SOLVE_3x3(JAC, -F, dH)
         
         alpha = 1.0d0
-        DO WHILE (DOT_PRODUCT(H_out + alpha*dH, H_out) < 0.0d0)
+        F0 = NORM2(F)
+        DO
+          H_trial = H_out + alpha*dH
+          CALL mumaterial_get_M(sdex, i_tile, H_trial, M_trial, chi_trial, Mirr_trial, u_JA_trial, tbl)
+          H_self_trial = MATMUL(N_self, M_trial)
+          F_trial = H_trial - H_app - H_self_trial
+          IF (NORM2(F_trial) < F0) EXIT     
           alpha = alpha * 0.5d0
-          IF (alpha < 1.0d-10) EXIT
+          IF (alpha < 1.0d-10) EXIT            
         END DO
         H_out = H_out + alpha * dH
       END DO
-
       CONTAINS
 
       PURE SUBROUTINE SOLVE_3x3(MAT, b, x)
@@ -2654,19 +3016,19 @@
 !------------------------------------------------------------------------------
 
 
-      PURE SUBROUTINE mumaterial_get_M(sdex, H, Mloc, chi)
-!!-----------------------------------------------------------------
-!! Get M as a function of the H-field and material type
-!!-----------------------------------------------------------------
-      INTEGER, INTENT(in) :: sdex !! State dex
-      DOUBLE PRECISION, INTENT(in) :: H(3) !! H-field
-      DOUBLE PRECISION, INTENT(out) :: Mloc(3) !! Output M
-      DOUBLE PRECISION, INTENT(out) :: chi !! Susceptibility
+      PURE SUBROUTINE mumaterial_get_M(sdex, i_tile, H, Mloc, chi, Mirr, u_JA, tbl)
+      INTEGER, INTENT(in) :: sdex
+      INTEGER, INTENT(in) :: i_tile
+      DOUBLE PRECISION, INTENT(in) :: H(3)
+      DOUBLE PRECISION, INTENT(out) :: Mloc(3)
+      DOUBLE PRECISION, INTENT(out) :: chi
+      DOUBLE PRECISION, INTENT(out), OPTIONAL :: Mirr
+      DOUBLE PRECISION, INTENT(out), OPTIONAL :: u_JA(3)
+      TYPE(ja_table_type), INTENT(in), OPTIONAL :: tbl
       INTEGER :: stype
       chi = 0.0d0
       stype = state_type(sdex)
 
-      ! Call relevant function
       SELECT CASE (stype)
         CASE (STATE_LINEAR)
           CALL get_M_linear(H,Mloc,chi)
@@ -2674,6 +3036,8 @@
           CALL get_M_soft(H,Mloc,chi)
         CASE (STATE_HARD)
           CALL get_M_hard(H,Mloc)
+        CASE (STATE_JA)
+          CALL get_M_JA(H, Mloc, chi, Mirr, u_JA)
       END SELECT
 
       CONTAINS
@@ -2698,11 +3062,11 @@
       Mrem_norm = NORM2(Mrem(:,sdex))
       u_ea = Mrem(:,sdex)/Mrem_norm ! Easy axis assumed parallel to remanent magnetization
       IF (u_ea(2)/=0 .OR. u_ea(3)/=0) THEN     
-         ! cross(u_ea ,[1, 0, 0]) and cross (u_ea, that vector)
+          ! cross(u_ea ,[1, 0, 0]) and cross (u_ea, that vector)
         u_oa_1 = [0.d0, u_ea(3), -u_ea(2)]
         u_oa_2 = [-u_ea(2)*u_ea(2) - u_ea(3)*u_ea(3), u_ea(1)*u_ea(2), u_ea(1)*u_ea(3)]
       ELSE                                     
-         ! Cross(u_ea,[0, 1, 0]) and cross (u_ea, that vector)
+          ! Cross(u_ea,[0, 1, 0]) and cross (u_ea, that vector)
         u_oa_1 = [-u_ea(3), 0.d0, u_ea(1)]
         u_oa_2 = [u_ea(1)*u_ea(2), -u_ea(1)*u_ea(1) - u_ea(3)*u_ea(3), u_ea(2)*u_ea(3)]
       END IF
@@ -2803,10 +3167,116 @@
 
       END SUBROUTINE getstate_scalar
 
+      PURE SUBROUTINE get_M_JA(H_in, M_out, chi_out, Mirr_out, u_out)
+      IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(in)  :: H_in(3)
+      DOUBLE PRECISION, INTENT(out) :: M_out(3), chi_out
+      DOUBLE PRECISION, INTENT(out), OPTIONAL :: Mirr_out
+      DOUBLE PRECISION, INTENT(out), OPTIONAL :: u_out(3)
+      DOUBLE PRECISION :: u(3), H_scalar_trial, M_scalar_trial, Mirr_scalar_trial, dummy
+
+      IF (axis_set_JA(i_tile)) THEN
+        u = u_ref_JA(:,i_tile)
+      ELSE
+        u = H_in / MAX(NORM2(H_in), 1.0d-30)
+      END IF
+      H_scalar_trial = DOT_PRODUCT(H_in, u)
+
+      IF (H_scalar_trial >= H_anchor_JA(i_tile)) THEN
+        CALL getstate_scalar(tbl%H_up, tbl%M_up,    tbl%Mb_up,    H_scalar_trial, M_scalar_trial,    chi_out)
+        CALL getstate_scalar(tbl%H_up, tbl%Mirr_up, tbl%Mirrb_up, H_scalar_trial, Mirr_scalar_trial, dummy)
+      ELSE
+        CALL getstate_scalar(tbl%H_dn, tbl%M_dn,    tbl%Mb_dn,    H_scalar_trial, M_scalar_trial,    chi_out)
+        CALL getstate_scalar(tbl%H_dn, tbl%Mirr_dn, tbl%Mirrb_dn, H_scalar_trial, Mirr_scalar_trial, dummy)
+      END IF
+
+      M_out = M_scalar_trial * u
+      IF (PRESENT(Mirr_out)) Mirr_out = Mirr_scalar_trial
+      IF (PRESENT(u_out))    u_out    = u
+      END SUBROUTINE get_M_JA
+
+
       END SUBROUTINE mumaterial_get_M
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
+      SUBROUTINE mumaterial_commit_JA(i_tile, H_out, M_out, Mirr_converged)
+      INTEGER, INTENT(in) :: i_tile
+      DOUBLE PRECISION, INTENT(in) :: H_out(3)
+      DOUBLE PRECISION, INTENT(in) :: M_out(3)
+      DOUBLE PRECISION, INTENT(in) :: Mirr_converged
+      
+      DOUBLE PRECISION :: Hn_now, u_now(3)
+      DOUBLE PRECISION, PARAMETER :: H_lock_thresh = 1.0d0  
+      
+      Hn_now = NORM2(H_out)
+      
+      IF (.NOT. axis_set_JA(i_tile)) THEN
+        IF (Hn_now > H_lock_thresh) THEN
+          u_ref_JA(:,i_tile) = H_out / Hn_now
+          axis_set_JA(i_tile) = .TRUE.
+        END IF
+      END IF
+      
+      IF (axis_set_JA(i_tile)) THEN
+        u_now = u_ref_JA(:,i_tile)
+      ELSE IF (Hn_now > 0.0d0) THEN
+        u_now = H_out / Hn_now        
+      ELSE
+        u_now = 0.0d0                  
+      END IF
+      
+      H_anchor_JA(i_tile)    = DOT_PRODUCT(H_out, u_now)
+      M_anchor_JA(i_tile)    = DOT_PRODUCT(M_out, u_now)
+      Mirr_anchor_JA(i_tile) = Mirr_converged
+      
+      RETURN
+      END SUBROUTINE
 
+      SUBROUTINE mumaterial_sync_JAstate()
+!!-----------------------------------------------------------------------------
+!! Reconciles the J-A anchor arrays across ranks after commit
+!!-----------------------------------------------------------------------------
+      USE mpi_inc
+      IMPLICIT NONE
+      LOGICAL, ALLOCATABLE :: touched_JA(:)
+      INTEGER :: ileaf_loc, itile_leaf, tile
+
+      ALLOCATE(touched_JA(ntet))
+      touched_JA = .FALSE.
+
+      DO ileaf_loc = 1, nleaf_loc
+        DO itile_leaf = 1, leaf_size_loc(ileaf_loc)
+          tile = leaf_tile_loc(itile_leaf, ileaf_loc)
+          touched_JA(tile) = .TRUE.
+        END DO
+      END DO
+
+      WHERE (.NOT. touched_JA)
+        H_anchor_JA    = 0.0d0
+        M_anchor_JA    = 0.0d0
+        Mirr_anchor_JA = 0.0d0
+        axis_set_JA    = .FALSE.
+      END WHERE
+      DO tile = 1, ntet
+        IF (.NOT. touched_JA(tile)) u_ref_JA(:,tile) = 0.0d0
+      END DO
+      DEALLOCATE(touched_JA)
+
+
+#if defined(MPI_OPT)
+      IF (lcomm) THEN
+        CALL MPI_ALLREDUCE(MPI_IN_PLACE, u_ref_JA,       3*ntet, MPI_DOUBLE_PRECISION, MPI_SUM, comm_world, ierr_mpi)
+        CALL MPI_ALLREDUCE(MPI_IN_PLACE, H_anchor_JA,    ntet,   MPI_DOUBLE_PRECISION, MPI_SUM, comm_world, ierr_mpi)
+        CALL MPI_ALLREDUCE(MPI_IN_PLACE, M_anchor_JA,    ntet,   MPI_DOUBLE_PRECISION, MPI_SUM, comm_world, ierr_mpi)
+        CALL MPI_ALLREDUCE(MPI_IN_PLACE, Mirr_anchor_JA, ntet,   MPI_DOUBLE_PRECISION, MPI_SUM, comm_world, ierr_mpi)
+        CALL MPI_ALLREDUCE(MPI_IN_PLACE, axis_set_JA,    ntet,   MPI_LOGICAL,          MPI_LOR, comm_world, ierr_mpi)
+      END IF
+#endif
+
+      END SUBROUTINE mumaterial_sync_JAstate
+
+
+      
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!                MPI SYNCHRONIZATION ROUTINES                  !!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3189,8 +3659,8 @@
 
       ! Get master offset & counts at every level
       ALLOCATE(sync_M_rcounts(master_size),&
-               sync_M_displs(master_size), &
-               sync_M_unpack_map(ntet))
+                sync_M_displs(master_size), &
+                sync_M_unpack_map(ntet))
       CALL MPI_BARRIER(comm_shar, ierr_mpi)  
 
       IF (shar_rank==0) THEN
@@ -3560,40 +4030,6 @@
 
 !--------------------------------------------------------------------
 !--------------------------------------------------------------------
-
-      SUBROUTINE mumaterial_magfile_read(filename)
-!!-----------------------------------------------------------------------
-!! Reads a magnetization file, containing 3 columns of M of each element
-!!-----------------------------------------------------------------------
-      USE mpi_inc
-      IMPLICIT NONE
-      CHARACTER(LEN=*), INTENT(in) :: filename
-      INTEGER :: i, istat, iunit
-
-      IF (lismaster) THEN
-
-        iunit = 327; istat = 0
-        CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
-        IF (istat/= 0) THEN
-          WRITE(6,'(/,A)') "  WARNING: Could not read magfile!"
-          WRITE(6,'(A,/)') "  WARNING: Defaulting to zero magnetization!"
-          RETURN
-        END IF
-        DO i = 1, ntet
-          READ(iunit, *) M(:,i)
-        END DO
-        CLOSE(iunit)
-      END IF
-
-#if defined(MPI_OPT)
-      IF ((lcomm).AND.(shar_rank.EQ.0)) THEN  ! Broadcast to masters
-        CALL MPI_Bcast(M,3*ntet,MPI_DOUBLE_PRECISION,0,comm_master,ierr_mpi)
-      END IF
-#endif
-      END SUBROUTINE
-!--------------------------------------------------------------------
-!-----------------------------------------------------------------------
-
       SUBROUTINE mumaterial_magfile_write(str)
 !!-----------------------------------------------------------------------
 !! Writes M to a .dat file, containing 3 columns of M of each element
@@ -3618,9 +4054,117 @@
       END IF
 
       END SUBROUTINE
-!--------------------------------------------------------------------
-!--------------------------------------------------------------------
 
+      SUBROUTINE mumaterial_magfile_read(filename)
+!!-----------------------------------------------------------------------
+!! Reads a magnetization file, containing 3 columns of M of each element
+!!-----------------------------------------------------------------------
+      USE mpi_inc
+      IMPLICIT NONE
+      CHARACTER(LEN=*), INTENT(in) :: filename
+      INTEGER :: i, istat, iunit
+      LOGICAL :: lfound
+
+      lfound = .TRUE.
+
+      IF (lismaster) THEN
+
+        iunit = 327; istat = 0
+        CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
+        IF (istat/= 0) THEN
+          WRITE(6,'(/,A)') "  WARNING: Could not read magfile!"
+          WRITE(6,'(A,/)') "  WARNING: Defaulting to zero magnetization!"
+          lfound = .FALSE.
+        ELSE
+          DO i = 1, ntet
+            READ(iunit, *) M(:,i)
+          END DO
+          CLOSE(iunit)
+        END IF
+      END IF
+
+#if defined(MPI_OPT)
+      IF (lcomm) CALL MPI_Bcast(lfound, 1, MPI_LOGICAL, 0, comm_world, ierr_mpi)
+      IF (.NOT. lfound) RETURN 
+
+      IF ((lcomm).AND.(shar_rank.EQ.0)) THEN  ! Broadcast to masters
+        CALL MPI_Bcast(M,3*ntet,MPI_DOUBLE_PRECISION,0,comm_master,ierr_mpi)
+      END IF
+#endif
+      END SUBROUTINE
+      SUBROUTINE mumaterial_state_write(str)
+!!-----------------------------------------------------------------------
+!! Writes full magnetics restart state 
+!!-----------------------------------------------------------------------
+      IMPLICIT NONE
+      CHARACTER(LEN=*), INTENT(in) :: str
+      CHARACTER(LEN=256) :: filename
+      INTEGER :: i, istat
+
+      IF (lismaster) THEN
+        filename = './mumat_state_'//TRIM(str)//'.dat'
+        WRITE(6,"(A)") "  MUMAT: Writing magnetics state to " // filename
+        OPEN(13, file=filename, iostat=istat)
+        IF (istat /= 0) THEN
+          WRITE(6,*) "ERROR: Could not open" // filename // "for writing."
+          RETURN
+        END IF
+        DO i = 1, ntet
+          WRITE(13, "(9E15.7,L2)") M(:,i), H_anchor_JA(i), M_anchor_JA(i), &
+                                    Mirr_anchor_JA(i), u_ref_JA(:,i), axis_set_JA(i)
+        END DO
+        CLOSE(13)
+      END IF
+
+      END SUBROUTINE mumaterial_state_write
+
+
+      SUBROUTINE mumaterial_state_read(filename)
+      USE mpi_inc
+      IMPLICIT NONE
+      CHARACTER(LEN=*), INTENT(in) :: filename
+      INTEGER :: i, istat, iunit
+      LOGICAL :: lfound
+
+      lfound = .TRUE.
+
+      IF (lismaster) THEN
+        iunit = 327; istat = 0
+        CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
+        IF (istat /= 0) THEN
+          WRITE(6,'(/,A)') "  WARNING: Could not read state file!"
+          WRITE(6,'(A,/)') "  WARNING: Defaulting to zero magnetization / demagnetized J-A state!"
+          lfound = .FALSE.
+        ELSE
+          DO i = 1, ntet
+            READ(iunit, *) M(:,i), H_anchor_JA(i), M_anchor_JA(i), &
+                            Mirr_anchor_JA(i), u_ref_JA(:,i), axis_set_JA(i)
+          END DO
+          CLOSE(iunit)
+        END IF
+      END IF
+
+#if defined(MPI_OPT)
+      IF (lcomm) CALL MPI_Bcast(lfound, 1, MPI_LOGICAL, 0, comm_world, ierr_mpi)
+      IF (.NOT. lfound) RETURN   
+
+      IF ((lcomm).AND.(shar_rank.EQ.0)) THEN
+        CALL MPI_Bcast(M,             3*ntet, MPI_DOUBLE_PRECISION,0,comm_master,ierr_mpi)
+        CALL MPI_Bcast(H_anchor_JA,   ntet,   MPI_DOUBLE_PRECISION,0,comm_master,ierr_mpi)
+        CALL MPI_Bcast(M_anchor_JA,   ntet,   MPI_DOUBLE_PRECISION,0,comm_master,ierr_mpi)
+        CALL MPI_Bcast(Mirr_anchor_JA,ntet,   MPI_DOUBLE_PRECISION,0,comm_master,ierr_mpi)
+        CALL MPI_Bcast(u_ref_JA,      3*ntet, MPI_DOUBLE_PRECISION,0,comm_master,ierr_mpi)
+        CALL MPI_Bcast(axis_set_JA,   ntet,   MPI_LOGICAL,         0,comm_master,ierr_mpi)
+      END IF
+      IF (lcomm) THEN
+        CALL MPI_Bcast(H_anchor_JA,   ntet,   MPI_DOUBLE_PRECISION,0,comm_shar,ierr_mpi)
+        CALL MPI_Bcast(M_anchor_JA,   ntet,   MPI_DOUBLE_PRECISION,0,comm_shar,ierr_mpi)
+        CALL MPI_Bcast(Mirr_anchor_JA,ntet,   MPI_DOUBLE_PRECISION,0,comm_shar,ierr_mpi)
+        CALL MPI_Bcast(u_ref_JA,      3*ntet, MPI_DOUBLE_PRECISION,0,comm_shar,ierr_mpi)
+        CALL MPI_Bcast(axis_set_JA,   ntet,   MPI_LOGICAL,         0,comm_shar,ierr_mpi)
+      END IF
+#endif
+      END SUBROUTINE mumaterial_state_read
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!! OUTPUT SUBROUTINES
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3726,9 +4270,9 @@
       ! 3. EVALUATE FIELD FOR LOCAL POINTS ONLY
       !-----------------------------
       ALLOCATE(B_tmp(3, npoints_loc), &
-               pts_loc(npoints_loc))
+                pts_loc(npoints_loc))
       ALLOCATE(r_box(3, max_pts_per_box), &
-               H_box(3, max_pts_per_box))
+                H_box(3, max_pts_per_box))
       B_tmp = 0.0d0
       pts_loc = 0
 
@@ -3909,7 +4453,7 @@
       INTEGER :: ix, iy, iz, i,j
       INTEGER :: neval_interactions
       INTEGER :: mystart, myend, nboxes_occ
- 
+  
       INTEGER, ALLOCATABLE :: box_order(:), box_to_rank(:), local_boxes(:)
       DOUBLE PRECISION, ALLOCATABLE :: rank_work(:)
       INTEGER :: itmp
@@ -4025,9 +4569,9 @@
       
 #if defined(MPI_OPT)
       IF (lcomm) CALL MPI_ALLREDUCE(MPI_IN_PLACE, box_work, nboxes, &
-                                     MPI_DOUBLE_PRECISION, MPI_SUM, comm_world, ierr_mpi)
+                                      MPI_DOUBLE_PRECISION, MPI_SUM, comm_world, ierr_mpi)
       IF (lcomm) CALL MPI_ALLREDUCE(MPI_IN_PLACE, box_nint, nboxes, &
-                                     MPI_INTEGER, MPI_SUM, comm_world, ierr_mpi)
+                                      MPI_INTEGER, MPI_SUM, comm_world, ierr_mpi)
 #endif
 
       t0 = MPI_WTIME()
@@ -4121,7 +4665,7 @@
 
       neval_interactions = interact_ptr(neval_boxes_loc+1) - 1
       ALLOCATE(interact_list(neval_interactions), &
-               interact_type(neval_interactions))
+                interact_type(neval_interactions))
 
       ALLOCATE(cursor(neval_boxes_loc))
       cursor = interact_ptr(1:neval_boxes_loc)
@@ -4429,15 +4973,16 @@
       DOUBLE PRECISION, INTENT(inout) :: H(3,npts)
     
       INTEGER :: i, itile, tile
-      DOUBLE PRECISION :: Mtile(3), N(3,3)
+      DOUBLE PRECISION :: Mtile(3), N(3,3), isqrt1_src(2,4)
     
       IF (node_child(1,inode)/=NODE_NOCHILD) RETURN
     
       DO itile = 1, leaf_size(inode)
         tile  = leaf_tile(itile, inode)
         Mtile = M(:, tile)
+        isqrt1_src = mumaterial_get_isqrt1(tet_v(:,:,:,tile))
         DO i = 1, npts
-          N = mumaterial_get_N(tet_P(:,:,:,tile), tet_D(:,:,tile), tet_v(:,:,:,tile), r(:,i))
+          N = mumaterial_get_N(tet_P(:,:,:,tile), tet_D(:,:,tile), tet_v(:,:,:,tile), r(:,i), isqrt1_src)
           H(1,i) = H(1,i) + N(1,1)*Mtile(1) + N(1,2)*Mtile(2) + N(1,3)*Mtile(3)
           H(2,i) = H(2,i) + N(2,1)*Mtile(1) + N(2,2)*Mtile(2) + N(2,3)*Mtile(3)
           H(3,i) = H(3,i) + N(3,1)*Mtile(1) + N(3,2)*Mtile(2) + N(3,3)*Mtile(3)
