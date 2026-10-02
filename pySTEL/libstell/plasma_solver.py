@@ -130,7 +130,9 @@ class PLASMA_SOLVER:
         from pathlib import Path
         
         # Check if extension of restart_filepath is .joblib; if not, add
-        restart_filepath = str(Path(restart_filepath).with_suffix(".joblib"))
+        restart_filepath = str(restart_filepath)
+        if not restart_filepath.endswith(".joblib"):
+            restart_filepath += ".joblib"
         
         restart_solver = joblib.load(restart_filepath)
         
@@ -2254,7 +2256,9 @@ class PLASMA_SOLVER:
         import joblib
         
         # check if extension of output_filename is .joblib; if not, add
-        output_filename = str(Path(output_filename).with_suffix(".joblib"))
+        output_filename = str(output_filename)
+        if not output_filename.endswith(".joblib"):
+            output_filename += ".joblib"
         
         # save the class (cannot save solver directly cause it contains lambda functions...)
         saved_class = SimpleNamespace()
