@@ -53,8 +53,8 @@
 ! values for i=0, -1 and iv, iv+1 by quadratic extrapolation:
       cl = (m(2)-m(1))/(xloc(3)-xloc(1))
       bl = m(1) - cl*(xloc(2)-xloc(1))
-      cr = (m(iv-2)-m(iv-1))/(xloc(iv)-xloc(iv-2))
-      br = m(iv-2) - cr*(xloc(iv-1)-xloc(iv-2))
+      cr = (m(iv-1)-m(iv-2))/(xloc(iv)-xloc(iv-2))
+      br = m(iv-1) - cr*(xloc(iv-1)-xloc(iv))
       yloc( 0)=yloc(1)+bl*(xloc( 0)-xloc(1))+
      >               cl*(xloc( 0)-xloc(1))**2
       yloc(-1)=yloc(1)+bl*(xloc(-1)-xloc(1))+
