@@ -53,6 +53,23 @@
 !            follow_tol     Tollerance for fieldline following (LSODE and NAG)
 !            vc_adapt_tol   Tollerance for adaptive integration using Virtual casing
 !                           (note set to negative value to use non-adaptive integration)
+!            int_type       Field line integration method
+!                           'NAG','LSODE','RKH68'
+!            rho_fullorbit  Follow markers with rho below this in full orbit
+!            nsub_fullorbit Full orbit integration substeps per gyroperiod.
+!                           Sets dt = 2*pi*m/(q*|B|*nsub_fullorbit) and so
+!                           fixes the accuracy of INT_TYPE='RKH68', which
+!                           takes a fixed step.  LSODE adapts within dt and
+!                           is governed by follow_tol instead.
+!            plasma_mass    Mean plasma mass in [kg]
+!            rng_seed       Seed for the random number generator.  Any
+!                           value >= 0 makes every run which draws
+!                           random numbers (beam deposition, fusion
+!                           birth, collisions) reproducible for a fixed
+!                           number of MPI ranks.  Negative (default)
+!                           draws a fresh seed from the OS each run.
+!            Zeff           <Z> = sum(n_k*Z_k^2)/sum(n_k*Z_k)
+!            plasma_Zmean   [Z] = sum(n_k*Z_k^2*(plasma_mass/m_k))/sum(n_k*Z_k)
 !            cyl2flx_ftol       Convergence tol on the RELATIVE residual of the
 !                               (R,Z)->(s,u) inverse map; achieved match ~ sqrt(ftol).
 !            cyl2flx_damp_floor Minimum Newton-step damping factor in newt2d
@@ -74,23 +91,6 @@
 !                               in resolved cells on AUG/NCSX/W7X. Set
 !                               .FALSE. if the non-convergence warning
 !                               fires on a mode-starved equilibrium.
-!            int_type       Field line integration method
-!                           'NAG','LSODE','RKH68'
-!            rho_fullorbit  Follow markers with rho below this in full orbit
-!            nsub_fullorbit Full orbit integration substeps per gyroperiod.
-!                           Sets dt = 2*pi*m/(q*|B|*nsub_fullorbit) and so
-!                           fixes the accuracy of INT_TYPE='RKH68', which
-!                           takes a fixed step.  LSODE adapts within dt and
-!                           is governed by follow_tol instead.
-!            plasma_mass    Mean plasma mass in [kg]
-!            rng_seed       Seed for the random number generator.  Any
-!                           value >= 0 makes every run which draws
-!                           random numbers (beam deposition, fusion
-!                           birth, collisions) reproducible for a fixed
-!                           number of MPI ranks.  Negative (default)
-!                           draws a fresh seed from the OS each run.
-!            Zeff           <Z> = sum(n_k*Z_k^2)/sum(n_k*Z_k)
-!            plasma_Zmean   [Z] = sum(n_k*Z_k^2*(plasma_mass/m_k))/sum(n_k*Z_k)
 !
 !            NOTE:  Some grid parameters may be overriden (such as
 !                   phimin and phimax) to properly represent a given
@@ -215,12 +215,6 @@
       npoinc = 1
       follow_tol   = 1.0D-9
       vc_adapt_tol = 1.0D-5
-      cyl2flx_ftol       = 1.0D-16
-      cyl2flx_damp_floor = 0.1D0
-      cyl2flx_niter      = 50
-      cyl2flx_nrestart   = 4
-      cyl2flx_lbndry     = .TRUE.
-      cyl2flx_lbail_outside = .TRUE.
       int_type = "LSODE"
       ldebug = .false.
       ne_scale = 1.0
@@ -233,6 +227,14 @@
       therm_factor = 1.5 ! Factor at which to thermalize particles
       lendt_m = 0.05 ! Max distance a particle travels
       te_col_min = 10 ! Min electron temperature to consider in collisions
+
+      ! VMEC Grid Lookup Parameters
+      cyl2flx_ftol       = 1.0D-16
+      cyl2flx_damp_floor = 0.1D0
+      cyl2flx_niter      = 50
+      cyl2flx_nrestart   = 4
+      cyl2flx_lbndry     = .TRUE.
+      cyl2flx_lbail_outside = .TRUE.
 
       ! Kick model defaults
       B_kick_min = -1.0 ! T
@@ -532,6 +534,7 @@
       WRITE(iunit_out,outflt) 'PHIMIN',phimin
       WRITE(iunit_out,outflt) 'PHIMAX',phimax
       WRITE(iunit_out,outflt) 'VC_ADAPT_TOL',vc_adapt_tol
+      WRITE(iunit_out,'(A)') '!---------- VMEC Field Lookup Parameters ------------'
       WRITE(iunit_out,outflt) 'CYL2FLX_FTOL',cyl2flx_ftol
       WRITE(iunit_out,outflt) 'CYL2FLX_DAMP_FLOOR',cyl2flx_damp_floor
       WRITE(iunit_out,outint) 'CYL2FLX_NITER',cyl2flx_niter
