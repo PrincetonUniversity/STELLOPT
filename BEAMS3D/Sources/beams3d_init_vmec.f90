@@ -42,7 +42,11 @@
       INTEGER :: MPI_COMM_LOCAL
       LOGICAL :: lnyquist, luse_vc, lcreate_wall, lverb_wall
       INTEGER :: ier, s, i, j, k, nu, nv, mystart, myend, mnmax_temp, u, v
-      INTEGER :: nfailed, ifailed
+      INTEGER :: nfailed, ifailed, nunconv
+      ! Failures beyond this solved s are exterior points with no solution
+      ! and are not reported; matches cyl2flx_log_smax so the warning and
+      ! the -DDEBUG_CYL2FLX log describe the same set of points.
+      REAL(rprec), PARAMETER :: s_unconv_max = 1.5_rprec
       INTEGER :: bcs1_s(2)
       INTEGER, ALLOCATABLE :: xn_temp(:), xm_temp(:), failed_index(:)
       LOGICAL, ALLOCATABLE :: retry_success(:)
@@ -65,6 +69,7 @@
 
       ! Divide up Work
       mylocalid = myworkid
+      cyl2flx_rank = myworkid   ! per-rank id for -DDEBUG_CYL2FLX logging
       numprocs_local = 1
       MPI_COMM_LOCAL = 0
 #if defined(MPI_OPT)
@@ -355,8 +360,20 @@
                B_PHI(i,j,k) = bphi
                B_Z(i,j,k)   = bz
             END IF
-         ELSE IF (ier == -1) THEN
-            S_ARR(i,j,k) = -1
+         ELSE
+            ! Flag non-convergence, but keep the solved s in the marker so
+            ! the warning below can tell a near-plasma failure (worth
+            ! acting on) from an exterior point that simply has no
+            ! solution.  Every existing test on S_ARR only looks at the
+            ! sign or at >=0, so encoding s here is transparent to them.
+            ! Only ier=-1 is flagged: -3 means no solution exists there,
+            ! which is the correct answer for an exterior point, and those
+            ! cells keep their 4.0 initialisation.
+            IF (ier == -1) S_ARR(i,j,k) = -1.0 - MAX(sflx,0.0)
+            ! Reset the seed on BOTH failure codes.  sflx/uflx are INOUT
+            ! and seed the next grid point, and on failure they hold
+            ! wherever the diverged Newton stopped - so without this the
+            ! worst seeds are the ones that propagate.
             sflx = 0.001
             uflx = 0.0
          END IF
@@ -458,7 +475,17 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! Set S==-1 values to default
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! S_ARR is only negative where GetBcyl returned ier=-1: the inverse
+      ! map converged, but not to cyl2flx_ftol.  Points genuinely outside
+      ! the plasma return -3 and keep the 4.0 initialisation, so this
+      ! count is real non-convergence rather than vacuum.
+      ! Only count failures at s < s_unconv_max.  Points further out are
+      ! outside the plasma, where Newton cannot converge because no
+      ! solution exists; flagging them is correct, not a problem, and
+      ! counting them would make this warning fire on every healthy run.
+      nunconv = 0
       IF (mylocalid == mylocalmaster) THEN
+         nunconv = COUNT(S_ARR < 0.0 .and. S_ARR > -(1.0+s_unconv_max))
          WHERE(S_ARR < 0.0) S_ARR=4.0
       END IF
 #if defined(MPI_OPT)
@@ -469,7 +496,19 @@
       ! flux labels, interior B, and wall coordinates remain unchanged.
       IF (lplasma_only) CALL beams3d_vmec_extend_exterior(&
          mystart,myend,MPI_COMM_LOCAL)
-      
+
+      IF (lverb .and. (nunconv > 0)) THEN
+         WRITE(6,*)
+         WRITE(6,'(5X,A,I0,A,F7.4,A)') 'WARNING: inverse map did not '// &
+            'converge near the plasma in ', nunconv, ' grid cells (', &
+            100.0*REAL(nunconv)/REAL(nr*nphi*nz), '% of grid)'
+         WRITE(6,'(5X,A)') '         these are flagged S=4 and treated '// &
+            'as outside the plasma;'
+         WRITE(6,'(5X,A)') '         see CYL2FLX_FTOL, CYL2FLX_NITER, '// &
+            'CYL2FLX_NRESTART, CYL2FLX_LBAIL_OUTSIDE'
+         CALL FLUSH(6)
+      END IF
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! Evaluate the profile quantities on the background grid
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

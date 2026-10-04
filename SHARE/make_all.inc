@@ -324,7 +324,17 @@ ifeq ($(MAKECMDGOALS),libstell.so)
   LIB_LINK = $(LIB_SHARE)
   COMPILE += -fPIC
   COMPILE_FREE += -fPIC
-  INC_PATH = 
+  INC_PATH =
+endif
+ifeq ($(MAKECMDGOALS),xpenta)
+  COMPILE += -fPIC
+  COMPILE_FREE += -fPIC
+endif
+ifeq ($(MAKECMDGOALS),libpenta.so)
+  LINK = $(LINK_C) -shared
+  COMPILE += -fPIC
+  COMPILE_FREE += -fPIC
+  INC_PATH =
 endif
 
 # Pass Git information to code

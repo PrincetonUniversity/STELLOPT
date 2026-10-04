@@ -11,9 +11,7 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE fieldlines_grid
-      USE fieldlines_runtime, ONLY: lmu, mu, ladvanced
-!      USE EZspline_obj
-!      USE EZspline
+      USE fieldlines_runtime, ONLY: lmu, mu
 !-----------------------------------------------------------------------
 !     Input Variables
 !          phi        phi angle

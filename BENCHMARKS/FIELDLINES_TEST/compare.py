@@ -37,6 +37,9 @@ if __name__=="__main__":
 
     # Extract values
     data={}
+    data['b_r'] = fieldlines.B_R[:,0,64].flatten().tolist()
+    data['b_phi'] = fieldlines.B_PHI[:,0,64].flatten().tolist()
+    data['b_z'] = fieldlines.B_Z[:,0,64].flatten().tolist()
     if run_name == 'NCSX_s1':
         data['iota0'] = fieldlines.iota0
         [_,iota,_] = fieldlines.calc_iota()
@@ -47,9 +50,17 @@ if __name__=="__main__":
         data['iota'] = iota.tolist()
     if run_name == 'NCSX_s1_coll':
         data['wall_strikes'] = fieldlines.wall_strikes.flatten().tolist()
-    data['b_r'] = fieldlines.B_R[:,0,64].flatten().tolist()
-    data['b_phi'] = fieldlines.B_PHI[:,0,64].flatten().tolist()
-    data['b_z'] = fieldlines.B_Z[:,0,64].flatten().tolist()
+    if run_name == 'NCSX_plasma':
+        # Different background grid
+        data['b_r'] = fieldlines.B_R[:,0,128].flatten().tolist()
+        data['b_phi'] = fieldlines.B_PHI[:,0,128].flatten().tolist()
+        data['b_z'] = fieldlines.B_Z[:,0,128].flatten().tolist()
+        data['b_r_0'] = fieldlines.B_R[:,61,128].flatten().tolist()
+        data['b_phi_0'] = fieldlines.B_PHI[:,61,128].flatten().tolist()
+        data['b_z_0'] = fieldlines.B_Z[:,61,128].flatten().tolist()
+        data['b_r_1'] = fieldlines.B_R[:,31,128].flatten().tolist()
+        data['b_phi_1'] = fieldlines.B_PHI[:,31,128].flatten().tolist()
+        data['b_z_1'] = fieldlines.B_Z[:,31,128].flatten().tolist()
 
     # Read or write to the database file.
     if args.lmake_db:

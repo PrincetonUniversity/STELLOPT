@@ -37,12 +37,15 @@ ifeq ($(wildcard $(MYHOME)),)
 	mkdir -p $(MYHOME)
 endif
 
-pystel: libstell$(SHARED_EXT)
+pystel: libstell$(SHARED_EXT) libpenta$(SHARED_EXT)
 	@echo 'Building pySTEL'
-	@cd pySTEL; pip install .
-	
+	@cd pySTEL; pip install -e .
+
 libstell$(SHARED_EXT):
 	@cd LIBSTELL; make shared_release
+
+libpenta$(SHARED_EXT):
+	@cd PENTA; make shared_release
 
 test_make:
 	@echo 'Directories and flags for build.'

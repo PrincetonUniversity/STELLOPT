@@ -954,6 +954,124 @@ class VMEC(FourierRep):
 		# Render if requested
 		if lrender: plt.render()
 
+	def boundary_spectrum(self, s_index=-1, floor_rel=1.0E-6,
+	                      warn_rel=1.0E-4, show=True):
+		"""Plot the boundary Fourier spectrum to judge mode sufficiency.
+
+		A VMEC boundary is well resolved when its R,Z Fourier amplitudes
+		decay smoothly to a small floor BEFORE the highest retained mode.
+		If the highest-m (or highest-n) amplitudes are still a sizeable
+		fraction of the peak, the boundary is truncated mid-decay, giving
+		Gibbs ripple at sharp tips/divertor legs. Re-running VMEC with
+		larger MPOL (and NTOR) is the cure at the source.
+
+		Parameters
+		----------
+		s_index : int
+			Radial surface to analyse (-1 = LCFS, the relevant one).
+		floor_rel : float
+			Reference "well-resolved" floor, relative to the peak.
+		warn_rel : float
+			Threshold above which the highest mode is flagged
+			under-resolved.
+		show : bool
+			Call plt.show() before returning.
+
+		Returns
+		-------
+		fig : matplotlib Figure
+		"""
+		import numpy as np
+		import matplotlib.pyplot as plt
+		nfp = max(int(self.nfp), 1)
+		m = np.asarray(self.xm).ravel().astype(float)
+		n = np.asarray(self.xn).ravel().astype(float) / nfp
+		# Total amplitude per (m,n): sqrt(cos^2+sin^2) so it is
+		# convention- and stellarator-symmetry-agnostic.
+		ramp = np.asarray(self.rmnc)[s_index, :].astype(float) ** 2
+		zamp = np.asarray(self.zmns)[s_index, :].astype(float) ** 2
+		if getattr(self, 'iasym', 0) == 1:
+			ramp = ramp + np.asarray(self.rmns)[s_index, :].astype(float) ** 2
+			zamp = zamp + np.asarray(self.zmnc)[s_index, :].astype(float) ** 2
+		ramp = np.sqrt(ramp); zamp = np.sqrt(zamp)
+		rpk = ramp.max() if ramp.max() > 0 else 1.0
+		zpk = zamp.max() if zamp.max() > 0 else 1.0
+		rrel = ramp / rpk; zrel = zamp / zpk
+
+		def _envelope(x, y):
+			# max |coeff| at each distinct mode value, clean envelope
+			xs = np.unique(x)
+			return xs, np.array([y[x == xv].max() for xv in xs])
+
+		mmax = m.max(); nmax = np.abs(n).max()
+
+		fig, ax = plt.subplots(1, 2, figsize=(13, 5))
+		fig.suptitle('VMEC boundary spectrum (s_index=%d)  mpol-1=%d '
+		             'ntor=%d' % (s_index, int(mmax), int(nmax)))
+		for a, xv, lab in ((ax[0], m, 'poloidal m'),
+		                   (ax[1], n, 'toroidal n')):
+			mx, ry = _envelope(xv, rrel)
+			_, zy = _envelope(xv, zrel)
+			a.semilogy(mx, np.maximum(ry, 1e-20), 'o-', ms=4,
+			           color='tab:blue', label='|Rmn|/peak')
+			a.semilogy(mx, np.maximum(zy, 1e-20), 's-', ms=4,
+			           color='tab:red', label='|Zmn|/peak')
+			a.axhline(floor_rel, color='g', ls='--',
+			          label='floor %.0e' % floor_rel)
+			a.axhline(warn_rel, color='orange', ls=':',
+			          label='warn %.0e' % warn_rel)
+			a.set_xlabel(lab); a.set_ylabel('relative amplitude')
+			a.set_ylim(1e-12, 2.0); a.legend(fontsize=8)
+			a.set_title(lab.split()[0])
+
+		# Judge sufficiency on the highest SIGNIFICANT mode, not the
+		# highest stored one.  VMEC zero-pads (m,n) above those actually
+		# present in the prescribed boundary; reading "decayed" off that
+		# padding is misleading.  A hard cliff from a sizeable amplitude
+		# straight to zero means the BOUNDARY INPUT (RBC/ZBS) was
+		# truncated before the spectrum finished decaying.
+		amp = np.maximum(rrel, zrel)
+		sig = amp > floor_rel
+		m_top = int(m.max()); n_top = int(np.abs(n).max())
+		m_eff = int(m[sig].max()) if np.any(sig) else 0
+		n_eff = int(np.abs(n)[sig].max()) if np.any(sig) else 0
+		amp_m = amp[m == m_eff].max()
+		amp_n = amp[np.abs(n) == n_eff].max()
+		padded_m = m_eff < m_top
+		padded_n = n_eff < n_top
+		print('')
+		print('=========== VMEC boundary spectrum sufficiency ==========')
+		print(' stored modes      : m<=%d, |n|<=%d' % (m_top, n_top))
+		print(' last significant  : m=%d (amp=%.2e), |n|=%d (amp=%.2e)'
+		      % (m_eff, amp_m, n_eff, amp_n))
+		under_m = amp_m > warn_rel
+		under_n = amp_n > warn_rel
+		if not under_m and not under_n:
+			print(' VERDICT: spectrum decays below %.0e by its highest '
+			      'significant mode -> mpol/ntor look sufficient.'
+			      % warn_rel)
+		else:
+			if under_m and padded_m:
+				print(' VERDICT: prescribed BOUNDARY truncated at m=%d while '
+				      'still at %.1e (> %.0e) -- harmonics stop before the '
+				      'spectrum decays. Under-resolved INPUT: supply higher-m '
+				      'RBC/ZBS and re-run.' % (m_eff, amp_m, warn_rel))
+			elif under_m:
+				print(' VERDICT: amplitude still %.1e at the top stored m=%d '
+				      '-> raise MPOL in VMEC.' % (amp_m, m_top))
+			if under_n and padded_n:
+				print(' VERDICT: prescribed BOUNDARY truncated at |n|=%d while '
+				      'still at %.1e (> %.0e). Under-resolved INPUT: supply '
+				      'higher-n RBC/ZBS and re-run.'
+				      % (n_eff, amp_n, warn_rel))
+			elif under_n:
+				print(' VERDICT: amplitude still %.1e at the top stored |n|=%d '
+				      '-> raise NTOR in VMEC.' % (amp_n, n_top))
+		print('=========================================================')
+		if show:
+			plt.show()
+		return fig
+
 	def wout_to_indata(self):
 		"""Converts an wout to indata
 

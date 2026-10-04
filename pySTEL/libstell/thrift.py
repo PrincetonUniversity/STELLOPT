@@ -1355,6 +1355,31 @@ class THRIFT():
             ax2.grid(True)
             
         plt.show()
+        
+    def create_plasma(self,t,list_of_species):
+        """ Returns a plasma class, with density and temperature profiles set from the thrift
+        class at time=t """
+        
+        thrift_num_species = self.THRIFT_TEMP.shape[2]
+        if(thrift_num_species != len(list_of_species)):
+            raise ValueError(f'Number of species in list_of_species ({len(list_of_species)}) does not agree with number of species in thrift output ({thrift_num_species})')
+        
+        if(list_of_species[0] != 'electrons'):
+            raise ValueError('First species in list_of_species must be electrons for consistency')
+        
+        from libstell.plasma import PLASMA
+        plasma = PLASMA(list_of_species=list_of_species)
+        
+        it_select = np.argmin(np.abs(t-self.THRIFT_T))
+        print(f'Returning plasma class with thrift profiles at t={self.THRIFT_T[it_select]}s')
+        
+        roa_thrift = np.sqrt(self.THRIFT_S)
+        
+        for ispec,spec in enumerate(list_of_species):
+            plasma.set_density(    spec, 'interp', rho_vals=roa_thrift, n_vals=self.THRIFT_DENS[it_select,:,ispec])
+            plasma.set_temperature(spec, 'interp', rho_vals=roa_thrift, T_vals=self.THRIFT_TEMP[it_select,:,ispec])        
+
+        return plasma
     
 # THRIFT Class
 class THRIFT_plasma_solver():

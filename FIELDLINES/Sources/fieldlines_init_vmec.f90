@@ -57,6 +57,7 @@
 
       ! Divide up Work
       mylocalid = myworkid
+      cyl2flx_rank = myworkid   ! per-rank id for -DDEBUG_CYL2FLX logging
       numprocs_local = 1
       MPI_COMM_LOCAL = 0
 #if defined(MPI_OPT)
