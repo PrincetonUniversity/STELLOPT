@@ -36,6 +36,7 @@
       INTEGER  ::  i, n, iunit_out, istat
       INTEGER  :: mystart,myend, chunk, numprocs_local
       REAL(8)  :: rho
+      REAL(8)  :: dPdV_beam, Pabs_beam, Jbb_beam, Jcdt_beam, Itotal_beam
       REAL(8)  :: maxlength,minStepSize,maxStepSize,odetolerance,umax
       REAL(8)  :: antennaPosition(3),targetPosition(3),rbeam(2),rfocus(2)
       REAL(8)  :: hgrid,dphi,B_scale,B0_ref,B_dir,phi_ref,phibx,timenow
@@ -213,15 +214,22 @@
                ! Run BEAM
                CALL run_ECRH_Beam_f77m(i,freq_ecrh(i)*1E-9,wmode_ecrh(i),power_beam(i)*1E-6)
 
+               ! Save this beam before set_Antenna_f77 discards it on the next iteration.
+               ! Accumulate all beams assigned to this rank before the MPI reduction.
+               DO n = 1, nrho
+                  rho = SQRT(THRIFT_S(n))
+                  CALL get_ECRH_deposition_f77(rho, dPdV_beam, Pabs_beam, Jbb_beam, Jcdt_beam, Itotal_beam)
+                  dPdV(n)   = dPdV(n)   + dPdV_beam
+                  Pabs(n)   = Pabs(n)   + Pabs_beam
+                  Jbb(n)    = Jbb(n)    + Jbb_beam
+                  Jcdt(n)   = Jcdt(n)   + Jcdt_beam
+                  Itotal(n) = Itotal(n) + Itotal_beam
+               END DO
+
             END DO
 
             ! Free the stuff we loaded.
             ! CALL Free_MagConfig_f77()
-
-            DO i = 1, nrho
-               rho = SQRT( THRIFT_S(i) )
-               CALL get_ECRH_deposition_f77(rho, dPdV(i),Pabs(i),jbb(i),jcdt(i),Itotal(i))
-            END DO
 
          END IF
 
