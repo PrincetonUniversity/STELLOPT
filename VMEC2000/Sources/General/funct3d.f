@@ -36,6 +36,7 @@ C-----------------------------------------------
       REAL(dp), EXTERNAL :: pmass
       INTEGER :: i, j, k, nsmin, nsmax, m
       REAL(dp), ALLOCATABLE, DIMENSION(:) :: bcastbuf
+      REAL(dp), ALLOCATABLE :: axis_r_save(:,:,:), axis_z_save(:,:,:)
       INTEGER, DIMENSION(4) :: bbuf
 C-----------------------------------------------
       CALL second0 (tfunon)
@@ -379,6 +380,14 @@ C-----------------------------------------------
 !
 
          IF (lasym) THEN
+!     Physical R/Z are reused as force scratch below. Preserve first-step
+!     geometry for the high-force axis search, without changing force arrays.
+            IF (lmove_axis .AND. iter2.EQ.1) THEN
+               ALLOCATE(axis_r_save(nznt,ns,0:1))
+               ALLOCATE(axis_z_save(nznt,ns,0:1))
+               axis_r_save = pr1
+               axis_z_save = pz1
+            END IF
             CALL symforce_par (parmn, pbrmn, pcrmn, pazmn, pbzmn,
      &                         pczmn, pblmn, pclmn, prcon, pzcon, pr1,
      &                         pru, prv, pz1, pzu, pzv, pextra3,
@@ -434,6 +443,10 @@ C-----------------------------------------------
      &    iter2                .eq  .1 .and.
      &    (fsqr + fsqz + fsql) .gt. 1.E2_dp) THEN
          irst = 4
+         IF (ALLOCATED(axis_r_save)) THEN
+            pr1 = axis_r_save
+            pz1 = axis_z_save
+         END IF
       END IF
 
       CALL second0 (tresoff)
