@@ -12,6 +12,7 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE fieldlines_globals
+      USE rng_seed_mod, ONLY: RNG_SEED_RANDOM
       USE safe_open_mod, ONLY: safe_open
       USE mpi_params
       USE mpi_inc
@@ -51,6 +52,11 @@
 !                           (note set to negative value to use non-adaptive integration)
 !            int_type       Field line integration method
 !                           'NAG','LSODE','RKH68'
+!            rng_seed       Seed for the random number generator.  Any
+!                           value >= 0 makes a diffusive (MU) run
+!                           reproducible for a fixed number of MPI
+!                           ranks.  Negative (default) draws a fresh
+!                           seed from the OS each run.
 !
 !            NOTE:  Some grid parameters may be overriden (such as
 !                   phimin and phimax) to properly represent a given
@@ -71,7 +77,7 @@
                                   mumaterial_convcheck, mumaterial_depth, &
                                   mumaterial_leaf, &
                                   mumaterial_theta_iter, mumaterial_theta_eval, &
-                                  mumaterial_scale
+                                  mumaterial_scale, rng_seed
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -107,6 +113,7 @@
       num_hcp   = 50
       delta_hc  = 5.0E-5
       npoinc = 1
+      rng_seed = RNG_SEED_RANDOM
       dphi   = 8.0 * ATAN(1.0)/360
       follow_tol   = 1.0E-7
       vc_adapt_tol = 1.0E-5
@@ -212,6 +219,7 @@
       WRITE(iunit_out,outflt) 'FOLLOW_TOL',follow_tol
       WRITE(iunit_out,outint) 'NPOINC',npoinc
       WRITE(iunit_out,outflt) 'MU',mu
+      WRITE(iunit_out,outint) 'RNG_SEED',rng_seed
       n = COUNT(r_start > 0)
       WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'R_START',(r_start(ik), ik=1,n)
       WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'Z_START',(z_start(ik), ik=1,n)
@@ -272,6 +280,7 @@
       CALL MPI_BCAST(nz,1,MPI_INTEGER, local_master, MPI_COMM_FIELDLINES,istat)
       CALL MPI_BCAST(nlines,1,MPI_INTEGER, local_master, MPI_COMM_FIELDLINES,istat)
       CALL MPI_BCAST(npoinc,1,MPI_INTEGER, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(rng_seed,1,MPI_INTEGER, local_master, MPI_COMM_FIELDLINES,istat)
       CALL MPI_BCAST(rmin,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
       CALL MPI_BCAST(rmax,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
       CALL MPI_BCAST(zmin,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)

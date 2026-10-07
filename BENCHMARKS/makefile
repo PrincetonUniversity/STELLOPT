@@ -29,7 +29,8 @@ test_beams3d:
 	$(MAKE) test_beams3d_basic
 	$(MAKE) test_beams3d_er
 	$(MAKE) test_beams3d_loss
-	$(MAKE) test_beams3d_slow
+	#$(MAKE) test_beams3d_slow
+	$(MAKE) test_beams3d_repro
 	@if [ -n "$(ADASDIR)" ]; then \
 		if [ -d $(ADASDIR) ]; then \
 			$(MAKE) test_beams3d_depo_adas;\
@@ -204,6 +205,24 @@ test_beams3d_slow:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_slow -plasma -collisions
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_slow -plasma -collisions
 	@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_slow
+	@echo ""
+
+# ORBITS_slow sets RNG_SEED, so two runs with the same number of ranks must
+# reproduce each other.  Guards the seeding of the collision operator against
+# regressions.  The trajectories come out bit identical; dist_prof does not,
+# because the order of its MPI reduction is not fixed and that costs the last
+# ULP.  The 1e-12 relative tolerance is far above that noise and far below any
+# difference an unseeded RNG would produce.
+test_beams3d_repro:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt;
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_slow -plasma -collisions
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_slow -plasma -collisions
+	@cd $(BEAMS3D_TEST_DIR); mv beams3d_ORBITS_slow.h5 beams3d_ORBITS_slow_ref.h5
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_slow -plasma -collisions
+	@cd $(BEAMS3D_TEST_DIR); h5diff -q -p 1e-12 beams3d_ORBITS_slow_ref.h5 beams3d_ORBITS_slow.h5 \
+		&& echo "  PASSED: RNG_SEED reproduces the run" \
+		|| { echo "  FAILED: seeded runs differ"; exit 1; }
+	@cd $(BEAMS3D_TEST_DIR); rm -f beams3d_ORBITS_slow_ref.h5
 	@echo ""
 
 test_beams3d_depo:

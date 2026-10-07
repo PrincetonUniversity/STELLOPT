@@ -21,8 +21,11 @@ MODULE random
 !
 !  Generate a random ordering of the integers 1 .. N
 !                                     random_order
-!     Initialize (seed) the uniform random number generator for ANY compiler
-!                                     seed_random_number
+
+!     NOTE: the original seed_random_number routine (see the version
+!           1.13 note below) has been removed.  It prompted for the
+!           seeds on standard input, which cannot work under MPI.  Seed
+!           the generator with init_rng_seed in rng_seed_mod instead.
 
 !     Lognormal - see note below.
 
@@ -1567,29 +1570,6 @@ END DO
 RETURN
 END SUBROUTINE random_order
 
-
-
-SUBROUTINE seed_random_number(iounit)
-
-INTEGER, INTENT(IN)  :: iounit
-
-! Local variables
-
-INTEGER              :: k
-INTEGER, ALLOCATABLE :: seed(:)
-
-CALL RANDOM_SEED(SIZE=k)
-ALLOCATE( seed(k) )
-
-WRITE(*, '(a, i2, a)')' Enter ', k, ' integers for random no. seeds: '
-READ(*, *) seed
-WRITE(iounit, '(a, (7i10))') ' Random no. seeds: ', seed
-CALL RANDOM_SEED(PUT=seed)
-
-DEALLOCATE( seed )
-
-RETURN
-END SUBROUTINE seed_random_number
 
 
 END MODULE random

@@ -19,7 +19,7 @@
       ! From fiellines_runtime
       INTEGER, PARAMETER ::  MAXLINES   = 2**19
       LOGICAL :: lerror_field, lmu
-      INTEGER :: npoinc, num_hcp
+      INTEGER :: npoinc, num_hcp, rng_seed
       REAL(rprec) :: dphi, follow_tol, delta_hc, mu
       REAL(rprec), DIMENSION(20)           :: errorfield_amp, errorfield_phase
       REAL(rprec), DIMENSION(MAXLINES)     :: r_start, phi_start, &

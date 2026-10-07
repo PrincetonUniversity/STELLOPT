@@ -48,6 +48,7 @@
       USE stel_kinds, ONLY: rprec
       USE EZspline
       USE fieldlines_globals, ONLY: MAXLINES, lerror_field, npoinc, &
+         rng_seed, &
          dphi, follow_tol, num_hcp, delta_hc, mu, errorfield_amp, &
          errorfield_phase, r_start, phi_start, z_start, phi_end, r_hc, &
          z_hc, phi_hc, int_type, lmu, &

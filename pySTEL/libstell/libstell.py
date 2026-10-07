@@ -478,7 +478,7 @@ class LIBSTELL():
 				return None
 		# Get vars
 		intList=['nr','nphi','nz','nparticles_start','npoinc', \
-				'duplicate_factor', 'ns_prof1','ns_prof2', \
+				'duplicate_factor', 'rng_seed', 'ns_prof1','ns_prof2', \
 				'ns_prof3','ns_prof4','ns_prof5', 'nr_fida', \
 				'nphi_fida', 'nz_fida', 'nenergy_fida', 'npitch_fida']
 		intLen=[1]*len(intList)
@@ -776,7 +776,7 @@ class LIBSTELL():
 		ierr = ct.c_int(0)
 		read_fieldlines_input(filename.encode('UTF-8'),ct.byref(ierr),len(filename))
 		# Get vars
-		intList=['nr','nphi','nz','npoinc','num_hcp']
+		intList=['nr','nphi','nz','npoinc','num_hcp','rng_seed']
 		intLen=[1]*len(intList)
 		realList=['rmin','rmax','zmin','zmax','phimin','phimax','vc_adapt_tol','follow_tol','mu','delta_hc']
 		realLen=[1]*len(realList)
