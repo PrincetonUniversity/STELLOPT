@@ -157,6 +157,55 @@ class COILSET():
 		# Render if requested
 		if lplotnow: plt.render()
 
+	def plotcoil(self,group,coildex,plot3D=None,color=None):
+		"""Plots a single coil in 3D using VTK
+
+		This routine plots a single coil in 3D using VTK
+
+		Parameters
+		----------
+		group : int
+			Group of coil
+		coildex : int
+			Index of coil in group
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		color : list (optional)
+			List of colors to plot coils.
+		"""
+		import numpy as np
+		import vtk
+		from libstell.plot3D import PLOT3D
+		# Handle optionals
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
+		else:
+			lplotnow = True
+			plt = PLOT3D()
+		# Setup color array
+		if color:
+			color_txt=color
+		else:
+			color_txt='red'
+		# Plot coils
+		i = group
+		j = coildex
+		points_array = np.zeros((self.groups[i].coils[j].npts,3))
+		points_array[:,0] =self.groups[i].coils[j].x
+		points_array[:,1] =self.groups[i].coils[j].y
+		points_array[:,2] =self.groups[i].coils[j].z
+		# Convert numpy array to VTK points
+		points = vtk.vtkPoints()
+		for point in points_array:
+			points.InsertNextPoint(point)
+		# Add to render
+		plt.add3Dline(points,color=color_txt,linewidth=5)
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Render if requested
+		if lplotnow: plt.render()
+
 	def plotcoilsHalfFP(self,plot3D=None,color=None):
 		"""Plots a half field period of a coilset in 3D using VTK
 
@@ -381,6 +430,114 @@ class COILSET():
 				self.groups[i].coils[j].x = x2
 				self.groups[i].coils[j].y = y2
 				self.groups[i].coils[j].z = z2
+
+	def calc_coilcoil_dist(self):
+		"""Computes the minimum points between coils
+
+		This routine computes the minimum distance between coils. It
+		returns this distance, the coil pair information, and the points 
+		which define the vector of closest approach. What is returned are
+		list of the distance between coil A and coil B and the indexes
+		into the group, coil, and segment defining each minimum distance.
+		Note that the first coil in each group is used as coil A always.
+
+		Returns
+		-------
+		dlmin : list
+			Minimum distances [m]
+		i1min : list
+			Group index of coil A
+		i2min : list
+			Group index of coil B
+		j1min : list
+			Coil index of coil A
+		j2min : list
+			Coil index of coil B
+		l1min : list
+			Point index of coil A
+		l2min : list
+			Point index of coil B
+
+		"""
+		import numpy as np
+		# Initalize
+		dlmin = []
+		i1min = []
+		i2min = []
+		j1min = []
+		j2min = []
+		l1min = []
+		l2min = []
+		pairs = []
+		# First find self minimum
+		for i in range(self.ngroups):
+			x0 = np.atleast_2d(self.groups[i].coils[0].x).T
+			y0 = np.atleast_2d(self.groups[i].coils[0].y).T
+			z0 = np.atleast_2d(self.groups[i].coils[0].z).T
+			dl_local = 1.0E30
+			for j in range(1,self.groups[i].ncoils):
+				x1 = np.atleast_2d(self.groups[i].coils[j].x)
+				y1 = np.atleast_2d(self.groups[i].coils[j].y)
+				z1 = np.atleast_2d(self.groups[i].coils[j].z)
+				dl2 = (x0-x1)*(x0-x1)+(y0-y1)*(y0-y1)+(z0-z1)*(z0-z1)
+				#### Need line like l1 = index(min(dl2,1))
+				l1=np.min(dl2,1).argmin()
+				#### Need line like l2 = index(min(dl2[1,:]))
+				l2=dl2[l1,:].argmin()
+				if dl2[l1,l2] < dl_local:
+					dl_local = dl2[l1,l2]
+					i1_local = i
+					i2_local = i
+					j1_local = 0
+					j2_local = j
+					l1_local = l1
+					l2_local = l2
+			if (dl_local < 1.0E30):
+				dlmin.append(dl_local)
+				i1min.append(i1_local)
+				i2min.append(i2_local)
+				j1min.append(j1_local)
+				j2min.append(j2_local)
+				l1min.append(l1_local)
+				l2min.append(l2_local)
+		# Now find minimum with others
+		for i in range(self.ngroups-1):
+			dl_local = 1.0E30
+			x0 = np.atleast_2d(self.groups[i].coils[0].x).T
+			y0 = np.atleast_2d(self.groups[i].coils[0].y).T
+			z0 = np.atleast_2d(self.groups[i].coils[0].z).T
+			for k in range(self.ngroups):
+				if (i == k): continue # Don't do self
+				for j in range(0,self.groups[k].ncoils):
+					if (k,j,i,0) in pairs: continue # recipricols
+					x1 = np.atleast_2d(self.groups[k].coils[j].x)
+					y1 = np.atleast_2d(self.groups[k].coils[j].y)
+					z1 = np.atleast_2d(self.groups[k].coils[j].z)
+					dl2 = (x0-x1)*(x0-x1)+(y0-y1)*(y0-y1)+(z0-z1)*(z0-z1)
+					#### Need line like l1 = index(min(dl2,1))
+					l1=np.min(dl2,1).argmin()
+					#### Need line like l2 = index(min(dl2[1,:]))
+					l2=dl2[l1,:].argmin()
+					if dl2[l1,l2] < dl_local:
+						dl_local = dl2[l1,l2]
+						i1_local = i
+						i2_local = k
+						j1_local = 0
+						j2_local = j
+						l1_local = l1
+						l2_local = l2
+			if (dl_local < 1.0E30):
+				dlmin.append(dl_local)
+				i1min.append(i1_local)
+				i2min.append(i2_local)
+				j1min.append(j1_local)
+				j2min.append(j2_local)
+				l1min.append(l1_local)
+				l2min.append(l2_local)
+				pairs.append((i1_local,j1_local,i2_local,j2_local))
+		# Now we need to sort out values
+
+		return dlmin,i1min,i2min,j1min,j2min,l1min,l2min
 
 	def write_coils_file(self,filename):
 		"""Writes a coils file

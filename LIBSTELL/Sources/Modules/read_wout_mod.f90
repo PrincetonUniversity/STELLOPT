@@ -1088,9 +1088,12 @@
 
       IF (mnmaxpot .gt. 0) THEN
          CALL cdf_inquire(nwout, vn_potsin, dimlens)
-         ALLOCATE (potsin(dimlens(1)), xmpot(dimlens(1)),               &
-                   xnpot(dimlens(1)), stat = ierror)
+         ALLOCATE (potsin(dimlens(1)), stat = ierror)
          IF (lasym) ALLOCATE (potcos(dimlens(1)), stat = ierror)
+         CALL cdf_inquire(nwout, vn_xmpot, dimlens)
+         ALLOCATE (xmpot(dimlens(1)), stat = ierror)
+         CALL cdf_inquire(nwout, vn_xnpot, dimlens)
+         ALLOCATE (xnpot(dimlens(1)), stat = ierror)
       END IF
 
       CALL cdf_inquire(nwout, vn_racc, dimlens)
@@ -2491,6 +2494,8 @@
  
       IF (ALLOCATED(potsin)) DEALLOCATE (potsin)
       IF (ALLOCATED(potcos)) DEALLOCATE (potcos)
+      IF (ALLOCATED(xmpot)) DEALLOCATE(xmpot)
+      IF (ALLOCATED(xnpot)) DEALLOCATE(xnpot)
 
       IF (ALLOCATED(chi)) DEALLOCATE (chi)
       IF (ALLOCATED(qfact)) DEALLOCATE (qfact)

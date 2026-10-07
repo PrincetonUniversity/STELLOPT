@@ -104,6 +104,8 @@ class BEAMS3D():
 		if hasattr(self,'vr_lines'):
 			self.vx_lines = self.vr_lines * np.cos(self.PHI_lines) - self.vphi_lines * np.sin(self.PHI_lines)
 			self.vy_lines = self.vr_lines * np.sin(self.PHI_lines) + self.vphi_lines * np.cos(self.PHI_lines)
+		# Fix S==Nan
+		self.S_ARR[np.isnan(self.S_ARR)] = np.nanmax(self.S_ARR)
 		return
 
 	def calcVperp(self):
@@ -744,6 +746,17 @@ class BEAMS3D_INPUT():
 		indata_dict = self.libStell.read_beams3d_input(filename)
 		for key in indata_dict:
 			setattr(self, key, indata_dict[key])
+		# Handle the distribution function names
+		self.nrho_dist = self.ns_prof1
+		self.ntheta_dist = self.ns_prof2
+		self.nphi_dist = self.ns_prof3
+		self.nvpara_dist = self.ns_prof4
+		self.nvperp_dist = self.ns_prof5
+		delattr(self,'ns_prof1')
+		delattr(self,'ns_prof2')
+		delattr(self,'ns_prof3')
+		delattr(self,'ns_prof4')
+		delattr(self,'ns_prof5')
 
 	def write_input(self,filename):
 		"""Writes BEASM3D_INPUT namelist to a file
@@ -754,6 +767,17 @@ class BEAMS3D_INPUT():
 		filename : string
 			Input file name to write BEASM3D_INPUT namelist to
 		"""
+		# First handle ns_prof stuff
+		self.ns_prof1 = self.nrho_dist
+		self.ns_prof2 = self.ntheta_dist
+		self.ns_prof3 = self.nphi_dist
+		self.ns_prof4 = self.nvpara_dist
+		self.ns_prof5 = self.nvperp_dist
+		delattr(self,'nrho_dist')
+		delattr(self,'ntheta_dist')
+		delattr(self,'nphi_dist')
+		delattr(self,'nvpara_dist')
+		delattr(self,'nvperp_dist')
 		out_dict = vars(self)
 		self.libStell.write_beams3d_input(filename,out_dict)
 
