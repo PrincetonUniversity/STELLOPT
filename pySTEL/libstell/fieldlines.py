@@ -120,9 +120,11 @@ class FIELDLINES():
 			Error in rotational transform
 		"""
 		import numpy as np
-		x = self.R_lines
-		y = self.Z_lines
-		for i in range(self.nsteps):
+		nmax = self.nsteps-self.npoinc-1
+		x = self.R_lines[:,:nmax+1]
+		y = self.Z_lines[:,:nmax+1]
+		p = self.PHI_lines[:,:nmax+1]
+		for i in range(nmax):
 			x[:,i] = x[:,i] - x[0,i]
 			y[:,i] = y[:,i] - y[0,i]
 		theta  = np.arctan2(y,x)
@@ -134,8 +136,8 @@ class FIELDLINES():
 		iota       = np.zeros((self.nlines))
 		iota_err   = np.zeros((self.nlines))
 		for i in range(self.nlines):
-			p, residuals, rank, singular_values, rcond = np.polyfit(self.PHI_lines[i,0:self.nsteps-1],theta[i,:],1,full=True)
-			iota[i] = p[0]
+			f, residuals, rank, singular_values, rcond = np.polyfit(p[i,:-1],theta[i,:],1,full=True)
+			iota[i] = f[0]
 			iota_err[i] = np.sqrt(residuals)
 		iota[0] = 2.0 * iota[1] - iota[2]
 		return reff, iota, iota_err

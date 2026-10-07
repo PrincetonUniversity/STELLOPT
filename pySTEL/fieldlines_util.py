@@ -134,9 +134,19 @@ if __name__=="__main__":
 			if args.vmec_ext:
 				vmec_wout = VMEC()
 				vmec_wout.read_wout(args.vmec_ext)
-				s = np.linspace(0,1.0,vmec_wout.ns)
-				r = np.sqrt(s)*vmec_wout.aminor
-				ax.plot(r,vmec_wout.iotaf,'r',linewidth=2.0,label='VMEC')
+				theta = np.linspace([0],[2*np.pi],360)
+				phi = np.linspace([0],[2*np.pi],720)
+				r = vmec_wout.cfunct(theta,phi,vmec_wout.rmnc,vmec_wout.xm,vmec_wout.xn)
+				z = vmec_wout.sfunct(theta,phi,vmec_wout.zmns,vmec_wout.xm,vmec_wout.xn)
+				x = np.zeros_like(r)
+				y = np.zeros_like(z)
+				for i in range(vmec_wout.ns):
+					x[i,:,:] = r[i,:,:] - r[0,:,:]
+					y[i,:,:] = z[i,:,:] - z[0,:,:]
+				reff = np.mean(np.sqrt(x*x+y*y),axis=(1,2))
+				#s = np.linspace(0,1.0,vmec_wout.ns)
+				#r = np.sqrt(s)*vmec_wout.aminor
+				ax.plot(reff,vmec_wout.iotaf,'r',linewidth=2.0,label='VMEC')
 				pyplot.legend()
 			ax.set_xlim([0,3.0])
 			if not args.lbackground:pyplot.show()
