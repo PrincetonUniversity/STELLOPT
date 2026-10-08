@@ -36,6 +36,7 @@ C-----------------------------------------------
       REAL(dp), EXTERNAL :: pmass
       INTEGER :: i, j, k, nsmin, nsmax, m
       REAL(dp), ALLOCATABLE, DIMENSION(:) :: bcastbuf
+      REAL(dp), ALLOCATABLE :: axis_r_save(:,:,:), axis_z_save(:,:,:)
       INTEGER, DIMENSION(4) :: bbuf
 C-----------------------------------------------
       CALL second0 (tfunon)
@@ -379,6 +380,14 @@ C-----------------------------------------------
 !
 
          IF (lasym) THEN
+!     Physical R/Z are reused as force scratch below. Preserve first-step
+!     geometry for the high-force axis search, without changing force arrays.
+            IF (lmove_axis .AND. iter2.EQ.1) THEN
+               ALLOCATE(axis_r_save(nznt,ns,0:1))
+               ALLOCATE(axis_z_save(nznt,ns,0:1))
+               axis_r_save = pr1
+               axis_z_save = pz1
+            END IF
             CALL symforce_par (parmn, pbrmn, pcrmn, pazmn, pbzmn,
      &                         pczmn, pblmn, pclmn, prcon, pzcon, pr1,
      &                         pru, prv, pz1, pzu, pzv, pextra3,
@@ -434,6 +443,10 @@ C-----------------------------------------------
      &    iter2                .eq  .1 .and.
      &    (fsqr + fsqz + fsql) .gt. 1.E2_dp) THEN
          irst = 4
+         IF (ALLOCATED(axis_r_save)) THEN
+            pr1 = axis_r_save
+            pz1 = axis_z_save
+         END IF
       END IF
 
       CALL second0 (tresoff)
@@ -485,6 +498,7 @@ C-----------------------------------------------
       REAL(dp), DIMENSION(:), POINTER :: lu, lv
       REAL(dp) :: presf_ns, delr_mse, delt0
       REAL(dp), EXTERNAL :: pmass
+      REAL(dp), ALLOCATABLE :: axis_r_save(:,:), axis_z_save(:,:)
 !-----------------------------------------------
 !
 !     POINTER ALIASES
@@ -774,6 +788,10 @@ C-----------------------------------------------
 !     IF lasym=T
 !
       IF (lasym) THEN
+         IF (lmove_axis .AND. iter2.EQ.1) THEN
+            axis_r_save = r1
+            axis_z_save = z1
+         END IF
          CALL symforce (armn, brmn, crmn, azmn, bzmn,
      &                  czmn, blmn, clmn, rcon, zcon, r1, ru, rv,
      &                  z1, zu, zv, extra3, extra4, extra1, extra2)
@@ -808,6 +826,12 @@ C-----------------------------------------------
      &    iter2                .eq. 1 .and.
      &    (fsqr + fsqz + fsql) .gt. 1.E2_dp) THEN
          irst = 4
+!        symforce uses R/Z storage for asymmetric forces. The axis repair
+!        must scan physical geometry after those forces are transformed.
+         IF (ALLOCATED(axis_r_save)) THEN
+            r1 = axis_r_save
+            z1 = axis_z_save
+         END IF
       END IF
 
       CALL second0 (tresoff)
