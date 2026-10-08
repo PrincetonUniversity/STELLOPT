@@ -42,7 +42,9 @@ c                    differently.
       IMPLICIT NONE
       INTEGER, INTENT(in)                 :: error
       INTEGER                             :: length, temp
+#if defined(MPI_OPT)
       CHARACTER(LEN=MPI_MAX_ERROR_STRING) :: message
+#endif
 #if defined(MPI_OPT)
       CALL MPI_ERROR_STRING(error,message,length,temp)
       WRITE(6,*) '!!!!!!!!!!!!MPI_ERROR DETECTED!!!!!!!!!!!!!!'
