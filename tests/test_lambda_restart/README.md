@@ -15,11 +15,11 @@ python3 tests/test_lambda_restart/run.py --require-fixed
 
 - The baseline command compiles the loader from official commit `8060f5e5b1bfe11b2f8809c8dfa90459ee72f9ba`; that commit must be present locally.
 - Both commands extract the normalization and half-grid export blocks from the actual production `wrout.f` and compile the entire native loader with bounds checking and invalid/division/overflow traps.
-- Synthetic read-module data describe exact circular geometry and physical lambda `0.1 sqrt(s) sin(theta) + 0.2 s sin(2 theta)` on five surfaces.
-- Six controls use `lamscale = 1, 2, 0.5` and both toroidal-flux signs. `phipf = +/-lamscale` satisfies the native constant-flux normalization; nonzero modes use native `mscale = sqrt(2)`.
+- Synthetic read-module data describe exact circular or elongated second-harmonic geometry and physical lambda `0.1 sqrt(s) sin(theta) + 0.2 s sin(2 theta)` on five surfaces.
+- Twelve circular/shaped controls use `lamscale = 1, 2, 0.5` and both toroidal-flux signs. `phipf = +/-lamscale` satisfies the native constant-flux normalization; nonzero modes use native `mscale = sqrt(2)`.
 - Independent oracles check internal lambda, physical toroidal field density `phipf (1 + d lambda/d theta)`, geometry and pressure/iota invariance.
 - Five additional fixed-loader controls must reject zero, negative, NaN and either infinite scale.
-- Baseline unit-scale controls pass; its four nonunit controls must fail the lambda oracle. The fixed loader must pass all six with error below `1e-13`.
+- Baseline unit-scale controls pass; its eight nonunit controls must fail the lambda oracle. The fixed loader must pass all twelve with error below `1e-13`.
 
 Scope: axisymmetric stellarator-symmetric component tests, including odd/even poloidal modes and both flux signs. These are not full NetCDF I/O, 3D, asymmetric or multi-rank equilibrium tests. A separate native Make release build checks production integration. No claim is made that this repair resolves cold or warm-start convergence failures.
 

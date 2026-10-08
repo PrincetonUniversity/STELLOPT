@@ -29,6 +29,7 @@ module vmec_main
     use vparams
     implicit none
     logical, parameter :: lthreed=.false.
+    logical :: shaped=.false.
     real(rprec), parameter :: cp5=.5_rprec
     real(rprec) :: phipf(5), sp(5), sm(5)
     real(rprec) :: pressure(5), iota(5)
@@ -43,7 +44,7 @@ end module
 module read_wout_mod
     use vparams
     use vmec_params, only: lamscale
-    use vmec_main, only: phipf, sp, sm, p5 => cp5
+    use vmec_main, only: phipf, sp, sm, p5 => cp5, shaped
     implicit none
     integer, parameter :: ns=5, ntor=0, nfp=1, mnmax=3
     real(rprec), allocatable :: rmnc(:,:), zmns(:,:), lmns(:,:)
@@ -63,6 +64,10 @@ contains
             rmnc(1,js)=6.2_rprec
             rmnc(2,js)=.62_rprec*sqrt(s)
             zmns(2,js)=.62_rprec*sqrt(s)
+            if (shaped) then
+                rmnc(3,js)=.08_rprec*s
+                zmns(2,js)=1.7_rprec*zmns(2,js)
+            end if
             ! Known internal full coefficients, independent physical lambda:
             ! lambda=.1*sqrt(s)*sin(theta)+.2*s*sin(2*theta).
             lmns1=[0.0_rprec,.1_rprec*sqrt(s),.2_rprec*s]*phipf(js)/lamscale

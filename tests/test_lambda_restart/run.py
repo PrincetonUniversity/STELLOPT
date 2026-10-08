@@ -40,15 +40,16 @@ def run(source, require_fixed, baseline):
             capture_output=True,text=True,timeout=30)
         if compiled.returncode:
             raise RuntimeError(compiled.stderr)
-        controls_to_run=[(scale, sign*scale) for scale in [1.,2.,.5] for sign in [1.,-1.]]
-        for scale, phi in controls_to_run:
-            result=subprocess.run([str(binary),str(scale),str(phi)],capture_output=True,
+        controls_to_run=[(shape,scale,sign*scale) for shape in ["circular","shaped"]
+                         for scale in [1.,2.,.5] for sign in [1.,-1.]]
+        for shape, scale, phi in controls_to_run:
+            result=subprocess.run([str(binary),str(scale),str(phi),shape],capture_output=True,
                                   text=True,timeout=5)
             values={k:float(v) for k,v in (line.split('=') for line in result.stdout.splitlines())}
             expected_exit=0 if require_fixed or scale==1. else 6
             if result.returncode!=expected_exit:
                 raise AssertionError((scale,result.returncode,result.stdout,result.stderr))
-            controls.append(dict(lamscale=scale,phipf=phi,process_exit=result.returncode,
+            controls.append(dict(shape=shape,lamscale=scale,phipf=phi,process_exit=result.returncode,
                                  independent_errors=values,expected_exit=expected_exit))
         if require_fixed:
             for scale in ['0', '-1', 'NaN', 'Infinity', '-Infinity']:

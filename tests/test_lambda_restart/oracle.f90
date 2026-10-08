@@ -1,7 +1,7 @@
 program lambda_restart_oracle
     use vparams
     use vmec_params, only: lamscale, mscale
-    use vmec_main, only: phipf, sp, sm, pressure, iota
+    use vmec_main, only: phipf, sp, sm, pressure, iota, shaped
     implicit none
     real(rprec) :: rmn(5,0:0,0:2,1), zmn(5,0:0,0:2,1)
     real(rprec) :: lmn(5,0:0,0:2,1), s, theta, expected, observed
@@ -13,6 +13,8 @@ program lambda_restart_oracle
     read(argument,*) scale
     call get_command_argument(2, argument)
     read(argument,*) phi
+    call get_command_argument(3, argument)
+    shaped=trim(argument)=="shaped"
     lamscale=scale; phipf=phi; pressure=123.0_rprec; iota=.7_rprec
     sm=0; sp=0
     do js=2,5
@@ -33,7 +35,9 @@ program lambda_restart_oracle
             -phi*.2_rprec*s/(scale*mscale(2))))
         geometry_error=max(geometry_error,abs(rmn(js,0,0,1)-6.2_rprec), &
             abs(mscale(1)*rmn(js,0,1,1)-.62_rprec*sqrt(s)), &
-            abs(mscale(1)*zmn(js,0,1,1)-.62_rprec*sqrt(s)))
+            abs(mscale(1)*zmn(js,0,1,1) &
+                -merge(1.7_rprec,1.0_rprec,shaped)*.62_rprec*sqrt(s)), &
+            abs(mscale(2)*rmn(js,0,2,1)-merge(.08_rprec*s,0.0_rprec,shaped)))
         do k=0,16
             theta=2.0_rprec*acos(-1.0_rprec)*real(k,rprec)/17.0_rprec
             expected=phi*(1+.1_rprec*sqrt(s)*cos(theta) &
