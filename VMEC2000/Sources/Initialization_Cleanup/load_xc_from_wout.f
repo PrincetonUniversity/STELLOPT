@@ -1,10 +1,12 @@
       SUBROUTINE load_xc_from_wout(rmn, zmn, lmn, lreset, 
      1    ntor_in, mpol1_in, ns_in, reset_file)
+      USE, INTRINSIC :: IEEE_ARITHMETIC, ONLY: IEEE_IS_FINITE
       USE read_wout_mod, ONLY: rmnc, zmns, lmns, rmns, zmnc, lmnc,
      1    xm, xn, ntor, ns,
      2    nfp, mnmax, read_wout_file, read_wout_deallocate
       USE vmec_params, ONLY: mscale, nscale, ntmax,
-     1                       rcc, rss, rsc, rcs, zsc, zcs, zcc, zss
+     1                       rcc, rss, rsc, rcs, zsc, zcs, zcc, zss,
+     2                       lamscale
       USE vmec_dim, ONLY: mpol1
       USE vparams, ONLY: one, zero, rprec
       USE vmec_input, ONLY: lasym
@@ -27,6 +29,7 @@ C-----------------------------------------------
       REAL(rprec), ALLOCATABLE :: temp(:,:)
       INTEGER :: nsmin
       INTEGER :: nsmax
+      LOGICAL :: valid_lambda_scale
 C-----------------------------------------------
 
 !
@@ -35,6 +38,14 @@ C-----------------------------------------------
 !     THIS IS THE CASE WHEN VMEC IS CALLED FROM, SAY, THE OPTIMIZATION CODE
 !
 !     SPH 12-13-11: allow for paths in wout file name (as per Ed Lazarus request)
+      valid_lambda_scale = .false.
+      IF (IEEE_IS_FINITE(lamscale))
+     1   valid_lambda_scale = lamscale.GT.zero
+      IF (.NOT.valid_lambda_scale) THEN
+         IF (rank.EQ.0) PRINT *, 'Invalid lambda scale in load_xc'
+         STOP 1
+      END IF
+
       CALL read_wout_file (reset_file, ierr)
       reset_file = " "               !nullify so this routine will not be recalled with present reset_file
 
@@ -150,7 +161,8 @@ C-----------------------------------------------
       END DO
 
       DO js = nsmin + 1, nsmax
-         lmn(js,:,:,:) = phipf(js)*lmn(js,:,:,:)
+!        wrout exports normalized lambda multiplied by lamscale.
+         lmn(js,:,:,:) = (phipf(js)/lamscale)*lmn(js,:,:,:)
       END DO
 
 
