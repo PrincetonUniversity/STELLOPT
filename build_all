@@ -28,8 +28,8 @@ done
 
 echo "Begin building STELLOPT with option: $MAKE_OPTION with $NUM_PROCS CPUs."
 # Call the toplevel makfile to setup the output directories.
-make $MAKE_OPTION
-make test_make
+make $MAKE_OPTION || exit $?
+make test_make || exit $?
 
 shift $((OPTIND-1))
 [ "${1:-}" = "--" ] && shift
@@ -58,9 +58,9 @@ do
 
   if [ $match -eq 1 ]; then
     echo "Begin building $CODE"
-    cd $CODE
-    make $MAKE_OPTION -j $NUM_PROCS
-    cd ..
+    cd $CODE || exit $?
+    make $MAKE_OPTION -j $NUM_PROCS || exit $?
+    cd .. || exit $?
   fi
 done
 
