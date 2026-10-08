@@ -43,6 +43,8 @@ program axis_storage_oracle
     real(dp) :: theta, error
     integer :: i, iter2 = 1
     logical :: lmove_axis = .true.
+    character(len=16) :: shape
+    call get_command_argument(1, shape)
     force = 0
     scratch = 0
     pr1 = 0
@@ -53,6 +55,10 @@ program axis_storage_oracle
         force(1, i, :, 0, 4) = -4000.0_dp*cos(theta)
         pr1(i, :, 0) = 6.2_dp + 0.62_dp*cos(theta)
         pz1(i, :, 0) = 0.3_dp + 0.62_dp*sin(theta)
+        if (shape == "shaped") then
+            pr1(i, :, 0) = pr1(i, :, 0) + 0.09_dp*cos(2*theta)
+            pz1(i, :, 0) = 0.3_dp + 1.05_dp*sin(theta) + 0.06_dp*cos(2*theta)
+        end if
     end do
     original_r = pr1
     original_z = pz1

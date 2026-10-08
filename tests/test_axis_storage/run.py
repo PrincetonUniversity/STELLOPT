@@ -49,23 +49,24 @@ def main():
             '-I'+str(build), str(fixture), str(build/'symforce_par.f'),
             '-o', str(build/'oracle')]
         records = []
-        for label, block in [('repaired', restore), ('without_restore', '')]:
-            include.write_text(block)
-            compiled = subprocess.run(command, cwd=build, capture_output=True,
-                                      text=True, timeout=60)
-            if compiled.returncode != 0:
-                raise RuntimeError(compiled.stdout + compiled.stderr)
-            result = subprocess.run([str(build/'oracle')], capture_output=True,
-                                    text=True, timeout=10)
-            if label == 'repaired':
-                if result.returncode != 0:
-                    raise AssertionError(result.stdout + result.stderr)
-            elif (result.returncode == 0 or
-                  'Axis scan would receive corrupted geometry' not in result.stderr):
-                raise AssertionError('Missing restoration did not fail the geometry oracle')
-            records.append(dict(control=label, process_exit=result.returncode,
-                                stdout=result.stdout.strip(),
-                                expected_geometry_rejection=label == 'without_restore'))
+        for shape in ["circular", "shaped"]:
+            for label, block in [('repaired', restore), ('without_restore', '')]:
+                include.write_text(block)
+                compiled = subprocess.run(command, cwd=build, capture_output=True,
+                                          text=True, timeout=60)
+                if compiled.returncode != 0:
+                    raise RuntimeError(compiled.stdout + compiled.stderr)
+                result = subprocess.run([str(build/'oracle'), shape], capture_output=True,
+                                        text=True, timeout=10)
+                if label == 'repaired':
+                    if result.returncode != 0:
+                        raise AssertionError(result.stdout + result.stderr)
+                elif (result.returncode == 0 or
+                      'Axis scan would receive corrupted geometry' not in result.stderr):
+                    raise AssertionError('Missing restoration did not fail the geometry oracle')
+                records.append(dict(shape=shape, control=label, process_exit=result.returncode,
+                                    stdout=result.stdout.strip(),
+                                    expected_geometry_rejection=label == 'without_restore'))
         print(json.dumps(dict(production_sha256=sha(production),
             symforce_source_sha256=sha(native), fixture_sha256=sha(fixture),
             extraction_driver_sha256=sha(Path(__file__)), controls=records,

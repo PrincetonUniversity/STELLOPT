@@ -42,9 +42,10 @@ program serial_axis_oracle
     real(dp), allocatable :: axis_r_save(:,:), axis_z_save(:,:)
     integer :: iter2 = 1
     logical :: lmove_axis = .true.
-    character(len=32) :: mode
+    character(len=32) :: mode, shape
     integer :: i, j, flat
     call get_command_argument(1, mode)
+    call get_command_argument(2, shape)
     if (mode == "later_iteration") iter2 = 2
     force = 0
     scratch = 0
@@ -58,6 +59,10 @@ program serial_axis_oracle
             flat = ns*(i - 1) + j
             r1(flat, 0) = 6.2_dp + 0.62_dp*cos(theta)
             z1(flat, 0) = 0.3_dp + 0.62_dp*sin(theta)
+            if (shape == "shaped") then
+                r1(flat, 0) = r1(flat, 0) + 0.09_dp*cos(2*theta)
+                z1(flat, 0) = 0.3_dp + 1.05_dp*sin(theta) + 0.06_dp*cos(2*theta)
+            end if
         end do
     end do
     initial_r = r1
