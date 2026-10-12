@@ -1006,12 +1006,6 @@ MODULE mumaterial_mod
       INTEGER :: k
 
       EXTERNAL:: Bfld
-      IF (world_rank==0) THEN
-        DO k = 1, n_watch
-          WRITE(6,'(A,I8,A,3ES14.6,A,L2)') ' DBG[A:run_start] tile=', watch_tiles(k), &
-            '  u_ref=', u_ref_JA(:,watch_tiles(k)), '  locked=', axis_set_JA(watch_tiles(k))
-        END DO
-      END IF
 
       lskip_loc = .FALSE.; IF (PRESENT(lskip)) lskip_loc = lskip
       linitM_loc = .FALSE.; IF(PRESENT(linitM)) linitM_loc = linitM
@@ -2812,8 +2806,6 @@ MODULE mumaterial_mod
       DOUBLE PRECISION, INTENT(out) :: H_out(3) !! Self-consistent H
       DOUBLE PRECISION, INTENT(out), OPTIONAL :: Mirr_out
       TYPE(ja_table_type), INTENT(in), OPTIONAL :: tbl
-      DOUBLE PRECISION :: H_scalar_trial_dbg, Hlo_dbg, Hhi_dbg
-      LOGICAL :: clamped_dbg
 
       INTEGER :: iter
       
