@@ -20,7 +20,8 @@ MODULE boxsim_sigma
               get_sigma_H_Hp, get_sigma_Hm_Hp, &
               get_sigma_H_Hm
     PUBLIC :: get_sigma_H2p_H2, get_sigma_H2_H2p, &
-              get_sigma_H2p_HHp, get_sigma_H2_HHp
+              get_sigma_H2p_HHp, get_sigma_H2_HHp, &
+              get_sigma_H2_2Hp, get_sigma_H2_2H
     PUBLIC :: get_sigma_H3p_H2H, get_sigma_H3p_3H, &
               get_sigma_H3p_H2pH, get_sigma_H3p_H2Hp,&
               get_sigma_H3p_Hp2H, get_sigma_H3p_H2pHp, &
@@ -518,9 +519,9 @@ CONTAINS
 
     END FUNCTION get_sigma_H2p_HHp
 
-    FUNCTION get_sigma_H2_HHp(E) result(sigma)
+    FUNCTION get_sigma_H2_Hp_production(E) result(sigma)
         !-------------------------------------------------------------------
-        !     Reaction (43) in Tabata (2000) [H2 + H2 -> fast H+ + fast H]
+        !     Reaction (43) in Tabata (2000) [H2 + H2 -> fast H+]
         !       
         !       Input parameters
         !           E       energy in keV
@@ -539,7 +540,80 @@ CONTAINS
         sigma = get_sigma_eq2(E1,a1,a2,a3,a4,a5,a6)
         RETURN
 
+    END FUNCTION get_sigma_H2_Hp_production
+
+    FUNCTION get_sigma_H2_destruction(E) result(sigma)
+        !-------------------------------------------------------------------
+        !     Reaction (37) in Tabata (2000) [H2 + H2 -> H2 destruction]
+        !       
+        !       Input parameters
+        !           E       energy in keV
+        !       Output parameters
+        !           sigma   cross-section in m^-2
+        !-------------------------------------------------------------------
+        IMPLICIT NONE
+        DOUBLE PRECISION :: sigma
+        DOUBLE PRECISION, INTENT(in) :: E 
+        DOUBLE PRECISION :: Eth, E1
+        DOUBLE PRECISION :: a1, a2, a3, a4, a5, a6, a7, a8
+
+        Eth = 1.1E-2 ! Threshold energy in keV
+        E1 = E - Eth
+        a1 = 4.69e-3; a2= 2.946; a3 = 4.36e-2; a4 = -9.01e-1; a5 = 1.52e-1; a6 = 5.01e-1
+        a7 = 2.6; a8 = 3.299e1;
+
+        sigma = get_sigma_eq10(E1,a1,a2,a3,a4,a5,a6,a7,a8)
+        RETURN
+
+    END FUNCTION get_sigma_H2_destruction
+
+
+    FUNCTION get_sigma_H2_2Hp(E) result(sigma)
+        !-------------------------------------------------------------------
+        !      H2 + H2 -> H+ + H+
+        !       No expression in Tabata (2000). Neglected for simplicity
+        !
+        !       Input parameters
+        !           E       energy in keV
+        !       Output parameters
+        !           sigma   cross-section in m^-2
+        !-------------------------------------------------------------------
+        IMPLICIT NONE
+        DOUBLE PRECISION :: sigma
+        DOUBLE PRECISION, INTENT(in) :: E 
+
+        DOUBLE PRECISION :: Eth, E1
+        
+        Eth = 0 ! Threshold energy in keV
+        E1 = E - Eth
+
+        sigma = 0 ! neglected
+        RETURN
+
+    END FUNCTION get_sigma_H2_2Hp
+
+    FUNCTION get_sigma_H2_HHp(E) result(sigma)
+
+        IMPLICIT NONE
+        DOUBLE PRECISION :: sigma
+        DOUBLE PRECISION, INTENT(in) :: E 
+
+        sigma = get_sigma_H2_Hp_production(E) - 2*get_sigma_H2_2Hp(E)
+        RETURN
+    
     END FUNCTION get_sigma_H2_HHp
+
+    FUNCTION get_sigma_H2_2H(E) result(sigma)
+
+        IMPLICIT NONE
+        DOUBLE PRECISION :: sigma
+        DOUBLE PRECISION, INTENT(in) :: E 
+
+        sigma = get_sigma_H2_destruction(E) - 2*get_sigma_H2_H2p(E) &
+                - get_sigma_H2_Hp_production(E) + get_sigma_H2_2Hp(E)
+        RETURN
+    
+    END FUNCTION get_sigma_H2_2H
 
 !---------------------------------------------------------------------------
 !---------------------------------------------------------------------------

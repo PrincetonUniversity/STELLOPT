@@ -34,6 +34,7 @@ MODULE boxsim_db
       INTEGER :: nproducts ! Number of products out
       INTEGER :: output_Q(boxsim_max_products) = boxsim_unused! charge out
       INTEGER :: output_A(boxsim_max_products) = boxsim_unused! mass out
+      DOUBLE PRECISION :: delta_energy = 0.0d0
       LOGICAL :: enabled ! for testing purposes
       PROCEDURE(sigma_interface), POINTER, NOPASS :: calc_sigma => NULL()
   END TYPE box_reaction
@@ -42,6 +43,10 @@ MODULE boxsim_db
   INTEGER :: n_reactions = 0                    
   PUBLIC :: boxsim_init_reactions, reactions_db, n_reactions
 
+  ! Reaction energies
+  DOUBLE PRECISION, PARAMETER :: boxsim_eV = 1.6021766339999E-21 ! J
+  DOUBLE PRECISION, PARAMETER :: energy_ionization_H = 13.598434599702 ! eV
+  DOUBLE PRECISION, PARAMETER :: energy_ionization_H2 = 15.425927 ! eV
 
   ! Particle kinds 
   INTEGER, PARAMETER :: boxsim_kind_H   = 1
@@ -65,7 +70,7 @@ MODULE boxsim_db
                         3.34358378D-27, &
                         5.00735675D-27, &
                         5.00641279D-27, &
-                        6.64465735D-27 &
+                        6.64465735D-27  &
                         ]
 CONTAINS
   !-------------------------------------------------------------------
@@ -76,7 +81,7 @@ CONTAINS
   IMPLICIT NONE
 
   ! Initialize database
-  ALLOCATE(reactions_db(17)) ! H: 5, H2: 4, H3: 8(!)
+  ALLOCATE(reactions_db(19)) ! H: 5, H2: 6, H3: 8(!)
 
   !-------------------------------------------------------------------
   !   SINGLE PROTON
@@ -89,6 +94,7 @@ CONTAINS
       input_Q   = 1, &
       input_A   = 1, &
       input_CAT = boxsim_cat_H, &
+!      delta_energy = (energy_ionization_H - energy_ionization_H2)*boxsim_eV
       enabled = .TRUE.)
   reactions_db(n_reactions)%calc_sigma => get_sigma_Hp_H
   reactions_db(n_reactions)%output_A(1) = 1 ! H
@@ -158,19 +164,6 @@ CONTAINS
   reactions_db(n_reactions)%output_A(1) = 2 ! H2
   reactions_db(n_reactions)%output_Q(1) = 0 ! H2
 
-  ! Ionization of H2 to produce fast H2+
-  n_reactions = n_reactions + 1
-  reactions_db(n_reactions) = box_reaction( & 
-      name = "H2 + (H2) -> fast H2+", &
-      nproducts = 1, &
-      input_Q   = 0, &
-      input_A   = 2, &
-      input_CAT = boxsim_cat_H, &
-      enabled = .TRUE.)
-  reactions_db(n_reactions)%calc_sigma => get_sigma_H2_H2p
-  reactions_db(n_reactions)%output_A(1) = 2 ! H2+
-  reactions_db(n_reactions)%output_Q(1) = 1 ! H2+
-
   ! Dissociation of H2+ into H+ and H
   n_reactions = n_reactions + 1
   reactions_db(n_reactions) = box_reaction( & 
@@ -186,6 +179,34 @@ CONTAINS
   reactions_db(n_reactions)%output_A(2) = 1 ! H
   reactions_db(n_reactions)%output_Q(2) = 0 ! H
 
+  ! Ionization of H2 to produce fast H2+
+  n_reactions = n_reactions + 1
+  reactions_db(n_reactions) = box_reaction( & 
+      name = "H2 + H2 -> fast H2+", &
+      nproducts = 1, &
+      input_Q   = 0, &
+      input_A   = 2, &
+      input_CAT = boxsim_cat_H, &
+      enabled = .TRUE.)
+  reactions_db(n_reactions)%calc_sigma => get_sigma_H2_H2p
+  reactions_db(n_reactions)%output_A(1) = 2 ! H2+
+  reactions_db(n_reactions)%output_Q(1) = 1 ! H2+
+
+  ! Dissociation of H2 into H+ and H+
+  n_reactions = n_reactions + 1
+  reactions_db(n_reactions) = box_reaction( & 
+      name = "H2 + H2 -> fast H+, fast H+", &
+      nproducts = 2, &
+      input_Q = 0, &
+      input_A = 2, &
+      input_CAT = boxsim_cat_H, &
+      enabled = .TRUE.)
+  reactions_db(n_reactions)%calc_sigma => get_sigma_H2_2Hp
+  reactions_db(n_reactions)%output_A(1) = 1 ! H+
+  reactions_db(n_reactions)%output_Q(1) = 1 ! H+
+  reactions_db(n_reactions)%output_A(2) = 1 ! H+
+  reactions_db(n_reactions)%output_Q(2) = 1 ! H+
+
   ! Dissociation of H2 into H+ and H
   n_reactions = n_reactions + 1
   reactions_db(n_reactions) = box_reaction( & 
@@ -198,6 +219,21 @@ CONTAINS
   reactions_db(n_reactions)%calc_sigma => get_sigma_H2_HHp
   reactions_db(n_reactions)%output_A(1) = 1 ! H+
   reactions_db(n_reactions)%output_Q(1) = 1 ! H+
+  reactions_db(n_reactions)%output_A(2) = 1 ! H
+  reactions_db(n_reactions)%output_Q(2) = 0 ! H
+
+  ! Dissociation of H2 into H and H
+  n_reactions = n_reactions + 1
+  reactions_db(n_reactions) = box_reaction( & 
+      name = "H2 + H2 -> fast H, fast H", &
+      nproducts = 2, &
+      input_Q = 0, &
+      input_A = 2, &
+      input_CAT = boxsim_cat_H, &
+      enabled = .TRUE.)
+  reactions_db(n_reactions)%calc_sigma => get_sigma_H2_2H
+  reactions_db(n_reactions)%output_A(1) = 1 ! H
+  reactions_db(n_reactions)%output_Q(1) = 0 ! H
   reactions_db(n_reactions)%output_A(2) = 1 ! H
   reactions_db(n_reactions)%output_Q(2) = 0 ! H
 
