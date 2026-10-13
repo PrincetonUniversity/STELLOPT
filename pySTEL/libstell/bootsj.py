@@ -101,7 +101,7 @@ class BOOTSJ():
 			self.densi[i]    = float(line[16])
 			self.betar[i]    = float(line[17])
 			self.ajBbs[i]    = float(line[18])
-		self.Itotal = np.trapz(self.dibs,self.rhoar)*1.0E6
+		self.Itotal = np.trapezoid(self.dibs,self.rhoar)*1.0E6
 
 	def calc_Itotal(self,order=6):
 		"""Computes the total current

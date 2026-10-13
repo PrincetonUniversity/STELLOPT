@@ -18,6 +18,7 @@
 
       ! Moved from thrift_vars
       LOGICAL ::  lverbj, leccd, lnbcd, lohmic, save_subiterations
+      LOGICAL :: update_equilibrium, vmec_done, dkes_done, add_susceptance_time_derivatives
       INTEGER ::  nrho, ntimesteps, n_eq, npicard, nsj
       REAL(rprec) :: tstart, tend, jtol, picard_factor, boot_factor
 
@@ -49,11 +50,11 @@
       INTEGER :: nparallel_runs, mboz, nboz
       CHARACTER(256) :: bootstrap_type, eccd_type, vessel_ecrh, &
                         mirror_ecrh, targettype_ecrh, antennatype_ecrh, &
-                        etapar_type, power_type
+                        etapar_type, power_type, edge_bc_type
 
       ! Plasma solver
-      LOGICAL :: solve_plasma_equations, beurskens_ions, add_NEO, &
-      external_normalized_diffusivities, external_normalized_particle_pinch
+      LOGICAL :: solve_plasma_equations, beurskens_ions, add_NEO, add_NEO_particle_flux, &
+      add_NEO_heat_flux, external_normalized_diffusivities, external_normalized_particle_pinch
       INTEGER, PARAMETER :: nions_max = 6
       REAL(rprec) :: dt_plasma_solver, tol_plasma_solver, dt_Er_ambipolar
       REAL(rprec) :: stiffness_beurskens, aLT_critical_beurskens, alpha_beurskens, &

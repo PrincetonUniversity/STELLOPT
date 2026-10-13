@@ -355,7 +355,7 @@ class THRIFT():
         A = np.pi*a*a
         L = 2*np.pi*R0
         
-        integrated_cond = np.trapz(1/self.THRIFT_ETAPARA[-1,:],self.THRIFT_S)
+        integrated_cond = np.trapezoid(1/self.THRIFT_ETAPARA[-1,:],self.THRIFT_S)
         Rohm = (L/A) * 1/integrated_cond
         
         tau_LR = Lext / Rohm
@@ -557,7 +557,7 @@ class THRIFT():
                 # integrate between first and last root
                 first_change = change_indices[0]
                 last_change = change_indices[-1]
-                integral = np.trapz(Jr_dict[roa][first_change:last_change+1],Er_dict[roa][first_change:last_change+1])
+                integral = np.trapezoid(Jr_dict[roa][first_change:last_change+1],Er_dict[roa][first_change:last_change+1])
                 if(integral>0):
                     Er_val = Er_dict[roa][change_indices[0]]
                 else:
@@ -1586,7 +1586,7 @@ class THRIFT_plasma_solver():
                     integrand = np.exp(-(self.rho_grid_source - rho_0)**2/sigma_rho**2) * dVdrho(self.rho_grid_source)
                     integrand = integrand.flatten()
                     #
-                    cte = total_power / np.trapz(integrand,self.rho_grid_source)
+                    cte = total_power / np.trapezoid(integrand,self.rho_grid_source)
                     #
                     source = lambda t: cte * np.exp(-(self.rho_grid_source - rho_0)**2/sigma_rho**2)
             
@@ -1598,7 +1598,7 @@ class THRIFT_plasma_solver():
                     integrand = np.exp(-(self.rho_grid_source - rho_0)**2/sigma_rho**2) * dVdrho(self.rho_grid_source)
                     integrand = integrand.flatten()
                     #
-                    cte = total_power / np.trapz(integrand,self.rho_grid_source)
+                    cte = total_power / np.trapezoid(integrand,self.rho_grid_source)
                     #
                     source = lambda t: time_dependent_factor(t) * cte * np.exp(-(self.rho_grid_source - rho_0)**2/sigma_rho**2)
                     
@@ -1638,7 +1638,7 @@ class THRIFT_plasma_solver():
                     integrand = np.exp(-(self.rho_grid_source - rho_0)**2/sigma_rho**2) * dVdrho(self.rho_grid_source)
                     integrand = integrand.flatten()
                     #
-                    cte = injected_particles_per_sec / np.trapz(integrand,self.rho_grid_source)
+                    cte = injected_particles_per_sec / np.trapezoid(integrand,self.rho_grid_source)
                     #
                     source = lambda t: cte * np.exp(-(self.rho_grid_source - rho_0)**2/sigma_rho**2)
             
@@ -1650,7 +1650,7 @@ class THRIFT_plasma_solver():
                     integrand = np.exp(-(self.rho_grid_source - rho_0)**2/sigma_rho**2) * dVdrho(self.rho_grid_source)
                     integrand = integrand.flatten()
                     #
-                    cte = injected_particles_per_sec / np.trapz(integrand,self.rho_grid_source)
+                    cte = injected_particles_per_sec / np.trapezoid(integrand,self.rho_grid_source)
                     #
                     source = lambda t: time_dependent_factor(t) * cte * np.exp(-(self.rho_grid_source - rho_0)**2/sigma_rho**2)
                     

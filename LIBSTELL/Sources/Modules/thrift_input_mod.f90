@@ -27,6 +27,7 @@
       NAMELIST /thrift_input/ nparallel_runs,bootstrap_type,mboz,nboz, &
                               nrho, tstart, tend, ntimesteps, n_eq, jtol, &
                               picard_factor, npicard, lverbj, boot_factor, &
+                              edge_bc_type, &
                               eccd_type, power_type, &
                               vessel_ecrh, mirror_ecrh, wmode_ecrh, &
                               targettype_ecrh, antennatype_ecrh, &
@@ -41,13 +42,15 @@
                               dt_plasma_solver, Nr_plasma_solver, &
                               max_subiter_plasma_solver, tol_plasma_solver, &
                               beurskens_ions, add_NEO, &
+                              add_NEO_particle_flux, add_NEO_heat_flux, &
                               external_normalized_diffusivities, &
                               external_normalized_particle_pinch, &
                               Dn_ions, chi_all, N0_init_ions, T0_init_all, &
                               stiffness_beurskens, aLT_critical_beurskens, &
                               alpha_beurskens, frac_alpha_heating, alpha_chi_external, &
                               tau_fast_alphas, mass_ref_species, dt_Er_ambipolar, &
-                              dt_plasma_write, save_subiterations, init_profiles_type
+                              dt_plasma_write, save_subiterations, init_profiles_type, &
+                              update_equilibrium, add_susceptance_time_derivatives
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -62,6 +65,7 @@
       etapar_type        = 'sauter'
       eccd_type          = ''
       power_type         = ''
+      edge_bc_type       = 'robin'
       nparallel_runs     = 1
       mboz               = 32
       nboz               = 16
@@ -79,6 +83,8 @@
       lohmic             = .FALSE.
       lverbj             = .FALSE.
       save_subiterations = .FALSE.
+      update_equilibrium = .TRUE.
+      add_susceptance_time_derivatives = .FALSE.
       ! For BOOTSJ
       boot_factor        = 1
       ! For ecrh simple model
@@ -112,7 +118,9 @@
       beurskens_ions = .FALSE.
       external_normalized_diffusivities = .FALSE.
       external_normalized_particle_pinch = .FALSE.
-      add_NEO = .TRUE.
+      add_NEO = .FALSE.
+      add_NEO_particle_flux = .TRUE.
+      add_NEO_heat_flux = .TRUE.
       Dn_ions = 0.0
       chi_all = 0.0
       N0_init_ions = 1E19
