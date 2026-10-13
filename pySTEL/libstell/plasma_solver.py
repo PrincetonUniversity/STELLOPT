@@ -581,7 +581,10 @@ class PLASMA_SOLVER:
         
         # Updates initial conditions and boundary conditions with profiles in restart file
         if(restart_filename is not None):
+            self.restart = True
             self.read_restart_file(restart_filename,tstart)
+        else:
+            self.restart = False
         
         # Check everything is set and ready to proceed with the run
         self.make_checks()
@@ -1690,16 +1693,20 @@ class PLASMA_SOLVER:
         from libstell.libpenta import _call_PENTA_surface_worker
         t = self.time[it]
 
-        # Search for a new ambipolar Er root at t=0 and every dt_Er_ambipolar
-        at_t_zero = np.isclose(t, 0.0, atol=self.dt/2)
-        if(at_t_zero):
-            look_for_ambipolar = True
-        elif(self.dt_Er_ambipolar is None or it==0):
-            look_for_ambipolar = False
+        # Search for a new ambipolar Er root at it=0 and every dt_Er_ambipolar
+        # If it's a restart, don't look at it=0
+        if(it==0):
+            if(self.restart):
+                look_for_ambipolar = False
+            else:
+                look_for_ambipolar = True
         else:
-            nsteps_per_Er = round(self.dt_Er_ambipolar/self.dt)
-            look_for_ambipolar = (it % nsteps_per_Er == 0)
-
+            if(self.dt_Er_ambipolar is None):
+                look_for_ambipolar = False
+            else:
+                nsteps_per_Er = round(self.dt_Er_ambipolar/self.dt)
+                look_for_ambipolar = (it % nsteps_per_Er == 0)
+            
         # Process kinetic profiles data
         ne, dnedrho = akima_interp(self.rho_grid, self.N['electrons'][it,:], self.roa_dkes_k)
         te, dtedrho = akima_interp(self.rho_grid, self.T['electrons'][it,:], self.roa_dkes_k)
