@@ -1728,7 +1728,12 @@ class PLASMA_SOLVER:
         Er_min_Vcm = -250
         Er_max_Vcm = 250
         bsq = self.Bsq_spline(self.roa_dkes_k)
-        Er_k, _ = akima_interp(self.rho_grid, self.Er[it,:], self.roa_dkes_k)
+        # Initialize from the solver grid once (including restart profiles).
+        # Reuse native surface values to avoid repeated interpolation drift.
+        if it == 0:
+            Er_k, _ = akima_interp(self.rho_grid, self.Er[it,:], self.roa_dkes_k)
+        else:
+            Er_k = self.Er_dkes
 
         # Placeholders -- their values don't really matter
         btheta = np.zeros_like(self.roa_dkes_k)
@@ -1738,38 +1743,29 @@ class PLASMA_SOLVER:
         chip = np.zeros_like(self.roa_dkes_k)
         vp = np.zeros_like(self.roa_dkes_k)
 
+        # Gather surface outputs before interpolating in either execution mode.
+        tasks = [
+            (Matom_prof, Zatom_prof,
+             ne[k], dnedrho[k], te[k], dtedrho[k], ni[k,:], dnidrho[k,:], ti[k,:], dtidrho[k,:],
+             self.aminor, self.Rmajor, vp[k], chip[k], phip[k], iota[k], btheta[k], bzeta[k], bsq[k],
+             int(self.dkes_k[k]), self.roa_dkes_k[k],
+             self.DKES_nuv, self.DKES_Erv, self.DKES_D11[k,:,:], self.DKES_D31[k,:,:], self.DKES_D33[k,:,:],
+             Er_min_Vcm, Er_max_Vcm, EparB[k], Er_k[k], self.Er_root_type, look_for_ambipolar)
+            for k in range(ns_dkes)
+        ]
         if(self.neo_pool is None):
-            # Serial: call_PENTA loops over all ns_dkes surfaces and
-            # interpolates onto self.rho_grid in one shot.
-            self.Er[it,:], Dn_out, cn_out, Dp_out, cp_out = self.libPenta.call_PENTA(
-                Matom_prof, Zatom_prof,
-                ne, dnedrho, te, dtedrho, ni, dnidrho, ti, dtidrho,
-                self.aminor, self.Rmajor, vp, chip, phip, iota, btheta, bzeta, bsq,
-                self.dkes_k, self.roa_dkes_k,
-                self.DKES_nuv, self.DKES_Erv, self.DKES_D11, self.DKES_D31, self.DKES_D33,
-                Er_min_Vcm, Er_max_Vcm, EparB, Er_k, self.Er_root_type, look_for_ambipolar,
-                self.rho_grid)
+            results = [self.libPenta.call_PENTA_surface(*task) for task in tasks]
         else:
-            # Parallel: spread the ns_dkes independent surface calculations
-            # across the persistent process pool created in initialize_NEO.
-            tasks = [
-                (Matom_prof, Zatom_prof,
-                 ne[k], dnedrho[k], te[k], dtedrho[k], ni[k,:], dnidrho[k,:], ti[k,:], dtidrho[k,:],
-                 self.aminor, self.Rmajor, vp[k], chip[k], phip[k], iota[k], btheta[k], bzeta[k], bsq[k],
-                 int(self.dkes_k[k]), self.roa_dkes_k[k],
-                 self.DKES_nuv, self.DKES_Erv, self.DKES_D11[k,:,:], self.DKES_D31[k,:,:], self.DKES_D33[k,:,:],
-                 Er_min_Vcm, Er_max_Vcm, EparB[k], Er_k[k], self.Er_root_type, look_for_ambipolar)
-                for k in range(ns_dkes)
-                    ]
             results = list(self.neo_pool.map(_call_PENTA_surface_worker, tasks))
-            Er_PENTA = np.array([r[1] for r in results])
-            Dn_PENTA = np.array([r[2] for r in results]).T
-            cn_PENTA = np.array([r[3] for r in results]).T
-            Dp_PENTA = np.array([r[4] for r in results]).T
-            cp_PENTA = np.array([r[5] for r in results]).T
 
-            self.Er[it,:], Dn_out, cn_out, Dp_out, cp_out = self.libPenta.call_PENTA_interpolate(
-                self.roa_dkes_k, Er_PENTA, Dn_PENTA, cn_PENTA, Dp_PENTA, cp_PENTA, self.rho_grid)
+        self.Er_dkes = np.array([r[1] for r in results])
+        Dn_PENTA = np.array([r[2] for r in results]).T
+        cn_PENTA = np.array([r[3] for r in results]).T
+        Dp_PENTA = np.array([r[4] for r in results]).T
+        cp_PENTA = np.array([r[5] for r in results]).T
+
+        self.Er[it,:], Dn_out, cn_out, Dp_out, cp_out = self.libPenta.call_PENTA_interpolate(
+            self.roa_dkes_k, self.Er_dkes, Dn_PENTA, cn_PENTA, Dp_PENTA, cp_PENTA, self.rho_grid)
 
         # Assign transport coefficients
         for isp, species in enumerate(self.list_of_species):
