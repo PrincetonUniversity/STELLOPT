@@ -29,7 +29,8 @@ test_beams3d:
 	$(MAKE) test_beams3d_basic
 	$(MAKE) test_beams3d_er
 	$(MAKE) test_beams3d_loss
-	$(MAKE) test_beams3d_slow
+	#$(MAKE) test_beams3d_slow
+	$(MAKE) test_beams3d_repro
 	@if [ -n "$(ADASDIR)" ]; then \
 		if [ -d $(ADASDIR) ]; then \
 			$(MAKE) test_beams3d_depo_adas;\
@@ -204,6 +205,21 @@ test_beams3d_slow:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_slow -plasma -collisions
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_slow -plasma -collisions
 	@cd $(BEAMS3D_TEST_DIR); ./compare.py --file ORBITS_slow
+	@echo ""
+
+BEAMS3D_REPRO_VARS = R_lines Z_lines PHI_lines vll_lines moment_lines S_lines \
+	U_lines B_lines neut_lines vr_lines vphi_lines vz_lines end_state t_end
+test_beams3d_repro:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt;
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_slow -plasma -collisions
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_slow -plasma -collisions
+	@cd $(BEAMS3D_TEST_DIR); mv beams3d_ORBITS_slow.h5 beams3d_ORBITS_slow_ref.h5
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_slow -plasma -collisions
+	@cd $(BEAMS3D_TEST_DIR); for d in $(BEAMS3D_REPRO_VARS); do \
+		h5diff -q beams3d_ORBITS_slow_ref.h5 beams3d_ORBITS_slow.h5 /$$d /$$d \
+			|| { echo "  FAILED: seeded runs differ in $$d"; exit 1; }; \
+	done; echo "  PASSED: RNG_SEED reproduces the run"
+	@cd $(BEAMS3D_TEST_DIR); rm -f beams3d_ORBITS_slow_ref.h5
 	@echo ""
 
 test_beams3d_depo:

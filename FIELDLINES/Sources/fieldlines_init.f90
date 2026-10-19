@@ -18,6 +18,7 @@
       USE fieldlines_runtime
       USE fieldlines_grid
       USE fieldlines_input_mod, ONLY: read_fieldlines_input
+      USE rng_seed_mod, ONLY: init_rng_seed
       USE fieldlines_lines, ONLY: nlines
       USE wall_mod
       USE random, ONLY: random_normal
@@ -104,6 +105,16 @@
          phimin = 0
          CALL get_hint_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)
       END IF
+
+      ! Initialize the random number generator.  This is the only place
+      ! FIELDLINES seeds it, so that a run with RNG_SEED >= 0 is
+      ! reproducible end to end.  It must happen before
+      ! fieldlines_init_fline (which draws) and before the MU diffusion.
+      ! Each rank gets its own stream, otherwise the diffusive kicks
+      ! would be identical on every rank.
+      CALL init_rng_seed(rng_seed, myworkid)
+      IF (lverb .and. (rng_seed >= 0)) &
+         WRITE(6,'(A,I0)') '   RNG_SEED: ', rng_seed
 
       ! TESTING LMU
       IF (lmu .and. .false.) THEN
@@ -286,7 +297,6 @@
 
       ! Handle mu
       IF (lmu) THEN
-         CALL init_random_seed()
          CALL mpialloc(MU3D, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MU)
          CALL mpialloc(MU4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MU4D)
          IF (myid_sharmem == master) THEN
@@ -310,7 +320,6 @@
          END IF
          CALL MPI_BARRIER(MPI_COMM_SHARMEM, ierr_mpi)
          CALL mpidealloc(MU3D,win_MU)
-         CALL RANDOM_SEED()
       END IF
 
       ! Get setup vessel

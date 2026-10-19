@@ -1,4 +1,5 @@
 ObjectFiles = \
+rng_seed_mod.o \
 henneberg_mapping_mod.o \
 SA_Evolve.o \
 nescoil_input_mod.o \
@@ -192,7 +193,6 @@ PCHEZ.o \
 spline_akima.o \
 PCHSP.o \
 PCHFD.o \
-init_random_seed.o \
 tolower.o \
 vmec_getenv.o \
 vmec_system.o \

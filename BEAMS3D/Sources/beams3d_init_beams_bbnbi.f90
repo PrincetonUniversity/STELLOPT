@@ -40,8 +40,6 @@
 !     Begin Subroutine
 !-----------------------------------------------------------------------
 
-      CALL init_random_seed
-
       IF (myworkid == master) THEN
          CALL H5open_f(ier)
          CALL h5fopen_f(TRIM(bbnbi_string), H5F_ACC_RDONLY_F, h5_fid, ier)
