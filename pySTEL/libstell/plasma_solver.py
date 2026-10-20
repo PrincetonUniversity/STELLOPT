@@ -460,17 +460,7 @@ class PLASMA_SOLVER:
                        using aLT_critical, stiffness and alpha (can be functions of rho)
         """
             
-        match type:
-            case 'dkespenta':
-                raise ValueError('dkespenta heat fluxes not working')
-                # #checks that dkes_folder and surfaces are provided
-                # if( surfaces is None):
-                #     print('ERROR: surfaces must be provided!!')
-                #     exit(0)
-                    
-                # self.heat_fluxes_info['type'] = type
-                # self.heat_fluxes_info[type]['surfaces'] = surfaces
-                
+        match type:           
             case 'diffusive':
                 #checks that diffusion coefficients are provided
                 if((chi is None) or (convective_fact is None)):
@@ -491,37 +481,13 @@ class PLASMA_SOLVER:
                 self.heat_fluxes_info[type]['convective_fact'] = convective_fact
                 self.heat_fluxes_info[type]['mass_ref_species'] = mass_ref_species        
                 
-            case 'dkespenta_beurskens':
-                raise ValueError('dkespenta_beurskens heat fluxes not working')
-                # if( (surfaces is None) or (chi_base is None) or (aLT_critical is None) or (alpha is None) or (stiffness is None) or (chi_electrons is None) or (convective_fact is None)):
-                #     print('ERROR: surfaces, chi_base, aLT_critical, alpha, stiffness, chi_electrons and convective_fact must be given!')
-                #     exit(0)
-                # self.heat_fluxes_info['type'] = type
-                # self.heat_fluxes_info[type]['surfaces'] = surfaces
-                # self.heat_fluxes_info[type]['chi_base'] = chi_base
-                # self.heat_fluxes_info[type]['aLT_critical'] = aLT_critical
-                # self.heat_fluxes_info[type]['alpha'] = alpha
-                # self.heat_fluxes_info[type]['stiffness'] = stiffness
-                # self.heat_fluxes_info[type]['chi_electrons'] = chi_electrons
-                # self.heat_fluxes_info[type]['convective_fact'] = convective_fact
-                
     def set_particle_fluxes(self, type: str, surfaces=None, Dn=None, cn=None, mass_ref_species=None):
         """
         Sets particle flux for all species. Currently, only 'diffusive' type is implemented:
         Gamma = -Dn dn/dr with Dn constant and equal to all species
         """
             
-        match type:
-            case 'dkespenta':
-                raise ValueError('dkespenta particle flux not working')
-                # #checks that dkes_folder and surfaces are provided
-                # if( surfaces is None ):
-                #     print('ERROR:surfaces must be provided!!')
-                #     exit(0)
-                    
-                # self.particle_fluxes_info['type'] = type
-                # self.particle_fluxes_info[type]['surfaces'] = surfaces
-                
+        match type:         
             case 'diffusive':
                 #checks that diffusion coefficient is provided
                 if(Dn is None):
@@ -888,16 +854,11 @@ class PLASMA_SOLVER:
         ptype = self.particle_fluxes_info['type']
         htype = self.heat_fluxes_info['type']
 
-        if (ptype in ['dkespenta'] or htype in ['dkespenta', 'dkespenta_beurskens']):
-            raise ValueError('The DKES+PENTA functionality is broken!!')
-
         # Particle flux function
         if ptype == 'diffusive':
             self.particle_flux_func = self.compute_diffusive_particle_flux
         elif ptype == 'diffusive_advective':
             self.particle_flux_func = self.compute_diffusive_advective_particle_flux
-        elif ptype == 'dkespenta':
-            self.particle_flux_func = self.compute_NEO_particle_flux
         elif ptype == 'normalized_Dn_cn_rho_aLn_dependent':
             self.particle_flux_func = self.compute_normalized_Dn_cn_rho_aLn_dependent_particle_flux
         else:
@@ -908,10 +869,6 @@ class PLASMA_SOLVER:
             self.heat_flux_func = self.compute_diffusive_heat_flux
         elif htype == 'beurskens':
             self.heat_flux_func = self.compute_beurskens_heat_flux
-        elif htype == 'dkespenta':
-            self.heat_flux_func = self.compute_NEO_heat_flux
-        elif htype == 'dkespenta_beurskens':
-            self.heat_flux_func = self.compute_NEO_plus_beurskens_heat_flux
         else:
             raise ValueError('Unsupported heat flux type')
              
