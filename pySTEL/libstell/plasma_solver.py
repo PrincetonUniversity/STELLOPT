@@ -58,7 +58,7 @@ class PLASMA_SOLVER:
         self.energy_sources = defaultdict(lambda: defaultdict(dict))
         self.particle_sources = defaultdict(lambda: defaultdict(dict))
         
-        self.heat_fluxes_info = defaultdict(lambda: defaultdict(dict))
+        self.heat_fluxes_info = {}
         self.particle_fluxes_info = defaultdict(lambda: defaultdict(dict))
 
         print(f'Transport plasma solver for {self.list_of_species} INITIALIZED!')
@@ -450,36 +450,58 @@ class PLASMA_SOLVER:
             case _:
                 raise ValueError(f'ERROR: Source type {source_type} is NOT possible')
                 
-    def set_heat_fluxes(self, type: str,surfaces=None,chi=None,chi_base=None,aLT_critical=None,alpha=None,stiffness=None,chi_electrons=None,convective_fact=None,mass_ref_species=None):
+    def set_heat_fluxes(self, species: str, type: str, *, chi_base=None, aLT_critical=None,
+                        stiffness=None, alpha=1.0, convective_fact=0.0, mass_ref_species=None):
         """
-        Sets heat flux for all species. In general, the heat flux for each species is:
+        Sets heat flux for a given species, replacing any previous configuration.
+        In general, the heat flux for each species is:
         Q = -n chi dT/dr + convective_fact*T*Gamma_turb
         The 'type' argument will set how chi is computed:
-        'diffusive' : 'chi' is constant and equal to all species
-        'beurskens' : 'chi_e' is constant for electrons; chi_ions are computed according to Beurskens model
-                       using aLT_critical, stiffness and alpha (can be functions of rho)
+        'diffusive' : chi is prescribed by chi_base
+        'beurskens' : ion chi is computed according to Beurskens model using chi_base,
+                       aLT_critical, stiffness, alpha and mass_ref_species [kg].
+                       Electrons must be present and use a separate heat-flux model.
+        chi_base, aLT_critical, stiffness, alpha and convective_fact can be scalars
+        or functions of rho returning a scalar or an array of shape (Nr,).
+        Every species must be configured before running the solver.
         """
-            
-        match type:           
+        if species not in self.list_of_species:
+            raise ValueError(f'ERROR: Species {species} is not in the plasma.')
+
+        config = {'type': type, 'chi_base': chi_base, 'convective_fact': convective_fact}
+        match type:
             case 'diffusive':
                 #checks that diffusion coefficients are provided
-                if((chi is None) or (convective_fact is None)):
-                    raise ValueError('ERROR: chi and convective_fact must be provided!')
-                self.heat_fluxes_info['type'] = type
-                self.heat_fluxes_info[type]['chi'] = chi
-                self.heat_fluxes_info[type]['convective_fact'] = convective_fact
-                
+                if chi_base is None:
+                    raise ValueError('ERROR: chi_base must be provided!')
+
             case 'beurskens':
-                if( (chi_base is None) or (aLT_critical is None) or (alpha is None) or (stiffness is None) or (chi_electrons is None) or (convective_fact is None) or (mass_ref_species is None)):
-                    raise ValueError('ERROR: chi_base, aLT_critical, alpha, stiffness, chi_electrons, convective_fact and mass_ref_species must be given!')
-                self.heat_fluxes_info['type'] = type
-                self.heat_fluxes_info[type]['chi_base'] = chi_base
-                self.heat_fluxes_info[type]['aLT_critical'] = aLT_critical
-                self.heat_fluxes_info[type]['alpha'] = alpha
-                self.heat_fluxes_info[type]['stiffness'] = stiffness
-                self.heat_fluxes_info[type]['chi_electrons'] = chi_electrons
-                self.heat_fluxes_info[type]['convective_fact'] = convective_fact
-                self.heat_fluxes_info[type]['mass_ref_species'] = mass_ref_species        
+                if species not in self.plasma.ion_species:
+                    raise ValueError('ERROR: beurskens heat flux is only supported for ions!')
+                if 'electrons' not in self.list_of_species:
+                    raise ValueError('ERROR: beurskens heat flux requires electron temperature!')
+                if any(value is None for value in (chi_base, aLT_critical, stiffness, alpha, mass_ref_species)):
+                    raise ValueError('ERROR: chi_base, aLT_critical, stiffness, alpha and mass_ref_species must be given!')
+                mass = np.asarray(mass_ref_species, dtype=float)
+                if mass.ndim != 0 or not np.isfinite(mass) or mass <= 0:
+                    raise ValueError('ERROR: mass_ref_species must be a finite positive scalar in kg!')
+                config.update(aLT_critical=aLT_critical, stiffness=stiffness,
+                              alpha=alpha, mass_ref_species=float(mass))
+
+            case _:
+                raise ValueError(f'ERROR: Unsupported heat flux type: {type}')
+
+        for name in ('chi_base', 'aLT_critical', 'stiffness', 'alpha', 'convective_fact'):
+            if name not in config or callable(config[name]):
+                continue
+            value = np.asarray(config[name], dtype=float)
+            if value.ndim != 0 or not np.isfinite(value):
+                raise ValueError(f'ERROR: {name} must be a finite scalar or a function of rho!')
+            if name in ('chi_base', 'stiffness') and value < 0:
+                raise ValueError(f'ERROR: {name} must be nonnegative!')
+            config[name] = float(value)
+
+        self.heat_fluxes_info[species] = config
                 
     def set_particle_fluxes(self, type: str, surfaces=None, Dn=None, cn=None, mass_ref_species=None):
         """
@@ -690,8 +712,10 @@ class PLASMA_SOLVER:
             #     raise ValueError(f'Edge pressure/temperature BC not consistent w/ initial temperature profile')
             
         # check fluxes info is set
-        if(not hasattr(self,'heat_fluxes_info')):
-            raise KeyError('ERROR: set_heat_fluxes must be called before running!!')
+        missing_heat_fluxes = [species for species in self.list_of_species
+                               if species not in self.heat_fluxes_info]
+        if missing_heat_fluxes:
+            raise KeyError(f'ERROR: Missing heat flux configuration for species: {", ".join(missing_heat_fluxes)}')
         if(not hasattr(self,'particle_fluxes_info')):
             raise KeyError('ERROR: set_particle_fluxes must be called before running!!')
         
@@ -848,11 +872,10 @@ class PLASMA_SOLVER:
     def setup_fluxes_type(self):
         """
         Selects the flux computation functions based on 
-        self.particle_fluxes_info['type'] and self.heat_fluxes_info['type']
+        self.particle_fluxes_info['type'] and self.heat_fluxes_info[species]['type']
         """
         
         ptype = self.particle_fluxes_info['type']
-        htype = self.heat_fluxes_info['type']
 
         # Particle flux function
         if ptype == 'diffusive':
@@ -865,12 +888,16 @@ class PLASMA_SOLVER:
             raise ValueError('Unsupported particle flux type')
 
         # Heat flux function
-        if htype == 'diffusive':
-            self.heat_flux_func = self.compute_diffusive_heat_flux
-        elif htype == 'beurskens':
-            self.heat_flux_func = self.compute_beurskens_heat_flux
-        else:
-            raise ValueError('Unsupported heat flux type')
+        models = {
+            'diffusive': self.compute_diffusive_chi,
+            'beurskens': self.compute_beurskens_chi,
+        }
+        self.heat_flux_funcs = {}
+        for species in self.list_of_species:
+            htype = self.heat_fluxes_info[species]['type']
+            if htype not in models:
+                raise ValueError(f'Unsupported heat flux type for {species}: {htype}')
+            self.heat_flux_funcs[species] = models[htype]
              
     def call_fluxes(self,it):
         """Computes fluxes at iteration it"""
@@ -878,7 +905,12 @@ class PLASMA_SOLVER:
         # Particle Fluxes
         self.particle_flux_func(it)
         # Heat Fluxes
-        self.heat_flux_func(it)
+        for species in self.list_of_species:
+            config = self.heat_fluxes_info[species]
+            chi = self.heat_flux_funcs[species](species, it, config)
+            convective_fact = self._evaluate_heat_flux_parameter(config['convective_fact'], 'convective_fact')
+            self.set_heat_transport_coefficients(species, it, chi, convective_fact,
+                                                 average_diffusion=(config['type'] == 'beurskens'))
         
         if(self.add_NEO):
             # add NEO fluxes to self.Dp, self.cp, self.Dn, self.cn
@@ -1358,43 +1390,71 @@ class PLASMA_SOLVER:
         control = kp * (error + integral/tau_i + tau_d * derivative)
         return control, error, integral
             
-    def compute_diffusive_heat_flux(self,it):
+    def _evaluate_heat_flux_parameter(self, value, name):
+        """Evaluate a scalar or function of rho as a finite array of shape (Nr,)."""
+        if callable(value):
+            value = value(self.rho_grid)
+        value = np.asarray(value, dtype=float)
+        if value.ndim == 0:
+            value = np.full(self.Nr, float(value))
+        elif value.shape != (self.Nr,):
+            raise ValueError(f'ERROR: {name} must return a scalar or an array of shape ({self.Nr},)!')
+        if not np.all(np.isfinite(value)):
+            raise ValueError(f'ERROR: {name} must contain only finite values!')
+        if name in ('chi_base', 'stiffness') and np.any(value < 0):
+            raise ValueError(f'ERROR: {name} must be nonnegative!')
+        return value
+
+    def compute_diffusive_chi(self, species, it, config):
+        """Return the prescribed diffusivity for one species."""
+        return self._evaluate_heat_flux_parameter(config['chi_base'], 'chi_base')
+
+    def set_heat_transport_coefficients(self, species, it, chi, convective_fact, average_diffusion=False):
         """
         Computes the coefficients Dp (diffusion) and cp (convection) of
-        each species assuming a simple diffusive mode, which are then used to 
+        a given species from its diffusivity, which are then used to
         fill the LHS_pressure matrix. The coefficients are computed such that 
         the heat flux is Q = -Dp*dp/dr + cp*p. This allows for the pressure to 
         be evolved in time according to LoDestro's method
+        For Beurskens, only Dp is averaged over subiterations; cp and the
+        diagnostic Q_turb retain the instantaneous diffusivity.
         """
-        from scipy.interpolate import CubicSpline
-        
         r_grid = self.r_grid
-        
-        for species in self.list_of_species:
-            
-            chi = self.heat_fluxes_info['diffusive']['chi']
-            convective_fact = self.heat_fluxes_info['diffusive']['convective_fact']
-            
-            # p_r = CubicSpline(r_grid,self.P[species][it,:])
-            # dpdr = p_r.derivative()
-            # dpdr = dpdr(r_grid)
-            p_r = self.P[species][it,:]
-            dpdr = akima_derivative(r_grid,p_r)
-            
-            # n_r = CubicSpline(r_grid,self.N[species][it,:])
-            # dndr = n_r.derivative()
-            n_r = self.N[species][it,:]
-            dndr = akima_derivative(r_grid,n_r)
-            
+
+        # p_r = CubicSpline(r_grid,self.P[species][it,:])
+        # dpdr = p_r.derivative()
+        p_r = self.P[species][it,:]
+        # dpdr = dpdr(r_grid)
+        dpdr = akima_derivative(r_grid,p_r)
+        # n_r = CubicSpline(r_grid,self.N[species][it,:])
+        # dndr = n_r.derivative()
+
+        n_r = self.N[species][it,:]
+        # dndr = dndr(r_grid)
+        dndr = akima_derivative(r_grid,n_r)
+
+        if average_diffusion:
+            D = chi
+
+            # save D of ALL subiter
+            self.Dp_keep[species][it].append(np.array(D))
+
+            # average to smooth-out eventual oscillations
+            D_avg = np.mean(np.array(self.Dp_keep[species][it]), axis=0)
+
+            self.Dp[species][it,:] = D_avg
+        else:
             self.Dp[species][it,:] = chi
-            
-            c = (chi/n_r)*dndr + convective_fact*self.Gamma_turb[species][it,:]/n_r
-            c[0] = 0.0
-            
-            self.cp[species][it,:] = c
-            
-            # this is for bookeeping
-            self.Q_turb[species][it,:] = -chi * dpdr + p_r*( (chi/n_r)*dndr + convective_fact*self.Gamma_turb[species][it,:]/n_r)
+
+        c = (chi/n_r)*dndr + convective_fact*self.Gamma_turb[species][it,:]/n_r
+        c[0] = 0.0
+
+        # should we also average 'c' ??
+
+        self.cp[species][it,:] = c
+
+        # this is for bookeeping
+        self.Q_turb[species][it,:] = -chi * dpdr + p_r*( (chi/n_r)*dndr + convective_fact*self.Gamma_turb[species][it,:]/n_r)
             
     def compute_diffusive_particle_flux(self,it):
         """
@@ -1513,102 +1573,53 @@ class PLASMA_SOLVER:
             dndr = akima_derivative(r_grid,n_r)
             self.Gamma_turb[species][it,:] = -self.Dn[species][it,:] * dndr + self.cn[species][it,:] * n_r
             
-    def compute_beurskens_heat_flux(self,it):
+    def compute_beurskens_chi(self, species, it, config):
         """
-        Computes the coefficients Dp (diffusion) and cp (convection) of
-        each species according to Beurskens model
+        Computes the diffusivity of a given ion according to Beurskens model.
+        The electron temperature is read from the current plasma profiles.
         """
-        from scipy.interpolate import CubicSpline
-        
-        chi_base = self.heat_fluxes_info['beurskens']['chi_base']
-        chi_electrons = self.heat_fluxes_info['beurskens']['chi_electrons']
-        aLT_critical = self.heat_fluxes_info['beurskens']['aLT_critical']
-        alpha = self.heat_fluxes_info['beurskens']['alpha']
-        stiffness = self.heat_fluxes_info['beurskens']['stiffness']
-        convective_fact = self.heat_fluxes_info['beurskens']['convective_fact']
-        m_ref_species = self.heat_fluxes_info['beurskens']['mass_ref_species']
-        
-        if callable(stiffness) and callable(aLT_critical):
-            stiffness = stiffness(self.rho_grid)
-            aLT_critical = aLT_critical(self.rho_grid)
-        elif isinstance(stiffness, (float, int)) and isinstance(aLT_critical, (float, int)):
-            pass
-        else:
-            raise ValueError('ERROR: stiffnes and aLTcritical can only be a function or integer/float!')
-        
-        chi = {}
+        chi_base = self._evaluate_heat_flux_parameter(config['chi_base'], 'chi_base')
+        aLT_critical = self._evaluate_heat_flux_parameter(config['aLT_critical'], 'aLT_critical')
+        alpha = self._evaluate_heat_flux_parameter(config['alpha'], 'alpha')
+        stiffness = self._evaluate_heat_flux_parameter(config['stiffness'], 'stiffness')
+        m_ref_species = config['mass_ref_species']
+
         r_grid = self.r_grid
         
         ## electrons
-        chi['electrons'] = chi_electrons * np.ones(self.Nr)
         T_electrons = self.T['electrons'][it,:]
          
         ## IONS
-        for ion in self.plasma.ion_species:
-            T_ion = self.T[ion][it,:]
-            n_ion = self.N[ion][it,:]
-            
-            # T_polyfit = np.poly1d( np.polyfit(r_grid,T_ion,deg=12) )
-            # dTdr_polyfit = np.poly1d( T_polyfit.deriv() )
-            # dTdr_polyfit = dTdr_polyfit(r_grid)
-            # dTdr = dTdr_polyfit
-            dTdr = polyfit_derivative_fast(r_grid,T_ion,deg=12)
-            
-            a_LT = self.aminor * dTdr / T_ion
-            
-            a_LT_filtered = -a_LT
-            
-            X = a_LT_filtered - aLT_critical
-            
-            chi_turb = stiffness * X * np.heaviside(X,1) * (T_electrons/T_ion)**alpha
-            
-            # gyro-Bohm heat flux
-            Tref = T_ion         # self.T[ref_species][it,:]
-            mref = m_ref_species # self.plasma.mass[ref_species]
-            # nref = self.N[ref_species][it,:] # we cannot use this one, as this poses issue to the impurities
-            nref = n_ion
-            
-            Q_gB = 2.0*np.sqrt(2)*nref*np.sqrt(mref)*(EC*Tref)**2.5 / (EC*self.Bref*self.aminor)**2
-            
-            chi_gB = Q_gB * self.aminor/(n_ion*EC*T_ion)
-            
-            chi_turb = chi_gB * chi_turb
-            
-            chi[ion] = chi_base + chi_turb
-        
-        for species in self.list_of_species:
-            
-            # p_r = CubicSpline(r_grid,self.P[species][it,:])
-            # dpdr = p_r.derivative()
-            p_r = self.P[species][it,:]
-            # dpdr = dpdr(r_grid)
-            dpdr = akima_derivative(r_grid,p_r)
-            # n_r = CubicSpline(r_grid,self.N[species][it,:])
-            # dndr = n_r.derivative()
-            
-            n_r = self.N[species][it,:]
-            # dndr = dndr(r_grid)
-            dndr = akima_derivative(r_grid,n_r)
-            
-            D = chi[species]
-            
-            # save D of ALL subiter
-            self.Dp_keep[species][it].append(np.array(D))
-            
-            # average to smooth-out eventual oscillations
-            D_avg = np.mean(np.array(self.Dp_keep[species][it]), axis=0)
+        T_ion = self.T[species][it,:]
+        n_ion = self.N[species][it,:]
 
-            self.Dp[species][it,:] = D_avg
-            
-            c = (chi[species]/n_r)*dndr + convective_fact*self.Gamma_turb[species][it,:]/n_r
-            c[0] = 0.0
-            
-            # should we also average 'c' ??
-            
-            self.cp[species][it,:] = c
-            
-            # this is for bookeeping
-            self.Q_turb[species][it,:] = -chi[species] * dpdr + p_r*( (chi[species]/n_r)*dndr + convective_fact*self.Gamma_turb[species][it,:]/n_r)
+        # T_polyfit = np.poly1d( np.polyfit(r_grid,T_ion,deg=12) )
+        # dTdr_polyfit = np.poly1d( T_polyfit.deriv() )
+        # dTdr_polyfit = dTdr_polyfit(r_grid)
+        # dTdr = dTdr_polyfit
+        dTdr = polyfit_derivative_fast(r_grid,T_ion,deg=12)
+
+        a_LT = self.aminor * dTdr / T_ion
+
+        a_LT_filtered = -a_LT
+
+        X = a_LT_filtered - aLT_critical
+
+        chi_turb = stiffness * X * np.heaviside(X,1) * (T_electrons/T_ion)**alpha
+
+        # gyro-Bohm heat flux
+        Tref = T_ion         # self.T[ref_species][it,:]
+        mref = m_ref_species # self.plasma.mass[ref_species]
+        # nref = self.N[ref_species][it,:] # we cannot use this one, as this poses issue to the impurities
+        nref = n_ion
+
+        Q_gB = 2.0*np.sqrt(2)*nref*np.sqrt(mref)*(EC*Tref)**2.5 / (EC*self.Bref*self.aminor)**2
+
+        chi_gB = Q_gB * self.aminor/(n_ion*EC*T_ion)
+
+        chi_turb = chi_gB * chi_turb
+
+        return chi_base + chi_turb
     
     def initialize_NEO(self, surfaces_k, DKES_coeffs_file, dt_NEO=None, Er_root_type='ion_root', dt_Er_ambipolar=None, n_workers_NEO=1, add_NEO_particle_fluxes=True, add_NEO_heat_fluxes=True, Er_min_Vcm=-250.0, Er_max_Vcm=250.0):
         """

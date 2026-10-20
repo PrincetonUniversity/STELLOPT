@@ -82,7 +82,8 @@ solver.set_equilibrium(type='VMEC', wout_path=wout_file)
 #################################################################################################
 ###################### set Heat Fluxes ##########################################################
 
-solver.set_heat_fluxes(type='beurskens', chi_base=0.03, aLT_critical=1.19, alpha=1.0, stiffness=0.89, chi_electrons=2.0, convective_fact=0.0,mass_ref_species=plasma.mass_database['hydrogen'])
+solver.set_heat_fluxes(species='hydrogen', type='beurskens', chi_base=0.03, aLT_critical=1.19, alpha=1.0, stiffness=0.89, convective_fact=0.0,mass_ref_species=plasma.mass_database['hydrogen'])
+solver.set_heat_fluxes(species='electrons', type='diffusive', chi_base=2.0)
 
 ####################################################################################################
 ###################### set Particle Fluxes ##########################################################

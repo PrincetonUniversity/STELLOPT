@@ -109,7 +109,9 @@ solver.set_equilibrium(type='cylindrical', aminor=2.0, Rmajor=20.0, B=6.0, iota2
 #################################################################################################
 ###################### set Heat Fluxes ##########################################################
 
-solver.set_heat_fluxes(type='beurskens', chi_base=0.03, aLT_critical=2.20, alpha=1.0, stiffness=0.4, chi_electrons=0.5, convective_fact=0.0,mass_ref_species=(plasma.mass_database['deuterium']+plasma.mass_database['tritium'])/2.0)
+for species in plasma.ion_species:
+    solver.set_heat_fluxes(species=species, type='beurskens', chi_base=0.03, aLT_critical=2.20, alpha=1.0, stiffness=0.4, convective_fact=0.0,mass_ref_species=(plasma.mass_database['deuterium']+plasma.mass_database['tritium'])/2.0)
+solver.set_heat_fluxes(species='electrons', type='diffusive', chi_base=0.5)
 
 ####################################################################################################
 ###################### set Particle Fluxes ##########################################################
