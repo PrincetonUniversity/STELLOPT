@@ -1653,7 +1653,7 @@ class PLASMA_SOLVER:
             # this is for bookeeping
             self.Q_turb[species][it,:] = -chi[species] * dpdr + p_r*( (chi[species]/n_r)*dndr + convective_fact*self.Gamma_turb[species][it,:]/n_r)
     
-    def initialize_NEO(self, surfaces_k, DKES_coeffs_file, dt_NEO=None, Er_root_type='ion_root', dt_Er_ambipolar=None, n_workers_NEO=1, add_NEO_particle_fluxes=True, add_NEO_heat_fluxes=True):
+    def initialize_NEO(self, surfaces_k, DKES_coeffs_file, dt_NEO=None, Er_root_type='ion_root', dt_Er_ambipolar=None, n_workers_NEO=1, add_NEO_particle_fluxes=True, add_NEO_heat_fluxes=True, Er_min_Vcm=-250.0, Er_max_Vcm=250.0):
         """
         n_workers_NEO controls how call_NEO evaluates the DKES surfaces
         n_workers_NEO=1 (default) evaluates them serially in this process. 
@@ -1685,6 +1685,9 @@ class PLASMA_SOLVER:
         
         self.fact_NEO_particle_fluxes = 1.0
         self.fact_NEO_heat_fluxes     = 1.0
+        
+        self.Er_min_Vcm = Er_min_Vcm
+        self.Er_max_Vcm = Er_max_Vcm
         
         if(not add_NEO_particle_fluxes): self.fact_NEO_particle_fluxes = 0.0
         if(not add_NEO_heat_fluxes):     self.fact_NEO_heat_fluxes     = 0.0
@@ -1725,8 +1728,8 @@ class PLASMA_SOLVER:
         Matom_prof = [self.plasma.mass[ion]    for ion in self.plasma.ion_species]
         Zatom_prof = [self.plasma.Zcharge[ion] for ion in self.plasma.ion_species]
         EparB = np.zeros_like(self.roa_dkes_k)
-        Er_min_Vcm = -250
-        Er_max_Vcm = 250
+        Er_min_Vcm = self.Er_min_Vcm
+        Er_max_Vcm = self.Er_max_Vcm
         bsq = self.Bsq_spline(self.roa_dkes_k)
         # Initialize from the solver grid once (including restart profiles).
         # Reuse native surface values to avoid repeated interpolation drift.
