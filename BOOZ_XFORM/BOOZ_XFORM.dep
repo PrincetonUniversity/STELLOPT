@@ -90,3 +90,17 @@ write_boozmn.o : \
       booz_params.o \
       booz_persistent.o 
       
+
+booz_ad.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      booz_params.o \
+      booz_persistent.o
+
+
+booz_ad_driver.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      booz_params.o \
+      booz_persistent.o \
+      booz_ad.o

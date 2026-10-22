@@ -17,6 +17,8 @@ VPATH = $(SPATH)
 .SUFFIXES : .f .f90 .o
 xbooz_xform:  $(LIB) $(ObjectFiles)
 	$(LINK) $@ $(ObjectFiles) $(LIB_LINK)
+xbooz_xform_ad:  $(LIB) $(ObjectFiles) booz_ad_driver.o
+	$(LINK) $@ $(filter-out boozer_xform.o,$(ObjectFiles)) booz_ad_driver.o $(LIB_LINK)
 #Compile object files defined in OBJLIST.
 .f.o :
 	@if grep -q '^!DEC\$$' $<; \
