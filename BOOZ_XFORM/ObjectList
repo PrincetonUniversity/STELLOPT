@@ -15,4 +15,5 @@ vcoords.o \
 boozer.o \
 free_mem_boozer.o \
 boozer_coords.o \
-booz_persistent.o 
+booz_persistent.o \
+booz_ad.o 
