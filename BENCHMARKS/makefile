@@ -6,6 +6,7 @@
 
 # Setup Subdirectories
   BEAMS3D_TEST_DIR = BEAMS3D_TEST
+  BOOZ_XFORM_TEST_DIR = BOOZ_XFORM_TEST
   DIAGNO_TEST_DIR = DIAGNO_TEST
   FIELDLINES_TEST_DIR = FIELDLINES_TEST
   NESCOIL_TEST_DIR = NESCOIL_TEST
@@ -44,6 +45,13 @@ test_beams3d:
 	$(MAKE) test_beams3d_fullorbit_rkh68
 	$(MAKE) test_beams3d_fullorbit_coll
 	@echo "Tesing of BEAMS3D complete"
+	@echo ""
+
+test_booz_xform:
+	@echo "Beginning testing of BOOZ_XFORM tangent-linear and adjoint"
+	@cd $(BOOZ_XFORM_TEST_DIR); $(MYHOME)/xbooz_xform_ad in_booz.ncsx chk
+	@cd $(BOOZ_XFORM_TEST_DIR); $(MYHOME)/xbooz_xform_ad in_booz.DIIID_lasym chk
+	@echo "Tesing of BOOZ_XFORM complete"
 	@echo ""
 
 test_diagno:
@@ -507,6 +515,7 @@ help:
 	@echo "   COMMANDS"
 	@echo "      test_indexing   Testing of linear to 3D indexing"
 	@echo "      test_beams3d    Tesing of BEAMS3D"
+	@echo "      test_booz_xform Tesing of BOOZ_XFORM tangent/adjoint"
 	@echo "      test_diagno     Tesing of DIAGNO"
 	@echo "      test_fieldlines Tesing of FIELDLINES"
 	@echo "      test_PENTA      Tesing of PENTA"
