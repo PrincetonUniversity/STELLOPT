@@ -122,10 +122,14 @@
          CALL EZspline_setup(BZ_spl,B_Z,ier,EXACT_DIM=.true.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_mumat:BZ_spl',ier)
       END IF
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_MUSHARE, ier)
       CALL mpialloc(BR4D,   8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_MUSHARE, win_BR4D)
       CALL mpialloc(BPHI4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_MUSHARE, win_BPHI4D)
       CALL mpialloc(BZ4D,   8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_MUSHARE, win_BZ4D)
+#else
+      ALLOCATE(BR4D(8,nr,nphi,nz), BPHI4D(8,nr,nphi,nz), BZ4D(8,nr,nphi,nz))
+#endif
       IF (lissubmaster) THEN
          BR4D = BR_SPL%fspl
          BPHI4D = BPHI_SPL%fspl
@@ -183,9 +187,13 @@
 #endif
 
       ! Free memory
+#if defined(MPI_OPT)
       CALL mpidealloc(BR4D,win_BR4D)
       CALL mpidealloc(BPHI4D,win_BPHI4D)
       CALL mpidealloc(BZ4D,win_BZ4D)
+#else
+      DEALLOCATE(BR4D, BPHI4D, BZ4D)
+#endif
       CALL MUMATERIAL_FREE()
 
 #if defined(MPI_OPT)

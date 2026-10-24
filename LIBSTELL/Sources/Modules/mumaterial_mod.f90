@@ -259,8 +259,17 @@
                                                         0.0d0, 0.0d0, 1.0d0], [3,3]) !! 3x3 identity matrix
 
       PRIVATE :: CROSS_PRODUCT
+#if !defined(MPI_OPT)
+      PRIVATE :: MPI_WTIME
+#endif
 
       CONTAINS
+#if !defined(MPI_OPT)
+      DOUBLE PRECISION FUNCTION MPI_WTIME()
+      ! Keep timing available when mpi_inc does not import MPI routines.
+      CALL second0(MPI_WTIME)
+      END FUNCTION MPI_WTIME
+#endif
 !------------------------------------------------------------------------------
 !     Subroutines
 !       Main flow
@@ -510,6 +519,7 @@
       INTEGER, INTENT(out) :: comm_master_out !! Master communicator
       INTEGER :: comm_myworld, i
 
+#if defined(MPI_OPT)
       CALL MPI_COMM_DUP( comm, comm_myworld, ierr_mpi )
       CALL MPI_COMM_SPLIT_TYPE( comm_myworld, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, comm_shar_out, ierr_mpi)
       CALL MPI_COMM_RANK( comm_shar_out, shar_rank, ierr_mpi)
@@ -517,6 +527,10 @@
       i = MPI_UNDEFINED
       IF (shar_rank.EQ.0) i = 0
       CALL MPI_COMM_SPLIT( comm_myworld, i, shar_rank, comm_master_out, ierr_mpi )
+#else
+      comm_shar_out = comm
+      comm_master_out = comm
+#endif
 
       END SUBROUTINE mumaterial_set_comms
 
@@ -529,6 +543,7 @@
       IMPLICIT NONE
 
       INTEGER :: ik
+#if defined(MPI_OPT)
       IF (ASSOCIATED(state_dex))     CALL mpidealloc(state_dex,win_state_dex)
       IF (ASSOCIATED(state_type))    CALL mpidealloc(state_type,win_state_type)
       IF (ASSOCIATED(constant_mu))   CALL mpidealloc(constant_mu,win_constant_mu)
@@ -543,6 +558,21 @@
       IF (ASSOCIATED(M))             CALL mpidealloc(M,win_M)
       IF (ASSOCIATED(Mrem))          CALL mpidealloc(Mrem,win_Mrem)
 
+#else
+      IF (ASSOCIATED(state_dex)) DEALLOCATE(state_dex)
+      IF (ASSOCIATED(state_type)) DEALLOCATE(state_type)
+      IF (ASSOCIATED(constant_mu)) DEALLOCATE(constant_mu)
+      IF (ASSOCIATED(constant_mu_o)) DEALLOCATE(constant_mu_o)
+      IF (ASSOCIATED(tet)) DEALLOCATE(tet)
+      IF (ASSOCIATED(vertex)) DEALLOCATE(vertex)
+      IF (ASSOCIATED(tet_cen)) DEALLOCATE(tet_cen)
+      IF (ASSOCIATED(tet_vol)) DEALLOCATE(tet_vol)
+      IF (ASSOCIATED(tet_P)) DEALLOCATE(tet_P)
+      IF (ASSOCIATED(tet_D)) DEALLOCATE(tet_D)
+      IF (ASSOCIATED(tet_v)) DEALLOCATE(tet_v)
+      IF (ASSOCIATED(M)) DEALLOCATE(M)
+      IF (ASSOCIATED(Mrem)) DEALLOCATE(Mrem)
+#endif
       DO ik = 1, nstate
          IF (ALLOCATED(stateFunction(ik)%H)) DEALLOCATE(stateFunction(ik)%H)
          IF (ALLOCATED(stateFunction(ik)%M)) DEALLOCATE(stateFunction(ik)%M)
@@ -550,6 +580,7 @@
       END DO
       IF (ALLOCATED(stateFunction)) DEALLOCATE(stateFunction)
 
+#if defined(MPI_OPT)
       IF (ASSOCIATED(node_level))     CALL mpidealloc(node_level,win_node_level)
       IF (ASSOCIATED(node_child))     CALL mpidealloc(node_child,win_node_child)
       IF (ASSOCIATED(node_parent))    CALL mpidealloc(node_parent,win_node_parent)
@@ -580,6 +611,33 @@
       IF (ASSOCIATED(sparse_M_send_buf))  CALL mpidealloc(sparse_M_send_buf,win_sparse_M_send_buf)
       IF (ASSOCIATED(sparse_M_recv_buf))  CALL mpidealloc(sparse_M_recv_buf,win_sparse_M_recv_buf)   
       
+#else
+      IF (ASSOCIATED(node_level)) DEALLOCATE(node_level)
+      IF (ASSOCIATED(node_child)) DEALLOCATE(node_child)
+      IF (ASSOCIATED(node_parent)) DEALLOCATE(node_parent)
+      IF (ASSOCIATED(node_bounds)) DEALLOCATE(node_bounds)
+      IF (ASSOCIATED(node_cen)) DEALLOCATE(node_cen)
+      IF (ASSOCIATED(leaf_size)) DEALLOCATE(leaf_size)
+      IF (ASSOCIATED(leaf_tile)) DEALLOCATE(leaf_tile)
+      IF (ASSOCIATED(leaf_to_node)) DEALLOCATE(leaf_to_node)
+      IF (ASSOCIATED(node_m)) DEALLOCATE(node_m)
+      IF (ASSOCIATED(node_p)) DEALLOCATE(node_p)
+      IF (ASSOCIATED(node_com)) DEALLOCATE(node_com)
+      IF (ASSOCIATED(node_w)) DEALLOCATE(node_w)
+      IF (ASSOCIATED(node_q)) DEALLOCATE(node_q)
+      IF (ASSOCIATED(sync_node_sendbuf)) DEALLOCATE(sync_node_sendbuf)
+      IF (ASSOCIATED(sync_node_recvbuf)) DEALLOCATE(sync_node_recvbuf)
+      IF (ASSOCIATED(sync_M_sendbuf)) DEALLOCATE(sync_M_sendbuf)
+      IF (ASSOCIATED(sync_M_recvbuf)) DEALLOCATE(sync_M_recvbuf)
+      IF (ASSOCIATED(sparse_send_buf)) DEALLOCATE(sparse_send_buf)
+      IF (ASSOCIATED(sparse_recv_buf)) DEALLOCATE(sparse_recv_buf)
+      IF (ASSOCIATED(sparse_send_map)) DEALLOCATE(sparse_send_map)
+      IF (ASSOCIATED(sparse_recv_map)) DEALLOCATE(sparse_recv_map)
+      IF (ASSOCIATED(sparse_M_send_map)) DEALLOCATE(sparse_M_send_map)
+      IF (ASSOCIATED(sparse_M_recv_map)) DEALLOCATE(sparse_M_recv_map)
+      IF (ASSOCIATED(sparse_M_send_buf)) DEALLOCATE(sparse_M_send_buf)
+      IF (ASSOCIATED(sparse_M_recv_buf)) DEALLOCATE(sparse_M_recv_buf)
+#endif
       END SUBROUTINE mumaterial_free
 
 !------------------------------------------------------------------------------
@@ -602,6 +660,9 @@
 
       ! Set lcomm
       lcomm = ((PRESENT(comm_shar_in).and.PRESENT(comm_master_in)).AND.PRESENT(comm_world_in))
+#if !defined(MPI_OPT)
+      lcomm = .FALSE.
+#endif
       IF (lcomm) THEN
         comm_shar   = comm_shar_in
         comm_master = comm_master_in
@@ -1022,7 +1083,9 @@
       IF (shar_rank.EQ.0) THEN  ! Master wipes shared arrays
         tet_cen = 0; tet_vol = 0
       END IF
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(comm_shar, ierr_mpi) ! Calculate range
+#endif
       mystart = 1; myend = ntet
       IF (lcomm) THEN
 #if defined(MPI_OPT)
@@ -1656,7 +1719,12 @@
       ALLOCATE(work(nleaf))
       work = 0
 
+#if defined(MPI_OPT)
       CALL MPI_CALC_MYRANGE(comm_world, 1, nleaf, leaf_start, leaf_end)
+#else
+      leaf_start = 1
+      leaf_end = nleaf
+#endif
       DO ileaf = leaf_start, leaf_end
         inode = leaf_to_node(ileaf)
         counter = 0
@@ -1664,7 +1732,9 @@
         CALL mumaterial_interactions_count(node_cen(:,inode), ROOT, counter, wval, .FALSE.)
         work(ileaf) = wval
       END DO
+#if defined(MPI_OPT)
       CALL MPI_ALLREDUCE(MPI_IN_PLACE, work, nleaf, MPI_DOUBLE_PRECISION, MPI_SUM, comm_world, ierr_mpi)
+#endif
 
       !-----------------------------
       ! SORT LEAVES BY DECREASING WORK
@@ -1727,7 +1797,11 @@
         max_leaf_size_seen = 0
       END IF
 
+#if defined(MPI_OPT)
       CALL MPI_ALLREDUCE(max_leaf_size_seen, max_leaf_size, 1, MPI_INTEGER, MPI_MAX, comm_world, ierr_mpi)
+#else
+      max_leaf_size = max_leaf_size_seen
+#endif
       ALLOCATE(leaf_tile_loc(max_leaf_size_seen, nleaf_loc))
       DO ileaf_loc = 1, nleaf_loc
         inode = leaf_local_to_node_global(ileaf_loc)
