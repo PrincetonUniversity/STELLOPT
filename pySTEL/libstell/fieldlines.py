@@ -138,7 +138,7 @@ class FIELDLINES():
 		for i in range(self.nlines):
 			f, residuals, rank, singular_values, rcond = np.polyfit(p[i,:-1],theta[i,:],1,full=True)
 			iota[i] = f[0]
-			iota_err[i] = np.sqrt(residuals)
+			iota_err[i] = np.sqrt(residuals/nmax)
 		iota[0] = 2.0 * iota[1] - iota[2]
 		return reff, iota, iota_err
 
