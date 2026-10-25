@@ -74,7 +74,6 @@
          IF(ALLOCATED(xm_nyq)) DEALLOCATE(xm_nyq); ALLOCATE(xm_nyq(mnmax_nyq))
          IF(ALLOCATED(xn_nyq)) DEALLOCATE(xn_nyq); ALLOCATE(xn_nyq(mnmax_nyq))
          IF(ALLOCATED(bsubvmnc)) DEALLOCATE(bsubvmnc); ALLOCATE(bsubvmnc(mnmax_nyq,ns))
-         CALL parse_coils_file('coils.'//TRIM(proc_string))
       END IF
       CALL MPI_BCAST(      xm,        mnmax, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
       CALL MPI_BCAST(      xn,        mnmax, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
@@ -84,6 +83,11 @@
       CALL MPI_BCAST(  xn_nyq,    mnmax_nyq, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
       CALL MPI_BCAST(bsubvmnc, mnmax_nyq*ns, MPI_DOUBLE_PRECISION, master, MPI_COMM_MYWORLD, ierr_mpi)
 #endif
+
+      !-----------------------------------------------------------------
+      !     Read the coils file if needed
+      !-----------------------------------------------------------------
+      IF (.not. ALLOCATED(coil_group)) CALL parse_coils_file('coils.'//TRIM(proc_string))
 
       !-----------------------------------------------------------------
       !     Compute BNORMAL
@@ -245,6 +249,7 @@
          WRITE(6,'(A,F7.3)') '   B-NORMAL MIN (COIL):  ',MINVAL(bcreal)
          WRITE(6,'(A,F7.3)') '         B-NORMAL MAX :  ',MAXVAL(bnormal_total)
          WRITE(6,'(A,F7.3)') '         B-NORMAL MIN :  ',MINVAL(bnormal_total)
+         CALL FLUSH(6)
       END IF
       
       !-----------------------------------------------------------------

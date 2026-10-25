@@ -65,6 +65,13 @@
       CALL MPI_COMM_SIZE( COMM_LOCAL, numprocs_local, ierr_mpi )
       CALL MPI_COMM_RANK( COMM_LOCAL, myworkid, ierr_mpi )
       ALLOCATE(lfile_found_global(numprocs_local))
+      CALL MPI_BCAST(nr, 1, MPI_INTEGER, master, COMM_LOCAL, ierr_mpi)
+      CALL MPI_BCAST(nphi, 1, MPI_INTEGER, master, COMM_LOCAL, ierr_mpi)
+      CALL MPI_BCAST(nz, 1, MPI_INTEGER, master, COMM_LOCAL, ierr_mpi)
+      CALL MPI_BCAST(rmin, 1, MPI_REAL8, master, COMM_LOCAL, ierr_mpi)
+      CALL MPI_BCAST(rmax, 1, MPI_REAL8, master, COMM_LOCAL, ierr_mpi)
+      CALL MPI_BCAST(zmin, 1, MPI_REAL8, master, COMM_LOCAL, ierr_mpi)
+      CALL MPI_BCAST(zmax, 1, MPI_REAL8, master, COMM_LOCAL, ierr_mpi)
 !DEC$ ENDIF
 
       IF (lscreen) WRITE(6,*) '---------------------------  WRITING MGRID  ------------------------'
@@ -101,9 +108,17 @@
 
       ! Print out some info
       IF (lscreen) THEN
+         WRITE(6,'(A,A)')                '   COILS FILE: ',TRIM(coil_string)
+         IF (mgrid_mode == 'S') THEN
+            WRITE(6,'(A,A)')             '   SCALING: UNIT CURRENT'
+         ELSE
+            WRITE(6,'(A,A)')             '   SCALING: RAW'
+         ENDIF
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   R   = [',rmin,',',rmax,'];  NR:   ',nr
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',0.0,',',pi2/nfp,'];  NPHI: ',nphi
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',zmin,',',zmax,'];  NZ:   ',nz
+         WRITE(6,'(A,A)')                '   MGRID FILE: ','mgrid_'//TRIM(proc_string)// '.nc'
+         IF (lstell_sym) WRITE(6,'(A)') '   Assuming stellarator symmetry.'
          CALL FLUSH(6)
       END IF
 
@@ -112,34 +127,6 @@
       dz = (zmax - zmin)/REAL(nz-1)
       dphi = pi2/REAL(nphi)/REAL(nfp)
       ALLOCATE(br(nr,nz,nphi),bz(nr,nz,nphi),bp(nr,nz,nphi))
-
-      ! Break up the Work
-      chunk = FLOOR(REAL(nr*nphi*nz) / REAL(numprocs_local))
-      mystart = myworkid*chunk + 1
-      myend = mystart + chunk - 1
-
-      ! Setup Chunking
-!DEC$ IF DEFINED (MPI_OPT)
-      chunk = FLOOR(REAL(nr*nphi*nz) / REAL(numprocs_local))
-      mystart = myworkid*chunk + 1
-      myend = mystart + chunk - 1
-      IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
-      IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
-      ALLOCATE(mnum(numprocs_local), moffsets(numprocs_local))
-      CALL MPI_ALLGATHER(chunk,1,MPI_INTEGER,mnum,1,MPI_INTEGER,COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHER(mystart,1,MPI_INTEGER,moffsets,1,MPI_INTEGER,COMM_LOCAL,ierr_mpi)
-      i = 1
-      DO
-         IF ((moffsets(numprocs_local)+mnum(numprocs_local)-1) == nr*nphi*nz) EXIT
-         IF (i == numprocs_local) i = 1
-         mnum(i) = mnum(i) + 1
-         moffsets(i+1:numprocs_local) = moffsets(i+1:numprocs_local) + 1
-         i=i+1
-      END DO
-      mystart = moffsets(myworkid+1)
-      chunk  = mnum(myworkid+1)
-      myend   = mystart + chunk - 1
-!DEC$ ENDIF
 
       ! Master handles netCDF file
       IF (myworkid == master) THEN
@@ -198,8 +185,12 @@
 
       END IF
 
+      ! Break up the work
+      CALL MPI_CALC_MYRANGE(COMM_LOCAL, 1, nr*nphi*nz, mystart, myend)
+
       ! Now loop over coil Groups
       DO ig = 1, nextcur
+         br = 0.0; bp = 0.0; bz = 0.0
          DO s = mystart, myend
             ! Ordering nr,nz,nphi
             i = MOD(s-1,nr)+1
@@ -214,15 +205,15 @@
          ! Gather the Results
 !DEC$ IF DEFINED (MPI_OPT)
          CALL MPI_BARRIER(COMM_LOCAL,ierr_mpi)
-         CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        br,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        COMM_LOCAL,ierr_mpi)
-         CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        bp,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        COMM_LOCAL,ierr_mpi)
-         CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        bz,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        COMM_LOCAL,ierr_mpi)
+         IF (myworkid == master) THEN
+            CALL MPI_REDUCE(MPI_IN_PLACE, br, nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, master, COMM_LOCAL, ierr_mpi)
+            CALL MPI_REDUCE(MPI_IN_PLACE, bp, nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, master, COMM_LOCAL, ierr_mpi)
+            CALL MPI_REDUCE(MPI_IN_PLACE, bz, nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, master, COMM_LOCAL, ierr_mpi)
+         ELSE
+            CALL MPI_REDUCE(br,           br, nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, master, COMM_LOCAL, ierr_mpi)
+            CALL MPI_REDUCE(bp,           bp, nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, master, COMM_LOCAL, ierr_mpi)
+            CALL MPI_REDUCE(bz,           bz, nr*nphi*nz, MPI_DOUBLE_PRECISION, MPI_SUM, master, COMM_LOCAL, ierr_mpi)
+         END IF
 !DEC$ ENDIF
   
 
@@ -254,12 +245,14 @@
             END IF
             CALL FLUSH(6)
          END IF
+!DEC$ IF DEFINED (MPI_OPT)
+         CALL MPI_BARRIER(COMM_LOCAL,ierr_mpi)
+!DEC$ ENDIF
 
       END DO
 
-      ! Clsoe file
+      ! Close file
       IF (myworkid == master) CALL cdf_close(ngrid)
-      CALL cleanup_biotsavart
 
       ! Free memory
       IF (ALLOCATED(br)) DEALLOCATE(br)
