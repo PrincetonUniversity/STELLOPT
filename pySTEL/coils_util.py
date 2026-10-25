@@ -52,6 +52,8 @@ if __name__=="__main__":
 		help="Flip the sign of the coils.", default = False)
 	parser.add_argument("--reverse", dest="lreverse", action='store_true',
 		help="Flip the toroidal direction of the coil.", default = False)
+	parser.add_argument("--info", dest="linfo", action='store_true',
+		help="Output to screen coil info.", default = False)
 	args = parser.parse_args()
 	coils = COILSET()
 	if args.vmec_ext:
@@ -63,6 +65,46 @@ if __name__=="__main__":
 			sys.exit(-1)
 	if args.coils_file: 
 		coils.read_coils_file(args.coils_file)
+		if args.linfo:
+			print('====================================================')
+			print(f'COIL FILE: {args.coils_file}')
+			if args.vmec_ext:
+				print(f'VMEC EXT: {args.vmec_ext}')
+				theta = np.linspace([0.0],[2.0*np.pi],360)
+				phi   = np.linspace([0.0],[2.0*np.pi],720)
+				r     = vmec_data.cfunct(theta,phi,vmec_data.rmnc,vmec_data.xm,vmec_data.xn)
+				z     = vmec_data.sfunct(theta,phi,vmec_data.zmns,vmec_data.xm,vmec_data.xn)
+				r     = r[-1,:,:]
+				z     = z[-1,:,:]
+				x     = np.ones_like(r)
+				y     = np.ones_like(r)
+				for k,phit in enumerate(phi):
+					x[:,k] = r[:,k]*np.cos(phit)
+					y[:,k] = r[:,k]*np.sin(phit)
+				coils.coilSurfDist(x.flatten(),y.flatten(),z.flatten())
+			coils.coilCoilDist()
+			print('====================================================')
+			for i in range(coils.ngroups):
+				print(f'  COIL GROUP {i:02d} {coils.groups[i].name}')
+				print(f'    NCOILS {coils.groups[i].ncoils:02d}')
+				print(f'    CURRENT {coils.groups[i].current/1E3:10.2f} [kA]')
+				j = 0 # Only do first coil
+				coil_dl = np.sqrt(coils.groups[i].coils[j].dx**2+coils.groups[i].coils[j].dy**2+coils.groups[i].coils[j].dz**2)
+				l = np.sum(coil_dl)
+				print(f'    LENGTH  {l:5.2f} [m]')
+				print(f'    COIL-COIL DISTANCE')
+				print(f'       MINIMUM {min(coils.groups[i].coils[j].dist_coil):5.2f} [m]')
+				print(f'       MAXIMUM {max(coils.groups[i].coils[j].dist_coil):5.2f} [m]')
+				top = np.where(coils.groups[i].coils[j].dist_coil[:-1]>1.0,coil_dl,0.0)
+				print(f'       {100.*sum(top)/l:5.2f}% greater than 1 m ')
+				if args.vmec_ext:
+					print(f'    COIL-PLASMA DISTANCE')
+					print(f'       MINIMUM {min(coils.groups[i].coils[j].dist_surf):5.2f} [m]')
+					print(f'       MAXIMUM {max(coils.groups[i].coils[j].dist_surf):5.2f} [m]')
+					top = np.where(coils.groups[i].coils[j].dist_surf[:-1]>2.5,coil_dl,0.0)
+					print(f'       {100.*sum(top)/l:5.2f}% greater than 2.5 m ')
+
+
 		if args.new_pts: coils.rescalecoils(args.new_pts)
 		if args.lplot: coils.plotcoils()
 		if args.lplotRZ: coils.plotcoilsRZ()

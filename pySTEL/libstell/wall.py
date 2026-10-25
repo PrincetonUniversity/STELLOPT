@@ -313,6 +313,94 @@ class WALL():
 		ax.set_aspect('equal')
 		if lplotnow: pyplot.show()
 
+	def plot_wall_3D_RZ(self,phi=0,plot3D=None):
+		"""Plots an 3D RZ cut of a wall
+
+		This routine plots a 3D cut of the wall at constant phi angle.
+
+		Parameters
+		----------
+		phi : float
+			Toroidal angle [rad] (default = 0)
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		"""
+		import meshcut
+		import numpy as np
+		from libstell.plot3D import PLOT3D
+		import vtk
+		# Handle optionals
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
+		else:
+			lplotnow = True
+			plt = PLOT3D()
+		# Make cut
+		nx = -np.sin(phi)
+		ny = np.cos(phi)
+		plane_orig = (0.0,0.0,0.0)
+		plane_normal = (nx,ny,0.0)
+		mesh = meshcut.cross_section(self.vertex,self.faces, \
+				plane_orig=plane_orig,plane_normal=plane_normal)
+		# Plot line
+		for submesh in mesh:
+			points_array = submesh
+			# Add last point
+			points_array=np.vstack([submesh,submesh[0,:]])
+			# Convert numpy array to VTK points
+			points = vtk.vtkPoints()
+			for point in points_array:
+				points.InsertNextPoint(point)
+			plt.add3Dline(points,linewidth=2,color='black')
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Render if requested
+		if lplotnow: plt.render()
+
+	def plot_wall_3D_XY(self,z=0,plot3D=None):
+		"""Plots an 3D XY cut of a wall
+
+		This routine plots a 3D cut of the wall at constant height (z).
+
+		Parameters
+		----------
+		z : float
+			Height [m] (default = 0)
+		plot3D : plot3D object (optional)
+			Plotting object to render to.
+		"""
+		import meshcut
+		import numpy as np
+		from libstell.plot3D import PLOT3D
+		import vtk
+		# Handle optionals
+		if plot3D: 
+			lplotnow=False
+			plt = plot3D
+		else:
+			lplotnow = True
+			plt = PLOT3D()
+		# Make cut
+		plane_orig = (0.0,0.0,z)
+		plane_normal = (0.0,0.0,1.0)
+		mesh = meshcut.cross_section(self.vertex,self.faces, \
+				plane_orig=plane_orig,plane_normal=plane_normal)
+		# Plot line
+		for submesh in mesh:
+			points_array = submesh
+			# Add last point
+			points_array=np.vstack([submesh,submesh[0,:]])
+			# Convert numpy array to VTK points
+			points = vtk.vtkPoints()
+			for point in points_array:
+				points.InsertNextPoint(point)
+			plt.add3Dline(points,linewidth=2,color='black')
+		# In case it isn't set by user.
+		plt.setBGcolor()
+		# Render if requested
+		if lplotnow: plt.render()
+
 	def plot_wall_3D(self,wallcolor=None,plot3D=None):
 		"""Plots a wall in 3D using VTK
 

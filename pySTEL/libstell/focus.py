@@ -240,6 +240,39 @@ class FOCUS():
 		f.close()
 		return
 
+	def read_focus_harmonics(self,filename):
+		"""Reads a .harmonics file
+
+		This routine reads the .harmonics files containg the harmonics
+		of bnormal on the plasma boundary. Produced when the 
+		save_harmonics is set to 1 in the input file.
+
+		Parameters
+		----------
+		file : str
+			Path to .harmonics file.
+		"""
+		import numpy as np
+		f = open(filename,'r')
+		lines = f.readlines()
+		f.close()
+		cline = 1
+		nharm = int(lines[cline])
+		self.harm_xn = np.zeros((nharm))
+		self.harm_xm = np.zeros((nharm))
+		self.harm_bnmnc = np.zeros((nharm))
+		self.harm_bnmns = np.zeros((nharm))
+		self.harm_weight = np.zeros((nharm))
+		for i in range(nharm):
+			cline = cline + 3
+			(xn_txt,xm_txt,bnmnc_txt,bnmns_txt,weight_txt) = lines[cline].split()
+			self.harm_xn[i] = int(xn_txt)
+			self.harm_xm[i] = int(xm_txt)
+			self.harm_bnmnc[i] = float(bnmnc_txt)
+			self.harm_bnmns[i] = float(bnmns_txt)
+			self.harm_weight[i] = float(weight_txt)
+		return
+
 	def write_focus_plasma(self,nfp,xm,xn,rmnc,zmns,rmns=None,zmnc=None,xm_b=None,\
 		xn_b=None,bmnc=None,bmns=None,filename='plasma.boundary'):
 		"""Writes a focus boundary file

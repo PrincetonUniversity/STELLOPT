@@ -38,7 +38,10 @@ if __name__=="__main__":
 		nmodes = int(np.floor(vmec_data.nfp/2.0))
 		print('Values for tpr_modules_ap.f')
 		for n in range(nmodes+1):
-			terp_data.create_input(vmec_data,n)
+			if n == 0 :
+				terp_data.create_input(vmec_data,n,loutput_grid_info=True)
+			else:
+				terp_data.create_input(vmec_data,n,loutput_grid_info=False)
 	if args.lplot_in:
 		if args.terp_ext:
 			file = args.terp_ext
