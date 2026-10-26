@@ -451,16 +451,21 @@ class PLASMA_SOLVER:
                 raise ValueError(f'ERROR: Source type {source_type} is NOT possible')
                 
     def set_heat_fluxes(self, species: str, type: str, *, chi_base=None, aLT_critical=None,
-                        stiffness=None, alpha=1.0, convective_fact=0.0, mass_ref_species=None):
+                        stiffness=None, alpha=1.0, convective_fact=0.0, mass_ref_species=None, chi_2D=None):
         """
         Sets heat flux for a given species, replacing any previous configuration.
         In general, the heat flux for each species is:
         Q = -n chi dT/dr + convective_fact*T*Gamma_turb
         The 'type' argument will set how chi is computed:
         'diffusive' : chi is prescribed by chi_base
-        'beurskens' : ion chi is computed according to Beurskens model using chi_base,
-                       aLT_critical, stiffness, alpha and mass_ref_species [kg].
-                       Electrons must be present and use a separate heat-flux model.
+        'beurskens' : chi is computed according to Beurskens model using chi_base,
+                       aLT_critical, stiffness, alpha and mass_ref_species [kg]
+        'chi_normalized_gB_2D' : 2D interpolating function as a function of (rho,a/LT)
+                       chi_2D(rho, aLT) returns chi/chi_gB for paired arrays.
+                       The diffusivity is multiplied by (Te/Ti)**alpha,
+                       with alpha=1.0 by default; electrons must be present.
+                       mass_ref_species [kg] sets the gyro-Bohm reference mass;
+                       the local species temperature is the reference temperature.
         chi_base, aLT_critical, stiffness, alpha and convective_fact can be scalars
         or functions of rho returning a scalar or an array of shape (Nr,).
         Every species must be configured before running the solver.
@@ -487,6 +492,34 @@ class PLASMA_SOLVER:
                     raise ValueError('ERROR: mass_ref_species must be a finite positive scalar in kg!')
                 config.update(aLT_critical=aLT_critical, stiffness=stiffness,
                               alpha=alpha, mass_ref_species=float(mass))
+
+            case 'chi_normalized_gB_2D':
+                if 'electrons' not in self.list_of_species:
+                    raise ValueError('ERROR: chi_normalized_gB_2D heat flux requires electron temperature!')
+                if chi_2D is None:
+                    raise ValueError('ERROR: chi_2D must be provided')
+                if not callable(chi_2D):
+                    raise ValueError('ERROR: chi_2D must be a callable function of (rho, aLT)!')
+                # Validate once at setup, outside the subiteration loop.
+                from inspect import signature
+                rho_test = np.array([0.25, 0.75])
+                aLT_test = np.array([1.0, 2.0])
+                try:
+                    signature(chi_2D).bind(rho_test, aLT_test)
+                    chi_test = np.asarray(chi_2D(rho_test, aLT_test), dtype=float)
+                except Exception as exc:
+                    raise ValueError('ERROR: chi_2D must accept two arguments (rho, aLT), including paired arrays!') from exc
+                if chi_test.shape not in ((), rho_test.shape):
+                    raise ValueError('ERROR: chi_2D must return a scalar or an array with the same shape as rho and aLT!')
+                if not np.all(np.isfinite(chi_test)) or np.any(chi_test < 0):
+                    raise ValueError('ERROR: chi_2D must return finite nonnegative diffusivities!')
+                if mass_ref_species is None:
+                    raise ValueError('ERROR: mass_ref_species must be provided for gyro-Bohm normalization!')
+                mass = np.asarray(mass_ref_species, dtype=float)
+                if mass.ndim != 0 or not np.isfinite(mass) or mass <= 0:
+                    raise ValueError('ERROR: mass_ref_species must be a finite positive scalar in kg!')
+                config.pop('chi_base')
+                config.update(chi_2D=chi_2D, alpha=alpha, mass_ref_species=float(mass))
 
             case _:
                 raise ValueError(f'ERROR: Unsupported heat flux type: {type}')
@@ -891,6 +924,7 @@ class PLASMA_SOLVER:
         models = {
             'diffusive': self.compute_diffusive_chi,
             'beurskens': self.compute_beurskens_chi,
+            'chi_normalized_gB_2D': self.compute_normalized_gB_chi,
         }
         self.heat_flux_funcs = {}
         for species in self.list_of_species:
@@ -910,7 +944,7 @@ class PLASMA_SOLVER:
             chi = self.heat_flux_funcs[species](species, it, config)
             convective_fact = self._evaluate_heat_flux_parameter(config['convective_fact'], 'convective_fact')
             self.set_heat_transport_coefficients(species, it, chi, convective_fact,
-                                                 average_diffusion=(config['type'] == 'beurskens'))
+                                                 average_diffusion=(config['type'] in ('beurskens', 'chi_normalized_gB_2D')))
         
         if(self.add_NEO):
             # add NEO fluxes to self.Dp, self.cp, self.Dn, self.cn
@@ -1401,13 +1435,32 @@ class PLASMA_SOLVER:
             raise ValueError(f'ERROR: {name} must return a scalar or an array of shape ({self.Nr},)!')
         if not np.all(np.isfinite(value)):
             raise ValueError(f'ERROR: {name} must contain only finite values!')
-        if name in ('chi_base', 'stiffness') and np.any(value < 0):
+        if name in ('chi_base', 'stiffness', 'chi_2D') and np.any(value < 0):
             raise ValueError(f'ERROR: {name} must be nonnegative!')
         return value
 
     def compute_diffusive_chi(self, species, it, config):
         """Return the prescribed diffusivity for one species."""
         return self._evaluate_heat_flux_parameter(config['chi_base'], 'chi_base')
+
+    def compute_normalized_gB_chi(self, species, it, config):
+        """Evaluate chi/chi_gB(rho, a/LT) and return chi in m^2/s.
+
+        Use a/LT = -a (dT/dr)/T and the same gyro-Bohm convention as
+        compute_beurskens_chi, with the configured reference mass and
+        the current species temperature (eV). Density cancels from chi_gB.
+        Multiply by (Te/Ti)**alpha using the current electron temperature.
+        """
+        temperature = self.T[species][it, :]
+        electron_temperature = self.T['electrons'][it, :]
+        alpha = self._evaluate_heat_flux_parameter(config['alpha'], 'alpha')
+        dTdr = polyfit_derivative_fast(self.r_grid, temperature, deg=12)
+        aLT = -self.aminor * dTdr / temperature
+        chi_normalized = self._evaluate_heat_flux_parameter(
+            config['chi_2D'](self.rho_grid, aLT), 'chi_2D')
+        chi_gB = (2.0 * np.sqrt(2.0 * config['mass_ref_species'])
+                  * (EC * temperature)**1.5 / ((EC * self.Bref)**2 * self.aminor))
+        return chi_normalized * chi_gB * (electron_temperature / temperature)**alpha
 
     def set_heat_transport_coefficients(self, species, it, chi, convective_fact, average_diffusion=False):
         """
@@ -1416,8 +1469,9 @@ class PLASMA_SOLVER:
         fill the LHS_pressure matrix. The coefficients are computed such that 
         the heat flux is Q = -Dp*dp/dr + cp*p. This allows for the pressure to 
         be evolved in time according to LoDestro's method
-        For Beurskens, only Dp is averaged over subiterations; cp and the
-        diagnostic Q_turb retain the instantaneous diffusivity.
+        For Beurskens and chi_normalized_gB_2D, only Dp is averaged over
+        subiterations; cp and diagnostic Q_turb retain the instantaneous
+        diffusivity.
         """
         r_grid = self.r_grid
 
