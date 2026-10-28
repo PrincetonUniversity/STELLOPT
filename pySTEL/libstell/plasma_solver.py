@@ -1474,16 +1474,11 @@ class PLASMA_SOLVER:
         the heat flux is Q = -Dp*dp/dr + cp*p. This allows for the pressure to 
         be evolved in time according to LoDestro's method
         For Beurskens and chi_normalized_gB_2D, only Dp is averaged over
-        subiterations; cp and diagnostic Q_turb retain the instantaneous
-        diffusivity.
+        subiterations; cp retains the instantaneous diffusivity.
         """
         r_grid = self.r_grid
 
-        # p_r = CubicSpline(r_grid,self.P[species][it,:])
-        # dpdr = p_r.derivative()
         p_r = self.P[species][it,:]
-        # dpdr = dpdr(r_grid)
-        dpdr = akima_derivative(r_grid,p_r)
         # n_r = CubicSpline(r_grid,self.N[species][it,:])
         # dndr = n_r.derivative()
 
@@ -1512,34 +1507,57 @@ class PLASMA_SOLVER:
         self.cp[species][it,:] = c
 
         # this is for bookeeping
-        self.Q_turb[species][it,:] = -chi * dpdr + p_r*( (chi/n_r)*dndr + convective_fact*self.Gamma_turb[species][it,:]/n_r)
-            
+        self.Q_turb[species][it,:] = self._compute_flux_on_grid(
+            p_r, self.Dp[species][it,:], c)
+
+    def _compute_flux_on_grid(self, field, diffusion, convection):
+        """Return a flux computed at cell faces on the original radial grid.
+
+        Face transport rates match the interior stencils in get_LHS_density
+        and get_LHS_pressure for flux = -diffusion * dfield/dr + convection *
+        field. Linearly interpolate dV/dr * flux, then divide by nodal dV/dr.
+        Set flux=0 at the axis and linearly extrapolate the last two face
+        rates to the outer boundary. The returned array has shape (Nr,);
+        exact discrete conservation applies to the underlying face rates.
+        """
+        r = self.r_grid
+        area = self.dVdr(self.rho_grid) if callable(self.dVdr) else self.dVdr
+        area_faces = 0.5 * (area[:-1] + area[1:])
+        diffusion_faces = 0.5 * (diffusion[:-1] + diffusion[1:])
+        convective_rate = area * convection * field
+        rate_faces = (-area_faces * diffusion_faces * np.diff(field) / np.diff(r)
+                      + 0.5 * (convective_rate[:-1] + convective_rate[1:]))
+
+        r_faces = 0.5 * (r[:-1] + r[1:])
+        rate = np.interp(r, r_faces, rate_faces)
+        rate[0] = 0.0
+        rate[-1] = (rate_faces[-1] + (r[-1] - r_faces[-1])
+                    * (rate_faces[-1] - rate_faces[-2])
+                    / (r_faces[-1] - r_faces[-2]))
+        flux = np.zeros_like(field, dtype=float)
+        np.divide(rate, area, out=flux, where=area != 0.0)
+        flux[0] = 0.0
+        return flux
+
     def compute_diffusive_particle_flux(self,it):
         """
         Computes the coefficient Dn (diffusion) which is used to fill the LHS_density matrices. 
         The coefficient is computed such that the particle flux is
         Gamma = -Dn*dn/dr. Here we assume that advection is zero and that Dn is a constant
         """
-        from scipy.interpolate import CubicSpline
-        
-        r_grid = self.r_grid
-        
         for species in self.list_of_species:
             
             Dn = self.particle_fluxes_info['diffusive']['Dn']
             
-            # n_r = CubicSpline(r_grid,self.N[species][it,:])
             n_r = self.N[species][it,:]
-            # dndr = n_r.derivative()
-            # dndr = dndr(r_grid)
-            dndr = akima_derivative(r_grid,n_r)
             
             self.Dn[species][it,:] = Dn
             
             self.cn[species][it,:] = 0.0
                         
             # this is used in heat flux (Q=-n\chi*dT/dr + convective_fact*T*Gamma_turb)
-            self.Gamma_turb[species][it,:] = -Dn * dndr
+            self.Gamma_turb[species][it,:] = self._compute_flux_on_grid(
+                n_r, self.Dn[species][it,:], self.cn[species][it,:])
             
     def compute_diffusive_advective_particle_flux(self,it):
         """
@@ -1547,10 +1565,6 @@ class PLASMA_SOLVER:
         The coefficient is computed such that the particle flux is
         Gamma = -Dn*dn/dr + cn*n. Dn and cn can be constants or functions of rho
         """
-        from scipy.interpolate import CubicSpline
-        
-        r_grid = self.r_grid
-        
         Dn = self.particle_fluxes_info['diffusive_advective']['Dn']
         cn = self.particle_fluxes_info['diffusive_advective']['cn']
         
@@ -1570,11 +1584,7 @@ class PLASMA_SOLVER:
         
         for species in self.list_of_species:
             
-            # n_r = CubicSpline(r_grid,self.N[species][it,:])
             n_r = self.N[species][it,:]
-            # dndr = n_r.derivative()
-            # dndr = dndr(r_grid)
-            dndr = akima_derivative(r_grid,n_r)
             
             self.Dn[species][it,:] = Dn
             self.cn[species][it,:] = cn
@@ -1583,7 +1593,8 @@ class PLASMA_SOLVER:
             self.cn[species][it,0] = 0.0
                         
             # this is used in heat flux (Q=-n\chi*dT/dr + convective_fact*T*Gamma_turb)
-            self.Gamma_turb[species][it,:] = -Dn * dndr + cn * n_r
+            self.Gamma_turb[species][it,:] = self._compute_flux_on_grid(
+                n_r, self.Dn[species][it,:], self.cn[species][it,:])
             
     def compute_normalized_Dn_cn_rho_aLn_dependent_particle_flux(self,it):
         """
@@ -1628,8 +1639,8 @@ class PLASMA_SOLVER:
             self.cn[species][it,0] = 0.0
                         
             # this is used in heat flux (Q=-n\chi*dT/dr + convective_fact*T*Gamma_turb)
-            dndr = akima_derivative(r_grid,n_r)
-            self.Gamma_turb[species][it,:] = -self.Dn[species][it,:] * dndr + self.cn[species][it,:] * n_r
+            self.Gamma_turb[species][it,:] = self._compute_flux_on_grid(
+                n_r, self.Dn[species][it,:], self.cn[species][it,:])
             
     def compute_beurskens_chi(self, species, it, config):
         """
@@ -1809,11 +1820,9 @@ class PLASMA_SOLVER:
             # vector(Gamma_NEO)\cdot\nabla_r := -Dn_NEO*dn/dr + cn_NEO*n
             n = self.N[species][it,:]
             p = self.P[species][it,:]
-            dndr = akima_derivative(self.r_grid,n)
-            dpdr = akima_derivative(self.r_grid,p)
             #
-            self.Gamma_NEO[species][it,:] = -Dn_out[isp,:]*dndr + cn_out[isp,:]*n
-            self.Q_NEO[species][it,:]     = -Dp_out[isp,:]*dpdr + cp_out[isp,:]*p
+            self.Gamma_NEO[species][it,:] = self._compute_flux_on_grid(n, Dn_out[isp,:], cn_out[isp,:])
+            self.Q_NEO[species][it,:] = self._compute_flux_on_grid(p, Dp_out[isp,:], cp_out[isp,:])
     
     def set_NEO_coefficients_from_previous(self,it):
         """ Sets NEO transport coefficients at current it equal to previous it """
@@ -1825,8 +1834,10 @@ class PLASMA_SOLVER:
             self.cp_NEO[species][it,:] = self.cp_NEO[species][it-1,:]
             
         for species in self.list_of_species:
-            self.Gamma_NEO[species][it,:] = self.Gamma_NEO[species][it-1,:]
-            self.Q_NEO[species][it,:] = self.Q_NEO[species][it-1,:]
+            self.Gamma_NEO[species][it,:] = self._compute_flux_on_grid(
+                self.N[species][it,:], self.Dn_NEO[species][it,:], self.cn_NEO[species][it,:])
+            self.Q_NEO[species][it,:] = self._compute_flux_on_grid(
+                self.P[species][it,:], self.Dp_NEO[species][it,:], self.cp_NEO[species][it,:])
         
     def add_NEO_transport_coefficients(self,it):
         """ Adds NEO transport coefficients to Dp,cp,Dn,cn """
@@ -1914,7 +1925,7 @@ class PLASMA_SOLVER:
             self.T[species][it,:] = self.P[species][it,:] / (EC*self.N[species][it,:])
             
             k = k+Nr
-            
+
         return press
           
     def get_explicit_particle_sources(self,species,it):
