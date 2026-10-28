@@ -840,6 +840,8 @@ class PLASMA_SOLVER:
             self.explicit_energy_sources[species] = {}
             for source_type in self.energy_sources[species].keys():
                 self.explicit_energy_sources[species][source_type] = np.zeros((Nt,Nr))
+            if getattr(self, 'solve_coll_heat_exchange', False):
+                self.explicit_energy_sources[species]['Coll_Heat_Exchange'] = np.zeros((Nt,Nr))
             self.explicit_particle_sources[species] = {}
             for source_type in self.particle_sources[species].keys():
                 self.explicit_particle_sources[species][source_type] = np.zeros((Nt,Nr))
@@ -879,6 +881,8 @@ class PLASMA_SOLVER:
         for species in self.list_of_species:
                 self.set_explicit_energy_sources(species,it=0)
                 self.set_explicit_particle_sources(species,it=0)
+        if getattr(self, 'solve_coll_heat_exchange', False):
+            self.get_collisionalHeatExchange(it=0)
                 
         # set NEO coefficients
         if(self.add_NEO):
@@ -1922,9 +1926,11 @@ class PLASMA_SOLVER:
         return explicit_source
     
     def get_explicit_energy_sources(self,species,it):
-        """Returns 1D array with explicit energy sources"""
+        """Returns explicit RHS sources, excluding the implicit heat-exchange diagnostic."""
         explicit_source = 0.0
         for source_type in self.explicit_energy_sources[species]:
+            if source_type == 'Coll_Heat_Exchange':
+                continue
             explicit_source += self.explicit_energy_sources[species][source_type][it,:]
             
         return explicit_source
@@ -2122,6 +2128,12 @@ class PLASMA_SOLVER:
 
         # Add aux_B matrix
         W_s1_s2[np.arange(num_species), np.arange(num_species), :] -= np.sum(aux_B, axis=1)
+
+        # Store heat exchange for each species; pressure already includes the eV-to-J factor.
+        P_arr = np.stack([self.P[s][it,:] for s in self.list_of_species])
+        heat_exchange = np.einsum('ijr,jr->ir', W_s1_s2, P_arr)
+        for ispecies, species in enumerate(self.list_of_species):
+            self.explicit_energy_sources[species]['Coll_Heat_Exchange'][it,:] = heat_exchange[ispecies]
 
         # W_out matrix
         
