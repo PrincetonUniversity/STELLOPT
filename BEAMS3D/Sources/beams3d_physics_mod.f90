@@ -41,6 +41,8 @@ MODULE beams3d_physics_mod
       USE EZspline
       USE adas_mod_parallel
       USE collision_operators, ONLY: COULOMB_LOG_NRL_COUNTERSTREAM,&
+                                     COULOMB_LOG_NRL_IEA, &
+                                     COULOMB_LOG_NRL_IEB, &
                                      V_CRITICAL, V_CRITICAL_WEILAND, &
                                      TAU_SPITZER
       USE fusion_mod, ONLY: DT_CROSS_SECTION, DD_CROSS_SECTION, &
@@ -95,10 +97,18 @@ MODULE beams3d_physics_mod
          IMPLICIT NONE
          DOUBLE PRECISION :: slow_par(3)
          DOUBLE PRECISION, INTENT(in) :: ne_in, te_in, vbeta_in, Zeff_in
-         DOUBLE PRECISION :: ne_cm,coulomb_log
+         DOUBLE PRECISION :: coulomb_log, coulomb_loge
          coulomb_log = COULOMB_LOG_NRL_COUNTERSTREAM(ne_in,te_in,vbeta_in,Zeff_in)
-         slow_par(1) = V_CRITICAL(te_in)
-         slow_par(2) = TAU_SPITZER(mymass,ne_in,te_in,myZ,coulomb_log)
+         ! Electron drag needs the electron-ion logarithm (about 16, not
+         ! the ion value of about 21), and v_c needs [Z] (plasma_Zmean) and
+         ! the ion/electron logarithm ratio, as in Stix (1972).
+         IF (te_in < 10*myZ*myZ) THEN
+            coulomb_loge = COULOMB_LOG_NRL_IEA(myZ,ne_in,te_in)
+         ELSE
+            coulomb_loge = COULOMB_LOG_NRL_IEB(ne_in,te_in)
+         END IF
+         slow_par(1) = V_CRITICAL_WEILAND(te_in,coulomb_log,coulomb_loge)
+         slow_par(2) = TAU_SPITZER(mymass,ne_in,te_in,myZ,coulomb_loge)
          slow_par(3) = Zeff_in*fact_pa  
       END FUNCTION coll_op_nrl19
 
