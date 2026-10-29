@@ -1,7 +1,8 @@
       SUBROUTINE evolve(time_step, ier_flag, liter_flag, lscreen)
       USE vmec_main
       USE vmec_params, ONLY: bad_jacobian_flag, successful_term_flag,
-     &                       norm_term_flag, time_control_flag
+     &                       norm_term_flag, time_control_flag,
+     &                       phiedge_error_flag
       USE xstuff
       USE precon2d, ONLY: ictrl_prec2d, l_comp_prec2D, 
      &                    compute_blocks_par, compute_blocks
@@ -147,6 +148,10 @@ C-----------------------------------------------
       funct3d_time = funct3d_time + (f3dt2 - f3dt1)
 
 !
+!     A WRONG-SIGN PHIEDGE IS A FATAL INPUT ERROR. RETURN IT NOW, BECAUSE
+!     TimeStepControl RESETS ier_flag TO norm_term_flag.
+      IF (ier_flag .EQ. phiedge_error_flag) RETURN
+
 !     COMPUTE ABSOLUTE STOPPING CRITERION
       IF (iter2.EQ.1 .and. irst.EQ.2) THEN
          ier_flag = bad_jacobian_flag
