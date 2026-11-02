@@ -1471,10 +1471,13 @@ MODULE PENTA_INTERFACE_MOD
 
    END SUBROUTINE root_analysis
 
-   SUBROUTINE interpolate_from_penta(nrho_penta,rho_penta,y_penta,nrho_out,rho_out,y_out,isHermite,useLog,preventNeg)
+   SUBROUTINE interpolate_from_penta(nrho_penta,rho_penta,y_penta,nrho_out,rho_out,y_out, &
+                                   isHermite,useLog,preventNeg,rho_max)
       ! This subroutine is an aider to thrift_penta, where a bunch of splines are done from the penta grid onto
       ! the thrift and plasma solver grids
-      ! ASSUMES: that rho_penta does not have rho=0 nor rho=1, and so a linear extrapolation is done
+      ! ASSUMES: at least two strictly increasing native surfaces with 0 < rho_penta < rho_max.
+      ! Append endpoints at rho=0 and rho=rho_max by linear extrapolation.
+      ! rho_max is optional and defaults to 1.
       ! useLog is useful to intepolate non-negative quantities that span several orders of magnitude
       ! if preventNeg is .true. then all negative values are clamped to 0.0
       USE EZspline
@@ -1488,22 +1491,25 @@ MODULE PENTA_INTERFACE_MOD
       INTEGER, INTENT(IN) :: isHermite
       LOGICAL, INTENT(IN) :: useLog
       LOGICAL, INTENT(IN), OPTIONAL :: preventNeg
+      REAL(rknd), INTENT(IN), OPTIONAL :: rho_max
       !
       INTEGER :: ier
       INTEGER :: bcs0(2)
+      REAL(rknd) :: rho_upper
       REAL(rknd), ALLOCATABLE :: rho_temp(:),y_temp(:)
       TYPE(EZspline1_r8) :: y_spl
 
-      ALLOCATE(rho_temp(nrho_penta+2),y_temp(nrho_penta+2))
+      rho_upper = 1.0_rknd
+      IF (PRESENT(rho_max)) rho_upper = rho_max
 
-      ! Assumes that tho_penta does not have rho=0 and rho=1 points
-      rho_temp(1)        = 0.0
+      ALLOCATE(rho_temp(nrho_penta+2),y_temp(nrho_penta+2))
+      rho_temp(1) = 0.0_rknd
       rho_temp(2:nrho_penta+1) = rho_penta
-      rho_temp(nrho_penta+2)   = 1.0
-      !
-      y_temp(2:nrho_penta+1)   = y_penta
-      y_temp(1)                = y_temp(2) - (y_temp(3)-y_temp(2)) * rho_temp(2) / (rho_temp(3)-rho_temp(2))
-      y_temp(nrho_penta+2)     = y_penta(nrho_penta-1) + (y_penta(nrho_penta)-y_penta(nrho_penta-1)) * (1-rho_penta(nrho_penta-1)) / (rho_penta(nrho_penta)-rho_penta(nrho_penta-1))
+      rho_temp(nrho_penta+2) = rho_upper
+      y_temp(2:nrho_penta+1) = y_penta
+      y_temp(1) = y_penta(1) - (y_penta(2)-y_penta(1)) * rho_penta(1) / (rho_penta(2)-rho_penta(1))
+      y_temp(nrho_penta+2) = y_penta(nrho_penta-1) + (y_penta(nrho_penta)-y_penta(nrho_penta-1)) &
+         * (rho_upper-rho_penta(nrho_penta-1)) / (rho_penta(nrho_penta)-rho_penta(nrho_penta-1))
 
       ! Spline
       bcs0=(/ 0, 0/)
@@ -1650,9 +1656,9 @@ MODULE PENTA_INTERFACE_MOD
       ! Interpolates the per-surface ambipolar root and neoclassical transport
       ! coefficients (as computed by call_PENTA_surface, one call per DKES
       ! surface, then gathered by the caller into arrays indexed by k) from the
-      ! DKES radial grid (rho_k) onto output_rho. This mirrors exactly the
-      ! interpolation block at the end of call_PENTA, duplicated here as a
-      ! standalone entry point. It is a cheap operation (a handful of 1D
+      ! DKES radial grid (rho_k) onto output_rho. The computational endpoint
+      ! is MAXVAL(output_rho), forwarded without changing this entry point's
+      ! calling signature. It is a cheap operation (a handful of 1D
       ! splines) meant to run once, serially, after all surfaces have been
       ! gathered -- it is NOT a candidate for parallelization.
       Implicit None
@@ -1666,27 +1672,30 @@ MODULE PENTA_INTERFACE_MOD
 
       ! Locals
       Integer :: jspecies
+      Real(rknd) :: rho_upper
+
+      rho_upper = MAXVAL(output_rho)
 
       CALL interpolate_from_PENTA(nrho_penta=ns_dkes, rho_penta=rho_k, y_penta=Er_PENTA,\
                               nrho_out=output_nrho, rho_out=output_rho, y_out=output_Er,\
-                              isHermite=1, useLog=.FALSE.)
+                              isHermite=1, useLog=.FALSE., rho_max=rho_upper)
       !
       DO jspecies=1,(nion_prof+1)
          CALL interpolate_from_PENTA(nrho_penta=ns_dkes, rho_penta=rho_k, y_penta=Dn_PENTA(jspecies,:),\
                      nrho_out=output_nrho, rho_out=output_rho, y_out=output_Dn(jspecies,:),\
-                     isHermite=1, useLog=.FALSE.)
+                     isHermite=1, useLog=.FALSE., rho_max=rho_upper)
          !
          CALL interpolate_from_PENTA(nrho_penta=ns_dkes, rho_penta=rho_k, y_penta=cn_PENTA(jspecies,:),\
                            nrho_out=output_nrho, rho_out=output_rho, y_out=output_cn(jspecies,:),\
-                           isHermite=1, useLog=.FALSE.)
+                           isHermite=1, useLog=.FALSE., rho_max=rho_upper)
          !
          CALL interpolate_from_PENTA(nrho_penta=ns_dkes, rho_penta=rho_k, y_penta=Dp_PENTA(jspecies,:),\
                            nrho_out=output_nrho, rho_out=output_rho, y_out=output_Dp(jspecies,:),\
-                           isHermite=1, useLog=.FALSE., preventNeg = .TRUE.)
+                           isHermite=1, useLog=.FALSE., preventNeg = .TRUE., rho_max=rho_upper)
          !
          CALL interpolate_from_PENTA(nrho_penta=ns_dkes, rho_penta=rho_k, y_penta=cp_PENTA(jspecies,:),\
                            nrho_out=output_nrho, rho_out=output_rho, y_out=output_cp(jspecies,:),\
-                           isHermite=1, useLog=.FALSE.)
+                           isHermite=1, useLog=.FALSE., rho_max=rho_upper)
       END DO
 
    End Subroutine call_PENTA_interpolate

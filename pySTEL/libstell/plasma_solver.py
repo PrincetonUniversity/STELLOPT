@@ -1629,6 +1629,11 @@ class PLASMA_SOLVER:
         from libstell.libpenta import _init_NEO_worker
         self.DKES_nuv, self.DKES_Erv, self.DKES_D11, self.DKES_D31, self.DKES_D33, self.dkes_k, self.roa_dkes_k = process_DKES_file(DKES_coeffs_file,surfaces_k)
 
+        if np.any(~np.isfinite(self.roa_dkes_k) | (self.roa_dkes_k <= 0) | (self.roa_dkes_k >= self.rho_max)):
+            raise ValueError(f'DKES surfaces must lie strictly inside the computational domain (0,{self.rho_max})')
+        if self.roa_dkes_k.size < 2 or np.any(np.diff(self.roa_dkes_k) <= 0):
+            raise ValueError('NEO interpolation requires at least two strictly increasing DKES surfaces')
+
         self.Er_root_type = Er_root_type
         self.dt_Er_ambipolar = dt_Er_ambipolar
 
