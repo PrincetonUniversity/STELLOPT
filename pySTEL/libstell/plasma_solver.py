@@ -257,6 +257,8 @@ class PLASMA_SOLVER:
         The 'Coll_Heat_Exchange' only needs to be set for electrons; once it's set it will be computed for ALL species
         Gaussian total_power and PID power amplitudes refer to the full volume
         0 <= rho <= 1. A truncated domain receives only its deposition fraction.
+        PID_pfuse_gaussian measures fusion power [W] only inside [0,rho_max];
+        time_dependent_fusion_power must specify a target for that same volume.
         """
         import inspect
         
@@ -368,6 +370,8 @@ class PLASMA_SOLVER:
         'deuterium_sink_protium_generation' (for deuterium)
         Gaussian injected particle rates and PID rate amplitudes refer to the
         full volume 0 <= rho <= 1, including when rho_max < 1.
+        PID_pfuse_gaussian measures fusion power [W] inside [0,rho_max], so
+        time_dependent_fusion_power must target that volume.
         """
         import inspect
         
@@ -697,7 +701,7 @@ class PLASMA_SOLVER:
                 # compute fluxes and diffusion coefficients
                 self.call_fluxes(it)
                 
-                # set explicit sources
+                # Set explicit energy and particle sources.
                 for species in self.list_of_species:
                     self.set_explicit_energy_sources(species,it)
                     self.set_explicit_particle_sources(species,it)
@@ -1074,7 +1078,7 @@ class PLASMA_SOLVER:
                     t         = self.time[it]
                     setpoint  = self.energy_sources[species]['PID_pfuse_gaussian']['time_dependent_fusion_power'](t) # Set Point
                     it1       = it #max(it - 1,2)
-                    # Compute fusion power
+                    # Measure fusion power in the simulated volume [0,rho_max].
                     nD = self.N['deuterium'][it1,:]
                     nT = self.N['tritium'][it1,:]
                     TD = self.T['deuterium'][it1,:]
@@ -1283,7 +1287,7 @@ class PLASMA_SOLVER:
                     t         = self.time[it]
                     setpoint  = self.particle_sources[species]['PID_pfuse_gaussian']['time_dependent_fusion_power'](t) # Set Point
                     it1       = it #max(it - 1,2)
-                    # Compute fusion power
+                    # Measure fusion power in the simulated volume [0,rho_max].
                     nD = self.N['deuterium'][it1,:]
                     nT = self.N['tritium'][it1,:]
                     TD = self.T['deuterium'][it1,:]
