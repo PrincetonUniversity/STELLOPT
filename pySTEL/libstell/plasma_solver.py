@@ -1547,14 +1547,13 @@ class PLASMA_SOLVER:
             p_r, self.Dp[species][it,:], c)
 
     def _compute_flux_on_grid(self, field, diffusion, convection):
-        """Return a flux computed at cell faces on the original radial grid.
+        """Return a flux computed at cell faces on the computational radial grid.
 
         Face transport rates match the interior stencils in get_LHS_density
         and get_LHS_pressure for flux = -diffusion * dfield/dr + convection *
         field. Linearly interpolate dV/dr * flux, then divide by nodal dV/dr.
         Set flux=0 at the axis and linearly extrapolate the last two face
-        rates to the outer boundary. The returned array has shape (Nr,);
-        exact discrete conservation applies to the underlying face rates.
+        rates to the outer boundary. The returned array has shape (Nr,).
         """
         r = self.r_grid
         area = self.dVdr(self.rho_grid) if callable(self.dVdr) else self.dVdr
@@ -1896,7 +1895,7 @@ class PLASMA_SOLVER:
                 continue
             
             RHS_vector = self.N[species][it-1,:] + self.dt*self.get_explicit_particle_sources(species,it)
-            # apply BC
+            # Apply Dirichlet BC
             RHS_vector[-1] = self.edge_density_BC[species]
             
             # get LHS matrix
@@ -1941,7 +1940,7 @@ class PLASMA_SOLVER:
         for species in self.list_of_species:
         
             g = self.P[species][it-1,:] + (2./3)*self.dt*self.get_explicit_energy_sources(species,it)
-            # apply edge Dirichlet BC
+            # Apply Dirichlet BC
             g[-1] = self.edge_pressure_BC[species]
             
             RHS_vector.append(g)
@@ -1984,7 +1983,6 @@ class PLASMA_SOLVER:
     
     def get_LHS_density(self,species,it):
         """Updates LHS density sparse matrix and returns it"""
-        from scipy.sparse import diags
         
         dr = self.dr
         Vp = self.dVdr
@@ -2004,7 +2002,7 @@ class PLASMA_SOLVER:
         main = np.zeros(Nr)
         upper = np.zeros(Nr-1)
         
-        ## 0<r<a (inner grid, no boundary points)
+        ## 0 < rho < rho_max (inner grid, no boundary points)
         Dn_plus = (Dn[2:]+Dn[1:-1]) / 2
         Dn_minus = (Dn[0:-2]+Dn[1:-1]) / 2
         
@@ -2025,7 +2023,7 @@ class PLASMA_SOLVER:
         main[0] = 1.0 + dt*( 4*Dn[0]/dr**2 + 2*cn[1]/dr )
         upper[0] = -4*dt*Dn[0]/dr**2
                 
-        ## r=a
+        ## rho=rho_max: Dirichlet boundary condition
         main[-1] = 1.0
         lower[-1] = 0.0
         
@@ -2040,8 +2038,7 @@ class PLASMA_SOLVER:
     def get_LHS_pressure(self,it):
         """Updates LHS pressure sparse matrix and returns it"""
 
-        drho = self.drho
-        dr = self.aminor * drho
+        dr = self.dr
         Vp = self.dVdr
         Nr = self.Nr
         num_species = len(self.list_of_species)
@@ -2066,7 +2063,7 @@ class PLASMA_SOLVER:
             ############### COMPUTE LHS ################
             ############################################
             
-            ## 0<r<a (inner grid, no boundary points)
+            ## 0<r<aminor*rho_max (inner grid, no boundary points)
             Dp_plus = (Dp[2:]+Dp[1:-1]) / 2
             Dp_minus = (Dp[0:-2]+Dp[1:-1]) / 2
             
@@ -2097,8 +2094,8 @@ class PLASMA_SOLVER:
         if hasattr(self, "solve_coll_heat_exchange") and self.solve_coll_heat_exchange:
             LHS = LHS - dt_fact*self.get_collisionalHeatExchange(it)
         
-        # impose Dirichlet boundary condition
-        # indices of to seto to zero (end of each species block)
+        # Impose Dirichlet BC at rho=rho_max for every species.
+        # Fix the last row of each species block, including source couplings.
         rows_to_fix = np.arange(Nr - 1, num_species * Nr, Nr)
         # Efficiently zero out rows
         for row in rows_to_fix:
