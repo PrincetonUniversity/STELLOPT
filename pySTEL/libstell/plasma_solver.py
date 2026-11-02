@@ -2136,12 +2136,14 @@ class PLASMA_SOLVER:
         if hasattr(self,'iota23'):
             saved_class.iota2o3 = self.iota23
         
-        # only save at minimum every dt=dt_save
+        # Sample every freq steps and always include the final state.
         freq = max(1, round(dt_save / self.dt))
-        sl = slice(0, None, freq)  # defines the slice once
+        sl = np.arange(0, len(self.time), freq)
+        if sl[-1] != len(self.time) - 1:
+            sl = np.append(sl, len(self.time) - 1)
 
         saved_class.time = self.time[sl]
-        saved_class.Nt = len(self.time[sl])
+        saved_class.Nt = len(sl)
 
         for attr in ('N','T','Dn','cn','Dp','cp','Q_NEO','Q_turb','Gamma_NEO','Gamma_turb'):
             setattr(saved_class, attr, {})
@@ -2195,7 +2197,7 @@ class PLASMA_SOLVER:
         joblib.dump(saved_class, output_filename)
         
 def merge_output_files(*output_files,concatenated_file=None):
-    """ Merges sequential joblib output files into a single one. 
+    """ Merges sequential joblib output files with exactly matching rho grids into a single one.
     Returns concatenated class and only saves concatenated joblib file if concatenated_file is not None"""
     from types import SimpleNamespace
     import joblib
@@ -2250,6 +2252,9 @@ def merge_output_files(*output_files,concatenated_file=None):
         # -------------------------------
         # (1) Check invariant attributes
         # -------------------------------
+        if not np.array_equal(ref_solver.rho_grid, solver.rho_grid):
+            raise ValueError('Cannot merge output files with different rho grids (same Nr and all rho coordinates required)')
+
         for attr in GRID_ATTRS:
             check_same(attr, getattr(ref_solver, attr), getattr(solver, attr))
 
