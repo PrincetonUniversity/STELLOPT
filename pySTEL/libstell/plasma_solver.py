@@ -140,12 +140,13 @@ class PLASMA_SOLVER:
         else:
             raise ValueError('field is not valid...')
         
-    def read_restart_file(self,restart_filepath,tstart):
+    def _read_restart_file(self,restart_filepath,tstart):
         """
         Reads a restart .joblib file and sets initial profiles & BC's 
         according to last iteration in file.
         If tstart of current run does not match tend of restart file
         an error is given
+        The saved rho_grid must exactly match self.rho_grid since currently regridding is not allowed.
         """
         import joblib
         from pathlib import Path
@@ -164,6 +165,9 @@ class PLASMA_SOLVER:
         # Check list_of_species in file are the same as those in this run
         if (restart_solver.list_of_species != self.list_of_species):
             raise ValueError('Species in restart file different from species in current solver!')
+
+        if not np.array_equal(restart_solver.rho_grid, self.rho_grid):
+            raise ValueError('Restart rho_grid must exactly match the computational grid (same Nr and all rho coordinates)')
         
         # Set initial conditions and BC's of all species
         for species in self.list_of_species:
@@ -624,32 +628,30 @@ class PLASMA_SOLVER:
         equilibrium minor radius, so its physical endpoint is aminor*rho_max.
         """
         
+        # Initialize rho grid
+        self.rho_grid = np.linspace(0.0,self.rho_max,Nr)
+        drho = self.rho_grid[1] - self.rho_grid[0]
+
+        # Initialize time grid
+        Nt = round( 1+(tend-tstart)/dt )
+        self.time = np.linspace(tstart,tend,Nt)
+
         # Updates initial conditions and boundary conditions with profiles in restart file
         if(restart_filename is not None):
             self.restart = True
-            self.read_restart_file(restart_filename,tstart)
+            self._read_restart_file(restart_filename,tstart)
         else:
             self.restart = False
         
         # Check everything is set and ready to proceed with the run
         self.make_checks()
         
-        # Initialize rho grid
-        rho = np.linspace(0.0,self.rho_max,Nr)
-        drho = rho[1]-rho[0]
-
-        # Initialize time grid
-        Nt = round( 1+(tend-tstart)/dt )
-        time = np.linspace(tstart,tend,Nt)
-            
         # save grids in class
-        self.time = time
         self.tstart = tstart
         self.tend = tend
         self.Nt = Nt
         self.dt = dt
-        self.rho_grid = rho
-        self.r_grid = rho * self.aminor
+        self.r_grid = self.rho_grid * self.aminor
         self.drho = drho
         self.dr = drho * self.aminor
         self.Nr = Nr
@@ -674,7 +676,7 @@ class PLASMA_SOLVER:
     
         start_time = perf_counter() 
         ### LOOP IN TIME STARTING AT t=tstart+dt ###
-        for it,t in enumerate(time[1:],start=1):
+        for it,t in enumerate(self.time[1:],start=1):
             self.it = it
             
             # the first subiter corresponds to the last time iteration
@@ -736,14 +738,14 @@ class PLASMA_SOLVER:
     
     def make_checks(self):
         """
-        Before running the simulation, checks if dVdr, initial profiles, BCs 
+        Before running the simulation, checks if dVdr, aminor, initial profiles, BCs
         and fluxes types have been set
         Checks consistency between initial profiles and Dirichlet BCs
         """
         
         # check equilibrium exists
-        if(not hasattr(self,'dVdr')):
-            raise ValueError('ERROR: dVdr MUST BE SET!!')
+        if not hasattr(self, 'dVdr') or not hasattr(self, 'aminor'):
+            raise ValueError('Call set_equilibrium() before running the solver')
         
         for species in self.list_of_species:
             
