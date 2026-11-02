@@ -15,13 +15,21 @@ EPS0 = 8.8541878188E-12 # Vacuum permittivity [F/m]
 
 class PLASMA_SOLVER:
     """Class for solving transport equations (density and pressure)
-
+    
     """
     
-    def __init__(self, list_of_species, solve_fast_alphas=False, tau_fast_alphas=0.5, constrain_nT=False, add_NEO=False):
+    def __init__(self, list_of_species, solve_fast_alphas=False, tau_fast_alphas=0.5, constrain_nT=False, add_NEO=False, rho_max=1.0):
         
         from collections import defaultdict
         
+        try:
+            rho_max = np.asarray(rho_max, dtype=float)
+        except (TypeError, ValueError) as exc:
+            raise ValueError('rho_max must be a finite scalar satisfying 0 < rho_max <= 1') from exc
+        if rho_max.ndim != 0 or not np.isfinite(rho_max) or not (0 < rho_max <= 1):
+            raise ValueError('rho_max must be a finite scalar satisfying 0 < rho_max <= 1')
+        self.rho_max = float(rho_max)
+
         self.list_of_species = list_of_species
             
         # create plasma class with list_of_species
@@ -66,7 +74,7 @@ class PLASMA_SOLVER:
     
     def set_edge_boundary_condition(self,field: str,species: str,val: float):
         """
-        Sets edge Dirichlet boundary conditions.
+        Sets Dirichlet boundary conditions at the computational edge rho=rho_max.
         Field can be 'density', 'temperature' or 'pressure'
         """
         
@@ -89,33 +97,46 @@ class PLASMA_SOLVER:
         
     def set_initial_profile(self,field: str, species: str, rho_vals, profile_vals):
         """
-        Sets profiles at t=t_start
+        Sets profiles at t=t_start using the full-equilibrium rho coordinate.
         Field can be 'density', 'temperature' or 'pressure'
+        Input coordinates must cover [0,rho_max] and may extend up to rho=1.
+        Temperature-to-pressure conversion also requires density data covering
+        every supplied temperature coordinate. Profiles are never extrapolated.
         """
         
         from scipy.interpolate import CubicSpline
         
         # check species exist in list_of_species
         if species not in self.list_of_species:
-            print(f"ERROR: Species {species} is not in the plasma.")
-            exit(1)
+            raise ValueError(f"ERROR: Species {species} is not in the plasma.")
         
-        # check rho_vals are in the range [0,1]
-        if( np.any((rho_vals<0) | (rho_vals>1))):
-            print('ERROR: rho_vals must be in the domain [0,1]')
-            exit(0)
+        rho_vals = np.asarray(rho_vals, dtype=float)
+        profile_vals = np.asarray(profile_vals, dtype=float)
+        if rho_vals.ndim != 1 or rho_vals.size < 2:
+            raise ValueError('rho_vals must be a one-dimensional array with at least two points')
+        if not np.all(np.isfinite(rho_vals)) or np.any((rho_vals < 0) | (rho_vals > 1)):
+            raise ValueError('rho_vals must contain finite coordinates in [0,1]')
+        if np.any(np.diff(rho_vals) <= 0):
+            raise ValueError('rho_vals must be strictly increasing')
+        if rho_vals[0] > 0 or rho_vals[-1] < self.rho_max:
+            raise ValueError(f'Initial {field} profile for {species} must cover [0,{self.rho_max}] without extrapolation')
+        if profile_vals.shape != rho_vals.shape or not np.all(np.isfinite(profile_vals)):
+            raise ValueError('profile_vals must be finite and have the same shape as rho_vals')
                             
         # create interpolating function
         if field=='density':
-            self.initial_density[species] = CubicSpline(rho_vals,profile_vals)
+            self.initial_density[species] = CubicSpline(rho_vals,profile_vals,extrapolate=False)
         elif field=='pressure':
-            self.initial_pressure[species] = CubicSpline(rho_vals,profile_vals)
+            self.initial_pressure[species] = CubicSpline(rho_vals,profile_vals,extrapolate=False)
         elif field=='temperature':
             if (species not in self.initial_density):
                 raise ValueError('Need to set density initial profile before setting temperature initial profile')
             else:
-                pressure = self.initial_density[species](rho_vals) * EC * profile_vals
-                self.initial_pressure[species] = CubicSpline(rho_vals,pressure)
+                density = self.initial_density[species]
+                if rho_vals[0] < density.x[0] or rho_vals[-1] > density.x[-1]:
+                    raise ValueError(f'Initial density profile for {species} must cover all temperature coordinates without extrapolation')
+                pressure = density(rho_vals) * EC * profile_vals
+                self.initial_pressure[species] = CubicSpline(rho_vals,pressure,extrapolate=False)
         else:
             raise ValueError('field is not valid...')
         
@@ -598,6 +619,8 @@ class PLASMA_SOLVER:
         If restart_filename is not None, overwrites eventually already defined initial profiles
         and BCs using profiles of the last iteration in restart file 
         The restart file is simply the output file of the previous simulation
+        The radial grid spans [0,rho_max], with rho normalized to the full
+        equilibrium minor radius, so its physical endpoint is aminor*rho_max.
         """
         
         # Updates initial conditions and boundary conditions with profiles in restart file
@@ -611,7 +634,7 @@ class PLASMA_SOLVER:
         self.make_checks()
         
         # Initialize rho grid
-        rho = np.linspace(0,1,Nr)
+        rho = np.linspace(0.0,self.rho_max,Nr)
         drho = rho[1]-rho[0]
 
         # Initialize time grid
@@ -731,18 +754,30 @@ class PLASMA_SOLVER:
             if (species not in self.initial_density or species not in self.initial_pressure):
                 raise KeyError(f"Missing initial profile for species: {species}")
             
-            # check consistency between boundary conditions and initial profiles
-            if(not np.isclose(self.initial_density[species](1),self.edge_density_BC[species],rtol=1E-7, atol=1E-12)):
-                raise ValueError(f'Edge density BC not consistent w/ initial density profile')
-            if(not np.isclose(self.initial_pressure[species](1),self.edge_pressure_BC[species],rtol=1E-7, atol=1E-12)):
-                raise ValueError(f'Edge pressure/temperature BC not consistent w/ initial temperature profile')
-            
-            # tol = np.abs(self.edge_density_BC[species]) * np.finfo(float).eps
-            # if( np.abs(self.initial_density[species](1)-self.edge_density_BC[species]) > 5*tol ):
-            #     raise ValueError(f'Edge density BC not consistent w/ initial density profile')
-            # tol = np.abs(self.edge_pressure_BC[species]) * np.finfo(float).eps
-            # if( np.abs(self.initial_pressure[species](1)-self.edge_pressure_BC[species]) > 10*tol ):
-            #     raise ValueError(f'Edge pressure/temperature BC not consistent w/ initial temperature profile')
+            for field, profile in (('density', self.initial_density[species]),
+                                   ('pressure', self.initial_pressure[species])):
+                if profile.x[0] > 0 or profile.x[-1] < self.rho_max:
+                    raise ValueError(f'Initial {field} profile for {species} must cover [0,{self.rho_max}] without extrapolation')
+
+            # Check consistency at the computational boundary, not at rho=1.
+            if(not np.isclose(self.initial_density[species](self.rho_max),self.edge_density_BC[species],rtol=1E-7, atol=1E-12)):
+                raise ValueError(f'Edge density BC for {species} not consistent with initial profile at rho={self.rho_max}')
+            if(not np.isclose(self.initial_pressure[species](self.rho_max),self.edge_pressure_BC[species],rtol=1E-7, atol=1E-12)):
+                raise ValueError(f'Edge pressure/temperature BC for {species} not consistent with initial profile at rho={self.rho_max}')
+
+        if self.constrain_nT:
+            if 'deuterium' not in self.list_of_species or 'tritium' not in self.list_of_species:
+                raise ValueError('constrain_nT requires both deuterium and tritium')
+            if not np.isclose(self.edge_density_BC['tritium'], self.edge_density_BC['deuterium'], rtol=1E-7, atol=1E-12):
+                raise ValueError('Edge tritium density must equal edge deuterium density when constrain_nT=True')
+
+        if 'electrons' in self.list_of_species:
+            electron_density = sum(self.plasma.Zcharge[ion] * self.edge_density_BC[ion]
+                                   for ion in self.plasma.ion_species)
+            if self.solve_fast_alphas and hasattr(self, 'alphas_fast_density_restart'):
+                electron_density += 2 * self.alphas_fast_density_restart[-1]
+            if not np.isclose(self.edge_density_BC['electrons'], electron_density, rtol=1E-7, atol=1E-12):
+                raise ValueError('Edge electron density must satisfy quasineutrality, including any initial fast alphas')
             
         # check fluxes info is set
         missing_heat_fluxes = [species for species in self.list_of_species
@@ -768,6 +803,7 @@ class PLASMA_SOLVER:
         print(f' *  tend   = {self.tend:5.2f}s    *')
         print(f' *  dt     = {self.dt:5.3f}s    *')
         print(f' *  Nt     = {self.Nt:3}       *')
+        print(f' *  rho_max = {self.rho_max:5.3f}    *')
         print(f' *  drho   = {self.drho:5.3f}     *')
         if(self.add_NEO):
             print(f' *  dt_NEO = {self.dt*self.nsteps_per_NEO:5.3f}s    *')
@@ -2944,4 +2980,4 @@ def run_pellet_simulation(rp0_mm, v_pel_ms, ne_array, te_keV_array, aminor, roa_
 # Main routine
 if __name__=="__main__":
     import sys
-    sys.exit(0)      
+    sys.exit(0)
