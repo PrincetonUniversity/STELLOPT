@@ -912,10 +912,10 @@ class PLASMA_SOLVER:
             except:
                 self.N['alphas_fast'][0,:] = 0.0
             
-        # set sources at t=0
+        # Set explicit energy and particle sources at t=0.
         for species in self.list_of_species:
-                self.set_explicit_energy_sources(species,it=0)
-                self.set_explicit_particle_sources(species,it=0)
+            self.set_explicit_energy_sources(species,it=0)
+            self.set_explicit_particle_sources(species,it=0)
         if getattr(self, 'solve_coll_heat_exchange', False):
             self.get_collisionalHeatExchange(it=0)
                 
