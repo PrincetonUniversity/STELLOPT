@@ -393,6 +393,8 @@ class PLASMA_SOLVER:
                     self.particle_sources[species][source_type] = {'injected_particles_per_sec' : injected_particles_per_sec, 'rho_0' : rho_0, 'sigma_rho' : sigma_rho, 'time_factor': time_dependent_factor }
             #
             case 'pellet_model':
+                if self.rho_max != 1.0:
+                    raise ValueError('ERROR: pellet_model requires rho_max=1.0')
                 if((pellet_size_mm is None) or (pellet_vel_ms is None) or (pellet_freq_Hz is None) or (time_dependent_factor is None)):
                     raise ValueError('ERROR: Need to provide pellet_size_mm, pellet_vel_ms, pellet_freq_Hz and a time depenedent factor for pellet model')
                 else:
