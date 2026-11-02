@@ -425,15 +425,6 @@ class PLASMA_SOLVER:
                     'noise_level' : noise_level, 'previous_error' : 0.0}
                     print(f'Using PID_itemp_gaussian with pid_K={pidK}m^3/s, pid_tauI={pidI}s, pid_tauD={pidD}s and noise_level={noise_level}')
             #
-            case 'PID_pradfrac_gaussian':
-                if((rho_0 is None) or (sigma_rho is None) or (time_dependent_factor is None)):
-                    raise ValueError('ERROR: Need to provide injected_particles_per_sec, rho_0, sigma_rho and a time depenedent factor for PID radiated fraction gaussian')
-                else:
-                    self.particle_sources[species][source_type] = {'injected_particles_per_sec' : injected_particles_per_sec, 'rho_0' : rho_0, 
-                    'sigma_rho' : sigma_rho, 'time_factor': time_dependent_factor,
-                    'pid_K' : pidK, 'pid_Ti' : pidI, 'pid_Td' : pidD, 'pid_I' : 0.0,
-                    'noise_level' : noise_level, 'previous_error' : 0.0}
-            #
             case 'fast_alphas_source':
                 # check we are solving fast alphas
                 if(not self.solve_fast_alphas):
@@ -1341,62 +1332,6 @@ class PLASMA_SOLVER:
                     # Normalize the controlled amplitude over the full equilibrium.
                     aux_source = control * self._normalized_gaussian_source(rho_0, sigma_rho)
                     
-                case 'PID_pradfrac_gaussian':
-                    # These define the gaussian
-                    rho_0     = self.particle_sources[species]['PID_pradfrac_gaussian']['rho_0']
-                    sigma_rho = self.particle_sources[species]['PID_pradfrac_gaussian']['sigma_rho']
-                    time_fact = self.particle_sources[species]['PID_pradfrac_gaussian']['time_factor']
-                    pid_K     = self.particle_sources[species]['PID_pradfrac_gaussian']['pid_K']
-                    pid_Ti    = self.particle_sources[species]['PID_pradfrac_gaussian']['pid_Ti']
-                    pid_Td    = self.particle_sources[species]['PID_pradfrac_gaussian']['pid_Td']
-                    Ival      = self.particle_sources[species]['PID_pradfrac_gaussian']['pid_I']
-                    N_IN      = self.particle_sources[species]['PID_pradfrac_gaussian']['injected_particles_per_sec']
-                    noise     = self.particle_sources[species]['PID_pradfrac_gaussian']['noise_level']
-                    error_old = self.particle_sources[species]['PID_pradfrac_gaussian']['previous_error']
-                    t              = self.time[it]
-                    setpoint       = self.particle_sources[species]['PID_pradfrac_gaussian']['time_factor'](t) # Set Point
-                    it1            = max(it - 1,2)
-                    dt             = self.dt
-                    # Compute ECRH power
-                    integrand = 0.0
-                    for ttype in ['external_gaussian','time_dependent_gaussian','PID_etemp_gaussian']:
-                        if ttype in self.explicit_energy_sources['electrons'].keys():
-                            integrand += self.explicit_energy_sources['electrons'][ttype][it1,:]
-                    P_ECRH = max(np.trapezoid(integrand,self.r_grid),0.0)
-                    if np.isnan(P_ECRH): P_ECRH = 0.0
-                    # Compute Bremstahlung
-                    integrand = 0.0
-                    ne = self.N['electrons'][it1,:]
-                    Te = self.T['electrons'][it1,:]
-                    for ion in self.plasma.ion_species:
-                        zi = self.plasma.Zcharge[ion]
-                        ni = self.N[ion][it1,:]
-                        integrand += fusion.BremsstrahlungPower(zi,ni,ne,Te)
-                    P_BREM = max(np.trapezoid(integrand,self.r_grid),0.0)
-                    if np.isnan(P_BREM): P_BREM = 0.0
-                    # Compute fusion power
-                    P_ALPHA = 0.0
-                    if False:
-                        nD = self.N['deuterium'][it1,:]
-                        nT = self.N['tritium'][it1,:]
-                        TD = self.T['deuterium'][it1,:]
-                        TT = self.T['tritium'][it1,:]
-                        integrand = fusion.alphaPower(nD,nT,TD,TT)*self.dVdr(rho_grid)
-                        integrand = integrand.flatten()
-                        P_ALPHA = max(np.trapezoid(integrand,self.r_grid),0.0)*5.0 #alpha to neutron
-                        if np.isnan(P_ALPHA): P_ALPHA = 0.0
-                    # Compute Fraction
-                    p_val = P_BREM / (P_ALPHA+P_ECRH+1.0)
-                    print(p_val,P_BREM,P_ALPHA,P_ECRH)
-                    p_val = p_val * (1.0 + (rand()-0.5)*2.0*noise)
-                    control, error, Ival = self.pid_controller(setpoint, p_val, pid_K, pid_Ti, pid_Td, error_old, Ival, dt)
-                    self.particle_sources[species]['PID_pradfrac_gaussian']['pid_I'] = Ival
-                    self.particle_sources[species]['PID_pradfrac_gaussian']['previous_error'] = error
-                    # Adjust U 
-                    control = max(control,0)
-                    control = min(control,N_IN)
-                    # Normalize the controlled amplitude over the full equilibrium.
-                    aux_source = control * self._normalized_gaussian_source(rho_0, sigma_rho)
                     
             # bookeeping
             self.explicit_particle_sources[species][source_type][it,:] = aux_source
