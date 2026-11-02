@@ -255,6 +255,8 @@ class PLASMA_SOLVER:
         Sets energy sources for a given species. The source_type can be:
         'external_gaussian', 'time_dependent_gaussian', 'Coll_Heat_Exchange', 'Er', 'alpha_heating', 'constant', 'lambda_2D' and 'Bremsstrahlung' (only for electrons)
         The 'Coll_Heat_Exchange' only needs to be set for electrons; once it's set it will be computed for ALL species
+        Gaussian total_power and PID power amplitudes refer to the full volume
+        0 <= rho <= 1. A truncated domain receives only its deposition fraction.
         """
         import inspect
         
@@ -364,6 +366,8 @@ class PLASMA_SOLVER:
         'pid_edense_gaussian' (for PID electron density control with gaussian soure),
         'protium generation' (for hydrogen)
         'deuterium_sink_protium_generation' (for deuterium)
+        Gaussian injected particle rates and PID rate amplitudes refer to the
+        full volume 0 <= rho <= 1, including when rho_max < 1.
         """
         import inspect
         
@@ -991,6 +995,14 @@ class PLASMA_SOLVER:
             self.add_NEO_transport_coefficients(it)
             
         
+    def _normalized_gaussian_source(self, rho_0, sigma_rho):
+        """Return a Gaussian on rho_grid with unit full-equilibrium volume integral."""
+        
+        rho_integral = np.linspace(0.0, 1.0, 100)
+        integrand = np.exp(-((rho_integral - rho_0) / sigma_rho)**2) * self.dVdr(rho_integral)
+        integral = np.trapezoid(integrand, rho_integral * self.aminor)
+        return np.exp(-((self.rho_grid - rho_0) / sigma_rho)**2) / integral
+
     def set_explicit_energy_sources(self,species: str, it):
         """
         Computes total explicit energy source of a given species
@@ -1019,35 +1031,17 @@ class PLASMA_SOLVER:
                         
                 case 'external_gaussian':
                     rho_0 = self.energy_sources[species]['external_gaussian']['rho_0']
-                    r0 = rho_0 * self.aminor
                     sigma_rho = self.energy_sources[species]['external_gaussian']['sigma_rho']
-                    sigma_r = sigma_rho*self.aminor
-                    r = self.rho_grid * self.aminor
                     P_IN = self.energy_sources[species]['external_gaussian']['total_power']
-                    #
-                    integrand = np.exp(-(r-r0)**2/sigma_r**2) * self.dVdr(self.rho_grid)
-                    integrand = integrand.flatten()
-                    #
-                    cte = P_IN / np.trapezoid(integrand,r)
-                    #
-                    aux_source = cte * np.exp(-(r-r0)**2/sigma_r**2)
+                    aux_source = P_IN * self._normalized_gaussian_source(rho_0, sigma_rho)
                     
                 case 'time_dependent_gaussian':
                     rho_0 = self.energy_sources[species]['time_dependent_gaussian']['rho_0']
-                    r0 = rho_0 * self.aminor
                     sigma_rho = self.energy_sources[species]['time_dependent_gaussian']['sigma_rho']
-                    sigma_r = sigma_rho*self.aminor
-                    r = self.rho_grid * self.aminor
                     P_IN = self.energy_sources[species]['time_dependent_gaussian']['total_power']
-                    #
-                    integrand = np.exp(-(r-r0)**2/sigma_r**2) * self.dVdr(self.rho_grid)
-                    integrand = integrand.flatten()
-                    #
-                    cte = P_IN / np.trapezoid(integrand,r)
-                    #
                     time_fact = self.energy_sources[species]['time_dependent_gaussian']['time_factor']
                     t = self.time[it]
-                    aux_source = cte * np.exp(-(r-r0)**2/sigma_r**2) * time_fact(t)
+                    aux_source = P_IN * time_fact(t) * self._normalized_gaussian_source(rho_0, sigma_rho)
                     
                 case 'Coll_Heat_Exchange':
                     # this source is fully implicit and is computed inside get_LHS_pressure
@@ -1109,13 +1103,8 @@ class PLASMA_SOLVER:
                     # If clipped, then set previous integral to zero (anti wind-up)
                     if np.isclose(control,0) or np.isclose(control,power_max):
                         self.energy_sources[species]['PID_pfuse_gaussian']['pid_I'] = 0.0     
-                    # Compute integrand
-                    integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
-                    integrand = integrand.flatten()
-                    # 
-                    cte = control / np.trapezoid(integrand,self.r_grid)
-                    #
-                    aux_source = cte * np.exp(-(rho_grid-rho_0)**2/sigma_rho**2)
+                    # Normalize the controlled amplitude over the full equilibrium.
+                    aux_source = control * self._normalized_gaussian_source(rho_0, sigma_rho)
                     
                 case 'PID_etemp_gaussian':
                     # These define the gaussian
@@ -1142,13 +1131,8 @@ class PLASMA_SOLVER:
                     # If clipped, then set previous integral to zero (anti wind-up)
                     if np.isclose(control,0) or np.isclose(control,power_max):
                         self.energy_sources[species]['PID_etemp_gaussian']['pid_I'] = 0.0  
-                    # Compute integrand
-                    integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
-                    integrand = integrand.flatten()
-                    # 
-                    cte = control / np.trapezoid(integrand,self.r_grid)
-                    #
-                    aux_source = cte * np.exp(-(rho_grid-rho_0)**2/sigma_rho**2)
+                    # Normalize the controlled amplitude over the full equilibrium.
+                    aux_source = control * self._normalized_gaussian_source(rho_0, sigma_rho)
                     
                 case 'PID_itemp_gaussian':
                     # These define the gaussian
@@ -1175,13 +1159,8 @@ class PLASMA_SOLVER:
                     # If clipped, then set previous integral to zero (anti wind-up)
                     if np.isclose(control,0) or np.isclose(control,power_max):
                         self.energy_sources[species]['PID_itemp_gaussian']['pid_I'] = 0.0 
-                    # Compute integrand
-                    integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
-                    integrand = integrand.flatten()
-                    # 
-                    cte = control / np.trapezoid(integrand,self.r_grid)
-                    #
-                    aux_source = cte * np.exp(-(rho_grid-rho_0)**2/sigma_rho**2)
+                    # Normalize the controlled amplitude over the full equilibrium.
+                    aux_source = control * self._normalized_gaussian_source(rho_0, sigma_rho)
 
                 case _:
                     print(f'ERROR: Source type {source_type} not defined....')
@@ -1210,27 +1189,15 @@ class PLASMA_SOLVER:
                     rho_0 = self.particle_sources[species]['external_gaussian']['rho_0']
                     sigma_rho = self.particle_sources[species]['external_gaussian']['sigma_rho']
                     injected_particles_per_sec = self.particle_sources[species]['external_gaussian']['injected_particles_per_sec']
-                    #
-                    integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
-                    integrand = integrand.flatten()
-                    #
-                    cte = injected_particles_per_sec / np.trapezoid(integrand,self.r_grid)
-                    #
-                    aux_source = cte * np.exp(-(rho_grid-rho_0)**2/sigma_rho**2)
+                    aux_source = injected_particles_per_sec * self._normalized_gaussian_source(rho_0, sigma_rho)
                     
                 case 'time_dependent_gaussian':
                     rho_0 = self.particle_sources[species]['time_dependent_gaussian']['rho_0']
                     sigma_rho = self.particle_sources[species]['time_dependent_gaussian']['sigma_rho']
                     injected_particles_per_sec = self.particle_sources[species]['time_dependent_gaussian']['injected_particles_per_sec']
                     time_fact = self.particle_sources[species]['time_dependent_gaussian']['time_factor']
-                    #
-                    integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
-                    integrand = integrand.flatten()
-                    #
-                    cte = injected_particles_per_sec / np.trapezoid(integrand,self.r_grid)
-                    #
                     t = self.time[it]
-                    aux_source = time_fact(t) * cte * np.exp(-(rho_grid-rho_0)**2/sigma_rho**2)
+                    aux_source = time_fact(t) * injected_particles_per_sec * self._normalized_gaussian_source(rho_0, sigma_rho)
                     
                 case 'alpha_particles_sink':
                     nD = self.N['deuterium'][it,:]
@@ -1308,13 +1275,8 @@ class PLASMA_SOLVER:
                     # If clipped, then set previous integral to zero (anti wind-up)
                     if np.isclose(control,0) or np.isclose(control,N_IN_max):
                         self.particle_sources[species]['PID_edense_gaussian']['pid_I'] = 0.0     
-                    # Compute integrand
-                    integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
-                    integrand = integrand.flatten()
-                    # 
-                    cte = control / np.trapezoid(integrand,self.r_grid)
-                    #
-                    aux_source = cte * np.exp(-(rho_grid-rho_0)**2/sigma_rho**2)
+                    # Normalize the controlled amplitude over the full equilibrium.
+                    aux_source = control * self._normalized_gaussian_source(rho_0, sigma_rho)
                     
                 case 'PID_pfuse_gaussian':
                     # These define the gaussian
@@ -1349,13 +1311,8 @@ class PLASMA_SOLVER:
                     # If clipped, then set previous integral to zero (anti wind-up)
                     if np.isclose(control,0) or np.isclose(control,N_IN_max):
                         self.particle_sources[species]['PID_pfuse_gaussian']['pid_I'] = 0.0
-                    # Compute integrand
-                    integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
-                    integrand = integrand.flatten()
-                    # 
-                    cte = control / np.trapezoid(integrand,self.r_grid)
-                    #
-                    aux_source = cte * np.exp(-(rho_grid-rho_0)**2/sigma_rho**2)
+                    # Normalize the controlled amplitude over the full equilibrium.
+                    aux_source = control * self._normalized_gaussian_source(rho_0, sigma_rho)
                 
                 case 'PID_itemp_gaussian':
                     # These define the gaussian
@@ -1381,13 +1338,8 @@ class PLASMA_SOLVER:
                         self.particle_sources[species]['PID_edense_gaussian']['pid_I'] = 0.0                  
                     # Threshold control
                     control = np.clip(control,0,N_IN_max)
-                    # Compute integrand
-                    integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
-                    integrand = integrand.flatten()
-                    # 
-                    cte = control / np.trapezoid(integrand,self.r_grid)
-                    #
-                    aux_source = cte * np.exp(-(rho_grid-rho_0)**2/sigma_rho**2)
+                    # Normalize the controlled amplitude over the full equilibrium.
+                    aux_source = control * self._normalized_gaussian_source(rho_0, sigma_rho)
                     
                 case 'PID_pradfrac_gaussian':
                     # These define the gaussian
@@ -1443,13 +1395,8 @@ class PLASMA_SOLVER:
                     # Adjust U 
                     control = max(control,0)
                     control = min(control,N_IN)
-                    # Compute integrand
-                    integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
-                    integrand = integrand.flatten()
-                    # 
-                    cte = control / np.trapezoid(integrand,self.r_grid)
-                    #
-                    aux_source = cte * np.exp(-(rho_grid-rho_0)**2/sigma_rho**2)
+                    # Normalize the controlled amplitude over the full equilibrium.
+                    aux_source = control * self._normalized_gaussian_source(rho_0, sigma_rho)
                     
             # bookeeping
             self.explicit_particle_sources[species][source_type][it,:] = aux_source
