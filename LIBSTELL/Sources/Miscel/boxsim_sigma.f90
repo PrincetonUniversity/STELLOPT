@@ -609,7 +609,7 @@ CONTAINS
         DOUBLE PRECISION :: sigma
         DOUBLE PRECISION, INTENT(in) :: E 
 
-        sigma = get_sigma_H2_destruction(E) - 2*get_sigma_H2_H2p(E) &
+        sigma = get_sigma_H2_destruction(E) - get_sigma_H2_H2p(E) &
                 - get_sigma_H2_Hp_production(E) + get_sigma_H2_2Hp(E)
         RETURN
     
