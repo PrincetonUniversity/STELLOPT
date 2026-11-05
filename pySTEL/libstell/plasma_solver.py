@@ -1374,23 +1374,28 @@ class PLASMA_SOLVER:
         return self._evaluate_heat_flux_parameter(config['chi_base'], 'chi_base')
 
     def compute_normalized_gB_chi(self, species, it, config):
-        """Evaluate chi/chi_gB(rho, a/LT) and return chi in m^2/s.
-
-        Use a/LT = -a (dT/dr)/T and the same gyro-Bohm convention as
-        compute_beurskens_chi, with the configured reference mass and
-        the current species temperature (eV). Density cancels from chi_gB.
-        Multiply by (Te/Ti)**alpha using the current electron temperature.
-        """
-        temperature = self.T[species][it, :]
-        electron_temperature = self.T['electrons'][it, :]
+        """Evaluate chi/chi_gB(rho, a/LT) and return chi in m^2/s"""
+        
+        T_ion = self.T[species][it,:]
+        n_ion = self.N[species][it,:]
+        Te = self.T['electrons'][it, :]
+        #
         alpha = self._evaluate_heat_flux_parameter(config['alpha'], 'alpha')
-        dTdr = polyfit_derivative_fast(self.r_grid, temperature, deg=12)
-        aLT = -self.aminor * dTdr / temperature
+        dTdr = polyfit_derivative_fast(self.r_grid, T_ion, deg=12)
+        aLT = -self.aminor * dTdr / T_ion
+        #
         chi_normalized = self._evaluate_heat_flux_parameter(
             config['chi_2D'](self.rho_grid, aLT), 'chi_2D')
-        chi_gB = (2.0 * np.sqrt(2.0 * config['mass_ref_species'])
-                  * (EC * temperature)**1.5 / ((EC * self.Bref)**2 * self.aminor))
-        return chi_normalized * chi_gB * (electron_temperature / temperature)**alpha
+        
+        # gyro-Bohm normalization
+        mref = config['mass_ref_species']
+        Tref = T_ion # self.T[ref_species][it,:]
+        nref = n_ion # self.N[ref_species][it,:] --> cannot use this one, as this poses issue to the impurities
+        Q_gB = 2.0*np.sqrt(2)*nref*np.sqrt(mref)*(EC*Tref)**2.5 / (EC*self.Bref*self.aminor)**2
+        #
+        chi_gB = Q_gB * self.aminor/(n_ion*EC*T_ion)
+        
+        return chi_normalized * chi_gB * (Te / T_ion)**alpha
 
     def set_heat_transport_coefficients(self, species, it, chi, convective_fact, average_diffusion=False):
         """
