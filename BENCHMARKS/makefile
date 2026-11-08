@@ -174,8 +174,8 @@ test_vmec:
 	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DIII-D
 	@cd $(VMEC_TEST_DIR) && ./compare.py --file DIII-D
 	@echo ""
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DIII-D_reset reset=wout_reset.nc
-	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DIII-D_reset reset=wout_reset.nc
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DIII-D_reset reset=wout_restart.nc
+	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DIII-D_reset reset=wout_restart.nc
 	@cd $(VMEC_TEST_DIR) && ./compare.py --file DIII-D_reset
 	@echo "Tesing of VMEC2000 complete"
 
@@ -470,7 +470,8 @@ FIELDLINES_TEST/fieldlines_NCSX_s1.h5:
 	@$(MAKE) test_fieldlines_full
 
 clean_test:
-	@cd $(VMEC_TEST_DIR); rm -f dcon* jxbout* mercier* threed1* parvmecinfo* wout*
+	@cd $(VMEC_TEST_DIR); rm -f dcon* jxbout* mercier* threed1* parvmecinfo* wout_ATF.nc \
+	wout_DIII-D.nc wout_DIII-D_reset.nc wout_DSHAPE.nc wout_HELIOTRON.nc wout_QAS.nc wout_SOLOVEV.nc
 	@cd $(DIAGNO_TEST_DIR); rm -f diagno_bench* diagno_flux* diagno_surf* test_loops_j* test_loops_b*
 	@cd $(FIELDLINES_TEST_DIR); rm -f fieldlines_*.h5
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/LMDIF_TEST stellopt_cleanup_dir
@@ -488,7 +489,7 @@ clean_test:
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/TOK_R0_DELTA stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/TOK_R0_RHO stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/TRAVIS stellopt_cleanup_dir
-	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/vboot_tokamak_sfincs stellopt_cleanup_dir
+	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/TOK_VBOOT_SFINCS stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/AVAILENERGYOPT stellopt_cleanup_dir
 
 stellopt_cleanup_dir:
