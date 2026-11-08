@@ -18,6 +18,10 @@ if __name__=="__main__":
 		help="VMEC file extension", default = None)
 	parser.add_argument("-p", "--plot", dest="lplot", action='store_true',
 		help="Plot the VMEC file.", default = False)
+	parser.add_argument("--J_plot_rho", dest="lj_plot_rho", action='store_true',
+		help="Plot second-invariant contours in polar (alpha,rho) coordinates.", default=False)
+	parser.add_argument("--b-mirror", dest="b_mirror", type=float, default=4.9,
+		help="Mirror field E/mu [T] for --J_plot_rho (default: 4.9).")
 	parser.add_argument("-b", "--boozer", dest="lbooz", action='store_true',
 		help="Output the in_booz file.", default = False)
 	parser.add_argument("--print_spectrum", dest="lspectrum", action='store_true',
@@ -309,6 +313,23 @@ if __name__=="__main__":
 				ax.set_xlabel('Toroidal Modes (n)'); ax.set_ylabel('Poloidal Modes (m)'); ax.set_title(r'$\lambda$ Boundary Modes')
 				if not args.lbackground:pyplot.show()
 				if (args.lsave): fig.savefig(f'wout_bound_modes_{args.vmec_ext}.png', dpi=fig.dpi)
+		# Output an J* plot
+		if (args.lj_plot_rho and loutput):
+			if args.lj_plot_rho and (not np.isfinite(args.b_mirror) or args.b_mirror <= 0):
+				parser.error('--b-mirror must be finite and positive')
+			extrema = vmec_wout.calc_B_extrema()
+			print(f'Minimum B-mirror: {extrema.b_min:.9g} T')
+			print(f'Maximum B-mirror: {extrema.b_max:.9g} T')
+			print(f'Auto phi-seed at |B| minimum: {extrema.phi_min:.9g} rad')
+			print(f'Using B-mirror: {args.b_mirror:g} T; nalpha=128')
+			fig, ax, grid = vmec_wout.plot_j_invariant_rho(
+				b_mirror=args.b_mirror, nalpha=128, extrema=extrema)
+			px = 1/pyplot.rcParams['figure.dpi']
+			fig.set_size_inches((1024*px,768*px))
+			labels, counts = np.unique(grid.status, return_counts=True)
+			print('Bounce-well status:', dict(zip(labels.tolist(), counts.tolist())))
+			if not args.lbackground: pyplot.show()
+			if (args.lsave): fig.savefig(f'second_invarriant_{args.vmec_ext}.png', dpi=fig.dpi)
 		# Output an input file from wout
 		if (loutput and args.lwout2indata):
 			vmec_wout.wout_to_indata()

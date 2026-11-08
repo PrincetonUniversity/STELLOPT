@@ -174,6 +174,58 @@ class VMEC(FourierRep):
 		jll = (bu*ju+bv*jv)/(g*b)
 		return jll
 
+	def calc_B_extrema(self, ntheta=64, nphi=64):
+		"""Return refined equilibrium-wide |B| bounds and their locations.
+
+		The FieldExtrema result contains b_min/b_max [T] and s, theta_VMEC,
+		geometric phi [rad] at each extremum. All full-grid surfaces are
+		scanned, with angular refinement of each surface's extrema.
+		"""
+		from libstell.second_invariant import field_extrema
+		return field_extrema(self, ntheta=ntheta, nphi=nphi)
+
+	def calc_j_invariant(self, s, alpha, b_mirror=4.9, phi_seed=None, **kwargs):
+		"""Return the reduced second invariant for the well at the seed.
+
+		s is normalized toroidal flux; alpha=theta_star-iota*phi [rad].
+		b_mirror=E/mu [T]. Auto-seeding uses phi at the global |B| minimum.
+		The BounceIntegral result's J_over_v is 2*integral sqrt(1-B/B_mirror)
+		dl [m], including both bounce legs. Multiply by v for the velocity
+		invariant or m*v for the momentum action. See the helper's docstring
+		for search/quadrature controls and field-line approximation limits.
+		"""
+		from libstell.second_invariant import second_adiabatic_invariant
+		if phi_seed is None:
+			phi_seed = self.calc_B_extrema().phi_min
+		return second_adiabatic_invariant(self, s, alpha, b_mirror,
+			phi_seed=phi_seed, **kwargs)
+
+	def calc_j_invariant_grid(self, b_mirror=4.9, rho=None, nalpha=128,
+			phi_seed=None, **kwargs):
+		"""Return JInvariantGrid on rho=sqrt(s), alpha in [0,2*pi).
+
+		Defaults: 64 positive radii through the LCFS and 128 distinct alpha
+		values. Undefined actions are NaN with an accompanying status array.
+		The magnetic axis is excluded from the line integral. One common seed
+		section is chosen at the global |B| minimum when phi_seed is None.
+		"""
+		from libstell.second_invariant import invariant_rho_grid
+		return invariant_rho_grid(self, b_mirror=b_mirror, rho=rho,
+			nalpha=nalpha, phi_seed=phi_seed, **kwargs)
+
+	def plot_j_invariant_rho(self, b_mirror=4.9, rho=None, nalpha=128,
+			phi_seed=None, ax=None, levels=20, **kwargs):
+		"""Plot polar J/v contours; return (figure, polar axes, JInvariantGrid).
+
+		The radius is rho=sqrt(s) and the angle is the field-line label alpha.
+		Accepts a polar Matplotlib axes and the calculation's convergence
+		controls. The periodic seam is closed without repeating a calculation.
+		"""
+		from libstell.second_invariant import plot_invariant_rho
+		grid = self.calc_j_invariant_grid(b_mirror=b_mirror, rho=rho,
+			nalpha=nalpha, phi_seed=phi_seed, **kwargs)
+		return plot_invariant_rho(grid, ax=ax, levels=levels)
+
 	def calc_magwell(self):
 		"""Compute Magnetic Well vs Hill
 
