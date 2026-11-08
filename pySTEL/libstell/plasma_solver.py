@@ -130,7 +130,9 @@ class PLASMA_SOLVER:
         from pathlib import Path
         
         # Check if extension of restart_filepath is .joblib; if not, add
-        restart_filepath = str(Path(restart_filepath).with_suffix(".joblib"))
+        restart_filepath = str(restart_filepath)
+        if not restart_filepath.endswith(".joblib"):
+            restart_filepath += ".joblib"
         
         restart_solver = joblib.load(restart_filepath)
         
@@ -960,7 +962,7 @@ class PLASMA_SOLVER:
                     integrand = np.exp(-(r-r0)**2/sigma_r**2) * self.dVdr(self.rho_grid)
                     integrand = integrand.flatten()
                     #
-                    cte = P_IN / np.trapz(integrand,r)
+                    cte = P_IN / np.trapezoid(integrand,r)
                     #
                     aux_source = cte * np.exp(-(r-r0)**2/sigma_r**2)
                     
@@ -975,7 +977,7 @@ class PLASMA_SOLVER:
                     integrand = np.exp(-(r-r0)**2/sigma_r**2) * self.dVdr(self.rho_grid)
                     integrand = integrand.flatten()
                     #
-                    cte = P_IN / np.trapz(integrand,r)
+                    cte = P_IN / np.trapezoid(integrand,r)
                     #
                     time_fact = self.energy_sources[species]['time_dependent_gaussian']['time_factor']
                     t = self.time[it]
@@ -1146,7 +1148,7 @@ class PLASMA_SOLVER:
                     integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
                     integrand = integrand.flatten()
                     #
-                    cte = injected_particles_per_sec / np.trapz(integrand,self.r_grid)
+                    cte = injected_particles_per_sec / np.trapezoid(integrand,self.r_grid)
                     #
                     aux_source = cte * np.exp(-(rho_grid-rho_0)**2/sigma_rho**2)
                     
@@ -1159,7 +1161,7 @@ class PLASMA_SOLVER:
                     integrand = np.exp(-(rho_grid-rho_0)**2/sigma_rho**2) * self.dVdr(rho_grid)
                     integrand = integrand.flatten()
                     #
-                    cte = injected_particles_per_sec / np.trapz(integrand,self.r_grid)
+                    cte = injected_particles_per_sec / np.trapezoid(integrand,self.r_grid)
                     #
                     t = self.time[it]
                     aux_source = time_fact(t) * cte * np.exp(-(rho_grid-rho_0)**2/sigma_rho**2)
@@ -1211,12 +1213,11 @@ class PLASMA_SOLVER:
                     Te = self.T['electrons'][it,:]
                     t = self.time[it]
                     dVdrho = self.dVdr(rho_grid) * self.aminor
-                    dVdrho[0] = dVdrho[1]
-                    aux_source = self.run_pellet_simulation(rp0_mm=rp0mm, v_pel_ms=v_pelms, 
-                        ne_array=ne, te_array=Te/1000.0, aminor=self.aminor, 
-                        roa_array=rho_grid, rho_solid_kg_m3=pellet_density_kgm3,
+                    aux_source = run_pellet_simulation(rp0_mm=rp0mm, v_pel_ms=v_pelms, 
+                        ne_array=ne, te_keV_array=Te/1000.0, aminor=self.aminor, 
+                        roa_array=rho_grid, dVdrho=dVdrho, rho_solid_kg_m3=pellet_density_kgm3,
                         atomic_mass_amu=pellet_mass_amu, L_over_D=pellet_LtoD)
-                    aux_source = f_pel_Hz*time_fact(t)*aux_source/dVdrho
+                    aux_source = f_pel_Hz*time_fact(t)*aux_source
 
                 case 'PID_edense_gaussian':
                     rho_0 = self.particle_sources[species]['PID_edense_gaussian']['rho_0']
@@ -1396,122 +1397,6 @@ class PLASMA_SOLVER:
         derivative = (error - previous_error) / dt
         control = kp * (error + integral/tau_i + tau_d * derivative)
         return control, error, integral
-
-    def run_pellet_simulation(self, rp0_mm, v_pel_ms, ne_array, te_array, aminor, roa_array, 
-                              C_drift=0.00, injection_side='LFS',
-                              rho_solid_kg_m3=200.0, atomic_mass_amu=2.014, L_over_D=0.9):
-        """
-        Simulates a cylindrical pellet injection including full trans-axis flight,
-        custom material properties, and cross-field plasmoid drift.
-        
-        Parameters:
-        -----------
-        rp0_mm           : float, Initial pellet radius in mm
-        v_pel_ms         : float, Pellet velocity in m/s
-        ne_array         : array_like, Electron density profile (m^-3)
-        te_array         : array_like, Electron temperature profile (keV)
-        aminor           : float, Plasma minor radius in meters
-        roa_array        : array_like, Normalized minor radius flux coordinates (rho = r/a)
-        C_drift          : float, Scaling multiplier for drift distance
-        injection_side   : str, 'HFS' (starts at X=-1) or 'LFS' (starts at X=+1)
-        rho_solid_kg_m3  : float, Mass density of solid cryogenic ice (default: 200.0 for D2)
-        atomic_mass_amu  : float, Atomic mass of the fuel species (default: 2.014 for Deuterium)
-        L_over_D         : float, Aspect ratio (Length / Diameter) of the cylinder (default: 1.0)
-        
-        Returns:
-        --------
-        dndrhoa_final    : ndarray, Final drifted ablation profile in [atoms / delta(r/a)]
-        """
-        import numpy as np
-        from scipy.integrate import solve_ivp
-        from scipy.interpolate import interp1d
-        roa_input = np.asarray(roa_array)
-        ne_input = np.asarray(ne_array)
-        te_input = np.asarray(te_array)
-        
-        # 1. Grid sorting and bin edge definition
-        idx_sort = np.argsort(roa_input)
-        roa_sorted = roa_input[idx_sort]
-        
-        edges = np.zeros(len(roa_sorted) + 1)
-        edges[1:-1] = 0.5 * (roa_sorted[:-1] + roa_sorted[1:])
-        edges[0] = min(roa_sorted[0] - 1e-5, 0.0)
-        edges[-1] = max(roa_sorted[-1] + 1e-5, 1.0)
-        user_droa = np.diff(edges)
-        
-        # 2. Dynamic Material Property Calculations
-        AMU_KG = 1.6605390666e-27  # Atomic mass unit constant
-        rho_atoms = rho_solid_kg_m3 / (atomic_mass_amu * AMU_KG)
-        
-        # Kinetic NGS and atomic scaling coefficient
-        CRP_SI_KEV = 5.5e-14 * (1000.0**1.64) 
-        
-        ne_func = interp1d(roa_sorted, ne_input[idx_sort], bounds_error=False, fill_value="extrapolate")
-        te_func = interp1d(roa_sorted, te_input[idx_sort], bounds_error=False, fill_value="extrapolate")
-        
-        # 3. ODE Solution (u = rp^(5/3))
-        u0 = [(rp0_mm / 1000.0)**(5.0 / 3.0)]
-        
-        def pellet_ode(x, u):
-            if u[0] <= 0:
-                return [0.0]
-                
-            if injection_side.upper() == 'HFS':
-                X_geom = -1.0 + (x / aminor)
-            else:
-                X_geom = 1.0 - (x / aminor)
-                
-            roa = np.clip(np.abs(X_geom), 0.0, 1.0)
-            return [- (5.0 / 3.0) * (CRP_SI_KEV / v_pel_ms) * (ne_func(roa)**(1.0 / 3.0)) * (te_func(roa)**1.64)]
-
-        def burnout_event(x, u): return u[0]
-        burnout_event.terminal = True
-        burnout_event.direction = -1
-
-        x_eval = np.linspace(0.0, 2.0 * aminor, 2000)
-        sol = solve_ivp(pellet_ode, (0.0, 2.0 * aminor), u0, t_eval=x_eval, events=burnout_event, rtol=1e-7, atol=1e-9)
-        
-        t_steps = sol.t
-        u_steps = sol.y[0]
-        dt_intervals = np.diff(t_steps)
-        
-        if len(dt_intervals) == 0:
-            return np.zeros_like(roa_input)
-            
-        # 4. Midpoint evaluation along trajectory
-        t_mid = 0.5 * (t_steps[:-1] + t_steps[1:])
-        u_mid = 0.5 * (u_steps[:-1] + u_steps[1:])
-        rp_m_mid = np.maximum(u_mid, 0.0)**(3.0 / 5.0)
-        
-        if injection_side.upper() == 'HFS':
-            X_geom_mid = -1.0 + (t_mid / aminor)
-        else:
-            X_geom_mid = 1.0 - (t_mid / aminor)
-            
-        roa_geom_mid = np.clip(np.abs(X_geom_mid), 0.0, 1.0)
-        ne_mid = ne_func(roa_geom_mid)
-        te_mid = te_func(roa_geom_mid)
-        
-        # 5. Cylindrical mass liberation step
-        # V = 2 * pi * gamma * rp^3  =>  dV/dt = 6 * pi * gamma * rp^2 * drp/dt
-        dndt_mid = 6.0 * np.pi * L_over_D * rho_atoms * CRP_SI_KEV * (rp_m_mid**(4.0 / 3.0)) * (ne_mid**(1.0 / 3.0)) * (te_mid**1.64)
-        dN_particles = dndt_mid * (dt_intervals / v_pel_ms)
-        
-        # 6. Drift shift application
-        delta_drift_meters = C_drift * ((rp_m_mid * 1000.0)**(4.0 / 3.0)) * (te_mid**0.5)
-        delta_roa = delta_drift_meters / aminor
-        
-        X_dep = X_geom_mid + delta_roa
-        roa_dep = np.clip(np.abs(X_dep), 0.0, 1.0)
-        
-        # 7. Flux folding and histogram remapping
-        counts, _ = np.histogram(roa_dep, bins=edges, weights=dN_particles)
-        dndroa_sorted = counts / user_droa
-        
-        dndroa_final = np.zeros_like(roa_input)
-        dndroa_final[idx_sort] = dndroa_sorted
-        
-        return dndroa_final
             
     def compute_diffusive_heat_flux(self,it):
         """
@@ -1779,6 +1664,7 @@ class PLASMA_SOLVER:
         are not safe to share across concurrent calls within a single process.
         """
         from concurrent.futures import ProcessPoolExecutor
+        import multiprocessing as mp
         from libstell.libpenta import _init_NEO_worker
         self.DKES_nuv, self.DKES_Erv, self.DKES_D11, self.DKES_D31, self.DKES_D33, self.dkes_k, self.roa_dkes_k = process_DKES_file(DKES_coeffs_file,surfaces_k)
 
@@ -1787,7 +1673,7 @@ class PLASMA_SOLVER:
 
         self.n_workers_NEO = n_workers_NEO
         if(n_workers_NEO is not None and n_workers_NEO > 1):
-            self.neo_pool = ProcessPoolExecutor(max_workers=n_workers_NEO, initializer=_init_NEO_worker)
+            self.neo_pool = ProcessPoolExecutor(max_workers=n_workers_NEO, initializer=_init_NEO_worker, mp_context=mp.get_context("fork"))
             print(f'Using {n_workers_NEO} worker processes for NEO (PENTA) surface calculations')
         else:
             self.neo_pool = None
@@ -2253,7 +2139,9 @@ class PLASMA_SOLVER:
         import joblib
         
         # check if extension of output_filename is .joblib; if not, add
-        output_filename = str(Path(output_filename).with_suffix(".joblib"))
+        output_filename = str(output_filename)
+        if not output_filename.endswith(".joblib"):
+            output_filename += ".joblib"
         
         # save the class (cannot save solver directly cause it contains lambda functions...)
         saved_class = SimpleNamespace()
@@ -2825,7 +2713,182 @@ def polyfit_derivative_fast(x, y, deg):
             val = val * x[k] + dcoeff[i]
         dy[k] = val
 
-    return dy  
+    return dy
+
+def run_pellet_simulation(rp0_mm, v_pel_ms, ne_array, te_keV_array, aminor, roa_array, dVdrho,
+                            C_drift=0.00, injection_side='LFS',
+                            rho_solid_kg_m3=200.0, atomic_mass_amu=2.014, L_over_D=0.9,
+                            output_time=False):
+    """
+    Simulates a cylindrical pellet injection including full trans-axis flight,
+    custom material properties, and cross-field plasmoid drift.
+
+    The cylinder shrinks at constant aspect ratio gamma = L/D, so that
+    L = 2*gamma*rp, V_pellet = 2*pi*gamma*rp**3, and its remaining
+    inventory is N = rho_atoms*V_pellet. The assumed regression law is
+    drp/dt = -K*rp**(-2/3)*ne**(1/3)*Te**1.64. This retains the NGS
+    radius law while using a cylindrical inventory; it is not a separate
+    derivation of cylindrical shielding physics. Consequently,
+    dN_abl/dt = 6*pi*gamma*rho_atoms*K*rp**(4/3)*ne**(1/3)*Te**1.64.
+
+    With distance x = v_pel*t and u = rp**(5/3), the solved equation is
+    du/dx = -(5/3)*(K/v_pel)*ne(rho(x))**(1/3)*Te(rho(x))**1.64,
+    where rho(x) = abs(1-x/aminor). Integration stops at burnout (u=0)
+    or the opposite edge (x=2*aminor). Interval inventory losses are
+    deposited at their shifted midpoints and accumulated in radial bins.
+    Each count is divided by its shell volume, integral(dVdrho d rho),
+    using a piecewise-linear interpolant of dVdrho (with linear
+    extrapolation to 0 and 1 if the supplied grid excludes the endpoints).
+    Multiplication by injection frequency gives a time-averaged source
+    in atoms m^-3 s^-1.
+
+    Parameters:
+    -----------
+    rp0_mm           : float, Initial pellet radius in mm
+    v_pel_ms         : float, Pellet velocity in m/s
+    ne_array         : array_like, Electron density profile (m^-3)
+    te_array         : array_like, Electron temperature profile (keV)
+    aminor           : float, Plasma minor radius in meters
+    roa_array        : array_like, Normalized minor radius flux coordinates (rho = r/a)
+    dVdrho           : array_like, Plasma dV/d(rho) in m^3 on roa_array
+    C_drift          : float, Scaling multiplier for drift distance
+    injection_side   : str, 'HFS' (starts at X=-1) or 'LFS' (starts at X=+1)
+    rho_solid_kg_m3  : float, Mass density of solid cryogenic ice (default: 200.0 for D2)
+    atomic_mass_amu  : float, Atomic mass of the fuel species (default: 2.014 for Deuterium)
+    L_over_D         : float, Constant Length / Diameter (default: 0.9)
+    output_time      : bool, Also return full-ablation time if True (default: False)
+
+    Returns:
+    --------
+    deposition_final : ndarray, Bin-average deposited density per pellet in atoms m^-3,
+                        in the original roa_array order
+    burnout_time_s   : float or None, Only returned when output_time=True, as
+                        (deposition_final, burnout_time_s). Time from plasma entry
+                        to complete ablation in seconds, or None if the pellet exits.
+    """
+    import numpy as np
+    from scipy.integrate import solve_ivp
+    from scipy.interpolate import interp1d, make_interp_spline
+    
+    roa_input = np.asarray(roa_array, dtype=float)
+    ne_input = np.asarray(ne_array, dtype=float)
+    te_input = np.asarray(te_keV_array, dtype=float)
+    dVdrho_input = np.asarray(dVdrho, dtype=float)
+    if roa_input.ndim != 1 or roa_input.size < 2:
+        raise ValueError('roa_array must be a one-dimensional grid with at least two points')
+    for name, values in [('ne_array', ne_input), ('te_array', te_input),
+                            ('dVdrho', dVdrho_input)]:
+        if values.shape != roa_input.shape or not np.all(np.isfinite(values)):
+            raise ValueError(f'{name} must be finite and have the same shape as roa_array')
+        if np.any(values < 0):
+            raise ValueError(f'{name} must be nonnegative')
+    if not np.all(np.isfinite(roa_input)) or np.any((roa_input < 0) | (roa_input > 1)):
+        raise ValueError('roa_array must contain finite coordinates in [0, 1]')
+
+    # 1. Grid sorting and bin edge definition
+    idx_sort = np.argsort(roa_input)
+    roa_sorted = roa_input[idx_sort]
+    if np.any(np.diff(roa_sorted) <= 0):
+        raise ValueError('roa_array coordinates must be distinct')
+
+    edges = np.zeros(len(roa_sorted) + 1)
+    edges[1:-1] = 0.5 * (roa_sorted[:-1] + roa_sorted[1:])
+    edges[0] = 0.0
+    edges[-1] = 1.0
+    volume_derivative = make_interp_spline(roa_sorted, dVdrho_input[idx_sort], k=1)
+    if np.any(volume_derivative(edges) < 0):
+        raise ValueError('Extrapolated dVdrho must be nonnegative throughout [0, 1]')
+    volume_integral = volume_derivative.antiderivative()
+    bin_volumes = np.diff(volume_integral(edges))
+    if not np.all(np.isfinite(bin_volumes)) or np.any(bin_volumes <= 0):
+        raise ValueError('Every deposition bin must have a positive finite shell volume')
+
+    # 2. Dynamic Material Property Calculations
+    AMU_KG = 1.6605390666e-27  # Atomic mass unit constant
+    rho_atoms = rho_solid_kg_m3 / (atomic_mass_amu * AMU_KG)
+
+    # Kinetic NGS and atomic scaling coefficient
+    CRP_SI_KEV = 5.5e-14 * (1000.0**1.64) 
+
+    ne_func = interp1d(roa_sorted, ne_input[idx_sort], bounds_error=False, fill_value="extrapolate")
+    te_func = interp1d(roa_sorted, te_input[idx_sort], bounds_error=False, fill_value="extrapolate")
+
+    # 3. ODE Solution (u = rp^(5/3))
+    u0 = [(rp0_mm / 1000.0)**(5.0 / 3.0)]
+
+    def pellet_ode(x, u):
+        # Continue the smooth transformed RHS through zero so the terminal
+        # event can locate burnout without a discontinuity in the RHS.
+        if injection_side.upper() == 'HFS':
+            X_geom = -1.0 + (x / aminor)
+        else:
+            X_geom = 1.0 - (x / aminor)
+
+        roa = np.clip(np.abs(X_geom), 0.0, 1.0)
+        return [- (5.0 / 3.0) * (CRP_SI_KEV / v_pel_ms) * (ne_func(roa)**(1.0 / 3.0)) * (te_func(roa)**1.64)]
+
+    def burnout_event(x, u): return u[0]
+    burnout_event.terminal = True
+    burnout_event.direction = -1
+
+    x_eval = np.linspace(0.0, 2.0 * aminor, 2000)
+    sol = solve_ivp(pellet_ode, (0.0, 2.0 * aminor), u0, t_eval=x_eval, events=burnout_event, rtol=1e-7, atol=1e-9)
+
+    if not sol.success:
+        raise RuntimeError(f'Pellet ablation integration failed: {sol.message}')
+    x_steps = sol.t
+    u_steps = sol.y[0]
+    burnout_time_s = None
+    if sol.t_events[0].size:
+        x_burnout = float(sol.t_events[0][0])
+        burnout_time_s = x_burnout / v_pel_ms
+        # t_eval samples normally end BEFORE the event. Include the last
+        # partial interval, even for burnout before the second sample.
+        if x_burnout > x_steps[-1]:
+            x_steps = np.append(x_steps, x_burnout)
+            u_steps = np.append(u_steps, 0.0)
+        else:
+            u_steps[-1] = 0.0
+    dx_intervals = np.diff(x_steps)
+
+    if len(dx_intervals) == 0:
+        deposition_final = np.zeros_like(roa_input)
+        return (deposition_final, burnout_time_s) if output_time else deposition_final
+
+    # 4. Midpoint evaluation along trajectory
+    x_mid = 0.5 * (x_steps[:-1] + x_steps[1:])
+    u_mid = 0.5 * (u_steps[:-1] + u_steps[1:])
+    rp_m_mid = np.maximum(u_mid, 0.0)**(3.0 / 5.0)
+
+    if injection_side.upper() == 'HFS':
+        X_geom_mid = -1.0 + (x_mid / aminor)
+    else:
+        X_geom_mid = 1.0 - (x_mid / aminor)
+
+    roa_geom_mid = np.clip(np.abs(X_geom_mid), 0.0, 1.0)
+    te_mid = te_func(roa_geom_mid)
+
+    # 5. Cylindrical mass liberation step
+    # N_remaining = 2*pi*gamma*rho_atoms*rp^3, with rp^3 = u^(9/5).
+    # Endpoint inventory losses conserve atoms, including at burnout.
+    remaining_atoms = 2.0 * np.pi * L_over_D * rho_atoms * np.maximum(u_steps, 0.0)**(9.0 / 5.0)
+    dN_particles = remaining_atoms[:-1] - remaining_atoms[1:]
+
+    # 6. Drift shift application
+    delta_drift_meters = C_drift * ((rp_m_mid * 1000.0)**(4.0 / 3.0)) * (te_mid**0.5)
+    delta_roa = delta_drift_meters / aminor
+
+    X_dep = X_geom_mid + delta_roa
+    roa_dep = np.clip(np.abs(X_dep), 0.0, 1.0)
+
+    # 7. Flux folding and histogram remapping
+    counts, _ = np.histogram(roa_dep, bins=edges, weights=dN_particles)
+    deposition_sorted = counts / bin_volumes
+
+    deposition_final = np.zeros_like(roa_input)
+    deposition_final[idx_sort] = deposition_sorted
+
+    return (deposition_final, burnout_time_s) if output_time else deposition_final
             
 # Main routine
 if __name__=="__main__":

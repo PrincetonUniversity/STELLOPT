@@ -142,7 +142,7 @@ SUBROUTINE calc_iota()
 END SUBROUTINE calc_iota
 
 SUBROUTINE curden_to_curtot(j_arr_in, i_arr_out)
-    ! Takes a J(s) array and returns an I(s) array.
+    ! Takes a J(s) array and returns an I(s) array using the trapezoidal rule.
     REAL(rprec), DIMENSION(:), INTENT(in) :: j_arr_in
     REAL(rprec), DIMENSION(:), INTENT(out) :: i_arr_out
     INTEGER :: i
@@ -152,10 +152,10 @@ SUBROUTINE curden_to_curtot(j_arr_in, i_arr_out)
     ds = THRIFT_S(2)-THRIFT_S(1)
     ! No enclosed current on-axis
     i_arr_out(1) = 0
-    ! Elsewhere: I(i) = I(i-1) + J(i)*dA(i) ; 
+    ! Elsewhere: I(i) = I(i-1) + (J(i-1)+J(i))/2*dA(i)
     !            dA(i) = dA/ds*ds = pi*aminor^2 * ds
     DO i = 2, nsj 
-        i_arr_out(i) = i_arr_out(i-1) + j_arr_in(i)*(pi*eq_Aminor**2)*ds
+        i_arr_out(i) = i_arr_out(i-1) + 0.5_rprec*(j_arr_in(i-1)+j_arr_in(i))*(pi*eq_Aminor**2)*ds
     END DO
     RETURN
 
@@ -368,5 +368,4 @@ SUBROUTINE Js_to_Jrho(j_s_in, j_rho_out)
 
 END SUBROUTINE Js_to_Jrho
 END MODULE thrift_funcs
-
 

@@ -15,7 +15,7 @@ SUBROUTINE thrift_run_bootstrap
    USE thrift_profiles_mod
    USE thrift_funcs
    USE booz_params, ONLY: lsurf_boz
-   USE thrift_globals, ONLY: look_for_ambipolar,update_thrift_vars,update_transport_vars
+   USE thrift_globals, ONLY: look_for_ambipolar,update_thrift_vars,update_transport_vars,dkes_done,update_equilibrium
    !-----------------------------------------------------------------------
    !     Local Variables
    !        ier         Error flag
@@ -33,14 +33,13 @@ SUBROUTINE thrift_run_bootstrap
    ! Just always check it's deallocated      
    IF (ALLOCATED(lsurf_boz)) DEALLOCATE(lsurf_boz)
 
-   ! Check to make sure we're not zero beta
-   IF (eq_beta == 0) THEN
-      THRIFT_JBOOT(:,mytimestep) = 0
-      RETURN
-   END IF
-
    SELECT CASE(TRIM(bootstrap_type))
       CASE ('model','simple','test')
+         ! Check to make sure we're not zero beta
+         IF (eq_beta == 0) THEN
+            THRIFT_JBOOT(:,mytimestep) = 0
+            RETURN
+         END IF
 
          ! j_BS = sqrt(epsilon) Rmajor *dp/dPhi
          ! epsilon = a/R (inverse aspect ratio)
@@ -54,12 +53,24 @@ SUBROUTINE thrift_run_bootstrap
          THRIFT_JBOOT(:,mytimestep) = SQRT(eq_Aminor*eq_Rmajor)/eq_phiedge*THRIFT_S*THRIFT_PPRIME(:,mytimestep)
 
       CASE ('bootsj')
+         ! Check to make sure we're not zero beta
+         IF (eq_beta == 0) THEN
+            THRIFT_JBOOT(:,mytimestep) = 0
+            RETURN
+         END IF
+         !
          ALLOCATE(lsurf_boz(ns_eq))
          lsurf_boz = .FALSE.
          lsurf_boz(2:ns_eq) = .TRUE.
          CALL thrift_paraexe('booz_xform',proc_string,lscreen_subcodes)
          CALL thrift_paraexe('bootsj',proc_string,lscreen_subcodes)
       CASE('read_from_file')
+         ! Check to make sure we're not zero beta
+         IF (eq_beta == 0) THEN
+            THRIFT_JBOOT(:,mytimestep) = 0
+            RETURN
+         END IF
+         !
          DO i = 1, nsj
             s = THRIFT_S(i)
             rho = SQRT(s)
@@ -72,13 +83,22 @@ SUBROUTINE thrift_run_bootstrap
             IF (DKES_K(i)<1) CYCLE
             lsurf_boz(DKES_K(i)) = .TRUE.
          END DO
-         CALL thrift_paraexe('booz_xform',proc_string,lscreen_subcodes)
-         CALL thrift_paraexe('dkes',proc_string,lscreen_subcodes)
+         IF( .NOT. dkes_done ) THEN
+            CALL thrift_paraexe('booz_xform',proc_string,lscreen_subcodes)
+            CALL thrift_paraexe('dkes',proc_string,lscreen_subcodes)
+            IF( .NOT. update_equilibrium ) dkes_done = .TRUE.
+         END IF
          ! Need to set the following booleans everytime thrift_penta is called
          ! They are also set in plasma_solver_mod
          look_for_ambipolar = .TRUE.
          update_thrift_vars = .TRUE.
          update_transport_vars = .FALSE.
+         ! Check to make sure we're not zero beta
+         IF (eq_beta == 0) THEN
+            THRIFT_JBOOT(:,mytimestep) = 0
+            RETURN
+         END IF
+         !
          CALL thrift_paraexe('penta',proc_string,lscreen_subcodes)
       CASE ('sfincs')
    END SELECT

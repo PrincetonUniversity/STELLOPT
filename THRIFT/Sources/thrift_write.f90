@@ -247,6 +247,10 @@
          ! Logicals
          CALL write_scalar_hdf5(fid,'add_NEO',ier,BOOVAR=add_NEO,ATT='add_NEO',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'add_NEO',ier)
+         CALL write_scalar_hdf5(fid,'add_NEO_particle_flux',ier,BOOVAR=add_NEO_particle_flux,ATT='add_NEO_particle_flux',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'add_NEO_particle_flux',ier)
+         CALL write_scalar_hdf5(fid,'add_NEO_heat_flux',ier,BOOVAR=add_NEO_heat_flux,ATT='add_NEO_heat_flux',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'add_NEO_heat_flux',ier)
          ! Integers
          CALL write_scalar_hdf5(fid,'Nt_plasma_grid',ier,INTVAR=Nt_write,ATT='Number of Time Steps Plasma Solver',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Nt plasma grid',ier)

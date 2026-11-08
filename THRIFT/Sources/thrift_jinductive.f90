@@ -11,6 +11,7 @@
 !-----------------------------------------------------------------------
       USE thrift_runtime
       USE thrift_vars
+      USE thrift_globals, ONLY : edge_bc_type, add_susceptance_time_derivatives
       USE thrift_funcs
       USE thrift_equil
       USE thrift_profiles_mod
@@ -31,6 +32,7 @@
                      BP_temp, CP_temp, DP_temp,temp_arr,  &
                      alpha1,alpha2,alpha3,alpha4,&
                      DIAGSUB,DIAGMID,DIAGSUP,RHS
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: S11dot, S12dot, src_sec, dia_sec
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !======================================================================
@@ -112,10 +114,27 @@
       ALLOCATE(alpha1(nsj-2),alpha2(nsj-2),alpha3(nsj-2),alpha4(nsj-2))
       alpha1 = 0; alpha2 = 0; alpha3 = 0; alpha4 = 0
 
+      ALLOCATE(S11dot(nsj),S12dot(nsj),src_sec(nsj),dia_sec(nsj))
+      IF(add_susceptance_time_derivatives) THEN
+            ! Secular terms from the evolving susceptance matrix:
+            !   u_t = A*d/ds[...] + u*dln(S11)/dt + S11*d/dt(S12/S11)
+            S11dot = 0; S12dot = 0; src_sec = 0; dia_sec = 0
+            !
+            S11dot = (THRIFT_S11(:,mytimestep) - THRIFT_S11(:,prevtimestep))/dt
+            S12dot = (THRIFT_S12(:,mytimestep) - THRIFT_S12(:,prevtimestep))/dt
+            !WHERE (ABS(THRIFT_S11(:,mytimestep)) > small)
+            dia_sec = S11dot/THRIFT_S11(:,mytimestep)
+            !END WHERE
+            src_sec = S12dot - THRIFT_S12(:,mytimestep)*dia_sec
+      ELSE
+            dia_sec = 0.0_rprec
+            src_sec = 0.0_rprec
+      END IF
+
       DO i = 1, nsj-2
          j = i + 1 ! ABCD in [0,1], alphas in (0,1), so index shifts
-         alpha1(i) = A_temp(j)* DP_temp(j)
-         alpha2(i) = A_temp(j)* CP_temp(j)
+         alpha1(i) = A_temp(j)* DP_temp(j) + src_sec(j)
+         alpha2(i) = A_temp(j)* CP_temp(j) + dia_sec(j)
          alpha3(i) = A_temp(j)*(BP_temp(j)+C_temp(j))            
          alpha4(i) = A_temp(j)*  B_temp(j)  
       END DO
@@ -169,51 +188,42 @@
       !DIAGSUP(1) = -4
       !RHS(1)     = 0
 
-      ! Plasma edge (s=1) Robin BC including pprime
-      vp = THRIFT_VP(nsj,mytimestep)
-      phia = THRIFT_PHIEDGE(mytimestep)
-      rmaj = THRIFT_RMAJOR(nsj,mytimestep); amin = THRIFT_AMINOR(nsj,mytimestep) ! R,a helpers
-      Lext = mu0*rmaj*(log(8*rmaj/amin)-2) ! mu0 R (log(8R/a)-2)
-      etapar = THRIFT_ETAPARA(nsj,mytimestep)
-      Bsq = THRIFT_BSQAV(nsj,mytimestep)
-      Bav = THRIFT_BAV(nsj,mytimestep)
-      !
-      fact1 = (vp/phia)*(etapar/Lext)*(mu0/phia)
-      fact2 = (vp/phia)*(etapar/Lext)*(Bsq/phia)
-      !
-      DIAGSUB(nsj-1) = -2.0*fact2/ds
-      DIAGMID( nsj ) = 1.0/dt + 1.5*fact2/ds + fact1*THRIFT_PPRIME(nsj,mytimestep)
-      RHS(nsj) = THRIFT_UGRID(nsj,prevtimestep)/dt + fact1*Bav*THRIFT_JSOURCE(nsj,mytimestep)
-      !
-      ! Row manipulations to get TDM for DGTSV
-      temp = fact2/(2.0*ds) ! X
-      temp = temp/DIAGSUB(nsj-2) ! X/an1
-      DIAGSUB(nsj-1)    = DIAGSUB(nsj-1)  - temp*DIAGMID(nsj-1)
-      DIAGMID(nsj)      = DIAGMID(nsj)    - temp*DIAGSUP(nsj-1)
-      RHS(nsj)          = RHS(nsj)        - temp*RHS(nsj-1)
+      IF(trim(edge_bc_type) == 'robin') THEN
+            ! Plasma edge (s=1) Robin BC including pprime
+            vp = THRIFT_VP(nsj,mytimestep)
+            phia = THRIFT_PHIEDGE(mytimestep)
+            rmaj = THRIFT_RMAJOR(nsj,mytimestep); amin = THRIFT_AMINOR(nsj,mytimestep) ! R,a helpers
+            Lext = mu0*rmaj*(log(8*rmaj/amin)-2) ! mu0 R (log(8R/a)-2)
+            etapar = THRIFT_ETAPARA(nsj,mytimestep)
+            Bsq = THRIFT_BSQAV(nsj,mytimestep)
+            Bav = THRIFT_BAV(nsj,mytimestep)
+            !
+            fact1 = (vp/phia)*(etapar/Lext)*(mu0/phia)
+            fact2 = (vp/phia)*(etapar/Lext)*(Bsq/phia)
+            !
+            DIAGSUB(nsj-1) = -2.0*fact2/ds
+            DIAGMID( nsj ) = 1.0/dt + 1.5*fact2/ds + fact1*THRIFT_PPRIME(nsj,mytimestep)
+            RHS(nsj) = THRIFT_UGRID(nsj,prevtimestep)/dt + fact1*Bav*THRIFT_JSOURCE(nsj,mytimestep)
+            !
+            ! Row manipulations to get TDM for DGTSV
+            temp = fact2/(2.0*ds) ! X
+            temp = temp/DIAGSUB(nsj-2) ! X/an1
+            DIAGSUB(nsj-1)    = DIAGSUB(nsj-1)  - temp*DIAGMID(nsj-1)
+            DIAGMID(nsj)      = DIAGMID(nsj)    - temp*DIAGSUP(nsj-1)
+            RHS(nsj)          = RHS(nsj)        - temp*RHS(nsj-1)
 
-      ! Plasma edge (s=1) Neuman BC
-      ! rmaj = THRIFT_RMAJOR(nsj,mytimestep); amin = THRIFT_AMINOR(nsj,mytimestep) ! R,a helpers
-      ! Lext = mu0*rmaj*(log(8*rmaj/amin)-2) ! mu0 R (log(8R/a)-2)
-      ! temp = 2*pi*rmaj*mu0/THRIFT_PHIEDGE(mytimestep)*THRIFT_ETAPARA(nsj,mytimestep)/Lext*THRIFT_JSOURCE(nsj,mytimestep)
-      ! RHS(nsj) = THRIFT_UGRID(nsj,prevtimestep)/dt + temp ! u/dt + 2*pi*R*(mu0/phi_edge)*(eta/Lext)*Js
-      ! temp = rmaj/(amin**2*ds)*THRIFT_ETAPARA(nsj,mytimestep)/Lext ! X2 = R0/(a^2 ds)*eta/Lext
-      ! DIAGSUB(nsj-1) = -4*temp
-      ! DIAGMID( nsj ) = 3*temp+1.0/dt
-
-      ! ! Row manipulations to get TDM for DGTSV
-      ! ! Eliminate X2
-      ! temp = temp/DIAGSUB(nsj-2) ! X2/an1
-      ! DIAGSUB(nsj-1)    = DIAGSUB(nsj-1)  - temp*DIAGMID(nsj-1)
-      ! DIAGMID(nsj)      = DIAGMID(nsj)    - temp*DIAGSUP(nsj-1)
-      ! RHS(nsj)          = RHS(nsj)        - temp*RHS(nsj-1)
+      ELSE IF(trim(edge_bc_type) == 'dirichlet') THEN
+            ! Dirichlet BC for the plasma edge
+            DIAGMID(nsj) = 1
+            DIAGSUB(nsj-1) = 0
+            RHS(nsj) = THRIFT_DIRICHLET_EDGE_BC(mytimestep)*mu0/THRIFT_PHIEDGE(mytimestep)
       
-      ! code for dI/ds = 0
-      !! Eliminate X1
-      !temp = 1.0/DIAGSUP(2) ! X1/c2 [X1=1]
-      !DIAGMID(1)        = DIAGMID(1)      - temp*DIAGSUB(1)
-      !DIAGSUP(1)        = DIAGSUP(1)      - temp*DIAGMID(2)
-      !RHS(1)            = RHS(1)          - temp*RHS(2)
+      ELSE
+         WRITE(6,*) '!!!!!!!!!!!! ERROR !!!!!!!!!!!!!!'
+         WRITE(6,*) '  edge_bc_type must be either dirichlet or robin'
+         WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         STOP
+      END IF
 
 !----------------------------------------------------------------------
 !     Bookkeeping
@@ -230,6 +240,7 @@
       ! Store solution
       THRIFT_UGRID(:,mytimestep) = RHS
       DEALLOCATE(alpha1,alpha2,alpha3,alpha4,DIAGSUB,DIAGMID,DIAGSUP,RHS)
+      DEALLOCATE(S11dot,S12dot,src_sec,dia_sec)
 !----------------------------------------------------------------------
 !     Bookkeeping
 !----------------------------------------------------------------------

@@ -580,7 +580,7 @@ MODULE thrift_plasma_solver_mod
 
         ALLOCATE(Dn(Nr),cn(Nr),Vp(Nr),cn_external(Nr))
 
-        IF(add_NEO) THEN
+        IF(add_NEO .AND. add_NEO_particle_flux) THEN
             Dn = Dn_NEO(1+iion,mytimestep_plasma_solver,:) + Dn_turb
             cn = cn_NEO(1+iion,mytimestep_plasma_solver,:) + cn_turb
         ELSE
@@ -720,7 +720,7 @@ MODULE thrift_plasma_solver_mod
             Dp_turb = chi_all(ispecies)
             cp_turb = 0.0_rprec
 
-            IF(add_NEO) THEN
+            IF(add_NEO .AND. add_NEO_heat_flux) THEN
                 Dp = Dp_NEO(ispecies,mytimestep_plasma_solver,:) + Dp_turb
                 cp = cp_NEO(ispecies,mytimestep_plasma_solver,:) + cp_turb
             ELSE

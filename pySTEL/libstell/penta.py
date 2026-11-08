@@ -620,8 +620,8 @@ class PENTA:
                 # Slice the arrays for the specified range
                 Er_slice = Er[idx_e:idx_i+1]
                 Jr_slice = Jr[idx_e:idx_i+1]
-                # Perform the integration using np.trapz
-                integral = np.trapz(Jr_slice, Er_slice)
+                # Perform the integration using np.trapezoid
+                integral = np.trapezoid(Jr_slice, Er_slice)
                 # Decide root
                 if(integral>0):
                     self.root_Maxwell[rho] = 'ion_root'

@@ -4,7 +4,8 @@
      1    xm, xn, ntor, ns,
      2    nfp, mnmax, read_wout_file, read_wout_deallocate
       USE vmec_params, ONLY: mscale, nscale, ntmax,
-     1                       rcc, rss, rsc, rcs, zsc, zcs, zcc, zss
+     1                       rcc, rss, rsc, rcs, zsc, zcs, zcc, zss,
+     2                       lamscale
       USE vmec_dim, ONLY: mpol1
       USE vparams, ONLY: one, zero, rprec
       USE vmec_input, ONLY: lasym
@@ -150,7 +151,8 @@ C-----------------------------------------------
       END DO
 
       DO js = nsmin + 1, nsmax
-         lmn(js,:,:,:) = phipf(js)*lmn(js,:,:,:)
+!        wrout exports normalized lambda multiplied by lamscale.
+         lmn(js,:,:,:) = (phipf(js)/lamscale)*lmn(js,:,:,:)
       END DO
 
 
