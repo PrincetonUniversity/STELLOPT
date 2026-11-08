@@ -219,43 +219,48 @@ C-----------------------------------------------
 
       SUBROUTINE GetAcyl_WOUT(R1, Phi, Z1, Ar, Aphi, Az,
      1                        sflx, uflx, info)
-      USE read_wout_mod, phi_wout=>phi, ns_w=>ns, ntor_w=>ntor,
-     1     mpol_w=>mpol, ntmax_w=>ntmax, lthreed_w=>lthreed,
-     2     lasym_w=>lasym, chi_wout=>chi, phipf_wout => phipf,
-     3     isigng_w=>isigng
+      USE read_wout_mod, ONLY: phi_wout=>phi, chi_wout=>chi,
+     1     phipf_wout=>phipf, isigng_w=>isigng,
+     2     ns_w=>ns, ntor_w=>ntor, mpol_w=>mpol,
+     3     ntmax_w=>ntmax, lthreed_w=>lthreed, lasym_w=>lasym,
+     4     nfp, lwout_opened, rzl_local, LoadRZL,
+     5     tosuvspaceLambda
       IMPLICIT NONE
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
-      INTEGER, OPTIONAL, INTENT(out) :: info
-      REAL(rprec), INTENT(in)  :: R1, Z1, Phi
+      REAL(rprec), INTENT(in) :: R1, Phi, Z1
       REAL(rprec), INTENT(out) :: Ar, Aphi, Az
-      REAL(rprec), INTENT(out), OPTIONAL :: sflx, uflx
+      REAL(rprec), OPTIONAL, INTENT(inout) :: sflx, uflx
+      INTEGER, OPTIONAL, INTENT(out) :: info
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       REAL(rprec), PARAMETER :: fmin_acceptable = 1.E-12_dp
-      INTEGER     :: nfe, info_loc, js_lo, js_hi
+      INTEGER :: nfe, info_loc, jslo, jshi
       REAL(rprec) :: r_cyl(3), c_flx(3), fmin
-      REAL(rprec) :: Ru1, Zu1, Rv1, Zv1
-      REAL(rprec) :: Rs1, Zs1, c_flx2(3), r_cyl2(3)
-      REAL(rprec) :: lam1, ds
-      REAL(rprec) :: g11,g12,g13,g22,g23,g33
-      REAL(rprec) :: g11i,g12i,g13i,g22i,g23i,g33i
-      REAL(rprec) :: phi_flux, chi_flux,wegt, phip_flux
-      REAL(rprec) :: asubs1, asubu1, asubv1, gdet
-      REAL(rprec) :: asups1, asupu1, asupv1
+      REAL(rprec) :: Rs1, Ru1, Rv1, Zs1, Zu1, Zv1
+      REAL(rprec) :: det, x, whi, wlo, fac
+      REAL(rprec) :: torflux, polflux, dtorflux
+      REAL(rprec) :: lam1, lu1, lv1
+      REAL(rprec) :: asubs1, asubu1, asubphi1
 C-----------------------------------------------
+!     Return physical cylindrical components of A [T m].
+!     Phi is the geometric toroidal angle in radians.
+!
+!     Gauge, with internally normalized fluxes:
+!       A = -Phi'(s)*lambda*grad(s)
+!           + Phi(s)*grad(u) - Chi(s)*grad(phi)
       IF (.not.lwout_opened) THEN
          WRITE(6, '(2a,/,a)')
-     1   ' This form of GetBcyl can only be called if WOUT has been',
-     2   ' previously opened!',' Try GetBcyl_VMEC form instead.'
+     1   ' This form of GetAcyl can only be called if WOUT has been',
+     2   ' previously opened!',' Try GetAcyl_VMEC form instead.'
          RETURN
       END IF
 
       CALL LoadRZL
 
-!     Computes cylindrical components of the vector potential field, Ar, Aphi, Az,
+!     Computes cylindrical components of the magnetic field, Br, Bphi, Bz,
 !     at the specified cylindrical coordinate point (R1, Phi, Z1), where
 !     Phi is the true geometric toroidal angle (NOT N*Phi)
 !
@@ -263,7 +268,7 @@ C-----------------------------------------------
 !     R1, Phi, Z1  : cylindrical coordinates at which evaluation is to take place
 !
 !     OUTPUT
-!     Ar, Aphi, Az : computed cylindrical components of A at input point
+!     Br, Bphi, Bz : computed cylindrical components of B at input point
 !     sflx, uflx   : computed flux and theta angle at the cylindrical point
 !
 !     1. Convert to point in flux-coordinates: cflux = (s, u, v=N*phi)
@@ -276,101 +281,72 @@ C-----------------------------------------------
       CALL cyl2flx(rzl_local, r_cyl, c_flx, ns_w, ntor_w, mpol_w,
      1     ntmax_w, lthreed_w, lasym_w, info_loc, nfe, fmin,
      2     RU=Ru1, ZU=Zu1, RV=Rv1, ZV=Zv1, RS=Rs1, ZS=Zs1)
-      Rv1 = nfp*Rv1;  Zv1 = nfp*Zv1
-
+!
+!     If info == 0 then the point is found
+!     If info == -1 then the tollerance was not achieved
+!     If info < -1 then most likely the point is outside the eq.
+!
       IF (info_loc.eq.-1 .and. (fmin .le. fmin_acceptable)) info_loc = 0
 
       IF (PRESENT(info)) info = info_loc
-      IF (info_loc .ne. 0) RETURN
-
+!
+!     Always report the solved flux coordinate back to the caller, even
+!     when the point is outside the plasma (info=-3).  Without this,
+!     the caller's sflx stays at its cold-start value of 0, which causes
+!     virtual-casing dispatch (sflx > 1 test) to be silently skipped for
+!     true-exterior points.
+!
       IF (PRESENT(sflx)) sflx = c_flx(1)
       IF (PRESENT(uflx)) uflx = c_flx(2)
 
-      IF (c_flx(1) .gt. one) THEN
+      IF (info_loc .lt. -1) RETURN
+
+      Rv1 = nfp*Rv1;  Zv1 = nfp*Zv1
+      det = Rs1*Zu1 - Ru1*Zs1
+
+      IF (c_flx(1) .ge. 2) THEN
          Ar = 0;  Aphi = 0;  Az = 0
          RETURN
+      ELSE IF (c_flx(1) .gt. one) THEN
+         c_flx(1) = one
       END IF
-!
-!     2. Interpolate Chi and phi
-!        phi, chi, phipf are full-grid radial profiles indexed 1:ns_w,
-!        with grid nodes at s_j = (j-1)/(ns_w-1) so that s=0 -> j=1 (axis)
-!        and s=1 -> j=ns_w (edge).  For s=c_flx(1) the real-valued index is
-!        1 + s*(ns_w-1); hence js_lo = FLOOR(s*(ns_w-1)) + 1 and the
-!        fractional weight wegt = s*(ns_w-1) - (js_lo-1) lies in [0,1).
-!        Clamp js_lo to [1, ns_w-1] so js_lo/js_hi stay within bounds.
-!
-      js_lo = FLOOR(c_flx(1)*(ns_w-1)) + 1
-      IF (js_lo .lt. 1)      js_lo = 1
-      IF (js_lo .ge. ns_w)   js_lo = ns_w-1
-      js_hi = js_lo+1
-      wegt  = c_flx(1)*(ns_w-1) - (js_lo-1)
-      phi_flux =   (1.0-wegt)*phi_wout(js_lo)
-     1            + wegt*phi_wout(js_hi)
-      chi_flux =   (1.0-wegt)*chi_wout(js_lo)
-     1            + wegt*chi_wout(js_hi)
-      phip_flux =  (1.0-wegt)*phipf_wout(js_lo)
-     1            + wegt*phipf_wout(js_hi)
 
+!     Interpolate full-mesh flux profiles.
 !
-!     3. Get lambda and radial derivatives
-!
-      CALL tosuvspaceLambda(c_flx(1),c_flx(2),c_flx(3),LAM=lam1)
+      x = c_flx(1)*(ns_w-1)
+      jslo = MAX(1, MIN(ns_w-1, FLOOR(x)+1))
+      jshi = jslo+1
+      whi = x-(jslo-1)
+      wlo = one-whi
 
-!
-!     2. Evaluate Metric Elements
-!       g_ij = e_i * e_j = e^i * e^j
-!           e^i = e_j x e_k / sqrt(g)
-!           e_i = d X / di
-!     g21 = g12
-!     g31 = g13
-!     g32 = g23
-!
-      g11 = Rs1*Rs1         + Zs1*Zs1
-      g12 = Rs1*Ru1         + Zs1*Zu1
-      g13 = Rs1*Rv1         + Zs1*Zv1
-      g22 = Ru1*Ru1         + Zu1*Zu1
-      g23 = Ru1*Rv1         + Zu1*Zv1
-      g33 = Rv1*Rv1 + R1*R1 + Zv1*Zv1
-      gdet =  g11*(g22*g33-g23*g23)
-     1       -g12*(g12*g33-g23*g13)
-     2       +g13*(g12*g23-g22*g13)
-      g11i = g22*g33 - g23*g23
-      g12i = g13*g23 - g12*g33
-      g13i = g12*g23 - g13*g22
-      g22i = g11*g33 - g13*g13
-      g23i = g13*g12 - g11*g23
-      g33i = g11*g22 - g12*g12
-!
-!     3. Calculate the Fields
-!        A = A_i * e^i
-!           e^i = e_j x e_k / sqrt(g)
-!           e_i = d X / di
-!             g = det(g_ij)
-!
-      asubs1 = -lam1 * phip_flux*isigng_w
-      asubu1 =  phi_flux*isigng_w
-      asubv1 = -chi_flux*isigng_w
-      asups1 = (asubs1*g11i+asubu1*g12i+asubv1*g13i)/gdet
-      asupu1 = (asubs1*g12i+asubu1*g22i+asubv1*g23i)/gdet
-      asupv1 = (asubs1*g13i+asubu1*g23i+asubv1*g33i)/gdet
-      Ar   = asups1*Rs1 + asupu1*Ru1 + asupv1*Rv1
-      Aphi = asupv1*R1
-      Az   = asups1*Zs1 + asupu1*Zu1 + asupv1*Zv1
+      fac = REAL(isigng_w,rprec)/twopi
 
-!      Ar   = -asubs1*(R1*Zu1)          + asubu1*(R1*Zs1)
-!      Az   =  asubs1*(R1*Ru1)          - asubu1*(R1*Rs1)
-!      Aphi =  asubs1*(Ru1*Zv1-Rv1*Zu1) + asubu1*(Rs1*Zv1-Rv1*Zs1)
-!     1         + asubv1*(Ru1*Zs1-Rs1*Zu1)
-!      Ar   = Ar/(gdet)
-!      Az   = Az/(gdet)
-!      Aphi = Aphi/(gdet)
-!      Aphi = gdet
-!      Ar   = Ar/(gdet*phi_wout(ns_w))
-!      Az   = Az/(gdet*phi_wout(ns_w))
-!      Aphi   = Aphi/(gdet*phi_wout(ns_w))
-!      Ar   = Ar/sqrt(gdet)
-!      Az   = Az/sqrt(gdet)
-!      Aphi = Aphi/sqrt(gdet)
+      torflux = fac*(wlo*phi_wout(jslo)
+     1             + whi*phi_wout(jshi))
+      polflux = (wlo*chi_wout(jslo)
+     1           + whi*chi_wout(jshi))/twopi
+      dtorflux = fac*(wlo*phipf_wout(jslo)
+     1              + whi*phipf_wout(jshi))
+
+!     Lambda uses the existing half-mesh interpolation.
+!     Pass all outputs: the current helper initializes them
+!     without checking PRESENT at entry.
+!
+      CALL tosuvspaceLambda(c_flx(1), c_flx(2), c_flx(3),
+     1                      LAM=lam1, LU=lu1, LV=lv1)
+
+      asubs1   = -dtorflux*lam1
+      asubu1   =  torflux
+      asubphi1 = -polflux
+
+!     Solve:
+!       A_s       = Ar*Rs + Az*Zs
+!       A_u       = Ar*Ru + Az*Zu
+!       A_phi_cov = Ar*Rphi + R*Aphi + Az*Zphi
+!
+      Ar = (asubs1*Zu1-asubu1*Zs1)/det
+      Az = (asubu1*Rs1-asubs1*Ru1)/det
+      Aphi = (asubphi1-Ar*Rv1-Az*Zv1)/R1
 
       END SUBROUTINE GetAcyl_WOUT
 
@@ -807,8 +783,8 @@ C-----------------------------------------------
 !
       rho  = SQRT(si)
       hs1  = one/(ns-1)
-      jslo = 1 + NINT(ABS(si)/hs1)
-      jslo = MIN(jslo,ns-1)
+      jslo = 1 + FLOOR(si/hs1)
+      jslo = MAX(1, MIN(jslo, ns-1))
       jshi = jslo + 1
       slo  = hs1*(jslo-1)
       shi  = hs1*jslo
