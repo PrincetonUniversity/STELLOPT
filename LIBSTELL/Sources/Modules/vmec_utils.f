@@ -260,7 +260,7 @@ C-----------------------------------------------
 
       CALL LoadRZL
 
-!     Computes cylindrical components of the magnetic field, Br, Bphi, Bz,
+!     Computes cylindrical components of the vector potential field, Ar, Aphi, Az,
 !     at the specified cylindrical coordinate point (R1, Phi, Z1), where
 !     Phi is the true geometric toroidal angle (NOT N*Phi)
 !
@@ -268,7 +268,7 @@ C-----------------------------------------------
 !     R1, Phi, Z1  : cylindrical coordinates at which evaluation is to take place
 !
 !     OUTPUT
-!     Br, Bphi, Bz : computed cylindrical components of B at input point
+!     Ar, Aphi, Az : computed cylindrical components of A at input point
 !     sflx, uflx   : computed flux and theta angle at the cylindrical point
 !
 !     1. Convert to point in flux-coordinates: cflux = (s, u, v=N*phi)
@@ -281,21 +281,11 @@ C-----------------------------------------------
       CALL cyl2flx(rzl_local, r_cyl, c_flx, ns_w, ntor_w, mpol_w,
      1     ntmax_w, lthreed_w, lasym_w, info_loc, nfe, fmin,
      2     RU=Ru1, ZU=Zu1, RV=Rv1, ZV=Zv1, RS=Rs1, ZS=Zs1)
-!
-!     If info == 0 then the point is found
-!     If info == -1 then the tollerance was not achieved
-!     If info < -1 then most likely the point is outside the eq.
-!
+
       IF (info_loc.eq.-1 .and. (fmin .le. fmin_acceptable)) info_loc = 0
 
       IF (PRESENT(info)) info = info_loc
-!
-!     Always report the solved flux coordinate back to the caller, even
-!     when the point is outside the plasma (info=-3).  Without this,
-!     the caller's sflx stays at its cold-start value of 0, which causes
-!     virtual-casing dispatch (sflx > 1 test) to be silently skipped for
-!     true-exterior points.
-!
+      
       IF (PRESENT(sflx)) sflx = c_flx(1)
       IF (PRESENT(uflx)) uflx = c_flx(2)
 
