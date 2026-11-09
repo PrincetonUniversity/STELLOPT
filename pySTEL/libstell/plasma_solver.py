@@ -477,7 +477,8 @@ class PLASMA_SOLVER:
                 raise ValueError(f'ERROR: Source type {source_type} is NOT possible')
                 
     def set_heat_fluxes(self, species: str, type: str, *, chi_base=None, aLT_critical=None,
-                        stiffness=None, alpha=1.0, convective_fact=0.0, mass_ref_species=None, chi_2D=None):
+                        stiffness=None, alpha=1.0, convective_fact=0.0, mass_ref_species=None, chi_2D=None,
+                        aLT_method='polyfit_der'):
         """
         Sets heat flux for a given species, replacing any previous configuration.
         In general, the heat flux for each species is:
@@ -494,12 +495,20 @@ class PLASMA_SOLVER:
                        the local species temperature is the reference temperature.
         chi_base, aLT_critical, stiffness, alpha and convective_fact can be scalars
         or functions of rho returning a scalar or an array of shape (Nr,).
+        For 'beurskens' and 'chi_normalized_gB_2D', aLT_method selects how to
+        compute a/LT = -(dT/drho)/T: 'polyfit_der' (default) uses a degree-12
+        polynomial fit; 'np_gradient' uses np.gradient with edge_order=2.
+        Other heat flux types ignore aLT_method.
         Every species must be configured before running the solver.
         """
         if species not in self.list_of_species:
             raise ValueError(f'ERROR: Species {species} is not in the plasma.')
 
         config = {'type': type, 'chi_base': chi_base, 'convective_fact': convective_fact}
+        if type in ('beurskens', 'chi_normalized_gB_2D'):
+            if aLT_method not in ('polyfit_der', 'np_gradient'):
+                raise ValueError("ERROR: aLT_method must be 'polyfit_der' or 'np_gradient'!")
+            config['aLT_method'] = aLT_method
         match type:
             case 'diffusive':
                 #checks that diffusion coefficients are provided
@@ -1381,8 +1390,11 @@ class PLASMA_SOLVER:
         Te = self.T['electrons'][it, :]
         #
         alpha = self._evaluate_heat_flux_parameter(config['alpha'], 'alpha')
-        dTdr = polyfit_derivative_fast(self.r_grid, T_ion, deg=12)
-        aLT = -self.aminor * dTdr / T_ion
+        if config['aLT_method'] == 'polyfit_der':
+            dTdrho = polyfit_derivative_fast(self.rho_grid, T_ion, deg=12)
+        else:
+            dTdrho = np.gradient(T_ion, self.rho_grid, edge_order=2)
+        aLT = -dTdrho / T_ion
         #
         chi_normalized = self._evaluate_heat_flux_parameter(
             config['chi_2D'](self.rho_grid, aLT), 'chi_2D')
@@ -1583,8 +1595,6 @@ class PLASMA_SOLVER:
         stiffness = self._evaluate_heat_flux_parameter(config['stiffness'], 'stiffness')
         m_ref_species = config['mass_ref_species']
 
-        r_grid = self.r_grid
-        
         ## electrons
         T_electrons = self.T['electrons'][it,:]
          
@@ -1592,17 +1602,13 @@ class PLASMA_SOLVER:
         T_ion = self.T[species][it,:]
         n_ion = self.N[species][it,:]
 
-        # T_polyfit = np.poly1d( np.polyfit(r_grid,T_ion,deg=12) )
-        # dTdr_polyfit = np.poly1d( T_polyfit.deriv() )
-        # dTdr_polyfit = dTdr_polyfit(r_grid)
-        # dTdr = dTdr_polyfit
-        dTdr = polyfit_derivative_fast(r_grid,T_ion,deg=12)
+        if config['aLT_method'] == 'polyfit_der':
+            dTdrho = polyfit_derivative_fast(self.rho_grid, T_ion, deg=12)
+        else:
+            dTdrho = np.gradient(T_ion, self.rho_grid, edge_order=2)
+        a_LT = -dTdrho / T_ion
 
-        a_LT = self.aminor * dTdr / T_ion
-
-        a_LT_filtered = -a_LT
-
-        X = a_LT_filtered - aLT_critical
+        X = a_LT - aLT_critical
 
         chi_turb = stiffness * X * np.heaviside(X,1) * (T_electrons/T_ion)**alpha
 
