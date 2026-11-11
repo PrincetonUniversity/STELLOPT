@@ -27,7 +27,7 @@ MODULE beams3d_physics_mod
                                fact_vsound, fact_coul, fact_kick, &
                                ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                                ns_prof5, my_end, h1_prof, fact_crit_legacy
-      USE beams3d_grid, ONLY: delta_t, MODB4D, OMEG4D, nomeg,&
+      USE beams3d_grid, ONLY: grid_cell, delta_t, MODB4D, OMEG4D, nomeg,&
                               phimax, TE4D, NE4D, TI4D, ZEFF4D, &
                               RHO4D, XRHO4D, YRHO4D, &
                               nr, nphi, nz, rmax, rmin, zmax, zmin, &
@@ -276,9 +276,9 @@ MODULE beams3d_physics_mod
          IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
              (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
              (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
-            i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
-            j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
-            k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+            i = grid_cell(raxis, nr, r_temp)
+            j = grid_cell(phiaxis, nphi, phi_temp)
+            k = grid_cell(zaxis, nz, z_temp)
             xparam = (r_temp - raxis(i)) * hri(i)
             yparam = (phi_temp - phiaxis(j)) * hpi(j)
             zparam = (z_temp - zaxis(k)) * hzi(k)
@@ -539,9 +539,9 @@ MODULE beams3d_physics_mod
          IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
              (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
              (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
-            i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
-            j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
-            k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+            i = grid_cell(raxis, nr, r_temp)
+            j = grid_cell(phiaxis, nphi, phi_temp)
+            k = grid_cell(zaxis, nz, z_temp)
             xparam = (r_temp - raxis(i)) * hri(i)
             yparam = (phi_temp - phiaxis(j)) * hpi(j)
             zparam = (z_temp - zaxis(k)) * hzi(k)
@@ -834,9 +834,9 @@ MODULE beams3d_physics_mod
                IF ((q(1) >= rmin-eps1) .and. (q(1) <= rmax+eps1) .and. &
                    (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
                    (q(3) >= zmin-eps3) .and. (q(3) <= zmax+eps3)) THEN
-                  i = MIN(MAX(COUNT(raxis < q(1)),1),nr-1)
-                  j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
-                  k = MIN(MAX(COUNT(zaxis < q(3)),1),nz-1)
+                  i = grid_cell(raxis, nr, q(1))
+                  j = grid_cell(phiaxis, nphi, phi_temp)
+                  k = grid_cell(zaxis, nz, q(3))
                   xparam = (q(1) - raxis(i)) * hri(i)
                   yparam = (phi_temp - phiaxis(j)) * hpi(j)
                   zparam = (q(3) - zaxis(k)) * hzi(k)
@@ -897,9 +897,9 @@ MODULE beams3d_physics_mod
                IF ((q(1) >= rmin-eps1) .and. (q(1) <= rmax+eps1) .and. &
                    (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
                    (q(3) >= zmin-eps3) .and. (q(3) <= zmax+eps3)) THEN
-                  i = MIN(MAX(COUNT(raxis < q(1)),1),nr-1)
-                  j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
-                  k = MIN(MAX(COUNT(zaxis < q(3)),1),nz-1)
+                  i = grid_cell(raxis, nr, q(1))
+                  j = grid_cell(phiaxis, nphi, phi_temp)
+                  k = grid_cell(zaxis, nz, q(3))
                   xparam = (q(1) - raxis(i)) * hri(i)
                   yparam = (phi_temp - phiaxis(j)) * hpi(j)
                   zparam = (q(3) - zaxis(k)) * hzi(k)
@@ -935,9 +935,9 @@ MODULE beams3d_physics_mod
          plocal = MODULO(plocal, phimax) ! Dont need to check for negative then
          ! Compute temp/density along path
          DO l = 1, num_depo
-            i = MIN(MAX(COUNT(raxis < rlocal(l)),1),nr-1)
-            j = MIN(MAX(COUNT(phiaxis < plocal(l)),1),nphi-1)
-            k = MIN(MAX(COUNT(zaxis < zlocal(l)),1),nz-1)
+            i = grid_cell(raxis, nr, rlocal(l))
+            j = grid_cell(phiaxis, nphi, plocal(l))
+            k = grid_cell(zaxis, nz, zlocal(l))
             xparam = (rlocal(l) - raxis(i)) * hri(i)
             yparam = (plocal(l) - phiaxis(j)) * hpi(j)
             zparam = (zlocal(l) - zaxis(k)) * hzi(k)
@@ -1030,9 +1030,9 @@ MODULE beams3d_physics_mod
                t = my_end + dt_local             
                RETURN
             END IF
-            i = MIN(MAX(COUNT(raxis < rlocal(l)),1),nr-1)
-            j = MIN(MAX(COUNT(phiaxis < plocal(l)),1),nphi-1)
-            k = MIN(MAX(COUNT(zaxis < zlocal(l)),1),nz-1)
+            i = grid_cell(raxis, nr, rlocal(l))
+            j = grid_cell(phiaxis, nphi, plocal(l))
+            k = grid_cell(zaxis, nz, zlocal(l))
             xparam = (rlocal(l) - raxis(i)) * hri(i)
             yparam = (plocal(l) - phiaxis(j)) * hpi(j)
             zparam = (zlocal(l) - zaxis(k)) * hzi(k)
@@ -1175,9 +1175,9 @@ MODULE beams3d_physics_mod
 
 
          ! Eval Spline
-         i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
-         j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
-         k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+         i = grid_cell(raxis, nr, r_temp)
+         j = grid_cell(phiaxis, nphi, phi_temp)
+         k = grid_cell(zaxis, nz, z_temp)
          xparam = (r_temp - raxis(i)) * hri(i)
          yparam = (phi_temp - phiaxis(j)) * hpi(j)
          zparam = (z_temp - zaxis(k)) * hzi(k)
@@ -1331,9 +1331,9 @@ MODULE beams3d_physics_mod
          moment_temp = q(5)
 
          ! Eval Spline
-         i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
-         j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
-         k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+         i = grid_cell(raxis, nr, r_temp)
+         j = grid_cell(phiaxis, nphi, phi_temp)
+         k = grid_cell(zaxis, nz, z_temp)
          xparam = (r_temp - raxis(i)) * hri(i)
          yparam = (phi_temp - phiaxis(j)) * hpi(j)
          zparam = (z_temp - zaxis(k)) * hzi(k)
@@ -1469,9 +1469,9 @@ MODULE beams3d_physics_mod
          IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
              (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
              (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
-            i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
-            j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
-            k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+            i = grid_cell(raxis, nr, r_temp)
+            j = grid_cell(phiaxis, nphi, phi_temp)
+            k = grid_cell(zaxis, nz, z_temp)
             xparam = (r_temp - raxis(i)) * hri(i)
             yparam = (phi_temp - phiaxis(j)) * hpi(j)
             zparam = (z_temp - zaxis(k)) * hzi(k)
@@ -1554,9 +1554,9 @@ MODULE beams3d_physics_mod
          IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
              (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
              (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
-            i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
-            j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
-            k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+            i = grid_cell(raxis, nr, r_temp)
+            j = grid_cell(phiaxis, nphi, phi_temp)
+            k = grid_cell(zaxis, nz, z_temp)
             xparam = (r_temp - raxis(i)) * hri(i)
             yparam = (phi_temp - phiaxis(j)) * hpi(j)
             zparam = (z_temp - zaxis(k)) * hzi(k)
@@ -1636,9 +1636,9 @@ MODULE beams3d_physics_mod
          IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
              (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
              (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
-            i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
-            j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
-            k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+            i = grid_cell(raxis, nr, r_temp)
+            j = grid_cell(phiaxis, nphi, phi_temp)
+            k = grid_cell(zaxis, nz, z_temp)
             xparam = (r_temp - raxis(i)) * hri(i)
             yparam = (phi_temp - phiaxis(j)) * hpi(j)
             zparam = (z_temp - zaxis(k)) * hzi(k)
@@ -1716,9 +1716,9 @@ MODULE beams3d_physics_mod
          IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
              (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
              (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
-            i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
-            j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
-            k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+            i = grid_cell(raxis, nr, r_temp)
+            j = grid_cell(phiaxis, nphi, phi_temp)
+            k = grid_cell(zaxis, nz, z_temp)
             xparam = (r_temp - raxis(i)) * hri(i)
             yparam = (phi_temp - phiaxis(j)) * hpi(j)
             zparam = (z_temp - zaxis(k)) * hzi(k)
@@ -1793,9 +1793,9 @@ MODULE beams3d_physics_mod
          IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
              (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
              (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
-            i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
-            j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
-            k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+            i = grid_cell(raxis, nr, r_temp)
+            j = grid_cell(phiaxis, nphi, phi_temp)
+            k = grid_cell(zaxis, nz, z_temp)
             xparam = (r_temp - raxis(i)) * hri(i)
             yparam = (phi_temp - phiaxis(j)) * hpi(j)
             zparam = (z_temp - zaxis(k)) * hzi(k)
@@ -1861,9 +1861,9 @@ MODULE beams3d_physics_mod
          IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
              (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
              (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
-            i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
-            j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
-            k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+            i = grid_cell(raxis, nr, r_temp)
+            j = grid_cell(phiaxis, nphi, phi_temp)
+            k = grid_cell(zaxis, nz, z_temp)
             xparam = (r_temp - raxis(i)) * hri(i)
             yparam = (phi_temp - phiaxis(j)) * hpi(j)
             zparam = (z_temp - zaxis(k)) * hzi(k)
@@ -1926,9 +1926,9 @@ MODULE beams3d_physics_mod
          IF ((r >= rmin-eps1) .and. (r <= rmax+eps1) .and. &
              (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
              (z >= zmin-eps3) .and. (z <= zmax+eps3)) THEN
-            i = MIN(MAX(COUNT(raxis < r),1),nr-1)
-            j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
-            k = MIN(MAX(COUNT(zaxis < z),1),nz-1)
+            i = grid_cell(raxis, nr, r)
+            j = grid_cell(phiaxis, nphi, phi_temp)
+            k = grid_cell(zaxis, nz, z)
             xparam = (r - raxis(i)) * hri(i)
             yparam = (phi_temp - phiaxis(j)) * hpi(j)
             zparam = (z - zaxis(k)) * hzi(k)
@@ -2045,9 +2045,9 @@ MODULE beams3d_physics_mod
          IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
              (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
              (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
-            i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
-            j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
-            k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+            i = grid_cell(raxis, nr, r_temp)
+            j = grid_cell(phiaxis, nphi, phi_temp)
+            k = grid_cell(zaxis, nz, z_temp)
             xparam = (r_temp - raxis(i)) * hri(i)
             yparam = (phi_temp - phiaxis(j)) * hpi(j)
             zparam = (z_temp - zaxis(k)) * hzi(k)
@@ -2115,9 +2115,9 @@ MODULE beams3d_physics_mod
          IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
              (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
              (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
-            i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
-            j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
-            k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+            i = grid_cell(raxis, nr, r_temp)
+            j = grid_cell(phiaxis, nphi, phi_temp)
+            k = grid_cell(zaxis, nz, z_temp)
             xparam = (r_temp - raxis(i)) * hri(i)
             yparam = (phi_temp - phiaxis(j)) * hpi(j)
             zparam = (z_temp - zaxis(k)) * hzi(k)
@@ -2190,7 +2190,7 @@ MODULE beams3d_physics_mod
          
          ! PHI does not change
          phi_out = MOD(v,MAXVAL(phiaxis))
-         j = MIN(MAX(COUNT(phiaxis < phi_out),1),nphi-1)
+         j = grid_cell(phiaxis, nphi, phi_out)
          yparam = (phi_out - phiaxis(j)) * hpi(j)
 
          ! Adjust u
@@ -2211,8 +2211,8 @@ MODULE beams3d_physics_mod
          !  dF/dR  = -ds/dR*(u0-u(R,Z))-du/dR*(s0-s(R,Z))
          !  dF/dZ  = -ds/dZ*(u0-u(R,Z))-du/dZ*(s0-s(R,Z))
          DO WHILE (residual > 1.0E-9 .and. n<1000)
-            i = MIN(MAX(COUNT(raxis < r_out),1),nr-1)
-            k = MIN(MAX(COUNT(zaxis < z_out),1),nz-1)
+            i = grid_cell(raxis, nr, r_out)
+            k = grid_cell(zaxis, nz, z_out)
             xparam = (r_out - raxis(i)) * hri(i)
             zparam = (z_out - zaxis(k)) * hzi(k)
             ! Evaluate the Splines
@@ -2312,9 +2312,9 @@ MODULE beams3d_physics_mod
          IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
              (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
              (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
-            i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
-            j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
-            k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+            i = grid_cell(raxis, nr, r_temp)
+            j = grid_cell(phiaxis, nphi, phi_temp)
+            k = grid_cell(zaxis, nz, z_temp)
             xparam = (r_temp - raxis(i)) * hri(i)
             yparam = (phi_temp - phiaxis(j)) * hpi(j)
             zparam = (z_temp - zaxis(k)) * hzi(k)
