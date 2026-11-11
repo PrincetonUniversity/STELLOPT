@@ -46,9 +46,9 @@
             p1 = MOD(PHI_lines(mystep,myline),phimax)
             IF (p1 < 0) p1 = p1 + phimax
             z1 = Z_lines(mystep,myline)
-            i = MIN(MAX(COUNT(raxis < r1),1),nr-1)
-            j = MIN(MAX(COUNT(phiaxis < p1),1),nphi-1)
-            k = MIN(MAX(COUNT(zaxis < z1),1),nz-1)
+            i = grid_cell(raxis, nr, r1)
+            j = grid_cell(phiaxis, nphi, p1)
+            k = grid_cell(zaxis, nz, z1)
             xparam = (r1 - raxis(i)) * hri(i)
             yparam = (p1 - phiaxis(j)) * hpi(j)
             zparam = (z1 - zaxis(k)) * hzi(k)

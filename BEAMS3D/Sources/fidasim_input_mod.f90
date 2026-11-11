@@ -15,7 +15,7 @@ MODULE fidasim_input_mod
       partvmax, dist5D_fida, &
       h2_prof, h3_prof, h4_prof, h5_prof, &
       nsh_prof4,  r_h, p_h, z_h, e_h, pi_h, h1_prof
-   USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
+   USE beams3d_grid, ONLY: grid_cell, nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
       zaxis, phiaxis, POT_ARR, OMEG_ARR, &
       TE, TI, NE, npot, nte, nti, &
       POT4D, NE4D, TE4D, TI4D, ZEFF4D, &
@@ -857,9 +857,9 @@ SUBROUTINE write_fidasim_equilibrium
                 ! Eval Spline
                 x0 = MOD(phiaxis_fida(m), phimax)
                 IF (x0 < 0) x0 = x0 + phimax
-                i = MIN(MAX(COUNT(raxis < raxis_fida(l)),1),nr-1)
-                j = MIN(MAX(COUNT(phiaxis < x0),1),nphi-1)
-                k = MIN(MAX(COUNT(zaxis < zaxis_fida(n)),1),nz-1)
+                i = grid_cell(raxis, nr, raxis_fida(l))
+                j = grid_cell(phiaxis, nphi, x0)
+                k = grid_cell(zaxis, nz, zaxis_fida(n))
                 xparam = (raxis_fida(l) - raxis(i)) * hri(i)
                 yparam = (x0 - phiaxis(j)) * hpi(j)
                 zparam = (zaxis_fida(n) - zaxis(k)) * hzi(k)
@@ -928,9 +928,9 @@ SUBROUTINE write_fidasim_equilibrium
                     ! Get the gridpoint info (this is possible since all grids are the same)
                     x0 = MOD(phiaxis_fida(m), phimax)
                     IF (x0 < 0) x0 = x0 + phimax
-                    i = MIN(MAX(COUNT(raxis < raxis_fida(l)),1),nr-1)
-                    j = MIN(MAX(COUNT(phiaxis < x0),1),nphi-1)
-                    k = MIN(MAX(COUNT(zaxis < zaxis_fida(n)),1),nz-1)
+                    i = grid_cell(raxis, nr, raxis_fida(l))
+                    j = grid_cell(phiaxis, nphi, x0)
+                    k = grid_cell(zaxis, nz, zaxis_fida(n))
                     xparam = (raxis_fida(l) - raxis(i)) * hri(i)
                     yparam = (x0 - phiaxis(j)) * hpi(j)
                     zparam = (zaxis_fida(n) - zaxis(k)) * hzi(k)
@@ -1029,9 +1029,9 @@ SUBROUTINE write_fidasim_equilibrium
                 ! Get the gridpoint info (this is possible since all grids are the same)
                 x0 = MOD(phiaxis_fida(m), phimax)
                 IF (x0 < 0) x0 = x0 + phimax
-                i = MIN(MAX(COUNT(raxis < raxis_fida(l)),1),nr-1)
-                j = MIN(MAX(COUNT(phiaxis < x0),1),nphi-1)
-                k = MIN(MAX(COUNT(zaxis < zaxis_fida(n)),1),nz-1)
+                i = grid_cell(raxis, nr, raxis_fida(l))
+                j = grid_cell(phiaxis, nphi, x0)
+                k = grid_cell(zaxis, nz, zaxis_fida(n))
                 xparam = (raxis_fida(l) - raxis(i)) * hri(i)
                 yparam = (x0 - phiaxis(j)) * hpi(j)
                 zparam = (zaxis_fida(n) - zaxis(k)) * hzi(k)

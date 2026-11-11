@@ -65,9 +65,9 @@
       IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
           (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
           (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
-         i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
-         j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
-         k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+         i = grid_cell(raxis, nr, r_temp)
+         j = grid_cell(phiaxis, nphi, phi_temp)
+         k = grid_cell(zaxis, nz, z_temp)
          xparam = (r_temp - raxis(i)) * hri(i)
          yparam = (phi_temp - phiaxis(j)) * hpi(j)
          zparam = (z_temp - zaxis(k)) * hzi(k)
