@@ -249,6 +249,7 @@ class PLASMA_SOLVER:
                     self.dVdr = CubicSpline(rho,dVdr(rho))
                     self.Baxis = B
                     self.Bref = B
+                    self.Bsq_spline = CubicSpline(rho,np.full_like(rho, B*B, dtype=float))
                     self.iota23 = iota23
                     
     def set_energy_source(self,species,source_type, total_power=None, sigma_rho=None, rho_0=None, 
