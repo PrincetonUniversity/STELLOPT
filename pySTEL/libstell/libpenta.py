@@ -241,7 +241,8 @@ class LIBPENTA():
 			eq_Aminor, eq_Rmajor, vp, chip, phip, iota, btheta, bzeta, bsq,
 			DKES_K_surf, rho_k_surf,
 			DKES_NUSTAR, DKES_ERSTAR, DKES_D11_surf, DKES_D31_surf, DKES_D33_surf,
-			Er_min_Vcm, Er_max_Vcm, EparB_surf, Er_k_surf, Er_root_type, look_for_ambipolar):
+			Er_min_Vcm, Er_max_Vcm, EparB_surf, Er_k_surf, Er_root_type, look_for_ambipolar,
+			num_Er_test=501):
 		"""Wrapper to call_PENTA_surface in penta_interface_mod
 
 		Computes the ambipolar Er root and neoclassical transport coefficients
@@ -291,6 +292,10 @@ class LIBPENTA():
 			Which ambipolar root to pick ('ion_root', 'electron_root', 'unstable_root').
 		look_for_ambipolar : bool
 			If True, search for the ambipolar Er root; if False, use Er_k_surf directly.
+		num_Er_test : int, optional
+			Initial number of Er scan points (at least 2); defaults to 501.
+			PENTA may increase this count during root finding. Unused when
+			look_for_ambipolar is False.
 
 		Returns
 		-------
@@ -304,6 +309,9 @@ class LIBPENTA():
 		"""
 		import ctypes as ct
 		import numpy as np
+
+		if not isinstance(num_Er_test, (int, np.integer)) or not 2 <= num_Er_test <= np.iinfo(np.int32).max:
+			raise ValueError('num_Er_test must be an integer between 2 and 2147483647')
 
 		module_name = self.s1+'penta_interface_mod_'+self.s2
 		call_penta_surface_h = getattr(self.libpenta, module_name+'_call_penta_surface'+self.s3)
@@ -328,6 +336,7 @@ class LIBPENTA():
 			ct.c_char_p, ct.POINTER(ct.c_int), \
 			ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), \
 			ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), \
+			ct.POINTER(ct.c_int), \
 			ct.c_long
 		]
 		call_penta_surface_h.restype = None
@@ -355,6 +364,7 @@ class LIBPENTA():
 		Er_max_Vcm_c  = ct.c_double(Er_max_Vcm)
 		EparB_surf_c  = ct.c_double(EparB_surf)
 		Er_k_surf_c   = ct.c_double(Er_k_surf)
+		num_Er_test_c = ct.c_int(num_Er_test)
 		look_for_ambipolar_c = ct.c_int(1 if look_for_ambipolar else 0)
 
 		# 1D real/int arrays (nion_prof / ncstar / nestar sized)
@@ -409,6 +419,7 @@ class LIBPENTA():
 			cn_surf.ctypes.data_as(ct.POINTER(ct.c_double)), \
 			Dp_surf.ctypes.data_as(ct.POINTER(ct.c_double)), \
 			cp_surf.ctypes.data_as(ct.POINTER(ct.c_double)), \
+			ct.byref(num_Er_test_c), \
 			ct.c_long(len(Er_root_type_c))
 		)
 

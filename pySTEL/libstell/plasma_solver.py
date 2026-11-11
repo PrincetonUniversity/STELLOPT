@@ -1627,7 +1627,7 @@ class PLASMA_SOLVER:
 
         return chi_base + chi_turb
     
-    def initialize_NEO(self, surfaces_k, DKES_coeffs_file, dt_NEO=None, Er_root_type='ion_root', dt_Er_ambipolar=None, n_workers_NEO=1, add_NEO_particle_fluxes=True, add_NEO_heat_fluxes=True, Er_min_Vcm=-250.0, Er_max_Vcm=250.0):
+    def initialize_NEO(self, surfaces_k, DKES_coeffs_file, dt_NEO=None, Er_root_type='ion_root', dt_Er_ambipolar=None, n_workers_NEO=1, add_NEO_particle_fluxes=True, add_NEO_heat_fluxes=True, Er_min_Vcm=-250.0, Er_max_Vcm=250.0, num_Er_test=501):
         """
         n_workers_NEO controls how call_NEO evaluates the DKES surfaces
         n_workers_NEO=1 (default) evaluates them serially in this process. 
@@ -1639,10 +1639,17 @@ class PLASMA_SOLVER:
         Note this must be OS processes, not threads: PENTA keeps its working
         state in Fortran module-level (SAVE) variables in libpenta.so, which
         are not safe to share across concurrent calls within a single process.
+
+        num_Er_test sets the initial number of Er scan points on each surface
+        (integer >= 2, default 501). PENTA may increase it during root finding.
         """
         from concurrent.futures import ProcessPoolExecutor
         import multiprocessing as mp
         from libstell.libpenta import _init_NEO_worker
+        
+        if not isinstance(num_Er_test, (int, np.integer)) or not 2 <= num_Er_test <= np.iinfo(np.int32).max:
+            raise ValueError('num_Er_test must be an integer larger than 1')
+        
         self.DKES_nuv, self.DKES_Erv, self.DKES_D11, self.DKES_D31, self.DKES_D33, self.dkes_k, self.roa_dkes_k = process_DKES_file(DKES_coeffs_file,surfaces_k)
 
         if np.any(~np.isfinite(self.roa_dkes_k) | (self.roa_dkes_k <= 0) | (self.roa_dkes_k >= self.rho_max)):
@@ -1667,6 +1674,7 @@ class PLASMA_SOLVER:
         
         self.Er_min_Vcm = Er_min_Vcm
         self.Er_max_Vcm = Er_max_Vcm
+        self.num_Er_test = int(num_Er_test)
         
         if(not add_NEO_particle_fluxes): self.fact_NEO_particle_fluxes = 0.0
         if(not add_NEO_heat_fluxes):     self.fact_NEO_heat_fluxes     = 0.0
@@ -1732,7 +1740,7 @@ class PLASMA_SOLVER:
              self.aminor, self.Rmajor, vp[k], chip[k], phip[k], iota[k], btheta[k], bzeta[k], bsq[k],
              int(self.dkes_k[k]), self.roa_dkes_k[k],
              self.DKES_nuv, self.DKES_Erv, self.DKES_D11[k,:,:], self.DKES_D31[k,:,:], self.DKES_D33[k,:,:],
-             Er_min_Vcm, Er_max_Vcm, EparB[k], Er_k[k], self.Er_root_type, look_for_ambipolar)
+             Er_min_Vcm, Er_max_Vcm, EparB[k], Er_k[k], self.Er_root_type, look_for_ambipolar, self.num_Er_test)
             for k in range(ns_dkes)
         ]
         if(self.neo_pool is None):

@@ -1549,7 +1549,7 @@ MODULE PENTA_INTERFACE_MOD
      DKES_K_surf, rho_k_surf, &
      DKES_NUSTAR, DKES_ERSTAR, DKES_D11_surf, DKES_D31_surf, DKES_D33_surf, &
      Er_min_Vcm_in, Er_max_Vcm_in, EparB_surf, Er_k_surf, Er_root_type_in, look_for_ambipolar, &
-     JBS_surf, Er_surf, Dn_surf, cn_surf, Dp_surf, cp_surf &
+     JBS_surf, Er_surf, Dn_surf, cn_surf, Dp_surf, cp_surf, num_Er_test_in &
      )
       ! Computes the ambipolar root and neoclassical transport coefficients on a
       ! SINGLE DKES surface -- i.e. the body of call_PENTA's "DO k = 1,ns_dkes"
@@ -1583,6 +1583,7 @@ MODULE PENTA_INTERFACE_MOD
       Logical, Intent(in) :: look_for_ambipolar
       Real(rknd), Intent(out) :: JBS_surf, Er_surf
       Real(rknd), Dimension(nion_prof+1), Intent(out) :: Dn_surf, cn_surf, Dp_surf, cp_surf
+      Integer(iknd), Optional, Intent(in) :: num_Er_test_in
 
       ! Locals
       Integer :: i, j
@@ -1591,6 +1592,9 @@ MODULE PENTA_INTERFACE_MOD
       ! These are never read from a namelist on this call path, so without this call they
       ! would keep whatever value the uninitialized module variables happen to have.
       CALL init_penta_input
+
+      ! Override the initial Er scan size before any flux arrays are allocated.
+      IF(PRESENT(num_Er_test_in)) num_Er_test = num_Er_test_in
 
       ! PENTA
       CALL PENTA_SET_ION_PARAMS(nion_prof, DBLE(Zatom_prof), Matom_prof/p_mass)
