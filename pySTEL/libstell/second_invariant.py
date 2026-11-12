@@ -461,8 +461,11 @@ def invariant_rho_grid(vmec, b_mirror=4.9, rho=None, nalpha=128,
                           float(phi_seed), extrema)
 
 
-def plot_invariant_rho(grid, ax=None, levels=20):
-    """Draw a periodic polar contour map and return (figure, polar axes, grid)."""
+def plot_invariant_rho(grid, ax=None, levels=20, cmap="viridis"):
+    """Draw a periodic polar contour map and return (figure, polar axes, grid).
+
+    cmap accepts a Matplotlib colormap name or Colormap (default: viridis).
+    """
     import matplotlib.pyplot as plt
 
     if ax is None:
@@ -476,10 +479,10 @@ def plot_invariant_rho(grid, ax=None, levels=20):
     values = np.ma.masked_invalid(np.column_stack((grid.J_over_v, grid.J_over_v[:, 0])))
     if np.isfinite(grid.J_over_v).sum() >= 4:
         color = ax.contourf(alpha, grid.rho, values, levels=levels,
-                            cmap="viridis", corner_mask=False)
+                            cmap=cmap, corner_mask=False)
         if np.ptp(values.compressed()) > 0:
             ax.contour(alpha, grid.rho, values, levels=color.levels,
-                        colors="k", linewidths=.4, alpha=.65, corner_mask=False)
+                        colors="k", linewidths=1, alpha=.65, corner_mask=False)
         fig.colorbar(color, ax=ax, pad=.10,
                       label=r"$J_\parallel/v$ [m] (full bounce)")
     else:

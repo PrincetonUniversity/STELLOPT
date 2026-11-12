@@ -214,17 +214,18 @@ class VMEC(FourierRep):
 			nalpha=nalpha, phi_seed=phi_seed, **kwargs)
 
 	def plot_j_invariant_rho(self, b_mirror=4.9, rho=None, nalpha=128,
-			phi_seed=None, ax=None, levels=20, **kwargs):
+			phi_seed=None, ax=None, levels=20, cmap="viridis", **kwargs):
 		"""Plot polar J/v contours; return (figure, polar axes, JInvariantGrid).
 
 		The radius is rho=sqrt(s) and the angle is the field-line label alpha.
 		Accepts a polar Matplotlib axes and the calculation's convergence
 		controls. The periodic seam is closed without repeating a calculation.
+		cmap accepts a Matplotlib colormap name or Colormap (default: viridis).
 		"""
 		from libstell.second_invariant import plot_invariant_rho
 		grid = self.calc_j_invariant_grid(b_mirror=b_mirror, rho=rho,
 			nalpha=nalpha, phi_seed=phi_seed, **kwargs)
-		return plot_invariant_rho(grid, ax=ax, levels=levels)
+		return plot_invariant_rho(grid, ax=ax, levels=levels, cmap=cmap)
 
 	def calc_magwell(self):
 		"""Compute Magnetic Well vs Hill
