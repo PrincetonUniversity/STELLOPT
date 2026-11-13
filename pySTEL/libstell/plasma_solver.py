@@ -258,7 +258,10 @@ class PLASMA_SOLVER:
         pidK=1.0,pidI=1.0E10,pidD=0.0,noise_level=0.00):
         """
         Sets energy sources for a given species. The source_type can be:
-        'external_gaussian', 'time_dependent_gaussian', 'Coll_Heat_Exchange', 'Er', 'alpha_heating', 'constant', 'lambda_2D' and 'Bremsstrahlung' (only for electrons)
+        'external_gaussian', 'time_dependent_gaussian', 'Coll_Heat_Exchange', 'Er', 'alpha_heating', 'constant', 'lambda_2D', 'Bremsstrahlung' and 'radiation'.
+        'Bremsstrahlung' and 'radiation' are electron sinks and are mutually
+        exclusive. 'radiation' includes Mavrin's bremsstrahlung+line+recombination losses for several impurities
+        plus BremsstrahlungPower for hydrogen, deuterium and tritium (which are not included in Mavrin's list)
         The 'Coll_Heat_Exchange' only needs to be set for electrons; once it's set it will be computed for ALL species
         Gaussian total_power and PID power amplitudes refer to the full volume
         0 <= rho <= 1. A truncated domain receives only its deposition fraction.
@@ -273,12 +276,21 @@ class PLASMA_SOLVER:
             exit(1)
          
         match source_type:
-            case 'Bremsstrahlung':
-                if(species != 'electrons'): 
-                    print('ERROR: Bremsstrahlung is only source for electrons')
-                    exit(0)
-                else:
-                    self.energy_sources[species][source_type] = {}
+            case 'Bremsstrahlung' | 'radiation':
+                if species != 'electrons':
+                    raise ValueError(f'ERROR: {source_type} is only an energy sink for electrons')
+                other_source = 'radiation' if source_type == 'Bremsstrahlung' else 'Bremsstrahlung'
+                if other_source in self.energy_sources.get(species, {}):
+                    raise ValueError('ERROR: Can only use Bremsstrahlung OR radiation as an electron energy sink. Not possible to use them together as the radiation source already contains Bremsstrahlung.')
+                if source_type == 'radiation':
+                    from libstell.radiation import MAVRIN_COEFFICIENTS
+                    unsupported = [ion for ion in self.plasma.ion_species
+                                   if ion not in ('hydrogen', 'deuterium', 'tritium')
+                                   and self.plasma.Zcharge[ion] not in MAVRIN_COEFFICIENTS]
+                    if unsupported:
+                        raise ValueError('ERROR: No Mavrin radiation fit for ion species: '
+                                         + ', '.join(unsupported))
+                self.energy_sources[species][source_type] = {}
             #
             case 'external_gaussian':
                 if((total_power is None) or (sigma_rho is None) or (rho_0 is None)):
@@ -1018,7 +1030,8 @@ class PLASMA_SOLVER:
         at iteration it using info in self.energy_sources[species]
         Returns 1D-array of same size as rho_grid
         """
-        from libstell.fusion import FUSION  
+        from libstell.fusion import FUSION
+        from libstell.radiation import mavrin_cooling_rate
         from numpy.random import rand
         fusion = FUSION()
 
@@ -1037,7 +1050,18 @@ class PLASMA_SOLVER:
                         ni = self.N[ion][it,:]
 
                         aux_source -= fusion.BremsstrahlungPower(zi,ni,ne,Te)
-                        
+
+                case 'radiation':
+                    ne = self.N['electrons'][it,:]
+                    Te = self.T['electrons'][it,:]
+                    for ion in self.plasma.ion_species:
+                        zi = self.plasma.Zcharge[ion]
+                        ni = self.N[ion][it,:]
+                        if ion in ('hydrogen', 'deuterium', 'tritium'):
+                            aux_source -= fusion.BremsstrahlungPower(zi,ni,ne,Te)
+                        else:
+                            aux_source -= ne * ni * mavrin_cooling_rate(zi, Te)
+
                 case 'external_gaussian':
                     rho_0 = self.energy_sources[species]['external_gaussian']['rho_0']
                     sigma_rho = self.energy_sources[species]['external_gaussian']['sigma_rho']
