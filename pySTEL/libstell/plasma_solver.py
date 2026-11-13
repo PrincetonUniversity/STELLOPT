@@ -1031,7 +1031,7 @@ class PLASMA_SOLVER:
         Returns 1D-array of same size as rho_grid
         """
         from libstell.fusion import FUSION
-        from libstell.radiation import mavrin_cooling_rate
+        from libstell.radiation import BremsstrahlungPower, mavrin_cooling_rate
         from numpy.random import rand
         fusion = FUSION()
 
@@ -1049,7 +1049,7 @@ class PLASMA_SOLVER:
                         zi = self.plasma.Zcharge[ion]
                         ni = self.N[ion][it,:]
 
-                        aux_source -= fusion.BremsstrahlungPower(zi,ni,ne,Te)
+                        aux_source -= BremsstrahlungPower(zi,ni,ne,Te)
 
                 case 'radiation':
                     ne = self.N['electrons'][it,:]
@@ -1058,7 +1058,7 @@ class PLASMA_SOLVER:
                         zi = self.plasma.Zcharge[ion]
                         ni = self.N[ion][it,:]
                         if ion in ('hydrogen', 'deuterium', 'tritium'):
-                            aux_source -= fusion.BremsstrahlungPower(zi,ni,ne,Te)
+                            aux_source -= BremsstrahlungPower(zi,ni,ne,Te)
                         else:
                             aux_source -= ne * ni * mavrin_cooling_rate(zi, Te)
 

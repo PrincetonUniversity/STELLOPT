@@ -1,4 +1,6 @@
-"""Coronal impurity radiation fits from A. A. Mavrin (2018).
+"""Bremsstrahlung power and coronal impurity radiation fits.
+
+Mavrin fits from A. A. Mavrin (2018).
 
 Reference: https://doi.org/10.1080/10420150.2018.1462361,
 Eqs. (4), (5), (7) and Tables 1--4, 6, 8, 10, 12, 14, 16, 18.
@@ -88,3 +90,37 @@ def mavrin_cooling_rate(atomic_number, electron_temperature):
     for power in range(3, -1, -1):
         log_rate = log_rate * x + coefficients[..., power]
     return 10.0**log_rate
+
+
+def BremsstrahlungPower(Zi, ni, ne, Te):
+    """Compute Bremsstrahlung power density for electrons slowed by an ion.
+
+    This routine computes the Bremsstrahlung irradiated power density
+    according to Freidberg's Plasma Physics and Fusion Energy,
+    page 56, Eq. (3.42)
+
+    Parameters
+    ----------
+    Zi : integer
+        Charge number of the ion
+    ni : real
+        Ion density [m^-3]
+    ne : real
+        Electron density [m^-3]
+    Te : real
+        Electron temperature [eV]
+    Returns
+    -------
+    SB : real
+        Bremsstrahlung power density [W/m^3]
+    """
+
+    CB = 5.35e3
+    n20 = ne / 1e20
+    Tk = Te / 1e3
+
+    Zeff = Zi*Zi * ni/ne
+
+    SB = CB * Zeff * n20**2 * np.sqrt(Tk) # W/m^3
+
+    return SB
