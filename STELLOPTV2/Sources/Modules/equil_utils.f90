@@ -857,7 +857,7 @@
       fval = 0
       CALL get_equil_ne(s,TRIM(ne_type),ne_val,ier)
       CALL get_equil_te(s,TRIM(te_type),te_val,ier)
-      CALL get_equil_zeff(s,TRIM(ne_type),zeff_val,ier)
+      CALL get_equil_zeff(s,TRIM(zeff_type),zeff_val,ier)
       fval = zeff_val*ne_val*ne_val*sqrt(te_val)
       fval = fval*sqrt(dx*dx+dy*dy+dz*dz)
       RETURN
