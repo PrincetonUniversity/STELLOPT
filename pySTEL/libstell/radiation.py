@@ -1,4 +1,4 @@
-"""Bremsstrahlung power and coronal impurity radiation fits.
+"""Bremsstrahlung, synchrotron and coronal impurity radiation models.
 
 Mavrin fits from A. A. Mavrin (2018).
 
@@ -90,6 +90,99 @@ def mavrin_cooling_rate(atomic_number, electron_temperature):
     for power in range(3, -1, -1):
         log_rate = log_rate * x + coefficients[..., power]
     return 10.0**log_rate
+
+
+def total_synchrotron_power(ne0, Te0, B, R, a, kappa, alpha_n, alpha_T,
+                         beta_T, f_reflect):
+    """Returns total synchrotron radiation power using Albajar-Fidone [W].
+
+    Parameters
+    ----------
+    ne0 : real or array_like
+        Central electron density [m^-3], strictly positive.
+    Te0 : real or array_like
+        Central electron temperature [eV], nonnegative.
+    B : real or array_like
+        Magnitude of the on-axis toroidal magnetic field [T], positive.
+    R, a : real or array_like
+        Plasma major and minor radii [m], positive. Aspect ratio is R/a.
+    kappa : real or array_like
+        Plasma separatrix elongation, positive.
+    alpha_n, alpha_T : real or array_like
+        Nonnegative density and temperature profile peaking exponents:
+        ne(rho) = ne0 * (1 - rho**2)**alpha_n and
+        Te(rho) = Te0 * (1 - rho**beta_T)**alpha_T, with rho = r/a.
+    beta_T : real or array_like
+        Secondary temperature profile exponent, at least 1.
+    f_reflect : real or array_like
+        Wall reflection fraction in [0, 1]. A value of 1 gives zero loss.
+
+    Returns
+    -------
+    power : real or ndarray
+        Total plasma synchrotron radiation power [W]
+
+    Notes
+    -----
+    Implements the PROCESS documented total-power formula, including the
+    profile factor K, aspect-ratio factor G and Fidone wall correction.
+    This interface uses eV and W, whereas PROCESS uses keV and MW/m^3
+    (after dividing the total power by the plasma volume).
+
+    The fit was derived for 10 < Te0 [keV] < 100, 100 < p_a0 < 10000,
+    1 < kappa < 2.5, 0 < alpha_n < 2, 0 < alpha_T < 8,
+    1 < beta_T < 8 and 1.5 < R/a < 15. Values outside these fit ranges
+    are evaluated without clipping.
+
+    References
+    ----------
+    https://ukaea.github.io/PROCESS/physics-models/plasma_radiation/#synchrotron-radiation-psync_albajar_fidone
+    Albajar et al. (2001), https://doi.org/10.1088/0029-5515/41/6/301.
+    Fidone et al. (2001), https://doi.org/10.1088/0029-5515/41/12/102.
+    """
+    parameters = dict(ne0=ne0, Te0=Te0, B=B, R=R, a=a, kappa=kappa,
+                      alpha_n=alpha_n, alpha_T=alpha_T, beta_T=beta_T,
+                      f_reflect=f_reflect)
+    parameters = {name: np.asarray(value, dtype=float)
+                  for name, value in parameters.items()}
+    for name, value in parameters.items():
+        if not np.all(np.isfinite(value)):
+            raise ValueError(f'{name} must be finite')
+        if name in ('ne0', 'B', 'R', 'a', 'kappa'):
+            if np.any(value <= 0):
+                raise ValueError(f'{name} must be positive')
+        elif name == 'f_reflect':
+            if np.any((value < 0) | (value > 1)):
+                raise ValueError('f_reflect must be in [0, 1]')
+        elif name == 'beta_T':
+            if np.any(value < 1):
+                raise ValueError('beta_T must be at least 1')
+        elif np.any(value < 0):
+            raise ValueError(f'{name} must be nonnegative')
+
+    ne0, Te0, B, R, a, kappa, alpha_n, alpha_T, beta_T, f_reflect = (
+        parameters[name] for name in parameters
+    )
+    ne0_20 = ne0 * 1e-20
+    Te0_keV = Te0 * 1e-3
+    p_a0 = 6.04e3 * a * ne0_20 / B
+    g_factor = 0.93 * (1.0 + 0.85 * np.exp(-0.82 * R / a))
+    k_factor = (
+        (alpha_n + 3.87 * alpha_T + 1.46)**-0.79
+        * (1.98 + alpha_T)**1.36
+        * beta_T**2.14
+        * (beta_T**1.53 + 1.87 * alpha_T - 0.16)**-1.33
+    )
+    wall_factor = (1.0 - f_reflect)**0.62 * (
+        1.0 + 0.12 * Te0_keV / p_a0**0.41
+        * (1.0 - f_reflect)**0.41
+    )**-1.51
+    power_mw = (
+        3.84e-8 * wall_factor * R * a**1.38 * kappa**0.79
+        * B**2.62 * ne0_20**0.38 * Te0_keV * (16.0 + Te0_keV)**2.61
+        * k_factor * g_factor
+    )
+    return power_mw * 1e6
 
 
 def BremsstrahlungPower(Zi, ni, ne, Te):
