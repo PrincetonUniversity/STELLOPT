@@ -43,7 +43,7 @@ MODULE thrift_plasma_solver_mod
     TYPE(EZspline1_r8), PRIVATE :: P_spline, fast_alphas_spl
     TYPE(EZspline2_r8), DIMENSION(:), ALLOCATABLE, PRIVATE :: chi_normalized_splines
     TYPE(EZspline1_r8), DIMENSION(:), ALLOCATABLE, PRIVATE :: cn_normalized_splines
-    TYPE(EZspline1_r8) :: Er_spline
+    REAL(rprec), DIMENSION(:), ALLOCATABLE :: Er_dkes_previous
     INTEGER, PRIVATE :: subiter
     CHARACTER(len=20), DIMENSION(:), ALLOCATABLE :: list_of_species
     ! Init (when initial profiles read from file)
@@ -534,11 +534,6 @@ MODULE thrift_plasma_solver_mod
         IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'init: plasma splines',ier)
         fast_alphas_spl%x1 = rho_plasma_grid
         fast_alphas_spl%isHermite = 1
-        !
-        CALL EZspline_init(Er_spline,Nr_plasma_solver,bcs0,ier)
-        IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'init: Er spline',ier)
-        Er_spline%x1 = rho_plasma_grid
-        Er_spline%isHermite = 1
 
         IF (lverb) WRITE(6,*) 'Splines Allocated!'
 
@@ -947,9 +942,6 @@ MODULE thrift_plasma_solver_mod
         ! Fast Alphas Density
         CALL EZspline_setup(fast_alphas_spl,N_fast_alphas(mytimestep_plasma_solver,:),ier,EXACT_DIM=.true.)
 
-        ! Er
-        CALL EZspline_setup(Er_spline,plasma_Er(mytimestep_plasma_solver,:),ier,EXACT_DIM=.true.)
-        
         RETURN
 
     END SUBROUTINE update_splines
@@ -982,9 +974,11 @@ MODULE thrift_plasma_solver_mod
     END SUBROUTINE update_equilibrium_vars
 
     SUBROUTINE set_initial_profiles
+        USE thrift_equil, ONLY: ns_eq
         IMPLICIT NONE
-        INTEGER :: i, j, ier, Nr_restart, k
+        INTEGER :: i, j, ier, Nr_restart, k, ns_dkes
         INTEGER :: bcs0(2)
+        REAL(rprec), ALLOCATABLE :: rho_dkes(:)
         TYPE(EZspline1_r8) :: spline_restart, spline_init
         bcs0=(/ 0, 0/)
 
@@ -992,6 +986,7 @@ MODULE thrift_plasma_solver_mod
         IF( trim(init_profiles_type) == 'read_from_file' .AND. lrestart_from_file) THEN
             STOP 'Cannot use init profiles from file and restart at same time!'
         END IF
+        plasma_Er(1,:) = 0.0_rprec
         !
         IF(lrestart_from_file) THEN
             ! Interpolate DENS_RESTART and TEMP_RESTART into plasma_solver grid
@@ -1023,6 +1018,15 @@ MODULE thrift_plasma_solver_mod
             CALL EZspline_setup(spline_restart,ER_RESTART(:),ier,EXACT_DIM=.true.)
             IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'setup: restart Er spline',ier)
             CALL EZspline_interp(spline_restart,Nr_plasma_solver,rho_plasma_grid,plasma_Er(1,:),ier)
+            IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'interpolating: restart plasma Er',ier)
+            IF (bootstrap_type == 'dkespenta') THEN
+                ! Cache the full-radius restart field directly on the fixed DKES surfaces.
+                ns_dkes = COUNT(DKES_K > 0)
+                ALLOCATE(rho_dkes(ns_dkes),Er_dkes_previous(ns_dkes))
+                rho_dkes = SQRT(DBLE(DKES_K(1:ns_dkes)-1)/DBLE(ns_eq-1))
+                CALL EZspline_interp(spline_restart,ns_dkes,rho_dkes,Er_dkes_previous,ier)
+                IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'interpolating: restart DKES Er',ier)
+            END IF
             !
             CALL EZspline_free(spline_restart,ier)
         ELSEIF(trim(init_profiles_type) == 'read_from_file' ) THEN

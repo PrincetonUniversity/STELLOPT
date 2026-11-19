@@ -19,7 +19,8 @@
       USE mpi_inc
       USE thrift_plasma_solver_mod, ONLY: Dn_NEO,cn_NEO,Dp_NEO,cp_NEO,&
       rho_plasma_grid,Nr_plasma_solver,mytimestep_plasma_solver,&
-      G_NEO_complet,Q_NEO_complet,Nt_total_plasma_solver,plasma_Er,Er_spline
+      G_NEO_complet,Q_NEO_complet,Nt_total_plasma_solver,plasma_Er, &
+      Er_dkes_previous
       USE thrift_globals, ONLY: look_for_ambipolar,update_thrift_vars,update_transport_vars
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
@@ -130,12 +131,10 @@
                   ! EparB
                   ier = 0
                   CALL EZSpline_interp(EparB_spl, rho, EparB(k), ier)
-                  ! Er from previous plasma solver step
-                  IF (solve_plasma_equations) THEN
-                        ier = 0
-                        CALL EZspline_interp(Er_spline, rho, Er_k(k), ier)
-                  END IF
             END DO
+            IF (solve_plasma_equations .AND. .NOT. look_for_ambipolar) THEN
+                  Er_k = Er_dkes_previous
+            END IF
             !
             CALL EZspline_free(EparB_spl,ier)    
       END IF
@@ -199,7 +198,7 @@
             IF(look_for_ambipolar) CALL PENTA_OPEN_OUTPUT(TRIM(temp1_str) // '_k' // TRIM(temp_str))
 
             ! Only search new ambipolar Er solution if look_for_ambipolar = true
-            ! If not, take the previous plasma_Er (stored in Er_spline)
+            ! Otherwise reuse the field cached on these DKES surfaces.
             IF(solve_plasma_equations .AND. .NOT. look_for_ambipolar) THEN
                   ! Need to define num_roots and set Er_roots
                   num_roots = 1
@@ -277,15 +276,11 @@
             END IF
 
             IF(solve_plasma_equations) THEN
-                  ! plasma_Er updates only when look_for_ambipolar is True
-                  ! otherwise, can simply store that of previous iter
-                  IF(look_for_ambipolar) THEN
-                        CALL interpolate_from_PENTA(nrho_penta=ns_dkes, rho_penta=rho_k, y_penta=Er_PENTA,\
-                                          nrho_out=Nr_plasma_solver, rho_out=rho_plasma_grid, y_out=plasma_Er(mytimestep_plasma_solver,:),\
-                                          isHermite=1, useLog=.FALSE.)
-                  ELSE
-                        plasma_Er(mytimestep_plasma_solver,:) = plasma_Er(mytimestep_plasma_solver-1,:)
-                  END IF
+                  Er_dkes_previous = Er_PENTA
+                  ! plasma_Er is a sampled history, never the source of cached PENTA roots.
+                  CALL interpolate_from_PENTA(nrho_penta=ns_dkes, rho_penta=rho_k, y_penta=Er_PENTA,\
+                                    nrho_out=Nr_plasma_solver, rho_out=rho_plasma_grid, y_out=plasma_Er(mytimestep_plasma_solver,:),\
+                                    isHermite=1, useLog=.FALSE.)
             END IF
 
             IF(update_thrift_vars) THEN
