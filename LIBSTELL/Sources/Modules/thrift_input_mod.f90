@@ -39,7 +39,7 @@
                               dkes_k, dkes_Erstar, dkes_Nustar, &
                               etapar_type, save_DKES_coeffs, &
                               solve_plasma_equations, &
-                              dt_plasma_solver, Nr_plasma_solver, &
+                              dt_plasma_solver, Nr_plasma_solver, rho_edge_plasma_solver, &
                               max_subiter_plasma_solver, tol_plasma_solver, &
                               beurskens_ions, add_NEO, &
                               add_NEO_particle_flux, add_NEO_heat_flux, &
@@ -113,6 +113,7 @@
       solve_plasma_equations = .FALSE.
       dt_plasma_solver = 1E-2
       Nr_plasma_solver = 101
+      rho_edge_plasma_solver = 1.0_rprec
       max_subiter_plasma_solver = 50
       tol_plasma_solver = 1E-4
       beurskens_ions = .FALSE.

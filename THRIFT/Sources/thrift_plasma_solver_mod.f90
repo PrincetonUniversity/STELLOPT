@@ -306,10 +306,14 @@ MODULE thrift_plasma_solver_mod
         ierr_mpi = 0
 
         ! Plasma spatial grid (rho and r)
+        IF (.NOT. (rho_edge_plasma_solver > 0.0_rprec .AND. rho_edge_plasma_solver <= 1.0_rprec)) THEN
+            STOP 'ERROR: rho_edge_plasma_solver must satisfy 0 < rho_edge_plasma_solver <= 1'
+        END IF
         ALLOCATE(rho_plasma_grid(Nr_plasma_solver))
         ALLOCATE(r_plasma_grid(Nt_total_plasma_solver,Nr_plasma_solver))
         !
-        FORALL(i = 1:Nr_plasma_solver)  rho_plasma_grid(i)  = DBLE(i-1)/DBLE(Nr_plasma_solver-1)
+        FORALL(i = 1:Nr_plasma_solver) rho_plasma_grid(i) = &
+            rho_edge_plasma_solver * DBLE(i-1)/DBLE(Nr_plasma_solver-1)
         !
         drho_plasma_solver = rho_plasma_grid(2) - rho_plasma_grid(1)
 

@@ -52,7 +52,7 @@ MODULE thrift_profiles_mod
       PUBLIC  :: read_thrift_profh5, get_prof_ne, get_prof_te, &
                  get_prof_ni, get_prof_ti, get_prof_p, get_prof_JBS, &
                  get_prof_eta, free_profiles
-      PRIVATE :: setup_grids
+      PRIVATE :: setup_grids, eval_plasma_profile
       CONTAINS
 
       SUBROUTINE read_thrift_profh5(filename)
@@ -373,6 +373,41 @@ MODULE thrift_profiles_mod
       RETURN
       END SUBROUTINE get_prof_dfdt
 
+      SUBROUTINE eval_plasma_profile(rho_val,SPL,ict,fval,ier)
+      ! Interpolate on the solver grid; extend the endpoint tangent up to rho=1.
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: rho_val
+      REAL(rprec), INTENT(in) :: SPL(2,nrho_prof)
+      INTEGER, INTENT(in) :: ict(2)
+      REAL(rprec), INTENT(out) :: fval(*)
+      INTEGER, INTENT(out) :: ier
+      REAL(rprec), PARAMETER :: profile_floor = 1.0E-20_rprec
+      REAL(rprec) :: val, slope
+      INTEGER :: iout
+
+      IF (rho_val > raxis_prof(nrho_prof) .AND. rho_val <= 1.0_rprec) THEN
+         ! Hermite data stores the value and df/drho in rows 1 and 2.
+         slope = SPL(2,nrho_prof)
+         val = SPL(1,nrho_prof) + slope * (rho_val - raxis_prof(nrho_prof))
+         IF (val <= profile_floor) THEN
+            val = profile_floor
+            slope = 0.0_rprec
+         END IF
+         iout = 0
+         IF (ict(1) == 1) THEN
+            iout = iout + 1
+            fval(iout) = val
+         END IF
+         IF (ict(2) == 1) THEN
+            iout = iout + 1
+            fval(iout) = slope
+         END IF
+         ier = 0
+      ELSE
+         CALL R8HERM1EV(rho_val,raxis_prof,nrho_prof,1,SPL,ict,fval,ier)
+      END IF
+      END SUBROUTINE eval_plasma_profile
+
       SUBROUTINE get_prof_ne(rho_val,t_val,val)
       IMPLICIT NONE
       REAL(rprec), INTENT(in) :: rho_val
@@ -382,7 +417,7 @@ MODULE thrift_profiles_mod
       INTEGER, parameter :: ict(2)=(/1,0/)
       REAL*8 :: fval(1)
       IF(solve_plasma_equations) THEN
-         CALL R8HERM1EV(rho_val,raxis_prof,nrho_prof,1,NE_spl,ict,fval,ier)
+         CALL eval_plasma_profile(rho_val,NE_spl,ict,fval,ier)
          IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Electron_Density',ier)
          val = fval(1)
       ELSE
@@ -400,7 +435,7 @@ MODULE thrift_profiles_mod
       INTEGER, parameter :: ict(2)=(/0,1/)
       REAL*8 :: fval(1)
       IF(solve_plasma_equations) THEN
-         CALL R8HERM1EV(rho_val,raxis_prof,nrho_prof,1,NE_spl,ict,fval,ier)
+         CALL eval_plasma_profile(rho_val,NE_spl,ict,fval,ier)
          IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Electron_Density_Derivative',ier)
          val = fval(1)
       ELSE
@@ -419,7 +454,7 @@ MODULE thrift_profiles_mod
       INTEGER, parameter :: ict(2)=(/1,0/)
       REAL*8 :: fval(1)
       IF(solve_plasma_equations) THEN
-         CALL R8HERM1EV(rho_val,raxis_prof,nrho_prof,1,TE_spl,ict,fval,ier)
+         CALL eval_plasma_profile(rho_val,TE_spl,ict,fval,ier)
          IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Electron_Temperature',ier)
          val = fval(1)
       ELSE
@@ -439,7 +474,7 @@ MODULE thrift_profiles_mod
       INTEGER, parameter :: ict(2)=(/0,1/)
       REAL*8 :: fval(1)
       IF(solve_plasma_equations) THEN
-         CALL R8HERM1EV(rho_val,raxis_prof,nrho_prof,1,TE_spl,ict,fval,ier)
+         CALL eval_plasma_profile(rho_val,TE_spl,ict,fval,ier)
          IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Electron_Temperature_Derivative',ier)
          val = fval(1)
       ELSE
@@ -459,7 +494,7 @@ MODULE thrift_profiles_mod
       REAL*8 :: fval(1)
       val = 0
       IF(solve_plasma_equations) THEN
-         CALL R8HERM1EV(rho_val,raxis_prof,nrho_prof,1,NI_spl(:,:,iion),ict,fval,ier)
+         CALL eval_plasma_profile(rho_val,NI_spl(:,:,iion),ict,fval,ier)
          IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Ion_Density',ier)
          val = fval(1)      
       ELSE
@@ -479,7 +514,7 @@ MODULE thrift_profiles_mod
       REAL*8 :: fval(1)
       val = 0
       IF(solve_plasma_equations) THEN
-         CALL R8HERM1EV(rho_val,raxis_prof,nrho_prof,1,NI_spl(:,:,iion),ict,fval,ier)
+         CALL eval_plasma_profile(rho_val,NI_spl(:,:,iion),ict,fval,ier)
          IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Ion_Density_Derivative',ier)
          val = fval(1)
       ELSE
@@ -499,7 +534,7 @@ MODULE thrift_profiles_mod
       REAL*8 :: fval(1)
       val = 0
       IF(solve_plasma_equations) THEN
-         CALL R8HERM1EV(rho_val,raxis_prof,nrho_prof,1,TI_spl(:,:,iion),ict,fval,ier)
+         CALL eval_plasma_profile(rho_val,TI_spl(:,:,iion),ict,fval,ier)
          IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Ion_Temperature',ier)
          val = fval(1)
       ELSE
@@ -519,7 +554,7 @@ MODULE thrift_profiles_mod
       REAL*8 :: fval(1)
       val = 0
       IF(solve_plasma_equations) THEN
-         CALL R8HERM1EV(rho_val,raxis_prof,nrho_prof,1,TI_spl(:,:,iion),ict,fval,ier)
+         CALL eval_plasma_profile(rho_val,TI_spl(:,:,iion),ict,fval,ier)
          IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Ion_Temperature_Derivative',ier)
          val = fval(1)
       ELSE
@@ -539,7 +574,7 @@ MODULE thrift_profiles_mod
       REAL*8 :: fval(1)
       val = 0
       IF(solve_plasma_equations) THEN
-         CALL R8HERM1EV(rho_val,raxis_prof,nrho_prof,1,P_spl(:,:),ict,fval,ier)
+         CALL eval_plasma_profile(rho_val,P_spl(:,:),ict,fval,ier)
          IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Total_Pressure',ier)
          val = fval(1)
       ELSE
@@ -584,7 +619,7 @@ MODULE thrift_profiles_mod
       REAL*8 :: fval(1)
       val = 0
       IF(solve_plasma_equations) THEN
-         CALL R8HERM1EV(rho_val,raxis_prof,nrho_prof,1,P_spl(:,:),ict,fval,ier)
+         CALL eval_plasma_profile(rho_val,P_spl(:,:),ict,fval,ier)
          IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Total_Pressure_Derivative',ier)
          val = fval(1)
       ELSE

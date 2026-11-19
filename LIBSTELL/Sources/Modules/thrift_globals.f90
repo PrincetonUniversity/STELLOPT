@@ -57,6 +57,7 @@
       add_NEO_heat_flux, external_normalized_diffusivities, external_normalized_particle_pinch
       INTEGER, PARAMETER :: nions_max = 6
       REAL(rprec) :: dt_plasma_solver, tol_plasma_solver, dt_Er_ambipolar
+      REAL(rprec) :: rho_edge_plasma_solver
       REAL(rprec) :: stiffness_beurskens, aLT_critical_beurskens, alpha_beurskens, &
                      alpha_chi_external, tau_fast_alphas, mass_ref_species
       REAL(rprec) :: dt_plasma_write
