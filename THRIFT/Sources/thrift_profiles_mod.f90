@@ -373,15 +373,16 @@ MODULE thrift_profiles_mod
       RETURN
       END SUBROUTINE get_prof_dfdt
 
-      SUBROUTINE eval_plasma_profile(rho_val,SPL,ict,fval,ier)
+      SUBROUTINE eval_plasma_profile(rho_val,SPL,profile_floor,ict,fval,ier)
       ! Interpolate on the solver grid; extend the endpoint tangent up to rho=1.
+      ! Clip the extrapolated value at profile_floor and zero its slope there.
       IMPLICIT NONE
       REAL(rprec), INTENT(in) :: rho_val
       REAL(rprec), INTENT(in) :: SPL(2,nrho_prof)
       INTEGER, INTENT(in) :: ict(2)
       REAL(rprec), INTENT(out) :: fval(*)
       INTEGER, INTENT(out) :: ier
-      REAL(rprec), PARAMETER :: profile_floor = 1.0E-20_rprec
+      REAL(rprec), INTENT(in) :: profile_floor
       REAL(rprec) :: val, slope
       INTEGER :: iout
 
@@ -417,7 +418,7 @@ MODULE thrift_profiles_mod
       INTEGER, parameter :: ict(2)=(/1,0/)
       REAL*8 :: fval(1)
       IF(solve_plasma_equations) THEN
-         CALL eval_plasma_profile(rho_val,NE_spl,ict,fval,ier)
+         CALL eval_plasma_profile(rho_val,NE_spl,1.0E16_rprec,ict,fval,ier)
          IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Electron_Density',ier)
          val = fval(1)
       ELSE
@@ -435,7 +436,7 @@ MODULE thrift_profiles_mod
       INTEGER, parameter :: ict(2)=(/0,1/)
       REAL*8 :: fval(1)
       IF(solve_plasma_equations) THEN
-         CALL eval_plasma_profile(rho_val,NE_spl,ict,fval,ier)
+         CALL eval_plasma_profile(rho_val,NE_spl,1.0E16_rprec,ict,fval,ier)
          IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Electron_Density_Derivative',ier)
          val = fval(1)
       ELSE
@@ -454,7 +455,7 @@ MODULE thrift_profiles_mod
       INTEGER, parameter :: ict(2)=(/1,0/)
       REAL*8 :: fval(1)
       IF(solve_plasma_equations) THEN
-         CALL eval_plasma_profile(rho_val,TE_spl,ict,fval,ier)
+         CALL eval_plasma_profile(rho_val,TE_spl,150.0_rprec,ict,fval,ier)
          IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Electron_Temperature',ier)
          val = fval(1)
       ELSE
@@ -474,7 +475,7 @@ MODULE thrift_profiles_mod
       INTEGER, parameter :: ict(2)=(/0,1/)
       REAL*8 :: fval(1)
       IF(solve_plasma_equations) THEN
-         CALL eval_plasma_profile(rho_val,TE_spl,ict,fval,ier)
+         CALL eval_plasma_profile(rho_val,TE_spl,150.0_rprec,ict,fval,ier)
          IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Electron_Temperature_Derivative',ier)
          val = fval(1)
       ELSE
@@ -494,7 +495,7 @@ MODULE thrift_profiles_mod
       REAL*8 :: fval(1)
       val = 0
       IF(solve_plasma_equations) THEN
-         CALL eval_plasma_profile(rho_val,NI_spl(:,:,iion),ict,fval,ier)
+         CALL eval_plasma_profile(rho_val,NI_spl(:,:,iion),1.0E16_rprec,ict,fval,ier)
          IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Ion_Density',ier)
          val = fval(1)      
       ELSE
@@ -514,7 +515,7 @@ MODULE thrift_profiles_mod
       REAL*8 :: fval(1)
       val = 0
       IF(solve_plasma_equations) THEN
-         CALL eval_plasma_profile(rho_val,NI_spl(:,:,iion),ict,fval,ier)
+         CALL eval_plasma_profile(rho_val,NI_spl(:,:,iion),1.0E16_rprec,ict,fval,ier)
          IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Ion_Density_Derivative',ier)
          val = fval(1)
       ELSE
@@ -534,7 +535,7 @@ MODULE thrift_profiles_mod
       REAL*8 :: fval(1)
       val = 0
       IF(solve_plasma_equations) THEN
-         CALL eval_plasma_profile(rho_val,TI_spl(:,:,iion),ict,fval,ier)
+         CALL eval_plasma_profile(rho_val,TI_spl(:,:,iion),150.0_rprec,ict,fval,ier)
          IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Ion_Temperature',ier)
          val = fval(1)
       ELSE
@@ -554,7 +555,7 @@ MODULE thrift_profiles_mod
       REAL*8 :: fval(1)
       val = 0
       IF(solve_plasma_equations) THEN
-         CALL eval_plasma_profile(rho_val,TI_spl(:,:,iion),ict,fval,ier)
+         CALL eval_plasma_profile(rho_val,TI_spl(:,:,iion),150.0_rprec,ict,fval,ier)
          IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Ion_Temperature_Derivative',ier)
          val = fval(1)
       ELSE
@@ -574,7 +575,7 @@ MODULE thrift_profiles_mod
       REAL*8 :: fval(1)
       val = 0
       IF(solve_plasma_equations) THEN
-         CALL eval_plasma_profile(rho_val,P_spl(:,:),ict,fval,ier)
+         CALL eval_plasma_profile(rho_val,P_spl(:,:),1.0E16_rprec*150.0_rprec*e_charge,ict,fval,ier)
          IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Total_Pressure',ier)
          val = fval(1)
       ELSE
@@ -619,7 +620,7 @@ MODULE thrift_profiles_mod
       REAL*8 :: fval(1)
       val = 0
       IF(solve_plasma_equations) THEN
-         CALL eval_plasma_profile(rho_val,P_spl(:,:),ict,fval,ier)
+         CALL eval_plasma_profile(rho_val,P_spl(:,:),1.0E16_rprec*150.0_rprec*e_charge,ict,fval,ier)
          IF(ier /= 0) CALL handle_err(EZSPLINE_ERR,'Total_Pressure_Derivative',ier)
          val = fval(1)
       ELSE
