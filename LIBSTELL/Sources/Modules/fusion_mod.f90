@@ -43,6 +43,117 @@
             RETURN
         END FUNCTION BREMSSTRAHLUNG_POWER
 
+        FUNCTION MAVRIN_COOLING_RATE(Z,Te) RESULT(result)
+            !--------------------------------------------------------------
+            !   Z            Atomic number [-]
+            !   TE           Electron temperature [eV]
+            !   RESULT       Total impurity cooling coefficient Lz [W m^3]
+            !
+            ! Mavrin (2018), doi:10.1080/10420150.2018.1462361.
+            ! Coronal fits include bremsstrahlung, line and recombination
+            ! radiation. Power density is ne*ni*Lz, where ni includes all
+            ! charge states. Fits were derived for ne = 1e20 m^-3.
+            ! As in pySTEL/libstell/radiation.py, clip Te to 0.1--100 keV
+            ! and use the hotter interval at each internal boundary.
+            ! Hydrogen isotopes (Z=1) must use BREMSSTRAHLUNG_POWER.
+            !--------------------------------------------------------------
+            USE, INTRINSIC :: IEEE_ARITHMETIC, ONLY: IEEE_IS_FINITE
+            USE, INTRINSIC :: ISO_FORTRAN_ENV, ONLY: ERROR_UNIT
+            INTEGER, INTENT(in) :: Z
+            DOUBLE PRECISION, INTENT(in) :: Te
+            DOUBLE PRECISION :: result, Tk, x, log_rate
+            DOUBLE PRECISION :: A(0:4)
+            INTEGER :: i
+
+            IF (.NOT. IEEE_IS_FINITE(Te)) THEN
+                ERROR STOP 'MAVRIN_COOLING_RATE: electron temperature must be finite'
+            END IF
+            Tk = MIN(MAX(Te,100.0D0),100000.0D0)*1.0D-3
+
+            ! Coefficients A0,...,A4 in ascending powers of log10(Te [keV]).
+            SELECT CASE (Z)
+            CASE (2) ! Helium
+                A = (/ -3.5551D1, 3.1469D-1, 1.0156D-1, -9.3730D-2, 2.5020D-2 /)
+            CASE (3) ! Lithium
+                A = (/ -3.5115D1, 1.9475D-1, 2.5082D-1, -1.6070D-1, 3.5190D-2 /)
+            CASE (4) ! Beryllium
+                A = (/ -3.4765D1, 3.7270D-2, 3.8363D-1, -2.1384D-1, 4.1690D-2 /)
+            CASE (6) ! Carbon
+                IF (Tk < 0.5D0) THEN
+                    A = (/ -3.4738D1, -5.0085D0, -1.2788D1, -1.6637D1, -7.2904D0 /)
+                ELSE
+                    A = (/ -3.4174D1, -3.6687D-1, 6.8856D-1, -2.9191D-1, 4.4470D-2 /)
+                END IF
+            CASE (7) ! Nitrogen
+                IF (Tk < 0.5D0) THEN
+                    A = (/ -3.4065D1, -2.3614D0, -6.0605D0, -1.1570D1, -6.9621D0 /)
+                ELSE IF (Tk < 2.0D0) THEN
+                    A = (/ -3.3899D1, -5.9668D-1, 7.6272D-1, -1.7160D-1, 5.8770D-2 /)
+                ELSE
+                    A = (/ -3.3913D1, -5.2628D-1, 7.0047D-1, -2.2790D-1, 2.8350D-2 /)
+                END IF
+            CASE (8) ! Oxygen
+                IF (Tk < 0.3D0) THEN
+                    A = (/ -3.7257D1, -1.5635D1, -1.7141D1, -5.3765D0, 0.0D0 /)
+                ELSE
+                    A = (/ -3.3640D1, -7.6211D-1, 7.9655D-1, -2.0850D-1, 1.4360D-2 /)
+                END IF
+            CASE (10) ! Neon
+                IF (Tk < 0.7D0) THEN
+                    A = (/ -3.3132D1, 1.7309D0, 1.5230D1, 2.8939D1, 1.5648D1 /)
+                ELSE IF (Tk < 5.0D0) THEN
+                    A = (/ -3.3290D1, -8.7750D-1, 8.6842D-1, -3.9544D-1, 1.7244D-1 /)
+                ELSE
+                    A = (/ -3.3410D1, -4.5345D-1, 2.9731D-1, 4.3960D-2, -2.6930D-2 /)
+                END IF
+            CASE (18) ! Argon
+                IF (Tk < 0.6D0) THEN
+                    A = (/ -3.2155D1, 6.5221D0, 3.0769D1, 3.9161D1, 1.5353D1 /)
+                ELSE IF (Tk < 3.0D0) THEN
+                    A = (/ -3.2530D1, 5.4490D-1, 1.5389D0, -7.6887D0, 4.9806D0 /)
+                ELSE
+                    A = (/ -3.1853D1, -1.6674D0, 6.1339D-1, 1.7480D-1, -8.2260D-2 /)
+                END IF
+            CASE (36) ! Krypton
+                IF (Tk < 0.447D0) THEN
+                    A = (/ -3.4512D1, -2.1484D1, -4.4723D1, -4.0133D1, -1.3564D1 /)
+                ELSE IF (Tk < 2.364D0) THEN
+                    A = (/ -3.1399D1, -5.0091D-1, 1.9148D0, -2.5865D0, -5.2704D0 /)
+                ELSE
+                    A = (/ -2.9954D1, -6.3683D0, 6.6831D0, -2.9674D0, 4.8356D-1 /)
+                END IF
+            CASE (54) ! Xenon
+                IF (Tk < 0.5D0) THEN
+                    A = (/ -2.9303D1, 1.4351D1, 4.7081D1, 5.9580D1, 2.5615D1 /)
+                ELSE IF (Tk < 2.5D0) THEN
+                    A = (/ -3.1113D1, 5.9339D-1, 1.2808D0, -1.1628D1, 1.0748D1 /)
+                ELSE IF (Tk < 10.0D0) THEN
+                    A = (/ -2.5813D1, -2.7526D1, 4.8614D1, -3.6885D1, 1.0069D1 /)
+                ELSE
+                    A = (/ -2.2138D1, -2.2592D1, 1.9619D1, -7.5181D0, 1.0858D0 /)
+                END IF
+            CASE (74) ! Tungsten
+                IF (Tk < 1.5D0) THEN
+                    A = (/ -3.0374D1, 3.8304D-1, -9.5126D-1, -1.0311D0, -1.0103D-1 /)
+                ELSE IF (Tk < 4.0D0) THEN
+                    A = (/ -3.0238D1, -2.9208D0, 2.2824D1, -6.3303D1, 5.1849D1 /)
+                ELSE
+                    A = (/ -3.2153D1, 5.2499D0, -6.2740D0, 2.6627D0, -3.6759D-1 /)
+                END IF
+            CASE DEFAULT
+                WRITE(ERROR_UNIT,*) 'No Mavrin radiation fit for atomic number ',Z
+                ERROR STOP 'MAVRIN_COOLING_RATE: unsupported atomic number'
+            END SELECT
+
+            x = LOG10(Tk)
+            log_rate = A(4)
+            DO i=3,0,-1
+                log_rate = log_rate*x + A(i)
+            END DO
+            result = 10.0D0**log_rate
+            RETURN
+        END FUNCTION MAVRIN_COOLING_RATE
+
         FUNCTION DT_CROSS_SECTION(Ti) RESULT(result)
             !--------------------------------------------------------------
             !   TI           Ion Temperature [eV]
@@ -180,5 +291,3 @@
         END FUNCTION ALPHA_POWER
 
     END MODULE fusion_mod
-
-        

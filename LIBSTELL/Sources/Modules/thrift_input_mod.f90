@@ -43,6 +43,7 @@
                               max_subiter_plasma_solver, tol_plasma_solver, &
                               beurskens_ions, add_NEO, &
                               add_NEO_particle_flux, add_NEO_heat_flux, &
+                              add_Bremsstrahlung, add_all_radiations, &
                               external_normalized_diffusivities, &
                               external_normalized_particle_pinch, &
                               Dn_ions, chi_all, N0_init_ions, T0_init_all, &
@@ -122,6 +123,8 @@
       add_NEO = .FALSE.
       add_NEO_particle_flux = .TRUE.
       add_NEO_heat_flux = .TRUE.
+      add_Bremsstrahlung = .FALSE.
+      add_all_radiations = .TRUE.
       Dn_ions = 0.0
       chi_all = 0.0
       N0_init_ions = 1E19
@@ -173,6 +176,10 @@
          END IF
          CLOSE(iunit)
       END IF
+
+      IF (add_Bremsstrahlung .AND. add_all_radiations) THEN
+         ERROR STOP 'ERROR: add_Bremsstrahlung and add_all_radiations cannot both be TRUE; Mavrin includes bremsstrahlung.'
+      END IF
       
       CALL tolower(bootstrap_type)
       CALL tolower(etapar_type)
@@ -217,6 +224,9 @@
       WRITE(iunit_out,'(A)') '!---------- ECCD PARAMETERS ------------'
       WRITE(iunit_out,outstr) 'ECCD_TYPE',eccd_type
       WRITE(iunit_out,'(A)') '!---------- DKES PARAMETERS ------------'
+      WRITE(iunit_out,'(A)') '!---------- RADIATION PARAMETERS ------------'
+      WRITE(iunit_out,outboo) 'ADD_BREMSSTRAHLUNG',add_Bremsstrahlung
+      WRITE(iunit_out,outboo) 'ADD_ALL_RADIATIONS',add_all_radiations
       WRITE(iunit_out,'(A)') '/'
       RETURN
       END SUBROUTINE write_thrift_namelist

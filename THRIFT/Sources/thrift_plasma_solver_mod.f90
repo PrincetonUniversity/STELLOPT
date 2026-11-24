@@ -811,33 +811,40 @@ MODULE thrift_plasma_solver_mod
     END SUBROUTINE
 
     SUBROUTINE get_RHS_pressure(RHS_pressure)
-        USE fusion_mod, ONLY : BREMSSTRAHLUNG_POWER, ALPHA_POWER
+        USE fusion_mod, ONLY : BREMSSTRAHLUNG_POWER, MAVRIN_COOLING_RATE, ALPHA_POWER
         IMPLICIT NONE
         REAL(rprec), DIMENSION(:), INTENT(INOUT) :: RHS_pressure
         INTEGER :: Nr, ir, iion, offset, Zi, iD, iT
         REAL(rprec) :: rho, t, explicit_source, n_previous, T_previous, p_previous
         REAL(rprec) :: ni, ne, Te, nD, nT, TD, TT
-        REAL(rprec), DIMENSION(:), ALLOCATABLE :: SB, S_alpha
+        REAL(rprec), DIMENSION(:), ALLOCATABLE :: S_radiation, S_alpha
 
         Nr = Nr_plasma_solver
 
         t = time_plasma_grid(mytimestep_plasma_solver)
 
-        ALLOCATE(SB(Nr),S_alpha(Nr))
+        ALLOCATE(S_radiation(Nr),S_alpha(Nr))
 
-        ! Bremsstrahlung power
-        SB = 0.0_rprec
-        DO iion=1,nion_prof
-            Zi = Zatom_prof(iion)
-            DO ir=1,Nr_plasma_solver
-                ni = plasma_N(1+iion,ir)
-                ne = plasma_N(1,ir)
-                Te = plasma_T(1,ir)
-                SB(ir) = SB(ir) + BREMSSTRAHLUNG_POWER(Zi,ni,ne,Te)
+        ! Radiation power density (Mavrin includes bremsstrahlung).
+        S_radiation = 0.0_rprec
+        IF (add_Bremsstrahlung .OR. add_all_radiations) THEN
+            DO iion=1,nion_prof
+                Zi = Zatom_prof(iion)
+                DO ir=1,Nr
+                    ni = plasma_N(1+iion,ir)
+                    ne = plasma_N(1,ir)
+                    Te = plasma_T(1,ir)
+                    IF (add_Bremsstrahlung .OR. Zi == 1) THEN
+                        ! Mavrin has no fit for hydrogen isotopes.
+                        S_radiation(ir) = S_radiation(ir) + BREMSSTRAHLUNG_POWER(Zi,ni,ne,Te)
+                    ELSE IF (add_all_radiations) THEN
+                        S_radiation(ir) = S_radiation(ir) + ne*ni*MAVRIN_COOLING_RATE(Zi,Te)
+                    END IF
+                END DO
             END DO
-        END DO
+        END IF
         ! Bookkeeping
-        S_radiated_power(mytimestep_plasma_solver,:) = SB
+        S_radiated_power(mytimestep_plasma_solver,:) = S_radiation
 
         ! Alpha power 
         S_alpha = 0.0_rprec
@@ -863,8 +870,8 @@ MODULE thrift_plasma_solver_mod
             rho = rho_plasma_grid(ir)
             ! Add external source
             explicit_source = S_energy_ext(1,mytimestep_plasma_solver,ir)
-            ! Add Bremsstrahlung
-            explicit_source = explicit_source - SB(ir)
+            ! Subtract radiated power
+            explicit_source = explicit_source - S_radiation(ir)
             ! Add alpha power
             explicit_source = explicit_source + S_alpha(ir)*frac_alpha_heating(1)
             !
@@ -899,7 +906,7 @@ MODULE thrift_plasma_solver_mod
             S_alpha_power(1+iion,mytimestep_plasma_solver,:) = S_alpha(:)*frac_alpha_heating(iion+1)
         END DO
         
-        DEALLOCATE(SB,S_alpha)
+        DEALLOCATE(S_radiation,S_alpha)
 
         RETURN
     END SUBROUTINE get_RHS_pressure

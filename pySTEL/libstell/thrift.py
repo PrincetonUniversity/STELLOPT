@@ -1738,7 +1738,7 @@ class THRIFT_plasma_solver():
         saved_class.Q_turb = defaultdict(dict)
         saved_class.Gamma_turb = defaultdict(dict)
 
-        saved_class.explicit_energy_sources['electrons']['Bremsstrahlung'] = -self.S_radiated_power[sl,:]
+        saved_class.explicit_energy_sources['electrons']['radiation'] = -self.S_radiated_power[sl,:]
         
         for ispecies,species in enumerate(self.list_of_species):
             saved_class.explicit_energy_sources[species]['time_dependent_gaussian'] = self.S_energy_ext[ispecies,sl,:]

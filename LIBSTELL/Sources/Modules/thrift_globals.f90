@@ -55,6 +55,7 @@
       ! Plasma solver
       LOGICAL :: solve_plasma_equations, beurskens_ions, add_NEO, add_NEO_particle_flux, &
       add_NEO_heat_flux, external_normalized_diffusivities, external_normalized_particle_pinch
+      LOGICAL :: add_Bremsstrahlung, add_all_radiations
       INTEGER, PARAMETER :: nions_max = 6
       REAL(rprec) :: dt_plasma_solver, tol_plasma_solver, dt_Er_ambipolar
       REAL(rprec) :: rho_edge_plasma_solver
