@@ -359,7 +359,8 @@
                CALL safe_open(iu_dkes_coeffs, istat, "DKES_coeffs."//TRIM(temp_str), &
                Trim(Adjustl('unknown')), 'formatted')
 
-               ! Write header
+               ! Header indicating total number of surfaces
+               WRITE(iu_dkes_coeffs, '(A,1X,I0)') 'ns_surfaces', ns_eq
                WRITE(iu_dkes_coeffs, '(A)') "dkes_k  Er_v           nu_v           D11            D31            D33"
 
                ! Write data row by row
