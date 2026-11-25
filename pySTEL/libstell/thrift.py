@@ -1539,14 +1539,25 @@ class THRIFT_plasma_solver():
                 elif value.ndim == 3:
                     setattr(self,name,value[:,mask,:])        
         
-    def create_input_sources_file(self,filename,nrho,tgrid):
-        # creates 
+    def create_input_sources_file(self,filename,rho_grid,tgrid):
+        """Create zero source arrays on the supplied radial and time grids.
+
+        rho_grid must be a finite, strictly increasing 1D grid in [0, 1].
+        It may be nonuniform and end below rho=1.
+        """
+        rho_grid = np.array(rho_grid, dtype=float, copy=True)
+        if (rho_grid.ndim != 1 or rho_grid.size < 2
+                or not np.all(np.isfinite(rho_grid))
+                or np.any(np.diff(rho_grid) <= 0)
+                or np.any((rho_grid < 0) | (rho_grid > 1))):
+            raise ValueError('rho_grid must contain at least two finite, strictly increasing values in [0, 1].')
+        nrho = len(rho_grid)
         
         Zcharge_ions = np.array( [self.plasma_class.Zcharge[ion] for ion in self.plasma_class.ion_species], dtype=int )
         mass_ions    = [self.plasma_class.mass[ion] for ion in self.plasma_class.ion_species]
         nZ   = self.plasma_class.num_ion_species
         
-        self.rho_grid_source = np.linspace(0,1,nrho)
+        self.rho_grid_source = rho_grid
         self.t_grid_source = tgrid
         nt = len(tgrid)
         
